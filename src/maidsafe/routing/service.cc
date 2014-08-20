@@ -76,6 +76,7 @@ void Service::Ping(protobuf::Message& message) {
   ping_response.set_timestamp(GetTimeStamp());
 #endif
   message.set_request(false);
+  message.set_ack_id(RandomInt32());
   message.clear_route_history();
   message.clear_data();
   message.add_data(ping_response.SerializeAsString());
@@ -166,6 +167,7 @@ void Service::SendConnectResponse(protobuf::Message message, const NodeInfo& pee
   message.set_replication(1);
   message.set_client_node(routing_table_.client_mode());
   message.set_request(false);
+  message.set_ack_id(RandomInt32());
   message.set_hops_to_live(Parameters::hops_to_live);
   if (message.has_source_id())
     message.set_destination_id(message.source_id());
@@ -298,6 +300,7 @@ void Service::FindNodes(protobuf::Message& message) {
   message.add_data(found_nodes.SerializeAsString());
   message.set_direct(true);
   message.set_replication(1);
+  message.set_ack_id(RandomInt32());
   message.set_client_node(routing_table_.client_mode());
   message.set_request(false);
   message.set_hops_to_live(Parameters::hops_to_live);
@@ -391,6 +394,7 @@ void Service::GetGroup(protobuf::Message& message) {
   message.set_replication(1);
   message.set_client_node(routing_table_.client_mode());
   message.set_request(false);
+  message.set_ack_id(RandomInt32());
   message.set_hops_to_live(Parameters::hops_to_live);
   assert(message.IsInitialized() && "unintialised message");
 }

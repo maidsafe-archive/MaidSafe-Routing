@@ -95,6 +95,10 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
 
   message.set_ack_id(network_utils_.acknowledgement_.GetId());
 
+  if (message.destination_id() == routing_table_.kNodeId().string())
+    if (RelayDirectMessageIfNeeded(message))
+      return;
+
   if (routing_table_.size() == 0)  // This node can only send to bootstrap_endpoint
     network_.SendToDirect(message, network_.bootstrap_connection_id(),
                           network_.bootstrap_connection_id());
@@ -114,12 +118,12 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
         LOG(kInfo) << "Empty response for message id :" << message.id();
         return;
       }
-      LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId())
-                    << "] repl : " << MessageTypeString(message) << " from "
-                    << HexSubstr(message.source_id()) << "   (id: " << message.id()
-                    << ")  --NodeLevel Replied--";
+      LOG(kSuccess) << " [" << routing_table_.kNodeId() << "] repl : "
+                    << MessageTypeString(message) << " from " << HexSubstr(message.source_id())
+                    << "   (id: " << message.id() << ")  --NodeLevel Replied--";
       protobuf::Message message_out;
       message_out.set_request(false);
+      message_out.set_ack_id(RandomUint32());
       message_out.set_hops_to_live(Parameters::hops_to_live);
       message_out.set_destination_id(message.source_id());
       message_out.set_type(message.type());
@@ -228,7 +232,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       return network_.SendToClosestNode(message);
     } else {
       network_.SendAck(message);
-      LOG(kWarning) << "Dropping message. This node [" << DebugId(routing_table_.kNodeId())
+      LOG(kWarning) << "Dropping message. This node [" << routing_table_.kNodeId()
                     << "] is the closest but is not connected to destination node ["
                     << HexSubstr(message.destination_id())
                     << "], Src ID: " << HexSubstr(message.source_id())
@@ -339,6 +343,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
     }
   }
 
+  message.clear_ack_node_ids();
   message.set_destination_id(routing_table_.kNodeId().string());
 
   if (IsRoutingMessage(message)) {
@@ -371,8 +376,8 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
       !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id()))
     return;
 
- if (IsAck(message))
-   return;
+//  if (IsAck(message))
+//    return;
 
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();
@@ -530,7 +535,7 @@ void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Messa
   }
 
   // This node is closest so will send to all replicant nodes
-  unsigned int replication(static_cast<unsigned int>(message.replication()));
+  auto replication(static_cast<unsigned int>(message.replication()));
   if ((replication < 1) || (replication > Parameters::group_size)) {
     LOG(kError) << "Dropping invalid non-direct message."
                 << " id: " << message.id();

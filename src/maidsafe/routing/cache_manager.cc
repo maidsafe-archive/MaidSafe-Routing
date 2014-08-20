@@ -117,6 +117,7 @@ bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
           //  Responding with cached response
           protobuf::Message message_out;
           message_out.set_request(false);
+          message_out.set_ack_id(RandomInt32());
           message_out.set_hops_to_live(Parameters::hops_to_live);
           message_out.set_destination_id(message.source_id());
           message_out.set_type(message.type());

@@ -169,6 +169,10 @@ bool IsAck(const protobuf::Message& message) {
   return message.type() == static_cast<int>(MessageType::kAcknowledgement);
 }
 
+bool IsConnectSuccessAcknowledgement(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kConnectSuccessAcknowledgement);
+}
+
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client) {
   return (is_destination_client && message.request() && message.client_node() &&
@@ -286,6 +290,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
       break;
     case MessageType::kNodeLevel:
       message_type = "kNodeLevel";
+      break;
+    case MessageType::kAcknowledgement:
+      message_type = "kAcknowledgement";
       break;
     default:
       message_type = "Unknown  ";

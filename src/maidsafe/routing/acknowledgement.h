@@ -44,7 +44,7 @@ namespace maidsafe {
 
 namespace routing {
 
-typedef uint32_t AckId;
+typedef int32_t AckId;
 
 namespace protobuf { class Message;}  // namespace protobuf
 namespace test {
@@ -88,7 +88,7 @@ class Acknowledgement {
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
   void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
-  void Remove(const AckId& ack_id);
+  void Remove(AckId ack_id);
   void GroupQueueRemove(AckId ack_id);
   void HandleMessage(AckId ack_id);
   bool HandleGroupMessage(const protobuf::Message& message);

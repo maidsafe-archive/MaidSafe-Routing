@@ -74,6 +74,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(network_utils_.acknowledgement_.GetId());
 
   AddGroupSourceRelatedFields(message, proto_message,
                               detail::is_group_source<GroupToSingleRelayMessage>());
@@ -117,7 +118,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
 
 void Routing::Impl::Stop() {
   LOG(kVerbose) << "Routing::Impl::Stop() " << kNodeId_ << ", connection id "
-    << routing_table_->kConnectionId();
+                << routing_table_->kConnectionId();
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     running_ = false;
@@ -460,6 +461,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_client_node(routing_table_->client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(network_utils_.acknowledgement_.GetId());
   unsigned int replication(1);
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
@@ -515,6 +517,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id)
     promise->set_value(nodes_id);
   };
   protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
+  get_group_message.set_ack_id(network_utils_.acknowledgement_.GetId());
   get_group_message.set_id(timer_.NewTaskId());
   timer_.AddTask(Parameters::default_response_timeout, callback, 1, get_group_message.id());
   network_->SendToClosestNode(get_group_message);
@@ -525,7 +528,7 @@ void Routing::Impl::OnMessageReceived(const std::string& message) {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (running_) {
     std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
-    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });  // NOLINT (Fraser)
+    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });
   }
 }
 
@@ -548,6 +551,10 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       std::lock_guard<std::mutex> lock(running_mutex_);
       if (!running_)
         return;
+    }
+    if (network_utils_.acknowledgement_.IsSendingAckRequired(pb_message, kNodeId())) {
+      network_->SendAck(pb_message);
+      pb_message.clear_ack_node_ids();
     }
     message_handler_->HandleMessage(pb_message);
   } else {

@@ -70,7 +70,7 @@ class MessageHandlerTest : public testing::Test {
     network_utils_.reset(new NetworkUtils(node_id, asio_service_));
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
-    utils_.reset(new MockNetwork(*table_, *ntable_));
+    utils_.reset(new MockNetwork(*table_, *ntable_, network_utils_->acknowledgement_));
     service_.reset(new MockService(*table_, *ntable_, *utils_, public_key_holder_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *utils_,
                                                     public_key_holder_));

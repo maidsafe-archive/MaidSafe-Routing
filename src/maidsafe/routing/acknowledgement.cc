@@ -124,7 +124,7 @@ void Acknowledgement::AddGroup(const protobuf::Message& message, Handler handler
   }
 }
 
-void Acknowledgement::Remove(const AckId& ack_id) {
+void Acknowledgement::Remove(AckId ack_id) {
   if (!running_)
     return;
   std::lock_guard<std::mutex> lock(mutex_);
@@ -252,8 +252,8 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
   if (message.source_id() == message.destination_id())
     return false;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////// if (IsConnectSuccessAcknowledgement(message))
-///////////////////////////////////////////////////////////////////////////////////////////////////    return false;
+ if (IsConnectSuccessAcknowledgement(message))
+   return false;
 
 //  communication between two nodes, in which one side is a relay at neither end
 //  involves setting a timer.
@@ -269,7 +269,7 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
 
 void Acknowledgement::AdjustAckHistory(protobuf::Message& message) {
   LOG(kVerbose) << "size of acks "  << message.ack_node_ids_size();
-  if (NodeId(message.relay_id()) == kNodeId_)
+  if (message.relay_id() == kNodeId_.string())
     return;
   assert((message.ack_node_ids_size() <= 2) && "size of ack list must be smaller than 3");
   if ((message.ack_node_ids_size() == 0) ||

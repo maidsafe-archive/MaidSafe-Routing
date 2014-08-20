@@ -33,6 +33,7 @@
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/acknowledgement.h"
 
 
 namespace maidsafe {
@@ -84,8 +85,9 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
+  Acknowledgement acknowledgement(node_id, asio_service);
   PublicKeyHolder public_key_holder(asio_service);
-  Network network(routing_table, client_routing_table);
+  Network network(routing_table, client_routing_table, acknowledgement);
   Service service(routing_table, client_routing_table, network, public_key_holder);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
