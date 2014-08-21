@@ -65,9 +65,31 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_AckDirect) {
+  SetUpNetwork(kServerSize);
+  std::string data(RandomAlphaNumericString(128));
+  LOG(kVerbose) << "SendDirect";
+  nodes_.at(0)->SendDirect(NodeId(NodeId::IdType::kRandomId), data, false,
+                           [](std::string) {} );
+  Sleep(std::chrono::seconds(10));
+  LOG(kVerbose) << "Wakeup";
+}
+
+TEST_F(RoutingStandAloneTest, FUNC_AckGroup) {
+  SetUpNetwork(kServerSize);
+  std::string data(RandomAlphaNumericString(128));
+  LOG(kVerbose) << "SendGroup";
+  nodes_.at(0)->SendGroup(NodeId(NodeId::IdType::kRandomId), data, false,
+                          [](std::string string) {
+                            LOG(kVerbose) << "Write string: " << string;
+                          } );
+  Sleep(std::chrono::seconds(10));
+  LOG(kVerbose) << "Wakeup";
+}
+
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
-  this->SetUpNetwork(kServerSize);
-  this->AddNode(passport::CreateMaidAndSigner().first);
+  SetUpNetwork(kServerSize);
+  AddNode(passport::CreateMaidAndSigner().first);
   NodeId maid_id(nodes_[kServerSize]->GetMaid().name()), pmid_id;
   while (this->nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     auto pmid(passport::CreatePmidAndSigner().first);
@@ -76,8 +98,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
     Sleep(std::chrono::milliseconds(500));
     if (PmidIsCloseToMaid(pmid_id, maid_id)) {
       EXPECT_TRUE(this->nodes_[ClientIndex()]->RoutingTableHasNode(pmid_id))
-          << DebugId(this->nodes_[ClientIndex()]->node_id()) << " does not have "
-          << DebugId(pmid_id);
+          << nodes_[ClientIndex()]->node_id() << " does not have " << DebugId(pmid_id);
     }
   }
 }

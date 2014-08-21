@@ -75,6 +75,7 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
   if (group_itr != std::end(group_queue_)) {
     group_itr->requested_peers.insert(
         std::make_pair(NodeId(message.destination_id()), GroupMessageAckStatus::kPending));
+    LOG(kVerbose) << "Add group entry " << NodeId(message.destination_id());
     return;
   }
 
@@ -162,7 +163,10 @@ void Acknowledgement::HandleMessage(AckId ack_id) {
 
 bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   AckId ack_id(message.ack_id());
-  NodeId destination_id(message.destination_id());
+  NodeId target_id((NodeId(message.destination_id()) == kNodeId_ &&
+                   !message.source_id().empty())
+                       ? NodeId(message.source_id())
+                       : NodeId(message.destination_id())) ;
   assert((ack_id != 0) && "Invalid acknowledgement id");
   LOG(kVerbose) << "MessageHandler::HandleGroupMessage " << ack_id;
 
@@ -174,12 +178,12 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   if (it == std::end(group_queue_))
     return false;
 
-  auto group_itr(it->requested_peers.find(destination_id));
+  auto group_itr(it->requested_peers.find(target_id));
   if (group_itr != it->requested_peers.end()) {
     group_itr->second = GroupMessageAckStatus::kSuccess;
-    LOG(kVerbose) << "Ack group member succeeds " << DebugId(group_itr->first) << " id: " << ack_id;
+    LOG(kVerbose) << "Ack group member succeeds " << group_itr->first << " id: " << ack_id;
   } else {
-    LOG(kWarning) << "Handling ack for a non-existing peer: " << DebugId(destination_id)
+    LOG(kWarning) << "Handling ack for a non-existing peer: " << target_id
                   << " ack id: " << ack_id;
     return true;
   }

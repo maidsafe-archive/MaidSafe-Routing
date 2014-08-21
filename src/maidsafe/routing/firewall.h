@@ -34,7 +34,7 @@ namespace test {
   class FirewallTest_BEH_AddRemove_Test;
 }
 
-typedef std::tuple<NodeId, uint32_t, std::time_t> ProcessedMessage;
+typedef std::tuple<NodeId, int32_t, std::time_t> ProcessedMessage;
 
 class Firewall {
  public:
@@ -43,7 +43,7 @@ class Firewall {
   Firewall(const Firewall&) = delete;
   Firewall(const Firewall&&) = delete;
 
-  bool Add(const NodeId& source_id, const uint32_t& message_id);
+  bool Add(const NodeId& source_id, int32_t message_id);
 
  private:
   friend class test::FirewallTest_BEH_AddRemove_Test;

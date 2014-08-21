@@ -29,7 +29,7 @@ const int Firewall::kQueueSize_ = 1000;
 Firewall::Firewall()
     : mutex_(), history_() {}
 
-bool Firewall::Add(const NodeId& source_id, const uint32_t& message_id) {
+bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
   if (source_id.IsZero())
     return false;
   std::unique_lock<std::mutex> lock(mutex_);

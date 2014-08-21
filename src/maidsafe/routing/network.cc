@@ -306,9 +306,7 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
       return;
     if (message.route_history().size() > 1)
       route_history = std::vector<std::string>(
-          message.route_history().begin(),
-          message.route_history().end() -
-              static_cast<size_t>(!(message.has_visited() && message.visited())));
+          message.route_history().begin(), message.route_history().end());
     else if ((message.route_history().size() == 1) &&
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));

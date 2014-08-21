@@ -231,6 +231,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
       message.set_visited(true);
       return network_.SendToClosestNode(message);
     } else {
+      network_utils_.acknowledgement_.AdjustAckHistory(message);
       network_.SendAck(message);
       LOG(kWarning) << "Dropping message. This node [" << routing_table_.kNodeId()
                     << "] is the closest but is not connected to destination node ["
