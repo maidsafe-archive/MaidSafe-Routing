@@ -127,6 +127,7 @@ void Routing::Impl::Stop() {
   re_bootstrap_timer_.cancel();
   recovery_timer_.cancel();
   setup_timer_.cancel();
+  message_handler_.reset();
   asio_service_.Stop();
   // Need to destroy network_ & routing_table_ as they hold a lambda capture (functor) of
   // shared_from_this()

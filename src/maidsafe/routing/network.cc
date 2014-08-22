@@ -312,7 +312,7 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
       route_history.push_back(message.route_history(0));
 
     auto group_target(acknowledgement_.AppendGroup(message.ack_id(), route_history));
-    if (group_target != NodeId())
+    if (!group_target.IsZero())
       ignore_exact_match = true;
 
     peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
@@ -380,9 +380,12 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
 void Network::AdjustRouteHistory(protobuf::Message& message) {
   if (message.source_id().empty())
     return;
-////////////////////////  if (Parameters::hops_to_live == static_cast<unsigned int>(message.hops_to_live()) &&
-////////////////////////      NodeId(message.source_id()) == routing_table_.kNodeId())
-////////////////////////    return;
+
+  acknowledgement_.AdjustAckHistory(message);
+
+  if (Parameters::hops_to_live == static_cast<unsigned int>(message.hops_to_live()) &&
+      NodeId(message.source_id()) == routing_table_.kNodeId())
+    return;
   assert(static_cast<unsigned int>(message.route_history().size()) <=
              Parameters::max_routing_table_size);
   if (std::find(message.route_history().begin(), message.route_history().end(),
@@ -400,7 +403,6 @@ void Network::AdjustRouteHistory(protobuf::Message& message) {
   }
   assert(static_cast<unsigned int>(message.route_history().size()) <=
              Parameters::max_routing_table_size);
-  acknowledgement_.AdjustAckHistory(message);
 }
 
 
