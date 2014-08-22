@@ -205,7 +205,7 @@ class ResponseHandlerTest : public testing::Test {
   std::shared_ptr<ResponseHandler> response_handler_;
 };
 
-TEST_F(ResponseHandlerTest, BEH_FindNodes) {
+TEST_F(ResponseHandlerTest, DISABLED_BEH_FindNodes) {
   protobuf::Message message;
   // Incorrect FindNodeResponse msg
   message = ComposeMsg(RandomString(128));
@@ -281,7 +281,7 @@ TEST_F(ResponseHandlerTest, BEH_FindNodes) {
   response_handler_->FindNodes(message);
 }
 
-TEST_F(ResponseHandlerTest, BEH_Connect) {
+TEST_F(ResponseHandlerTest, DISABLED_BEH_Connect) {
   protobuf::Message message;
   // Incorrect ConnectResponse msg
   message = ComposeMsg(RandomString(128));
@@ -336,7 +336,7 @@ TEST_F(ResponseHandlerTest, BEH_Connect) {
   response_handler_->Connect(message);
 }
 
-TEST_F(ResponseHandlerTest, BEH_ConnectSuccessAcknowledgement) {
+TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   protobuf::Message message;
   NodeId node_id(RandomString(64)), connection_id(RandomString(64));
   // Incorrect ConnectSuccessAcknowledgement msg

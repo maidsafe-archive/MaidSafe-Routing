@@ -268,6 +268,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_request(true);
     message.set_client_node(true);
     message.set_visited(true);
+    message.set_ack_id(RandomInt32());
     auto closest_nodes(table_->GetClosestNodes(close_info_.id, 4));
     closest_nodes.erase(
         std::remove_if(closest_nodes.begin(), closest_nodes.end(),
@@ -319,6 +320,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
+    message.set_ack_id(RandomInt32());
     NodeId source_id(NodeId::IdType::kRandomId);
     NodeId destination_id(GenerateUniqueRandomId(close_info_.id, 4));
     EXPECT_CALL(*utils_,
@@ -348,6 +350,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
+    message.set_ack_id(RandomInt32());
     NodeId source_id(NodeId::IdType::kRandomId);
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     auto closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
@@ -401,6 +404,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(false);
+    message.set_ack_id(RandomInt32());
     NodeId source_id(NodeId::IdType::kRandomId);
     auto closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     EXPECT_CALL(*utils_,
@@ -462,6 +466,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(true);
+    message.set_ack_id(RandomInt32());
     auto closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     EXPECT_CALL(*utils_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*utils_,
@@ -514,6 +519,7 @@ TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
     message.set_direct(false);
     message.set_request(true);
     message.set_client_node(false);
+    message.set_ack_id(RandomInt32());
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     auto closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     for (auto closest_node : closest_nodes)

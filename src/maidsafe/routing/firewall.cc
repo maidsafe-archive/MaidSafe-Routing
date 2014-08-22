@@ -24,8 +24,6 @@ namespace maidsafe {
 
 namespace routing {
 
-const int Firewall::kQueueSize_ = 1000;
-
 Firewall::Firewall()
     : mutex_(), history_() {}
 
@@ -33,35 +31,17 @@ bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
   if (source_id.IsZero())
     return false;
   std::unique_lock<std::mutex> lock(mutex_);
-  auto found(std::find_if(history_.begin(),
-                          history_.end(),
-                          [&](const ProcessedMessage& processed_message)->bool {
-                            return ((std::get<0>(processed_message) == source_id) &&
-                                    (std::get<1>(processed_message) == message_id));
-                          }));
-
-  if (found != std::end(history_))
+  if (std::any_of(std::begin(history_), std::end(history_),
+                  [&](const ProcessedMessageInfo& processed_message)->bool {
+                    return ((processed_message.source == source_id) &&
+                            (processed_message.id == message_id));
+                  }))
     return false;
 
-  history_.push_back(std::make_tuple(source_id, message_id, std::time(NULL)));
-  if (history_.size() > kQueueSize_)
+  history_.push_back(ProcessedMessageInfo(source_id, message_id));
+  if (history_.size() > Parameters::max_message_history_size)
     history_.pop_front();
   return true;
-}
-
-void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
-  assert(lock.owns_lock());
-//  static_cast<void>(lock);
-//  std::time_t now(std::time(NULL));
-
-//  auto old_entry(std::find_if(history_.begin(), history_.end(),
-//                              [&](const ProcessedMessage& processed_message) {
-//                                return ((now - std::get<2>(processed_message)) <
-//                                        Parameters::message_age_to_drop);
-//                              }));
-
-//  if (old_entry != history_.begin())
-//    history_.erase(history_.begin(), old_entry);
 }
 
 }  // namespace routing

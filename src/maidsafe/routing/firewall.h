@@ -34,12 +34,18 @@ namespace test {
   class FirewallTest_BEH_AddRemove_Test;
 }
 
-typedef std::tuple<NodeId, int32_t, std::time_t> ProcessedMessage;
+struct ProcessedMessageInfo {
+  ProcessedMessageInfo(const NodeId& source_in, int32_t message_id)
+      : source(source_in), id(message_id) {}
+  NodeId source;
+  int32_t id;
+};
 
 class Firewall {
  public:
   Firewall();
   Firewall& operator=(const Firewall&) = delete;
+  Firewall& operator=(const Firewall&&) = delete;
   Firewall(const Firewall&) = delete;
   Firewall(const Firewall&&) = delete;
 
@@ -48,11 +54,8 @@ class Firewall {
  private:
   friend class test::FirewallTest_BEH_AddRemove_Test;
 
-  void Remove(std::unique_lock<std::mutex>& lock);
-
   std::mutex mutex_;
-  std::deque<ProcessedMessage> history_;
-  static const int kQueueSize_;
+  std::deque<ProcessedMessageInfo> history_;
 };
 
 }  // namespace routing

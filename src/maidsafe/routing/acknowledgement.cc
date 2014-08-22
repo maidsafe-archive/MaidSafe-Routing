@@ -32,11 +32,10 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(const NodeId& local_node_id, AsioService& io_service)
-    : running_(true), kNodeId_(local_node_id), ack_id_(RandomUint32()), mutex_(),
+    : kNodeId_(local_node_id), ack_id_(RandomUint32()), mutex_(),
       io_service_(io_service), queue_(), group_queue_() {}
 
 Acknowledgement::~Acknowledgement() {
-  running_ = false;
   RemoveAll();
 }
 
@@ -51,7 +50,7 @@ void Acknowledgement::RemoveAll() {
   LOG(kVerbose) << "Size of list: " << ack_ids.size();
   for (const auto& ack_id : ack_ids) {
     LOG(kVerbose) << "still in list: " << ack_id;
-//    Remove(ack_id);
+    Remove(ack_id);
   }
 }
 
@@ -61,8 +60,6 @@ AckId Acknowledgement::GetId() {
 }
 
 void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int timeout) {
-  if (!running_)
-    return;
   std::lock_guard<std::mutex> lock(mutex_);
   assert(message.has_ack_id() && "non-existing ack id");
   assert((message.ack_id() != 0) && "invalid ack id");
@@ -104,8 +101,6 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
 }
 
 void Acknowledgement::AddGroup(const protobuf::Message& message, Handler handler, int timeout) {
-  if (!running_)
-    return;
   std::lock_guard<std::mutex> lock(mutex_);
   assert(message.has_ack_id() && "non-existing ack id");
   assert((message.ack_id() != 0) && "invalid ack id");
@@ -126,8 +121,6 @@ void Acknowledgement::AddGroup(const protobuf::Message& message, Handler handler
 }
 
 void Acknowledgement::Remove(AckId ack_id) {
-  if (!running_)
-    return;
   std::lock_guard<std::mutex> lock(mutex_);
   auto const it(std::find_if(std::begin(queue_), std::end(queue_),
                              [ack_id] (const AckTimer& timer)->bool {
@@ -146,8 +139,6 @@ void Acknowledgement::Remove(AckId ack_id) {
 }
 
 void Acknowledgement::GroupQueueRemove(AckId ack_id) {
-  if (!running_)
-    return;
   std::lock_guard<std::mutex> lock(mutex_);
   group_queue_.erase(std::remove_if(std::begin(group_queue_), std::end(group_queue_),
                                     [ack_id](const GroupAckTimer& group_ack) {
@@ -158,7 +149,7 @@ void Acknowledgement::GroupQueueRemove(AckId ack_id) {
 void Acknowledgement::HandleMessage(AckId ack_id) {
   assert((ack_id != 0) && "Invalid acknowledgement id");
   LOG(kVerbose) << "MessageHandler::HandleAckMessage " << ack_id;
-  Remove(ack_id);  
+  Remove(ack_id);
 }
 
 bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
@@ -166,7 +157,7 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
   NodeId target_id((NodeId(message.destination_id()) == kNodeId_ &&
                    !message.source_id().empty())
                        ? NodeId(message.source_id())
-                       : NodeId(message.destination_id())) ;
+                       : NodeId(message.destination_id()));
   assert((ack_id != 0) && "Invalid acknowledgement id");
   LOG(kVerbose) << "MessageHandler::HandleGroupMessage " << ack_id;
 
@@ -256,8 +247,8 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
   if (message.source_id() == message.destination_id())
     return false;
 
- if (IsConnectSuccessAcknowledgement(message))
-   return false;
+  if (IsConnectSuccessAcknowledgement(message))
+    return false;
 
 //  communication between two nodes, in which one side is a relay at neither end
 //  involves setting a timer.

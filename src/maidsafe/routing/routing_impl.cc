@@ -123,6 +123,19 @@ void Routing::Impl::Stop() {
     std::lock_guard<std::mutex> lock(running_mutex_);
     running_ = false;
   }
+
+  // below is a work-around and not a fix for routing destruction issues.
+  // this must be replaced with an appropriate fix as soon as possible.
+  // TOBE FIXED  {
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  while (this_ptr.use_count() > 6) {
+    Sleep(std::chrono::seconds(1));
+    LOG(kVerbose) << "Waiting for pending operations to complete";
+  }
+
+  // }  // TOBE FIXED
+
+  network_utils_.acknowledgement_.RemoveAll();
   timer_.CancelAll();
   re_bootstrap_timer_.cancel();
   recovery_timer_.cancel();

@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_H_
+#define MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_H_
 
 #include <string>
 
@@ -60,4 +60,4 @@ class MockNetwork : public Network {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_TESTS_MOCK_NETWORK_H_

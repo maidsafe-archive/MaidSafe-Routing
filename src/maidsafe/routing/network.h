@@ -114,7 +114,7 @@ class Network {
   unsigned int bootstrap_attempt_;
   NodeId bootstrap_connection_id_;
   NodeId this_node_relay_connection_id_;
-  RoutingTable& routing_table_;  
+  RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   Acknowledgement& acknowledgement_;
   rudp::NatType nat_type_;

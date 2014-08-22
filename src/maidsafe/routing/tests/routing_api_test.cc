@@ -1160,7 +1160,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
-  const int kMessageCount = 100;
+  const int kMessageCount = 10;
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
   std::vector<boost::future<bool>> join_futures;

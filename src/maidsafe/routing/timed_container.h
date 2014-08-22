@@ -55,6 +55,10 @@ TimedContainer<T, DefaultTimeout>::TimedContainer(AsioService& asio_service)
 
 template <typename T, unsigned int DefaultTimeout>
 TimedContainer<T, DefaultTimeout>::~TimedContainer() {
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    elements_.clear();
+  }
   timer_.CancelAll();
 }
 
