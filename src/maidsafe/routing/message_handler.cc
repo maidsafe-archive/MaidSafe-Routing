@@ -48,7 +48,7 @@ MessageHandler::MessageHandler(RoutingTable& routing_table,
                          ? nullptr
                          : (new CacheManager(routing_table_.kNodeId(), network_))),
       timer_(timer),
-      public_key_holder_(asio_service),
+      public_key_holder_(asio_service, network),
       response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
                                             public_key_holder_)),
       service_(new Service(routing_table, client_routing_table, network_, public_key_holder_)),

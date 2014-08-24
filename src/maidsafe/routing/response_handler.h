@@ -34,6 +34,7 @@
 
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/timer.h"
 
 namespace maidsafe {
 

@@ -301,7 +301,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
   }
   public_key_holder_.Remove(peer.id);
   if (ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                   peer.connection_id, peer_public_key->GetValue(), false)) {
+                                   peer.connection_id, *peer_public_key, false)) {
     if (from_requestor) {
       HandleSuccessAcknowledgementAsReponder(peer, false);
     } else {
@@ -362,7 +362,7 @@ void ResponseHandler::ValidateAndSendConnectRequest(const NodeId& peer_id) {
         return;
       }
       if (std::shared_ptr<ResponseHandler> response_handler = response_handler_weak_ptr.lock()) {
-        response_handler->public_key_holder_.Add(NodeIdPublicKeyPair(peer_id, *public_key));
+        response_handler->public_key_holder_.Add(peer_id, *public_key);
         response_handler->SendConnectRequest(peer_id);
       }
     });

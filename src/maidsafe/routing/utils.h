@@ -35,25 +35,11 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/timed_container.h"
+#include "maidsafe/routing/public_key_holder.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-struct NodeIdPublicKeyPair {
-  typedef NodeId Key;
-  NodeIdPublicKeyPair(const NodeId& node_id_in, const asymm::PublicKey& public_key_in)
-      : node_id(node_id_in), public_key(public_key_in) {}
-  NodeId GetKey() const { return node_id; }
-  asymm::PublicKey GetValue() const { return public_key; }
-
- private:
-  NodeId node_id;
-  asymm::PublicKey public_key;
-};
-
-typedef TimedContainer<NodeIdPublicKeyPair, Parameters::public_key_holding_time> PublicKeyHolder;
 
 namespace protobuf {
 

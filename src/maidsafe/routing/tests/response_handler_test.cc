@@ -55,7 +55,7 @@ class ResponseHandlerTest : public testing::Test {
         routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_, network_utils_.acknowledgement_),
-        public_key_holder_(asio_service_),
+        public_key_holder_(asio_service_, network_),
         response_handler_(new ResponseHandler(routing_table_, client_routing_table_, network_,
                                               public_key_holder_)) {}
 

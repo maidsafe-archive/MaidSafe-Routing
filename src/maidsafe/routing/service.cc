@@ -140,7 +140,7 @@ void Service::ValidateAndSendConnectResponse(protobuf::Message message, const No
         return;
       }
       if (std::shared_ptr<Service> service = service_weak_ptr.lock()) {
-        service->public_key_holder_.Add(NodeIdPublicKeyPair(peer_node.id, *public_key));
+        service->public_key_holder_.Add(peer_node.id, *public_key);
         service->SendConnectResponse(message, peer_node, peer_endpoint_pair);
       }
     });
@@ -349,7 +349,7 @@ void Service::HandleConnectSuccess(NodeInfo& peer, bool client) {
       return;
     }
     if (!ValidateAndAddToRoutingTable(network_, routing_table_, client_routing_table_, peer.id,
-                                      peer.connection_id, peer_public_key->GetValue(), false)) {
+                                      peer.connection_id, *peer_public_key, false)) {
       LOG(kVerbose) << "Failed to add to routing table";
       return;
     } else {

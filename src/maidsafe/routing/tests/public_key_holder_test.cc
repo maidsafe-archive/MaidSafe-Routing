@@ -21,6 +21,9 @@
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/acknowledgement.h"
+#include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/network.h"
 
 #include "maidsafe/routing/tests/test_utils.h"
 
@@ -30,31 +33,38 @@ namespace routing {
 
 namespace test {
 
-TEST(TimedContainerTest, BEH_AddFindRemoveTimeout) {
+TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
   AsioService asio_service(1);
-  PublicKeyHolder public_key_holder(asio_service);
+  auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
+  RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
+  ClientRoutingTable client_routing_table(node_details.node_info.id);
+  Acknowledgement acknowledgment(node_details.node_info.id, asio_service);
+  Network network(routing_table, client_routing_table, acknowledgment);
+  PublicKeyHolder public_key_holder(asio_service, network);
 
   EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
 
-  auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
-  public_key_holder.Add(NodeIdPublicKeyPair(node_details.node_info.id,
-                                            node_details.node_info.public_key));
+  public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
   EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
   EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
 
   Sleep(std::chrono::seconds(Parameters::public_key_holding_time + 1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
 
-  public_key_holder.Add(NodeIdPublicKeyPair(node_details.node_info.id,
-                                            node_details.node_info.public_key));
+  public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
   EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
   public_key_holder.Remove(node_details.node_info.id);
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
 }
 
-TEST(TimedContainerTest, BEH_MultipleAddFindRemove) {
+TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
   AsioService asio_service(2);
-  PublicKeyHolder public_key_holder(asio_service);
+  auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
+  RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
+  ClientRoutingTable client_routing_table(node_details.node_info.id);
+  Acknowledgement acknowledgment(node_details.node_info.id, asio_service);
+  Network network(routing_table, client_routing_table, acknowledgment);
+  PublicKeyHolder public_key_holder(asio_service, network);
   std::vector<NodeInfoAndPrivateKey> nodes_details;
   const size_t kIterations(100);
   std::vector<std::future<bool>> futures;
@@ -68,9 +78,8 @@ TEST(TimedContainerTest, BEH_MultipleAddFindRemove) {
     futures.emplace_back(
         std::async(std::launch::async,
                    [index, &public_key_holder, &nodes_details]() {
-                     return public_key_holder.Add(
-                              NodeIdPublicKeyPair(nodes_details.at(index).node_info.id,
-                                                  nodes_details.at(index).node_info.public_key));
+                     return public_key_holder.Add(nodes_details.at(index).node_info.id,
+                                                  nodes_details.at(index).node_info.public_key);
                    }));
 
   for (auto& future : futures)
@@ -121,9 +130,14 @@ TEST(TimedContainerTest, BEH_MultipleAddFindRemove) {
     EXPECT_FALSE(future.get());
 }
 
-TEST(TimedContainerTest, BEH_MultipleAddFindTimeout) {
+TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
   AsioService asio_service(2);
-  PublicKeyHolder public_key_holder(asio_service);
+  auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
+  RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
+  ClientRoutingTable client_routing_table(node_details.node_info.id);
+  Acknowledgement acknowledgment(node_details.node_info.id, asio_service);
+  Network network(routing_table, client_routing_table, acknowledgment);
+  PublicKeyHolder public_key_holder(asio_service, network);
   std::vector<NodeInfoAndPrivateKey> nodes_details;
   const size_t kIterations(100);
   std::vector<std::future<bool>> futures;
@@ -139,9 +153,8 @@ TEST(TimedContainerTest, BEH_MultipleAddFindTimeout) {
     futures.emplace_back(
         std::async(std::launch::async,
                    [index, &public_key_holder, &nodes_details]() {
-                     return public_key_holder.Add(
-                              NodeIdPublicKeyPair(nodes_details.at(index).node_info.id,
-                                                  nodes_details.at(index).node_info.public_key));
+                     return public_key_holder.Add(nodes_details.at(index).node_info.id,
+                                                  nodes_details.at(index).node_info.public_key);
                    }));
 
   for (auto& future : futures)
