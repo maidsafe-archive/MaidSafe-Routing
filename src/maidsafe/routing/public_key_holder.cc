@@ -44,15 +44,15 @@ bool PublicKeyHolder::Add(const NodeId& peer, const asymm::PublicKey& public_key
   auto timer(std::make_shared<boost::asio::deadline_timer>(
       io_service_.service(), boost::posix_time::seconds(Parameters::public_key_holding_time)));
   timer->async_wait([peer, this](const boost::system::error_code& error) {
+                      {
+                        std::lock_guard<std::mutex> lock(mutex_);
+                        this->elements_.erase(std::remove_if(
+                            std::begin(this->elements_), std::end(this->elements_),
+                            [peer](const PublicKeyInfo& info) {
+                              return info.peer == peer;
+                            }), std::end(this->elements_));
+                      }
                       if (!error) {
-                        {
-                          std::lock_guard<std::mutex> lock(mutex_);
-                          this->elements_.erase(std::remove_if(
-                              std::begin(this->elements_), std::end(this->elements_),
-                              [peer](const PublicKeyInfo& info) {
-                                return info.peer == peer;
-                              }), std::end(this->elements_));
-                        }
                         this->network_.Remove(peer);
                       }
                     });
