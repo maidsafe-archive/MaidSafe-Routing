@@ -32,7 +32,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-TEST(BootstrapFileOperationsTest, BEH_FileExists) {
+TEST(BootstrapFileOperationsTest, FUNC_FileExists) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   std::string file_content(RandomString(3000 + RandomUint32() % 1000));

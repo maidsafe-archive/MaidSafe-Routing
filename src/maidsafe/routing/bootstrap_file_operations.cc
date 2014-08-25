@@ -110,13 +110,15 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
       database.Execute(query);
       InsertBootstrapContacts(database, bootstrap_contacts);
       transaction.Commit();
-      break;
+      return;
     } catch (const std::exception& e) {
       LOG(kError) << "error in attempt " << i << " write to " << bootstrap_file_path.string()
                   << " : " << boost::diagnostic_information(e);
-      std::this_thread::sleep_for(std::chrono::milliseconds(((RandomUint32() % 250) + 10) * i));
+      std::this_thread::sleep_for(std::chrono::milliseconds(RandomUint32() % 250 + 10));
     }
   }
+  LOG(kError) << "Failed to write bootstrap contract after 10 attempts";
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::unable_to_handle_request));
 }
 
 // TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
@@ -150,13 +152,15 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
       database.Execute(query);
       InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
       transaction.Commit();
-      break;
+      return;
     } catch (const std::exception& e) {
       LOG(kError) << "error in attempt " << i << " insert into " << bootstrap_file_path.string()
                   << " : " << boost::diagnostic_information(e);
-      std::this_thread::sleep_for(std::chrono::milliseconds(((RandomUint32() % 250) + 10) * i));
+      std::this_thread::sleep_for(std::chrono::milliseconds(RandomUint32() % 250 + 10));
     }
   }
+  LOG(kError) << "Failed to insert or update bootstrap contract after 10 attempts";
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::unable_to_handle_request));
 }
 
 }  // namespace routing
