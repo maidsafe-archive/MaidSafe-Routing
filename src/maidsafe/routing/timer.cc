@@ -28,8 +28,9 @@ namespace maidsafe {
 namespace routing {
 
   template <>
-  void Timer<std::string>::RespondWithError(ResponseFunctor functor, maidsafe_error error) {
-    functor(error.what());
+  void Timer<std::string>::RespondWithError(ResponseFunctor functor, maidsafe_error /*error*/) {
+    //functor(error.what());
+    functor("");
   }
 
 }  // namespace routing
