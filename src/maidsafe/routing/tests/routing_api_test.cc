@@ -696,10 +696,10 @@ TEST(APITest, BEH_API_SendGroup) {
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
-
-  Parameters::default_response_timeout = std::chrono::seconds(200);
+  auto timeout(Parameters::default_response_timeout);
   const unsigned int kMessageCount(
       10);  // each vault will send kMessageCount message to other vaults
+  Parameters::default_response_timeout *= kMessageCount;
   const size_t kDataSize(512 * 1024);
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
@@ -833,7 +833,7 @@ TEST(APITest, BEH_API_SendGroup) {
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
             << "\n Message size : " << (kDataSize / 1024) << "kB \n";
-  Parameters::default_response_timeout = std::chrono::seconds(10);
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {
