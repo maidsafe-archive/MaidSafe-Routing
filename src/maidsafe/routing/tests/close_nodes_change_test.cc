@@ -380,15 +380,24 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   RoutingTableChangeFunctor routing_table_change_functor([&](
       const RoutingTableChange& routing_table_change) {
     if (routing_table.size() <= Parameters::closest_nodes_size) {
-      EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
+      bool special_case((routing_table.size() == Parameters::closest_nodes_size) &&
+                         std::none_of(std::begin(new_ids), std::end(new_ids),
+                                      [&](const NodeId& new_node_id) {
+                                        return NodeId::CloserToTarget(removed, new_node_id,
+                                                                      node_id);
+                                      }));
+      if (!special_case)
+        EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
       if (routing_table_change.insertion) {
         EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
         EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
       } else {
         if (routing_table.size() != Parameters::closest_nodes_size)
           EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
-        EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
-        EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
+        if (!special_case) {
+          EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+          EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
+        }
         new_ids.erase(removed);
       }
     } else {
