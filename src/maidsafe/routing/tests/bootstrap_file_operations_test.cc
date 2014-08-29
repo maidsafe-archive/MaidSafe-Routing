@@ -68,7 +68,7 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
                                                            << " vs " << bootstrap_contacts.size();
 }
 
-TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
+TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
