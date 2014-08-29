@@ -190,7 +190,6 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   unsigned int message_count(10), receivers_message_count(0);
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
-
   auto timeout(Parameters::default_response_timeout);
   Parameters::default_response_timeout *= message_count;
   for (unsigned int dest_index(0); dest_index < kServerSize; ++dest_index) {
