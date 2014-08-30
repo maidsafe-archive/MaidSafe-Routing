@@ -323,8 +323,11 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
 
   // Get the 5 closest to 'kTarget' as the owners.
   std::sort(std::begin(new_close_nodes), std::end(new_close_nodes),
-            [&kTarget](const NodeId& lhs,
-                       const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, kTarget); });
+            [&kTarget](const NodeId& lhs, const NodeId& rhs) {
+              return NodeId::CloserToTarget(lhs, rhs, kTarget);
+            });
+  old_close_nodes = new_close_nodes;
+  old_close_nodes.erase(std::begin(old_close_nodes) + 2);
   std::vector<CloseNodesChange> owners;
   for (unsigned int i(0); i != kGroupSize + 1; ++i)
     owners.push_back(CloseNodesChange(new_close_nodes[i], old_close_nodes, new_close_nodes));
