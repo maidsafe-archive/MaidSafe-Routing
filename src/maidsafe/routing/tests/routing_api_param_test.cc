@@ -228,7 +228,7 @@ TEST_P(RoutingApi, BEH_API_SendGroup) {
 }
 
 // currently the tests with larger data size pass on non-Windows platforms.
-#ifndef __MSVC__
+#ifndef MAIDSAFE_WIN32
 INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi, testing::Values(128 * 1024,
                                                                256 * 1024,
                                                                512 * 1024,
