@@ -222,7 +222,7 @@ TEST_P(RoutingApi, BEH_API_SendGroup) {
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
             << "\n Message size : " << (this->data_size_ / 1024) << "kB \n";
-  Parameters::default_response_timeout = std::chrono::seconds(10);
+  Parameters::default_response_timeout = timeout;
 }
 
 INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi, testing::Values(128 * 1024,
