@@ -76,13 +76,21 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 
 class RoutingApi : public testing::TestWithParam<unsigned int> {
  public:
-  RoutingApi() : data_size_(GetParam()) {}
+  RoutingApi() : kDataSize_(GetParam()) {}
 
  protected:
-  unsigned int data_size_;
+  const unsigned int kDataSize_;
 };
 
 TEST_P(RoutingApi, BEH_API_SendGroup) {
+// Currently the tests with larger data size pass on non-Windows platforms.  We can't disable the
+// larger values by moving the macro inside a preprocessor if/else block
+// since CMake's C++ parsing can't handle this and will try and add the test twice.
+// TODO(Team) BEFORE_RELEASE - Re-enable for Windows.
+#ifdef MAIDSAFE_WIN32
+  if (kDataSize_ > 256 * 1024)
+    return GTEST_SUCCEED();
+#endif
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
@@ -91,7 +99,7 @@ TEST_P(RoutingApi, BEH_API_SendGroup) {
   auto timeout(Parameters::default_response_timeout);
   const unsigned int kMessageCount(10);  // nodes send kMessageCount messages to other nodes
   Parameters::default_response_timeout = std::chrono::steady_clock::duration(
-      std::chrono::seconds((10 * data_size_) / (128 * 1024) + 20));
+      std::chrono::seconds((10 * kDataSize_) / (128 * 1024) + 20));
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
   std::vector<boost::future<bool>> join_futures;
@@ -168,7 +176,7 @@ TEST_P(RoutingApi, BEH_API_SendGroup) {
     routing_node[i]->Join(functors);
     EXPECT_EQ(join_futures.at(i).wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
   }
-  std::string data(RandomAlphaNumericString(this->data_size_));
+  std::string data(RandomAlphaNumericString(this->kDataSize_));
   // Call SendGroup repeatedly - measure duration to allow performance comparison
   boost::progress_timer t;
 
@@ -223,20 +231,15 @@ TEST_P(RoutingApi, BEH_API_SendGroup) {
   std::cout << "\n Time taken: " << time_taken
             << "\n Total number of request messages :" << (kMessageCount * kServerCount)
             << "\n Total number of response messages :" << (kMessageCount * kServerCount * 4)
-            << "\n Message size : " << (this->data_size_ / 1024) << "kB \n";
+            << "\n Message size : " << (this->kDataSize_ / 1024) << "kB \n";
   Parameters::default_response_timeout = timeout;
 }
 
-// currently the tests with larger data size pass on non-Windows platforms.
-#ifndef MAIDSAFE_WIN32
 INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi, testing::Values(128 * 1024,
                                                                256 * 1024,
                                                                512 * 1024,
                                                                1024 * 1024,
                                                                Parameters::max_data_size));
-#else
-INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi, testing::Values(128 * 1024, 256 * 1024);
-#endif
 
 }  // namespace test
 
