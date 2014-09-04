@@ -190,7 +190,8 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   unsigned int message_count(10), receivers_message_count(0);
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
-
+  auto timeout(Parameters::default_response_timeout);
+  Parameters::default_response_timeout *= message_count;
   for (unsigned int dest_index(0); dest_index < kServerSize; ++dest_index) {
     NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
     futures.emplace_back(
@@ -204,7 +205,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>> & future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -222,6 +223,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   }
   EXPECT_EQ(message_count * (Parameters::group_size) * kServerSize, receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << receivers_message_count;
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
@@ -266,6 +268,8 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
+  auto timeout(Parameters::default_response_timeout);
+  Parameters::default_response_timeout *= message_count;
   for (unsigned int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(
@@ -277,7 +281,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>> & future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -294,6 +298,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   }
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
@@ -301,6 +306,8 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
+  auto timeout(Parameters::default_response_timeout);
+  Parameters::default_response_timeout *= message_count;
   env_->AddMutatingClient(false);
   assert(env_->nodes_.size() - 1 < std::numeric_limits<unsigned int>::max());
 
@@ -316,7 +323,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>> & future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -335,6 +342,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {

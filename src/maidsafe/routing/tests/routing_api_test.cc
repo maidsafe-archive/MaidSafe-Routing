@@ -1367,7 +1367,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   }
   {
     std::unique_lock<std::mutex> lock(mutex);
-    cv.wait_for(lock, std::chrono::seconds(10), [&response_count, kMessageCount] {
+    cv.wait_for(lock, std::chrono::seconds(20), [&response_count, kMessageCount] {
       return (response_count == Parameters::group_size * (kMessageCount + 1));
     });
   }

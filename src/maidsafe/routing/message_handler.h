@@ -44,7 +44,7 @@ class GenericNode;
 class MessageHandlerTest;
 class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
 class MessageHandlerTest_BEH_HandleRelay_Test;
-class MessageHandlerTest_BEH_HandleGroupMessage_Test;
+class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
 class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
 class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
@@ -118,7 +118,7 @@ class MessageHandler {
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
-  friend class test::MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  friend class test::MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
   friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
   friend class test::GenericNode;

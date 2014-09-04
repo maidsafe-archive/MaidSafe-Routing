@@ -32,7 +32,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-TEST(BootstrapFileOperationsTest, BEH_FileExists) {
+TEST(BootstrapFileOperationsTest, FUNC_FileExists) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   std::string file_content(RandomString(3000 + RandomUint32() % 1000));
@@ -68,7 +68,7 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
                                                            << " vs " << bootstrap_contacts.size();
 }
 
-TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
+TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
@@ -92,7 +92,7 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   });
 }
 
-TEST(BootstrapFileOperationsTest, FUNC_Parallel_Duplicate_Update) {
+TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Duplicate_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));

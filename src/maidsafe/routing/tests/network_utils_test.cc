@@ -97,7 +97,7 @@ TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
                        NodeId(NodeId::IdType::kRandomId));
 }
 
-TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
+TEST(NetworkTest, DISABLED_FUNC_ProcessSendDirectEndpoint) {
   const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
@@ -243,7 +243,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
 }
 
 // RT with only 1 active node and 7 inactive node
-TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
+TEST(NetworkTest, DISABLED_FUNC_ProcessSendRecursiveSendOn) {
   const int kMessageCount(1);
   rudp::ManagedConnections rudp1, rudp2;
   Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());

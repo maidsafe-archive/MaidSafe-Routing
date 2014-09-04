@@ -221,7 +221,7 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
   }
 }
 
-TEST_F(MessageHandlerTest, BEH_HandleGroupMessage) {
+TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
   MessageHandler message_handler(*table_, *ntable_, *network_, timer_, *network_network_,
                                  asio_service_);
   bool result(true);

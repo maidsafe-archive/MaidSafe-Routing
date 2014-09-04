@@ -1352,7 +1352,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   }
 
   std::unique_lock<std::mutex> lock(*response_mutex);
-  if (!cond_var->wait_for(lock, std::chrono::seconds(15), [reply_count, expected_count]() {
+  if (!cond_var->wait_for(lock, std::chrono::seconds(25), [reply_count, expected_count]() {
          return *reply_count == *expected_count;
        })) {
     //    ADD_FAILURE() << "Didn't get reply within allowed time!";
@@ -1408,7 +1408,7 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
   source_node->SendDirect(destination_node_id, data, false, response_functor);
 
   std::unique_lock<std::mutex> lock(*response_mutex);
-  if (cond_var->wait_for(lock, std::chrono::seconds(15)) != std::cv_status::no_timeout) {
+  if (cond_var->wait_for(lock, std::chrono::seconds(25)) != std::cv_status::no_timeout) {
     ADD_FAILURE() << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }

@@ -107,7 +107,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(peer.id, lock));
     if (found.first) {
-      LOG(kVerbose) << "Node " << peer.id << " already in routing table.";
+//       LOG(kVerbose) << "Node " << peer.id << " already in routing table.";
       return false;
     }
 

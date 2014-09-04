@@ -39,7 +39,7 @@ bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
     return false;
 
   history_.push_back(ProcessedMessageInfo(source_id, message_id));
-  if (history_.size() > Parameters::max_message_history_size)
+  if (history_.size() > Parameters::max_firewall_history_size)
     history_.pop_front();
   return true;
 }

@@ -99,14 +99,26 @@ boost::filesystem::path DoGetBootstrapFilePath(bool is_client,
 
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
-  sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
-  sqlite::Tranasction transaction(database);
-  std::string query(
-      "CREATE TABLE BOOTSTRAP_CONTACTS("
-      "ENDPOINT TEXT  PRIMARY KEY  NOT NULL);");
-  database.Execute(query);
-  InsertBootstrapContacts(database, bootstrap_contacts);
-  transaction.Commit();
+  // carry out re-attempt for 10 times
+  for (int i(0); i != 10; ++i) {
+    try {
+      sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
+      sqlite::Tranasction transaction(database);
+      std::string query(
+          "CREATE TABLE BOOTSTRAP_CONTACTS("
+          "ENDPOINT TEXT  PRIMARY KEY  NOT NULL);");
+      database.Execute(query);
+      InsertBootstrapContacts(database, bootstrap_contacts);
+      transaction.Commit();
+      return;
+    } catch (const std::exception& e) {
+      LOG(kError) << "error in attempt " << i << " write to " << bootstrap_file_path.string()
+                  << " : " << boost::diagnostic_information(e);
+      std::this_thread::sleep_for(std::chrono::milliseconds(RandomUint32() % 250 + 10));
+    }
+  }
+  LOG(kError) << "Failed to write bootstrap contract after 10 attempts";
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::unable_to_handle_request));
 }
 
 // TODO(Team) : Consider timestamp in forming the list. If offline for more than a week, then
@@ -129,14 +141,26 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
 
 void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
                                     const boost::filesystem::path& bootstrap_file_path) {
-  sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
-  sqlite::Tranasction transaction(database);
-  std::string query(
-      "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS("
-      "ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
-  database.Execute(query);
-  InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
-  transaction.Commit();
+  // carry out re-attempt for 10 times
+  for (int i(0); i != 10; ++i) {
+    try {
+      sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
+      sqlite::Tranasction transaction(database);
+      std::string query(
+          "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS("
+          "ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
+      database.Execute(query);
+      InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
+      transaction.Commit();
+      return;
+    } catch (const std::exception& e) {
+      LOG(kError) << "error in attempt " << i << " insert into " << bootstrap_file_path.string()
+                  << " : " << boost::diagnostic_information(e);
+      std::this_thread::sleep_for(std::chrono::milliseconds(RandomUint32() % 250 + 10));
+    }
+  }
+  LOG(kError) << "Failed to insert or update bootstrap contract after 10 attempts";
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::unable_to_handle_request));
 }
 
 }  // namespace routing
