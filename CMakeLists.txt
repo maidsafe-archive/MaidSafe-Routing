@@ -141,6 +141,7 @@ if(MaidsafeTesting)
   set(Timeout 1200)
   ms_update_test_timeout(Timeout)
   set_property(TEST RoutingTableTest.FUNC_AddTooManyNodes PROPERTY TIMEOUT ${Timeout})
+  set_property(TEST SendGroup/RoutingApi.BEH_API_SendGroup/4 PROPERTY TIMEOUT ${Timeout})
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
   if(WEEKLY)
     ms_add_gtests(weekly_test_routing)
