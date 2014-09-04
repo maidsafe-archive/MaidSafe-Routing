@@ -49,7 +49,8 @@ set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
                             ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/zero_state_helpers.h
                             ${RoutingSourcesDir}/tests/test_utils.cc
                             ${RoutingSourcesDir}/tests/test_utils.h)
-set(RoutingApiTestFiles ${RoutingSourcesDir}/tests/routing_api_test.cc)
+set(RoutingApiTestFiles ${RoutingSourcesDir}/tests/routing_api_test.cc
+                        ${RoutingSourcesDir}/tests/routing_api_param_test.cc)
 set(RoutingFuncTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
                          ${RoutingSourcesDir}/tests/test_func_main.cc)
 set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/cache_test.cc
@@ -135,12 +136,12 @@ if(MaidsafeTesting)
   ms_update_test_timeout(Timeout)
   set_property(TEST CloseNodesChangeTest.BEH_FullSizeRoutingTable PROPERTY TIMEOUT ${Timeout})
   set_property(TEST ResponseHandlerTest.BEH_FindNodes PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST APITest.BEH_API_SendGroup PROPERTY TIMEOUT ${Timeout})
   set_property(TEST APITest.BEH_API_TypedMessagePartiallyJoinedSendReceive PROPERTY TIMEOUT ${Timeout})
   set_property(TEST APITest.BEH_API_NodeNetworkWithClient PROPERTY TIMEOUT ${Timeout})
   set(Timeout 1200)
   ms_update_test_timeout(Timeout)
   set_property(TEST RoutingTableTest.FUNC_AddTooManyNodes PROPERTY TIMEOUT ${Timeout})
+  set_property(TEST SendGroup/RoutingApi.BEH_API_SendGroup/4 PROPERTY TIMEOUT ${Timeout})
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
   if(WEEKLY)
     ms_add_gtests(weekly_test_routing)
