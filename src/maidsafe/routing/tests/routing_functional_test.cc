@@ -396,34 +396,6 @@ TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
   env_->AddNode(maid);
 }
 
-TEST_F(RoutingNetworkTest, FUNC_SendToClientsWithSameId) {
-  // TODO(Prakash) - send messages in parallel so test duration is reduced.
-  // TODO(Prakash) - revert kMessageCount to 50 when test duration fixed.
-  const unsigned int kMessageCount(5);
-  auto maid(passport::CreateMaidAndSigner().first);
-  for (unsigned int index(0); index < 4; ++index)
-    env_->AddNode(maid);
-
-  for (unsigned int index(0); index < kMessageCount; ++index)
-    EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id(),
-                                 kExpectClient));
-  unsigned int num_of_tries(0);
-  bool done(false);
-  do {
-    //    Sleep(std::chrono::seconds(1));
-    size_t size(0);
-    for (const auto& node : env_->nodes_) {
-      size += node->MessagesSize();
-    }
-    if (4 * kMessageCount == size) {
-      done = true;
-      num_of_tries = 19;
-    }
-    ++num_of_tries;
-  } while (num_of_tries < 20);
-  EXPECT_TRUE(done);  // the number of 20 may need to be increased
-}
-
 TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   auto maid(env_->nodes_.at(env_->RandomClientIndex())->GetMaid());
   size_t new_index(env_->nodes_.size());
