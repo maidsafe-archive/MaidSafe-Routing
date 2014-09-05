@@ -24,7 +24,6 @@
 #include <map>
 #include <string>
 #include <utility>
-#include <tuple>
 #include <vector>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -62,8 +61,8 @@ enum class GroupMessageAckStatus {
 
 struct AckTimer {
   AckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
-           unsigned int quantity_in) : ack_id(ack_id_in), message(message_in), timer(timer_in),
-                                       quantity(quantity_in) {}
+           unsigned int quantity_in)
+    : ack_id(ack_id_in), message(message_in), timer(timer_in), quantity(quantity_in) {}
   AckId ack_id;
   protobuf::Message message;
   TimerPointer timer;
@@ -73,8 +72,8 @@ struct AckTimer {
 struct GroupAckTimer {
   GroupAckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
                 const std::map<NodeId, GroupMessageAckStatus> requested_peers_in)
-      : ack_id(ack_id_in), message(message_in), timer(timer_in),
-        requested_peers(requested_peers_in) {}
+    : ack_id(ack_id_in), message(message_in), timer(timer_in),
+      requested_peers(requested_peers_in) {}
   AckId ack_id;
   protobuf::Message message;
   TimerPointer timer;
@@ -110,6 +109,7 @@ class Acknowledgement {
   const NodeId kNodeId_;
   AckId ack_id_;
   std::mutex mutex_;
+  bool stop_handling_;
   AsioService& io_service_;
   std::vector<AckTimer> queue_;
   std::vector<GroupAckTimer> group_queue_;

@@ -32,10 +32,11 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(const NodeId& local_node_id, AsioService& io_service)
-    : kNodeId_(local_node_id), ack_id_(RandomUint32()), mutex_(),
+    : kNodeId_(local_node_id), ack_id_(RandomInt32()), mutex_(), stop_handling_(false),
       io_service_(io_service), queue_(), group_queue_() {}
 
 Acknowledgement::~Acknowledgement() {
+  stop_handling_ = true;
   RemoveAll();
 }
 
@@ -52,6 +53,8 @@ void Acknowledgement::RemoveAll() {
     LOG(kVerbose) << "still in list: " << ack_id;
     Remove(ack_id);
   }
+  for (auto& entry : group_queue_)
+    entry.timer->cancel();
 }
 
 AckId Acknowledgement::GetId() {
@@ -126,15 +129,12 @@ void Acknowledgement::Remove(AckId ack_id) {
                              [ack_id] (const AckTimer& timer)->bool {
                                return ack_id == timer.ack_id;
                              }));
-  // assert((it != queue_.end()) && "attempt to cancel handler for non existant timer");
   if (it != std::end(queue_)) {
-    // ack timed out or ack killed
     it->timer->cancel();
     queue_.erase(it);
-    LOG(kVerbose) << "Clean up after ack with id: " << ack_id << " queue size: " << queue_.size();
+    LOG(kVerbose) << "After ack with id: " << ack_id << " queue size: " << queue_.size();
   } else {
-    LOG(kVerbose) << "Attempt to clean up a non existent ack with id" << ack_id
-                  << " queue size: " << queue_.size();
+    LOG(kVerbose) << "Non existiing ack id" << ack_id << " queue size: " << queue_.size();
   }
 }
 
@@ -153,6 +153,9 @@ void Acknowledgement::HandleMessage(AckId ack_id) {
 }
 
 bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
+  if (stop_handling_)
+    return true;
+
   AckId ack_id(message.ack_id());
   NodeId target_id((NodeId(message.destination_id()) == kNodeId_ &&
                    !message.source_id().empty())
