@@ -82,10 +82,10 @@ class RoutingApi : public testing::TestWithParam<unsigned int> {
   const unsigned int kDataSize_;
 };
 
-TEST_P(RoutingApi, BEH_API_SendGroup) {
+TEST_P(RoutingApi, FUNC_API_SendGroup) {
 // Currently the tests with larger data size pass on non-Windows platforms.  We can't disable the
-// larger values by moving the macro inside a preprocessor if/else block
-// since CMake's C++ parsing can't handle this and will try and add the test twice.
+// larger values by moving the macro inside a preprocessor if/else block since CMake's C++ parsing
+// can't handle this and will try and add the test twice.
 // TODO(Team) BEFORE_RELEASE - Re-enable for Windows.
 #ifdef MAIDSAFE_WIN32
   if (kDataSize_ > 256 * 1024)
