@@ -282,7 +282,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
         message,
         [message, this](const boost::system::error_code& error) {
           LOG(kVerbose) << "Ack AddGroup Handler Fires";
-          if (error &&  (NodeId(message.source_id()) != routing_table_.kNodeId()))
+          if (error /*&&  (NodeId(message.source_id()) != routing_table_.kNodeId())*/)
             network_.SendAck(message);
           else
             network_utils_.acknowledgement_.GroupQueueRemove(message.ack_id());
