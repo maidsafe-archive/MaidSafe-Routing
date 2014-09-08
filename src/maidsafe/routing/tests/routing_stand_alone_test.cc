@@ -313,6 +313,32 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSy
   }
 }
 
+TEST_F(RoutingStandAloneTest, FUNC_SendToClientsWithSameId) {
+  this->SetUpNetwork(20, 0);
+  const unsigned int kMessageCount(5);
+  auto maid(passport::CreateMaidAndSigner().first);
+  for (unsigned int index(0); index < 4; ++index)
+    AddNode(maid);
+
+  for (unsigned int index(0); index < kMessageCount; ++index)
+    EXPECT_TRUE(SendDirect(nodes_[kServerSize], nodes_[kServerSize]->node_id(), kExpectClient));
+  unsigned int num_of_tries(0);
+  bool done(false);
+  do {
+    Sleep(std::chrono::seconds(1));
+    size_t size(0);
+    for (const auto& node : nodes_) {
+      size += node->MessagesSize();
+    }
+    if (4 * kMessageCount == size) {
+      done = true;
+      num_of_tries = 4;
+    }
+    ++num_of_tries;
+  } while (num_of_tries < 5);
+  EXPECT_TRUE(done);  // the number of 20 may need to be increased
+}
+
 }  // namespace test
 
 }  // namespace routing
