@@ -61,7 +61,7 @@ struct TypedMessageRecievedFunctors {
 }  // unnamed detail
 
 class Network;
-class NetworkUtils;
+struct NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 class NetworkStatistics;
