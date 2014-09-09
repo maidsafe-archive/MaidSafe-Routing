@@ -395,27 +395,6 @@ unsigned int RoutingTable::PartialSortFromTarget(const NodeId& target, unsigned 
   return count;
 }
 
-void RoutingTable::NthElementSortFromTarget(const NodeId& target, unsigned int nth_element,
-                                            std::unique_lock<std::mutex>& lock) {
-  assert(lock.owns_lock());
-  static_cast<void>(lock);
-  assert((nodes_.size() >= nth_element) &&
-         "This should only be called when n is at max the size of RT");
-#ifndef __GNUC__
-  std::nth_element(nodes_.begin(), nodes_.begin() + nth_element - 1, nodes_.end(),
-                   [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-                       return NodeId::CloserToTarget(lhs.id, rhs.id, target);
-                   });
-#else
-// BEFORE_RELEASE use std::nth_element() for all platform when min required Gcc version is 4.8.3
-// http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800 Bug fixed in gcc 4.8.3
-  std::partial_sort(nodes_.begin(), nodes_.begin() + nth_element - 1, nodes_.end(),
-                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-                        return NodeId::CloserToTarget(lhs.id, rhs.id, target);
-                    });
-#endif
-}
-
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match,
                                       const std::vector<std::string>& exclude) {
   auto closest_nodes(GetClosestNodes(target_id, Parameters::closest_nodes_size,
@@ -460,7 +439,7 @@ NodeInfo RoutingTable::GetNthClosestNode(const NodeId& target_id, unsigned int i
     node_info.id = NodeInNthBucket(kNodeId(), static_cast<int>(index));
     return node_info;
   }
-  NthElementSortFromTarget(target_id, index, lock);
+  PartialSortFromTarget(target_id, index, lock);
   return nodes_.at(index - 1);
 }
 

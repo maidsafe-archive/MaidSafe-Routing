@@ -149,8 +149,6 @@ class RoutingTable {
 
   unsigned int PartialSortFromTarget(const NodeId& target, unsigned int number,
                                      std::unique_lock<std::mutex>& lock);
-  void NthElementSortFromTarget(const NodeId& target, unsigned int nth_element,
-                                std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
