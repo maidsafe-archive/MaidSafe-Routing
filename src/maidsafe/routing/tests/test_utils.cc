@@ -50,8 +50,7 @@ ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_cont
 }
 
 ScopedBootstrapFile::~ScopedBootstrapFile() {
-  if (boost::filesystem::remove(kFilePath))
-    LOG(kError) << "Failed to remove bootstrap file at : " << kFilePath;
+  boost::filesystem::remove(kFilePath);
 }
 
 NodeInfo MakeNode() {
