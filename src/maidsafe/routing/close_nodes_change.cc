@@ -272,7 +272,20 @@ std::string CloseNodesChange::ReportConnection() const {
   std::stringstream stream;
   stream << DebugId(lost_node_);
   stream << "," << DebugId(new_node_);
-  for (auto entry : new_close_nodes_)
+
+  size_t closest_size_adjust(Parameters::closest_nodes_size + 1U);
+  std::vector<NodeId> closest_nodes(closest_size_adjust);
+  std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                         std::begin(closest_nodes), std::end(closest_nodes),
+                         [&](const NodeId& lhs, const NodeId& rhs) {
+                           return NodeId::CloserToTarget(lhs, rhs, this->node_id_);
+                         });
+  if (node_id_ == closest_nodes.front())
+    closest_nodes.erase(std::begin(closest_nodes));
+  else
+    closest_nodes.pop_back();
+
+  for (auto entry : closest_nodes)
     stream << "," << DebugId(entry);
   return stream.str();
 }
