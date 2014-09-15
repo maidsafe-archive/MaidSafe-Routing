@@ -20,8 +20,12 @@
 #define MAIDSAFE_ROUTING_FIREWALL_H_
 
 #include <time.h>
-#include <tuple>
-#include <deque>
+
+#include "boost/multi_index_container.hpp"
+#include "boost/multi_index/global_fun.hpp"
+#include "boost/multi_index/mem_fun.hpp"
+#include "boost/multi_index/ordered_index.hpp"
+#include "boost/multi_index/identity.hpp"
 
 #include "maidsafe/routing/api_config.h"
 
@@ -34,13 +38,6 @@ namespace test {
   class FirewallTest_BEH_AddRemove_Test;
 }
 
-struct ProcessedMessageInfo {
-  ProcessedMessageInfo(const NodeId& source_in, int32_t message_id)
-      : source(source_in), id(message_id) {}
-  NodeId source;
-  int32_t id;
-};
-
 class Firewall {
  public:
   Firewall();
@@ -50,17 +47,38 @@ class Firewall {
   Firewall(const Firewall&&) = delete;
 
   bool Add(const NodeId& source_id, int32_t message_id);
+  void Remove(std::unique_lock<std::mutex>& lock);
+
+  struct ProcessedEntry {
+    ProcessedEntry(const NodeId& source_in, int32_t messsage_id_in)
+        : source(source_in), message_id(messsage_id_in), birth_time(std::time(NULL)) {}
+    ProcessedEntry Key() const { return *this; }
+    std::time_t BirthTime() const { return birth_time; }
+    NodeId source;
+    int32_t message_id;
+    std::time_t birth_time;
+  };
 
  private:
   friend class test::FirewallTest_BEH_AddRemove_Test;
 
+  typedef boost::multi_index_container<
+      ProcessedEntry,
+      boost::multi_index::indexed_by<
+          boost::multi_index::ordered_unique<boost::multi_index::identity<ProcessedEntry>>,
+      boost::multi_index::ordered_non_unique<
+          BOOST_MULTI_INDEX_CONST_MEM_FUN(ProcessedEntry, std::time_t, BirthTime)>
+    >
+  > ProcessedEntrySet;
+
   std::mutex mutex_;
-  std::deque<ProcessedMessageInfo> history_;
+  ProcessedEntrySet history_;
 };
+
+bool operator > (const Firewall::ProcessedEntry& lhs, const Firewall::ProcessedEntry& rhs);
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_FIREWALL_H_
-

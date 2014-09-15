@@ -253,6 +253,10 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
+  if (!network_utils_.firewall_.Add(NodeId(message.destination_id()), message.id())) {
+    message.Clear();
+    return;
+  }
   // This node is not closest to the destination node for non-direct message.
   if (!routing_table_.IsThisNodeClosestTo(NodeId(message.destination_id()), !IsDirect(message))) {
     LOG(kInfo) << "This node is not closest, passing it on."

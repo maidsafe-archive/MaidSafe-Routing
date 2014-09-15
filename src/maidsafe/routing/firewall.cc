@@ -24,27 +24,45 @@ namespace maidsafe {
 
 namespace routing {
 
+bool operator < (const Firewall::ProcessedEntry& lhs, const Firewall::ProcessedEntry& rhs) {
+  return (lhs.message_id == rhs.message_id) ? lhs.source < rhs.source
+                                            : lhs.message_id < rhs.message_id;
+}
+
 Firewall::Firewall()
     : mutex_(), history_() {}
 
 bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
   if (source_id.IsZero())
     return false;
+
   std::unique_lock<std::mutex> lock(mutex_);
-  if (std::any_of(std::begin(history_), std::end(history_),
-                  [&](const ProcessedMessageInfo& processed_message)->bool {
-                    return ((processed_message.source == source_id) &&
-                            (processed_message.id == message_id));
-                  }))
+  auto entry(ProcessedEntry(source_id, message_id));
+  auto found(history_.find(entry));
+  if (found != std::end(history_))
     return false;
 
-  history_.push_back(ProcessedMessageInfo(source_id, message_id));
-  if (history_.size() > Parameters::max_firewall_history_size)
-    history_.pop_front();
+  history_.insert(entry);
+  if (history_.size() % Parameters::firewall_history_cleanup_factor == 0)
+    Remove(lock);
+
   return true;
 }
+
+void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
+  assert(lock.owns_lock());
+  static_cast<void>(lock);
+  ProcessedEntry dummy(NodeId(NodeId::IdType::kRandomId), RandomInt32());
+  auto upper(std::upper_bound(
+      std::begin(history_), std::end(history_), dummy,
+      [this](const ProcessedEntry& lhs, const ProcessedEntry& rhs) {
+        return (lhs.birth_time - rhs.birth_time < Parameters::firewall_message_life_in_seconds);
+      }));
+  if (upper != std::end(history_))
+    history_.erase(std::begin(history_), upper);
+}
+
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
