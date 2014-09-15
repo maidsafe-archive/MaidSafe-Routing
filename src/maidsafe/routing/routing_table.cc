@@ -409,10 +409,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, unsigned int n
 #else
 // BEFORE_RELEASE use std::nth_element() for all platform when min required Gcc version is 4.8.3
 // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58800 Bug fixed in gcc 4.8.3
-  std::partial_sort(nodes_.begin(), nodes_.begin() + nth_element, nodes_.end(),
-                    [target](const NodeInfo & lhs, const NodeInfo & rhs) {
-                        return NodeId::CloserToTarget(lhs.id, rhs.id, target);
-                    });
+  PartialSortFromTarget(target, nth_element, lock);
 #endif
 }
 
