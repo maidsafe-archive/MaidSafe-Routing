@@ -402,8 +402,9 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, unsigned int n
   assert((nodes_.size() >= nth_element) &&
          "This should only be called when n is at max the size of RT");
 #if defined(__clang__) || defined(MAIDSAFE_WIN32) || \
-    ((__GNUC__) > 4 && (__GNUC_MINOR__ > 8) && (__GNUC_PATCHLEVEL__ > 2))
-  std::nth_element(std::begin(nodes_), std::begin() + nth_element, std::end(nodes_),
+    (__GNUC__ > 4 || \
+    (__GNUC__ == 4 && (__GNUC_MINOR__ > 8 || (__GNUC_MINOR__ ==  8  && __GNUC_PATCHLEVEL__ > 2))))
+  std::nth_element(std::begin(nodes_), std::begin(nodes_) + nth_element, std::end(nodes_),
                    [target](const NodeInfo& lhs, const NodeInfo& rhs) {
                      return NodeId::CloserToTarget(lhs.id, rhs.id, target);
                    });
