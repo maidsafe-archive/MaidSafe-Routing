@@ -16,6 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <mutex>
 #include <vector>
 
 #include "boost/filesystem/operations.hpp"
@@ -85,11 +86,18 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
 
+  std::mutex mutex;
   ::maidsafe::test::RunInParallel(20, [&] {
     BootstrapContacts bootstrap_contacts;
     for (int i(0); i < 20; ++i) {
-      bootstrap_contacts.push_back(
-          BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+      {
+        // already_used_ports inside GetRandomPort() is a non-constant global variable,
+        // which is not thread safe. A local mutex is required here, but shall not put the
+        // insertioin of bootstrap_contact under mutex lock
+        std::lock_guard<std::mutex> lock{ mutex };
+        bootstrap_contacts.push_back(
+            BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+      }
 
       EXPECT_NO_THROW(
           InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
