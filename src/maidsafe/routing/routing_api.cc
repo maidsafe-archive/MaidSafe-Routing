@@ -86,7 +86,7 @@ void Routing::SendGroup(const NodeId& destination_id, const std::string& message
 
 bool Routing::ClosestToId(const NodeId& target_id) { return pimpl_->ClosestToId(target_id); }
 
-NodeId Routing::RandomConnectedNode() { return pimpl_->RandomConnectedNode(); }
+boost::optional<NodeId> Routing::RandomConnectedNode() { return pimpl_->RandomConnectedNode(); }
 
 bool Routing::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const {
   return pimpl_->EstimateInGroup(sender_id, info_id);

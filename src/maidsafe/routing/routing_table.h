@@ -106,7 +106,7 @@ class RoutingTable {
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
                                         bool ignore_exact_match = false);
   NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int index);
-  NodeId RandomConnectedNode();
+  boost::optional<NodeId> RandomConnectedNode();
 
   size_t size() const;
   unsigned int kThresholdSize() const { return kThresholdSize_; }

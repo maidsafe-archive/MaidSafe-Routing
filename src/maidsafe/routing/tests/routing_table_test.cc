@@ -301,17 +301,19 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
 #endif
   auto run_random_connected_node_test = [&]() {
-    NodeId random_connected_node_id = routing_table.RandomConnectedNode();
+    auto random_connected_node_id = routing_table.RandomConnectedNode();
     LOG(kVerbose) << "Got random connected node: " << random_connected_node_id;
     if (routing_table.size() > Parameters::closest_nodes_size)
-      EXPECT_TRUE(NodeId::CloserToTarget(random_connected_node_id,
+      EXPECT_TRUE(NodeId::CloserToTarget(*random_connected_node_id,
                                          known_nodes.at(Parameters::closest_nodes_size).id,
                                          own_node_id));
-    else
+    else if (routing_table.size() > 0)
       EXPECT_TRUE(std::any_of(std::begin(known_nodes), std::end(known_nodes),
-                  [&](const NodeInfo& info) {
-                    return info.id == random_connected_node_id;
-                  }));
+                              [&](const NodeInfo& info) {
+                                return info.id == *random_connected_node_id;
+                              }));
+    else
+      EXPECT_FALSE(random_connected_node_id);
   };
 
   while (routing_table.size() < Parameters::max_routing_table_size) {
