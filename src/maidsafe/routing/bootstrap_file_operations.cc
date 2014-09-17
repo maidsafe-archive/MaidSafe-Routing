@@ -81,6 +81,15 @@ void InsertBootstrapContacts(sqlite::Database& database,
   }
 }
 
+void PrepareBootstrapTable(sqlite::Database& database) {
+  std::string query(
+      "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS("
+      "ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
+  sqlite::Statement statement{database, query};
+  statement.Step();
+  statement.Reset();
+}
+
 }  // unnamed namespace
 
 namespace detail {
@@ -104,10 +113,7 @@ void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
     try {
       sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
       sqlite::Tranasction transaction(database);
-      std::string query(
-          "CREATE TABLE BOOTSTRAP_CONTACTS("
-          "ENDPOINT TEXT  PRIMARY KEY  NOT NULL);");
-      database.Execute(query);
+      PrepareBootstrapTable(database);
       InsertBootstrapContacts(database, bootstrap_contacts);
       transaction.Commit();
       return;
@@ -146,10 +152,7 @@ void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
     try {
       sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
       sqlite::Tranasction transaction(database);
-      std::string query(
-          "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS("
-          "ENDPOINT TEXT  PRIMARY KEY NOT NULL);");
-      database.Execute(query);
+      PrepareBootstrapTable(database);
       InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
       transaction.Commit();
       return;
