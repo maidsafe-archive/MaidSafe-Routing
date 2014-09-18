@@ -83,7 +83,6 @@ GenericNode::GenericNode(bool has_symmetric_nat)
       endpoint_(),
       messages_(),
       routing_(),
-      health_mutex_(),
       health_(0) {
   node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
   routing_.reset(new Routing());  // FIXME Prakash
@@ -109,7 +108,6 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
       endpoint_(),
       messages_(),
       routing_(),
-      health_mutex_(),
       health_(0) {
   if (client_mode) {
     auto maid(passport::CreateMaidAndSigner().first);
@@ -143,7 +141,6 @@ GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
       endpoint_(),
       messages_(),
       routing_(),
-      health_mutex_(),
       health_(0) {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -168,7 +165,6 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
       endpoint_(),
       messages_(),
       routing_(),
-      health_mutex_(),
       health_(0) {
   endpoint_.address(GetLocalIp());
   endpoint_.port(maidsafe::test::GetRandomPort());
@@ -383,12 +379,10 @@ asymm::PublicKey GenericNode::public_key() {
 }
 
 int GenericNode::Health() {
-  std::lock_guard<std::mutex> health_lock(health_mutex_);
   return health_;
 }
 
 void GenericNode::SetHealth(int health) {
-  std::lock_guard<std::mutex> health_lock(health_mutex_);
   health_ = health;
 }
 
