@@ -29,6 +29,7 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/interprocess/ipc/message_queue.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"

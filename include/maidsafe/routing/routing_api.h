@@ -40,6 +40,7 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
