@@ -321,7 +321,7 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
     known_nodes.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
     std::sort(std::begin(known_nodes), std::end(known_nodes),
-              [&](const NodeInfo& lhs, NodeInfo& rhs) {
+              [&](const NodeInfo& lhs, const NodeInfo& rhs) {
                 return NodeId::CloserToTarget(lhs.id, rhs.id, own_node_id);
               });
     run_random_connected_node_test();
