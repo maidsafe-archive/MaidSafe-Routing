@@ -297,9 +297,7 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeInfo node_info;
   std::vector<NodeInfo> known_nodes;
 
-#ifdef NDEBUG
-  EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
-#endif
+  EXPECT_FALSE(routing_table.RandomConnectedNode());
   auto run_random_connected_node_test = [&]() {
     auto random_connected_node_id = routing_table.RandomConnectedNode();
     LOG(kVerbose) << "Got random connected node: " << random_connected_node_id;
