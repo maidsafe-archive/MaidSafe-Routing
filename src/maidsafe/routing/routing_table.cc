@@ -206,9 +206,10 @@ NodeId RoutingTable::RandomConnectedNode() {
   if (nodes_.empty())
     return NodeId();
 
-  PartialSortFromTarget(kNodeId_, static_cast<unsigned int>(nodes_.size()), lock);
-  size_t index(RandomUint32() % (nodes_.size()));
-  return nodes_.at(index).id;
+  auto limit(PartialSortFromTarget(kNodeId_,
+                                   static_cast<unsigned int>(Parameters::closest_nodes_size),
+                                   lock));
+  return nodes_.at(RandomUint32() % limit).id;
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
