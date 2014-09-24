@@ -40,6 +40,7 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/date_time/posix_time/posix_time_config.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -127,7 +128,7 @@ class Routing {
   // Gets a random connected node from routing table (excluding closest
   // Parameters::closest_nodes_size nodes).
   // Shouldn't be called when routing table is likely to be smaller than closest_nodes_size.
-  NodeId RandomConnectedNode();
+  boost::optional<NodeId> RandomConnectedNode();
 
   // Evaluates whether the sender_id is a legitimate source to send a request for performing
   // an operation on info_id

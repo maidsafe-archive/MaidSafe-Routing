@@ -488,7 +488,9 @@ bool Routing::Impl::ClosestToId(const NodeId& target_id) {
   return routing_table_->IsThisNodeClosestTo(target_id, true);
 }
 
-NodeId Routing::Impl::RandomConnectedNode() { return routing_table_->RandomConnectedNode(); }
+boost::optional<NodeId> Routing::Impl::RandomConnectedNode() {
+  return routing_table_->RandomConnectedNode();
+}
 
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return ((routing_table_->size() > Parameters::routing_table_ready_to_response) &&
