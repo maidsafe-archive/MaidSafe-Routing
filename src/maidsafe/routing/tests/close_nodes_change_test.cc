@@ -38,6 +38,19 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
+std::vector<std::string> SplitString(std::string input, const char& delimiter) {
+  std::vector<std::string> result;
+  auto delimiter_pos(input.find(delimiter));
+  while ((delimiter_pos > 0) && (delimiter_pos < input.size())) {
+    result.push_back(input.substr(0, delimiter_pos));
+    input = input.substr(delimiter_pos + 1);
+    delimiter_pos = input.find(delimiter);
+  }
+  if (!input.empty())
+    result.push_back(input);
+  return result;
+}
+
 class CloseNodesChangeTest : public testing::Test {
  protected:
   CloseNodesChangeTest()
@@ -382,6 +395,13 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   RoutingTableChangeFunctor routing_table_change_functor([&](
       const RoutingTableChange& routing_table_change) {
+    if (routing_table_change.close_nodes_change) {
+      std::vector<std::string> reported(
+              SplitString(routing_table_change.close_nodes_change->ReportConnection(), ','));
+      ASSERT_TRUE(reported.size() >= 2);
+      EXPECT_EQ(reported.at(1), DebugId(routing_table_change.close_nodes_change->lost_node()));
+      EXPECT_EQ(reported.at(0), DebugId(routing_table_change.close_nodes_change->new_node()));
+    }
     if (routing_table.size() <= Parameters::closest_nodes_size) {
       bool special_case((routing_table.size() == Parameters::closest_nodes_size) &&
                          std::none_of(std::begin(new_ids), std::end(new_ids),
