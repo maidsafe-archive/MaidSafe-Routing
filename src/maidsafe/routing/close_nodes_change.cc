@@ -266,6 +266,32 @@ void CloseNodesChange::Print() const {
   LOG(kInfo) << stream.str();
 }
 
+std::string CloseNodesChange::ReportConnection() const {
+  std::stringstream stream;
+  stream << DebugId(new_node_);
+  stream << "," << DebugId(lost_node_);
+
+//   size_t closest_size_adjust(std::min(new_close_nodes_.size(),
+//                                       Parameters::group_size + 1U));
+//   if (closest_size_adjust == 0)
+//     return stream.str();
+//
+//   std::vector<NodeId> closest_nodes(closest_size_adjust);
+//   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+//                          std::begin(closest_nodes), std::end(closest_nodes),
+//                          [&](const NodeId& lhs, const NodeId& rhs) {
+//                            return NodeId::CloserToTarget(lhs, rhs, this->node_id_);
+//                          });
+//   if (node_id_ == closest_nodes.front())
+//     closest_nodes.erase(std::begin(closest_nodes));
+//   else if (closest_nodes.size() > Parameters::group_size)
+//     closest_nodes.pop_back();
+//
+//   for (auto entry : closest_nodes)
+//     stream << "," << DebugId(entry);
+  return stream.str();
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
