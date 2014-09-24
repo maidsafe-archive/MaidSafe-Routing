@@ -297,31 +297,22 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeInfo node_info;
   std::vector<NodeInfo> known_nodes;
 
-  EXPECT_FALSE(routing_table.RandomConnectedNode());
+#ifdef NDEBUG
+  EXPECT_TRUE(routing_table.RandomConnectedNode().IsZero());
+#endif
   auto run_random_connected_node_test = [&]() {
-    auto random_connected_node_id = routing_table.RandomConnectedNode();
-    LOG(kVerbose) << "Got random connected node: " << random_connected_node_id;
-    if (routing_table.size() > Parameters::closest_nodes_size)
-      EXPECT_TRUE(NodeId::CloserToTarget(*random_connected_node_id,
-                                         known_nodes.at(Parameters::closest_nodes_size).id,
-                                         own_node_id));
-    else if (routing_table.size() > 0)
-      EXPECT_TRUE(std::any_of(std::begin(known_nodes), std::end(known_nodes),
-                              [&](const NodeInfo& info) {
-                                return info.id == *random_connected_node_id;
-                              }));
-    else
-      EXPECT_FALSE(random_connected_node_id);
+    NodeId random_connected_node_id = routing_table.RandomConnectedNode();
+    LOG(kVerbose) << "Got random connected node: " << DebugId(random_connected_node_id);
+    auto found(
+        std::find_if(std::begin(known_nodes), std::end(known_nodes),
+                     [=](const NodeInfo& node) { return (node.id == random_connected_node_id); }));
+    ASSERT_FALSE(found == std::end(known_nodes));
   };
 
   while (routing_table.size() < Parameters::max_routing_table_size) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
-    std::sort(std::begin(known_nodes), std::end(known_nodes),
-              [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-                return NodeId::CloserToTarget(lhs.id, rhs.id, own_node_id);
-              });
     run_random_connected_node_test();
   }
   for (auto i(0); i < 100; ++i)

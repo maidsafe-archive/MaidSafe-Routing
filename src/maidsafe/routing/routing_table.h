@@ -29,7 +29,6 @@
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/interprocess/ipc/message_queue.hpp"
-#include "boost/optional.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -107,7 +106,7 @@ class RoutingTable {
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
                                         bool ignore_exact_match = false);
   NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int index);
-  boost::optional<NodeId> RandomConnectedNode();
+  NodeId RandomConnectedNode();
 
   size_t size() const;
   unsigned int kThresholdSize() const { return kThresholdSize_; }

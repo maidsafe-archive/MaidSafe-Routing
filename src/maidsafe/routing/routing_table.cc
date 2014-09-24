@@ -196,7 +196,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   return dropped_node;
 }
 
-boost::optional<NodeId> RoutingTable::RandomConnectedNode() {
+NodeId RoutingTable::RandomConnectedNode() {
   std::unique_lock<std::mutex> lock(mutex_);
 // Commenting out assert as peer starts treating this node as joined as soon as it adds
 // it into its routing table.
@@ -204,12 +204,11 @@ boost::optional<NodeId> RoutingTable::RandomConnectedNode() {
 //         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
 //   assert(nodes_.empty());
   if (nodes_.empty())
-    return boost::optional<NodeId>();
+    return NodeId();
 
-  auto limit(PartialSortFromTarget(kNodeId_,
-                                   static_cast<unsigned int>(Parameters::closest_nodes_size),
-                                   lock));
-  return boost::optional<NodeId>(nodes_.at(RandomUint32() % limit).id);
+  PartialSortFromTarget(kNodeId_, static_cast<unsigned int>(nodes_.size()), lock);
+  size_t index(RandomUint32() % (nodes_.size()));
+  return nodes_.at(index).id;
 }
 
 bool RoutingTable::GetNodeInfo(const NodeId& node_id, NodeInfo& peer) const {
