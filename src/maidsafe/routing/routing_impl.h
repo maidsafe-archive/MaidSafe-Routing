@@ -118,7 +118,7 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
 
   bool ClosestToId(const NodeId& node_id);
 
-  boost::optional<NodeId> RandomConnectedNode();
+  NodeId RandomConnectedNode();
 
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id);
 
