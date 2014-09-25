@@ -32,6 +32,7 @@ PublicKeyHolder::~PublicKeyHolder() {
                 [](const PublicKeyInfo& info) {
                   info.timer->cancel();
                 });
+  while (!elements_.empty()) {}
 }
 
 bool PublicKeyHolder::Add(const NodeId& peer, const asymm::PublicKey& public_key) {
@@ -84,7 +85,6 @@ void PublicKeyHolder::Remove(const NodeId& peer) {
 
     if (element != std::end(elements_)) {
       timer = element->timer;
-      elements_.erase(element);
     }
   }
   timer->cancel();
@@ -93,5 +93,3 @@ void PublicKeyHolder::Remove(const NodeId& peer) {
 }  // namespace routing
 
 }  // namespace maidsafe
-
-

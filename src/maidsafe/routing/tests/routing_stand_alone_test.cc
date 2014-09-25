@@ -265,9 +265,6 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
   // Approx duration of test on Linux: 90mins
   SetUpNetwork(80, 0, 0, 0);
 
-  ASSERT_TRUE(WaitForNodesToJoin());
-  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
-
   for (unsigned int repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
@@ -290,9 +287,6 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
 TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSymmetricNat) {
   // Approx duration of test on Linux: 90mins
   SetUpNetwork(80, 0, 20, 0);
-
-  ASSERT_TRUE(WaitForNodesToJoin());
-  ASSERT_TRUE(WaitForHealthToStabiliseInLargeNetwork());
 
   for (unsigned int repeat(0); repeat < 10; ++repeat) {
     std::cout << "Repeat: " << repeat << std::endl;
