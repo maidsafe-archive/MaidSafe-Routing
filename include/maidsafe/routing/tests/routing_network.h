@@ -69,8 +69,8 @@ enum ExpectedNodeType {
   kExpectDoesNotExist
 };
 
-const uint32_t kClientSize(5);
-const uint32_t kServerSize(20);
+const uint32_t kClientSize(3);
+const uint32_t kServerSize(35);
 const uint32_t kNetworkSize = kClientSize + kServerSize;
 
 class GenericNetwork;

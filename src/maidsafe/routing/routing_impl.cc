@@ -382,7 +382,7 @@ void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
   unsigned int expected_response_count(1);
   if (response_functor) {
     if (DestinationType::kGroup == destination_type)
-      expected_response_count = 4;
+      expected_response_count = Parameters::group_size;
     proto_message.set_id(timer_.NewTaskId());
     timer_.AddTask(Parameters::default_response_timeout, response_functor, expected_response_count,
                    proto_message.id());
