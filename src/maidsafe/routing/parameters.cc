@@ -29,15 +29,15 @@ namespace routing {
 
 unsigned int Parameters::thread_count(8);
 unsigned int Parameters::num_chunks_to_cache(100);
-unsigned int Parameters::closest_nodes_size(16);
-unsigned int Parameters::group_size(4);
+unsigned int Parameters::closest_nodes_size(32);
+unsigned int Parameters::group_size(32);
 unsigned int Parameters::proximity_factor(2);
 unsigned int Parameters::max_routing_table_size(64);
 unsigned int Parameters::routing_table_size_threshold(max_routing_table_size / 4);
 unsigned int Parameters::max_routing_table_size_for_client(8);
 unsigned int Parameters::max_client_routing_table_size(max_routing_table_size);
 unsigned int Parameters::bucket_target_size(1);
-std::chrono::steady_clock::duration Parameters::default_response_timeout(std::chrono::seconds(10));
+std::chrono::steady_clock::duration Parameters::default_response_timeout(std::chrono::seconds(20));
 std::chrono::seconds Parameters::find_node_interval(10);
 std::chrono::seconds Parameters::recovery_time_lag(5);
 std::chrono::seconds Parameters::re_bootstrap_time_lag(10);
