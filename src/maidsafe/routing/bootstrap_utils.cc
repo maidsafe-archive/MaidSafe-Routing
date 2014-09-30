@@ -35,7 +35,7 @@ using boost::asio::ip::address;
 
 BootstrapContacts GetHardCodedBootstrapContacts() {
   BootstrapContacts hard_coded_bootstrap_contacts{
-      udp::endpoint{ address::from_string("192.168.0.200"), kLivePort },
+      udp::endpoint{ address::from_string("213.104.185.97"), kLivePort },
       udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
       udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
       udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
