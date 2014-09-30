@@ -91,6 +91,11 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
   if (kDataSize_ > 128 * 1024)
     return GTEST_SUCCEED();
 #endif
+
+#if !defined(NDEBUG)
+  if (kDataSize_ > 1024 * 1024)
+    return GTEST_SUCCEED();
+#endif
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
