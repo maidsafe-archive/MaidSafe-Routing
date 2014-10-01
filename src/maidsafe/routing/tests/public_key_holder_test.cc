@@ -54,6 +54,7 @@ TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
   public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
   EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
   public_key_holder.Remove(node_details.node_info.id);
+  Sleep(std::chrono::seconds(1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
 }
 
@@ -113,6 +114,8 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
+
+  Sleep(std::chrono::seconds(1));
 
   futures.clear();
 
