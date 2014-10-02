@@ -16,6 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <mutex>
 #include <vector>
 
 #include "boost/filesystem/operations.hpp"
@@ -58,9 +59,19 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
   BootstrapContacts bootstrap_contacts;
-  for (int i(0); i < 1000; ++i)
-    bootstrap_contacts.push_back(
-        BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+  // already_used_ports inside GetRandomPort only holds the last 10000 records
+  // as already_used_ports is static, it's life span is across gtest's iteratioins
+  // if BEH_ReadWrite got run repeatedly, already_used_ports will got reset sometime
+  // this opens a window for duplications during the generating of 1000 ports
+  for (int i(0); i < 1000; ++i) {
+    auto itr(bootstrap_contacts.end());
+    BootstrapContact contact;
+    do {
+      contact = BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+      itr = std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), contact);
+    } while (itr != bootstrap_contacts.end());
+    bootstrap_contacts.push_back(contact);
+  }
 
   EXPECT_NO_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path));
   auto bootstrap_contacts_result = ReadBootstrapContacts(bootstrap_file_path);
@@ -68,18 +79,25 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
                                                            << " vs " << bootstrap_contacts.size();
 }
 
-TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Unique_Update) {
+TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
   EXPECT_THROW(ReadBootstrapContacts(bootstrap_file_path), std::exception);
   EXPECT_FALSE(fs::exists(bootstrap_file_path));
 
+  std::mutex mutex;
   ::maidsafe::test::RunInParallel(20, [&] {
     BootstrapContacts bootstrap_contacts;
     for (int i(0); i < 20; ++i) {
-      bootstrap_contacts.push_back(
-          BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+      {
+        // already_used_ports inside GetRandomPort() is a non-constant global variable,
+        // which is not thread safe. A local mutex is required here, but shall not put the
+        // insertioin of bootstrap_contact under mutex lock
+        std::lock_guard<std::mutex> lock{ mutex };
+        bootstrap_contacts.push_back(
+            BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+      }
 
       EXPECT_NO_THROW(
           InsertOrUpdateBootstrapContact(bootstrap_contacts.back(), bootstrap_file_path));
@@ -92,7 +110,7 @@ TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Unique_Update) {
   });
 }
 
-TEST(BootstrapFileOperationsTest, DISABLED_FUNC_Parallel_Duplicate_Update) {
+TEST(BootstrapFileOperationsTest, FUNC_Parallel_Duplicate_Update) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestUtils"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   ASSERT_FALSE(fs::exists(bootstrap_file_path));
