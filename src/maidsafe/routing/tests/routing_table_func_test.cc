@@ -90,6 +90,7 @@ class RoutingTableNetwork : public testing::Test {
   void FindCloseNodesOnDemand();
   void GetCloseNodeIndexStats();
   void AddNewNode();
+  void ValidateNewGroupMessaging();
   std::vector<std::shared_ptr<RoutingTableInfo>> nodes_info_;
   size_t GetClosenessIndex(const NodeId& node_id, const NodeId& target_id);
 
@@ -99,6 +100,8 @@ class RoutingTableNetwork : public testing::Test {
   void OnRoutingTableChange(const NodeId& node_id, const RoutingTableChange& routing_table_change);
   void PartialSortFromTarget(const NodeId& target, const size_t limit, const size_t search_limit);
   void AddNode(std::shared_ptr<RoutingTableInfo> lhs, std::shared_ptr<RoutingTableInfo> rhs);
+  bool ConfirmHoldersKnowGroup(const NodeId &target, const std::vector<NodeId>& holders_id,
+                               const std::vector<NodeId>& expected_group);
   size_t RoutingTableSize(RoutingTablePtr routing_table);
   size_t kNumberofClosestNode;
   std::set<NodeId> nodes_changed_;
@@ -427,6 +430,77 @@ TEST_F(RoutingTableNetwork, FUNC_AnalyseNetwork) {
       }
     }
   }
+}
+
+void RoutingTableNetwork::ValidateNewGroupMessaging() {
+  NodeId target(NodeId::IdType::kRandomId);
+  for (size_t index(0); index < 10000; ++index) {
+    std::vector<NodeId> expected_group(Parameters::group_size);
+    bool done(false);
+    std::partial_sort_copy(std::begin(node_ids_), std::end(node_ids_), std::begin(expected_group),
+                           std::end(expected_group),
+                           [&, this](const NodeId& lhs, const NodeId& rhs) {
+                             return NodeId::CloserToTarget(lhs, rhs, target);
+                           });
+    auto random_node(nodes_info_.at(RandomUint32() % nodes_info_.size()));
+    while (!done) {
+      random_node->routing_table->GetNthClosestNode(random_node->routing_table->kNodeId(),
+                                                    kNumberofClosestNode);
+      if (NodeId::CloserToTarget(target,
+                                 random_node->routing_table->nodes_.at(kNumberofClosestNode - 1).id,
+                                 random_node->routing_table->kNodeId())) {
+        auto potential_holders(
+            random_node->routing_table->GetClosestNodes(target, Parameters::group_size, true));
+        std::vector<NodeId> holders_id;
+        for (unsigned int index(0); index < Parameters::group_size - 1; ++index)
+          holders_id.push_back(potential_holders.at(index).id);
+        if (NodeId::CloserToTarget(random_node->routing_table->kNodeId(),
+                                   potential_holders.at(Parameters::group_size - 1).id, target))
+          holders_id.push_back(random_node->routing_table->kNodeId());
+        else
+          holders_id.push_back(potential_holders.at(Parameters::group_size - 1).id);
+        ConfirmHoldersKnowGroup(target, holders_id, expected_group);
+        done = true;
+      } else {
+        auto closest_to_target(random_node->routing_table->GetClosestNodes(target, 1, true));
+        random_node = network_map_[closest_to_target.at(0).id];
+      }
+    }
+  }
+}
+
+bool RoutingTableNetwork::ConfirmHoldersKnowGroup(const NodeId& target,
+                                                  const std::vector<NodeId>& holders_id,
+                                                  const std::vector<NodeId>& expected_group) {
+  std::vector<NodeId> local_nodes_id;
+  for (const auto& holder_id : holders_id) {
+    auto node(network_map_[holder_id]);
+    auto local_nodes(node->routing_table->GetClosestNodes(target, Parameters::group_size, true));
+    for (unsigned int index(0); index < Parameters::group_size - 1; ++index)
+      local_nodes_id.push_back(local_nodes.at(index).id);
+    if (NodeId::CloserToTarget(holder_id, local_nodes.at(Parameters::group_size - 1).id, target))
+      local_nodes_id.push_back(holder_id);
+    else
+      local_nodes_id.push_back(local_nodes.at(Parameters::group_size - 1).id);
+    std::sort(std::begin(local_nodes_id), std::end(local_nodes_id),
+                         [&](const NodeId& lhs, const NodeId&rhs) {
+                           return NodeId::CloserToTarget(lhs, rhs, target);
+                         });
+    EXPECT_EQ(expected_group.size(), local_nodes_id.size());
+    for (unsigned int index(0); index < Parameters::group_size; ++index) {
+      EXPECT_EQ(expected_group.at(index), local_nodes_id.at(index));
+    }
+    local_nodes_id.clear();
+  }
+  return true;
+}
+
+TEST_F(RoutingTableNetwork, FUNC_GroupMessaging) {
+  size_t kMaxNetworkSize(2000);
+  LOG(kVerbose) << "Add new nodes";
+  for (size_t index(0); index < kMaxNetworkSize; ++index)
+    AddNewNode();
+  ValidateNewGroupMessaging();
 }
 
 }  // namespace test
