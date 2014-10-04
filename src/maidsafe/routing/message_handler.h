@@ -28,7 +28,8 @@
 #include "maidsafe/routing/response_handler.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/network_statistics.h"
+#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/network_utils.h"
 
 namespace maidsafe {
 
@@ -43,7 +44,7 @@ class GenericNode;
 class MessageHandlerTest;
 class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
 class MessageHandlerTest_BEH_HandleRelay_Test;
-class MessageHandlerTest_BEH_HandleGroupMessage_Test;
+class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
 class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
 class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
@@ -59,7 +60,8 @@ struct TypedMessageRecievedFunctors {
 
 }  // unnamed detail
 
-class NetworkUtils;
+class Network;
+struct NetworkUtils;
 class ClientRoutingTable;
 class RoutingTable;
 class NetworkStatistics;
@@ -72,6 +74,7 @@ enum class MessageType : int32_t {
   kConnectSuccessAcknowledgement = 5,
   kGetGroup = 6,
   kInformClientOfNewCloseNode = 7,
+  kAcknowledgement = 8,
   kMaxRouting = 100,
   kNodeLevel = 101
 };
@@ -79,8 +82,8 @@ enum class MessageType : int32_t {
 class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                 NetworkUtils& network, Timer<std::string>& timer,
-                 NetworkStatistics& network_statistics);
+                 Network& network, Timer<std::string>& timer,
+                 NetworkUtils& network_utils, AsioService& asio_service);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);
@@ -115,7 +118,7 @@ class MessageHandler {
   friend class test::MessageHandlerTest;
   friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
-  friend class test::MessageHandlerTest_BEH_HandleGroupMessage_Test;
+  friend class test::MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
   friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
   friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
   friend class test::GenericNode;
@@ -123,10 +126,11 @@ class MessageHandler {
 
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
-  NetworkStatistics& network_statistics_;
-  NetworkUtils& network_;
+  NetworkUtils& network_utils_;
+  Network& network_;
   std::unique_ptr<CacheManager> cache_manager_;
   Timer<std::string>& timer_;
+  PublicKeyHolder public_key_holder_;
   std::shared_ptr<ResponseHandler> response_handler_;
   std::shared_ptr<Service> service_;
   MessageReceivedFunctor message_received_functor_;

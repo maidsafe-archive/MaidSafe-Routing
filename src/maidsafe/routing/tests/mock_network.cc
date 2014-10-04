@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tests/mock_network_utils.h"
+#include "maidsafe/routing/tests/mock_network.h"
 
 namespace maidsafe {
 
@@ -24,11 +24,11 @@ namespace routing {
 
 namespace test {
 
-MockNetworkUtils::MockNetworkUtils(RoutingTable& routing_table,
-                                   ClientRoutingTable& client_routing_table)
-    : NetworkUtils(routing_table, client_routing_table) {}
+MockNetwork::MockNetwork(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
+                         Acknowledgement& acknowledgement)
+    : Network(routing_table, client_routing_table, acknowledgement) {}
 
-MockNetworkUtils::~MockNetworkUtils() {}
+MockNetwork::~MockNetwork() {}
 
 }  // namespace test
 

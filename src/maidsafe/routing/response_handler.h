@@ -24,6 +24,7 @@
 #include <vector>
 #include <utility>
 #include <deque>
+#include <map>
 
 #include "boost/asio/deadline_timer.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
@@ -32,6 +33,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
+#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/timer.h"
 
 namespace maidsafe {
@@ -46,7 +48,7 @@ namespace test {
 class ResponseHandlerTest_BEH_ConnectAttempts_Test;
 }  // namespace test
 
-class NetworkUtils;
+class Network;
 class ClientRoutingTable;
 class RoutingTable;
 class GroupChangeHandler;
@@ -54,7 +56,7 @@ class GroupChangeHandler;
 class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
  public:
   ResponseHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                  NetworkUtils& network);
+                  Network& network, PublicKeyHolder& public_key_holder);
   virtual ~ResponseHandler();
   virtual void Ping(protobuf::Message& message);
   virtual void Connect(protobuf::Message& message);
@@ -65,12 +67,14 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   void GetGroup(Timer<std::string>& timer, protobuf::Message& message);
   void CloseNodeUpdateForClient(protobuf::Message& message);
   void InformClientOfNewCloseNode(protobuf::Message& message);
+  void ConnectSuccess(protobuf::Message& message);
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
  private:
   void SendConnectRequest(const NodeId peer_node_id);
   void CheckAndSendConnectRequest(const NodeId& node_id);
+  void ValidateAndSendConnectRequest(const NodeId& peer_id);
   void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
   void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client);
   void ValidateAndCompleteConnectionToClient(const NodeInfo& peer, bool from_requestor,
@@ -81,8 +85,9 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   mutable std::mutex mutex_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
-  NetworkUtils& network_;
+  Network& network_;
   RequestPublicKeyFunctor request_public_key_functor_;
+  PublicKeyHolder& public_key_holder_;
 };
 
 }  // namespace routing
