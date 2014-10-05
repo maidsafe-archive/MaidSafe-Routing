@@ -184,10 +184,10 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
 
   auto expected(std::min(static_cast<unsigned int>(it->requested_peers.size()),
                          Parameters::group_size / 2));
-  if (std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
-                    [](const std::pair<NodeId, GroupMessageAckStatus>& member) {
-                      return member.second == GroupMessageAckStatus::kSuccess;
-                    }) == expected) {
+  if (static_cast<size_t>(std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
+                          [](const std::pair<NodeId, GroupMessageAckStatus>& member) {
+                            return member.second == GroupMessageAckStatus::kSuccess;
+                          })) == expected) {
     LOG(kVerbose) << "HandleGroupMessage: expected meets: " << ack_id;
     it->timer->cancel();
     group_queue_.erase(it);
