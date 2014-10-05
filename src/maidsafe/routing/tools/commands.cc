@@ -179,11 +179,9 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
   //   Send messages
   auto timeout(Parameters::default_response_timeout);
   std::cout << "message_count " << messages_count << std::endl;
-  if (1000 * messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4) >
-          Parameters::default_response_timeout.count())
-    Parameters::default_response_timeout =
-      std::chrono::seconds(messages_count *
-                               ((destination_type != DestinationType::kGroup) ? 1 : 4));
+  if (messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4) > 10)
+    Parameters::default_response_timeout *=
+        (messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
     std::vector<NodeId> closest_nodes;
     NodeId dest_id;
@@ -191,7 +189,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
     if (expect_respondent == 0)
       return;
     auto start = std::chrono::steady_clock::now();
-    data = ">:<" + std::to_string(++message_id) + "<:>" + data;
+    data = ">:< " + std::to_string(++message_id) + " <:>" + data;
     SendAMessage(successful_count, operation_count, mutex, cond_var, messages_count,
                  expect_respondent, closest_nodes, dest_id, data);
 
@@ -222,8 +220,12 @@ unsigned int Commands::MakeMessage(int id_index, const DestinationType& destinat
     std::cout << "ERROR : destination index out of range" << std::endl;
     return 0;
   }
-  if (identity_index >= 0)
-    dest_id = NodeId(all_keys_[identity_index].pmid.name().value);
+  if (identity_index >= 0) {
+    if (destination_type == DestinationType::kGroup)
+      dest_id = NodeId(NodeId::IdType::kRandomId);
+    else
+      dest_id = NodeId(all_keys_[identity_index].pmid.name().value);
+  }
   std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->node_id().string())
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())
@@ -256,9 +258,12 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& op
   auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
   auto callable = [shared_response_ptr, &successful_count, &operation_count, &mutex,
                    messages_count, expect_respondent, &cond_var, group_performance,
-                   data_size](std::string response) {
+                   data_size, this](std::string response) {
     if (!response.empty()) {
-      shared_response_ptr->CollectResponse(response, !group_performance);
+      std::string string(response.substr(0, 20));
+      std::cout << "Received message: " << string << "\n";
+      if (!shared_response_ptr->CollectResponse(response, !group_performance))
+        return;
       if (shared_response_ptr->expected_responses_ == 1)
         shared_response_ptr->PrintRoutingTable(response);
       if (shared_response_ptr->responded_nodes_.size() ==

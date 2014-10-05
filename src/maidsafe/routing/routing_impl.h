@@ -36,13 +36,13 @@
 #include "maidsafe/routing/api_config.h"
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/random_node_helper.h"
 #include "maidsafe/routing/routing_api.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/timer.h"
-
+#include "maidsafe/routing/network_utils.h"
 
 namespace maidsafe {
 
@@ -180,7 +180,6 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
 
   std::mutex network_status_mutex_;
   int network_status_;
-  NetworkStatistics network_statistics_;
   std::unique_ptr<RoutingTable> routing_table_;
   const NodeId kNodeId_;
   bool running_;
@@ -193,7 +192,8 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
   AsioService asio_service_;
-  std::unique_ptr<NetworkUtils> network_;
+  NetworkUtils network_utils_;
+  std::unique_ptr<Network> network_;
   Timer<std::string> timer_;
   boost::asio::steady_timer re_bootstrap_timer_, recovery_timer_, setup_timer_;
 };
@@ -236,6 +236,8 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(network_utils_.acknowledgement_.GetId());
+  proto_message.set_id(RandomUint32());
 
   AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
   AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());

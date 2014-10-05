@@ -19,10 +19,13 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_MOCK_SERVICE_H_
 #define MAIDSAFE_ROUTING_TESTS_MOCK_SERVICE_H_
 
+#include <string>
+
 #include "gmock/gmock.h"
 
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/service.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -33,7 +36,7 @@ namespace test {
 class MockService : public Service {
  public:
   MockService(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-              NetworkUtils& network_utils);
+              Network& network_utils, PublicKeyHolder& public_key_holder);
   virtual ~MockService();
 
   MOCK_METHOD1(Ping, void(protobuf::Message& message));

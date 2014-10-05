@@ -25,6 +25,7 @@
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/node_id.h"
 
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -34,10 +35,9 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/public_key_holder.h"
 
 namespace maidsafe {
-
-class NodeId;
 
 namespace routing {
 
@@ -48,19 +48,19 @@ class Endpoint;
 
 }  // namespace protobuf
 
-class NetworkUtils;
+class Network;
 class ClientRoutingTable;
 class RoutingTable;
 
-int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
 
-bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
+bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
     ClientRoutingTable& client_routing_table, const NodeId& peer_id, const NodeId& connection_id,
     const asymm::PublicKey& public_key, bool client);
 
-void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
 
 // GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
@@ -75,6 +75,8 @@ bool IsResponse(const protobuf::Message& message);
 bool IsDirect(const protobuf::Message& message);
 bool IsCacheableGet(const protobuf::Message& message);
 bool IsCacheablePut(const protobuf::Message& message);
+bool IsAck(const protobuf::Message& message);
+bool IsConnectSuccessAcknowledgement(const protobuf::Message& message);
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client);
 bool CheckId(const std::string& id_to_test);

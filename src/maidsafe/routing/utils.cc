@@ -36,7 +36,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
@@ -46,33 +46,34 @@ namespace maidsafe {
 
 namespace routing {
 
-int AddToRudp(NetworkUtils& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
-  LOG(kVerbose) << "AddToRudp. peer_id : " << DebugId(peer_id)
-                << " , connection id : " << DebugId(peer_connection_id);
+  LOG(kVerbose) << "AddToRudp. peer_id: " << peer_id << " ,connection id: " << peer_connection_id;
   protobuf::Message connect_success(
       rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
   int result =
       network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString());
-  if (result != rudp::kSuccess) {
-    LOG(kError) << "rudp add failed for peer node [" << DebugId(peer_id)
-                << "]. Connection id : " << DebugId(peer_connection_id) << ". result : " << result;
+  if (result == rudp::kConnectionAlreadyExists) {
+    network.SendToDirect(connect_success, peer_id, peer_connection_id);
+  } else if (result == kSuccess) {
+    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << peer_id
+                  << "]. Connection id : " << peer_connection_id;
   } else {
-    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << DebugId(peer_id)
-                  << "]. Connection id : " << DebugId(peer_connection_id);
+    LOG(kError) << "rudp add failed for peer node [" << peer_id << "]. Connection id : "
+                << peer_connection_id << ". result : " << result;
   }
   return result;
 }
 
-bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_table,
+bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
                                   ClientRoutingTable& client_routing_table,
                                   const NodeId& peer_id, const NodeId& connection_id,
                                   const asymm::PublicKey& public_key, bool client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-    LOG(kError) << "[" << DebugId(routing_table.kNodeId()) << "] "
-                << ". Rudp failed to validate connection with  Peer id : " << DebugId(peer_id)
-                << " , Connection id : " << DebugId(connection_id);
+    LOG(kError) << "[" << routing_table.kNodeId()
+                << "]  Rudp failed to validate connection with  Peer id : " << peer_id
+                << " , Connection id : " << connection_id;
     return false;
   }
 
@@ -94,13 +95,13 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   }
 
   if (routing_accepted_node) {
-    LOG(kVerbose) << "[" << DebugId(routing_table.kNodeId()) << "] "
+    LOG(kVerbose) << "[" << routing_table.kNodeId() << "] "
                   << "added " << (client ? "client-" : "") << "node to " << (client ? "non-" : "")
                   << "routing table.  Node ID: " << HexSubstr(peer_id.string());
     return true;
   }
 
-  LOG(kInfo) << "[" << DebugId(routing_table.kNodeId()) << "] "
+  LOG(kInfo) << "[" << routing_table.kNodeId() << "] "
              << "failed to add " << (client ? "client-" : "") << "node to "
              << (client ? "non-" : "") << "routing table.  Node ID: " << HexSubstr(peer_id.string())
              << ". Added rudp connection will be removed.";
@@ -108,7 +109,7 @@ bool ValidateAndAddToRoutingTable(NetworkUtils& network, RoutingTable& routing_t
   return false;
 }
 
-void InformClientOfNewCloseNode(NetworkUtils& network, const NodeInfo& client,
+void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id) {
   protobuf::Message inform_client_of_new_close_node(
       rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
@@ -162,6 +163,14 @@ bool IsCacheablePut(const protobuf::Message& message) {
   return (!(message.has_relay_id() || message.has_relay_connection_id()) &&
           message.has_cacheable() &&
           (static_cast<Cacheable>(message.cacheable()) == Cacheable::kPut));
+}
+
+bool IsAck(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kAcknowledgement);
+}
+
+bool IsConnectSuccessAcknowledgement(const protobuf::Message& message) {
+  return message.type() == static_cast<int>(MessageType::kConnectSuccessAcknowledgement);
 }
 
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
@@ -281,6 +290,9 @@ std::string MessageTypeString(const protobuf::Message& message) {
       break;
     case MessageType::kNodeLevel:
       message_type = "kNodeLevel";
+      break;
+    case MessageType::kAcknowledgement:
+      message_type = "kAcknowledgement";
       break;
     default:
       message_type = "Unknown  ";

@@ -39,8 +39,8 @@ class RoutingNetworkTest : public testing::Test {
   RoutingNetworkTest(void) : env_(NodesEnvironment::g_environment()) {}
 
   void SetUp() override {
+    assert(env_->ClientIndex() == kServerSize && "No server should have been added in test");
     EXPECT_TRUE(env_->RestoreComposition());
-    EXPECT_TRUE(env_->WaitForHealthToStabilise());
   }
 
   void TearDown() override {
@@ -162,7 +162,12 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSend) { EXPECT_TRUE(env_->SendDirect(1)); 
 
 TEST_F(RoutingNetworkTest, FUNC_SendMulti) {
   boost::progress_timer t;
+
+#if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
+  EXPECT_TRUE(env_->SendDirect(3));
+#else
   EXPECT_TRUE(env_->SendDirect(5));
+#endif
   std::cout << "Time taken for test : " << t.elapsed();
 }
 
@@ -228,11 +233,17 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   size_t message_count(100), receivers_message_count(0);
+#if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
+    message_count = 50;
+#endif
 
   size_t client_index(env_->RandomClientIndex());
 
   size_t last_index(env_->nodes_.size());
   NodeId dest_id(env_->nodes_[client_index]->node_id());
+
+  auto timeout(Parameters::default_response_timeout);
+  Parameters::default_response_timeout *= Parameters::group_size * message_count;
 
   env_->ClearMessages();
   EXPECT_TRUE(env_->SendGroup(dest_id, message_count,
@@ -244,6 +255,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
       << "Not expected message at Node : "
       << HexSubstr(env_->nodes_[client_index]->node_id().string());
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
@@ -265,11 +277,15 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   unsigned int message_count(200), receivers_message_count(0);
+#if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
+  message_count = 50;
+#endif
+
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
   auto timeout(Parameters::default_response_timeout);
-  Parameters::default_response_timeout *= message_count;
+  Parameters::default_response_timeout *= message_count * Parameters::group_size;
   for (unsigned int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(
@@ -303,6 +319,10 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   unsigned int message_count(100), receivers_message_count(0);
+#if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
+    message_count = 50;
+#endif
+
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
 
@@ -347,8 +367,13 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   unsigned int message_count(100), receivers_message_count(0);
+#if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
+    message_count = 50;
+#endif
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
+  auto timeout(Parameters::default_response_timeout);
+  Parameters::default_response_timeout *= message_count;
 
   size_t initial_network_size(env_->nodes_.size());
   env_->AddMutatingClient(false);
@@ -386,6 +411,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+  Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_JoinWithSameId) {
