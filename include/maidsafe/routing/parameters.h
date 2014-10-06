@@ -58,7 +58,7 @@ struct Parameters {
   static unsigned int max_send_retry;
   static unsigned int ack_timeout;
   static unsigned int firewall_history_cleanup_factor;
-  static unsigned int firewall_message_life_in_seconds;
+  static std::chrono::seconds firewall_message_life;
   static unsigned int public_key_holding_time;
   static bool caching;
 
