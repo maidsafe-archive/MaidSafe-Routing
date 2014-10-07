@@ -206,11 +206,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendDirectEndpoint) {
   ScopedBootstrapFile bootstrap_file({endpoint2});
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
   rudp::NatType this_nat_type;
-  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
-  // bootstrap node endpoints before returning from Bootstrap() and so some times this
-  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
-  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // sleep here will let the test pass. the issue is discussed in tasks MAID-143 and MAID-311
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(
       rudp::kBootstrapConnectionAlreadyExists,
       network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type));
@@ -358,11 +355,8 @@ TEST(NetworkUtilsTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
-  // bootstrap node endpoints before returning from Bootstrap() and so some times this
-  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
-  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // sleep here will let the test pass. the issue is discussed in tasks MAID-143 and MAID-311
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
