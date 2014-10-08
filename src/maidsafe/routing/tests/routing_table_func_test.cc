@@ -494,9 +494,7 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
         LOG(kVerbose) << close.id;
 
       auto limit(std::begin(closests_to_target));
-      auto limit_no(Parameters::group_size - (self_added ? 1 : 0));
-      LOG(kVerbose) << limit_no << ", " << Parameters::group_size << ", " << ((self_added) ? 1 : 0);
-      std::advance(limit, (Parameters::group_size - ((self_added) ? 1 : 0)));
+      std::advance(limit, (Parameters::group_size - (self_added ? 1 : 0)));
       for (auto iter(std::begin(closests_to_target)); iter != limit; ++iter) {
         LOG(kVerbose) << "inside: " << iter->id;
         if (std::find(std::begin(tried), std::end(tried), iter->id) == std::end(tried)) {
@@ -528,10 +526,10 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
 TEST_F(RoutingTableNetwork, FUNC_GroupMessaging) {
   size_t kMaxNetworkSize(3000);
   LOG(kVerbose) << "Add new nodes";
-  for (size_t index(0); index < 2000; ++index)
+  for (size_t index(0); index < 300; ++index)
     AddNewNode();
 
-  for (size_t index(2000); index < kMaxNetworkSize; ++index) {
+  for (size_t index(300); index < kMaxNetworkSize; ++index) {
     AddNewNode();
     ValidateNewGroupMessaging();
     LOG(kVerbose) << index << " current add index\n";

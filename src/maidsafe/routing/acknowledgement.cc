@@ -236,6 +236,8 @@ void Acknowledgement::SetAsFailedPeer(AckId ack_id, const NodeId& node_id) {
 
 bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
                                            const NodeId& this_node_id) {
+  if (message.ack_id() == 0)
+    return false;
   return (message.destination_id() == this_node_id.string()) &&
          (message.destination_id() != message.relay_id());
 }
