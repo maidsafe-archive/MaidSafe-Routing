@@ -245,6 +245,9 @@ bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
   LOG(kVerbose) << "node_id: " << HexSubstr(node_id.string());
 
+  if (message.ack_id() == 0)
+    return false;
+
 // Ack messages do not need an ack
   if (IsAck(message))
     return false;
