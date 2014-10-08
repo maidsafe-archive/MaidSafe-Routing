@@ -50,7 +50,7 @@ class SharedResponse {
     // CheckAndPrintResult();
   }
   void CheckAndPrintResult();
-  void CollectResponse(std::string response, bool print_performance);
+  bool CollectResponse(std::string response, bool print_performance);
   void PrintRoutingTable(std::string response);
   void PrintGroupPerformance(int data_size);
 

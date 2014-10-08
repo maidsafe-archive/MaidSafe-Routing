@@ -27,12 +27,14 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/network_statistics.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/service.h"
 #include "maidsafe/routing/tests/test_utils.h"
+#include "maidsafe/routing/acknowledgement.h"
+
 
 namespace maidsafe {
 
@@ -51,8 +53,10 @@ TEST(ServicesTest, BEH_Ping) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network);
+  Acknowledgement acknowledgement(node_id, asio_service);
+  Network network(routing_table, client_routing_table, acknowledgement);
+  PublicKeyHolder public_key_holder(asio_service, network);
+  Service service(routing_table, client_routing_table, network, public_key_holder);
   NodeInfo node;
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
@@ -81,8 +85,10 @@ TEST(ServicesTest, BEH_FindNodes) {
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
-  NetworkUtils network(routing_table, client_routing_table);
-  Service service(routing_table, client_routing_table, network);
+  Acknowledgement acknowledgement(node_id, asio_service);
+  Network network(routing_table, client_routing_table, acknowledgement);
+  PublicKeyHolder public_key_holder(asio_service, network);
+  Service service(routing_table, client_routing_table, network, public_key_holder);
   protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
@@ -114,7 +120,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   AsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
-//   NetworkUtils network(routing_table, client_routing_table, timer);
+//   Network network(routing_table, client_routing_table, timer);
 //   protobuf::ProxyConnectRequest proxy_connect_request;
 //   // they send us an proxy connect rpc
 //   rudp::EndpointPair endpoint_pair;

@@ -31,11 +31,11 @@ namespace protobuf {
 class Message;
 }
 
-class NetworkUtils;
+class Network;
 
 class CacheManager {
  public:
-  CacheManager(const NodeId& node_id, NetworkUtils& network);
+  CacheManager(const NodeId& node_id, Network& network);
 
   void InitialiseFunctors(const MessageAndCachingFunctors& message_and_caching_functors);
   void InitialiseFunctors(const TypedMessageAndCachingFunctor& typed_message_and_caching_functors);
@@ -51,7 +51,7 @@ class CacheManager {
   bool TypedMessageHandleGetFromCache(protobuf::Message& message);
 
   const NodeId kNodeId_;
-  NetworkUtils& network_;
+  Network& network_;
   MessageAndCachingFunctors message_and_caching_functors_;
   TypedMessageAndCachingFunctor typed_message_and_caching_functors_;
 };

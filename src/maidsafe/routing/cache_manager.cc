@@ -20,7 +20,7 @@
 
 #include "maidsafe/routing/cache_manager.h"
 
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/network.h"
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/utils.h"
@@ -30,7 +30,7 @@ namespace maidsafe {
 
 namespace routing {
 
-CacheManager::CacheManager(const NodeId& node_id, NetworkUtils &network)
+CacheManager::CacheManager(const NodeId& node_id, Network& network)
     : kNodeId_(node_id),
       network_(network),
       message_and_caching_functors_(),
@@ -117,6 +117,7 @@ bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
           //  Responding with cached response
           protobuf::Message message_out;
           message_out.set_request(false);
+          message_out.set_ack_id(RandomInt32());
           message_out.set_hops_to_live(Parameters::hops_to_live);
           message_out.set_destination_id(message.source_id());
           message_out.set_type(message.type());

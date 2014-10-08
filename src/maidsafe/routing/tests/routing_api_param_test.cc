@@ -88,9 +88,21 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
 // can't handle this and will try and add the test twice.
 // TODO(Team) BEFORE_RELEASE - Re-enable for Windows.
 #ifdef MAIDSAFE_WIN32
-  if (kDataSize_ > 256 * 1024)
+  if (kDataSize_ > 128 * 1024)
     return GTEST_SUCCEED();
 #endif
+
+#if !defined(NDEBUG)
+  if (kDataSize_ > 1024 * 1024)
+    return GTEST_SUCCEED();
+#endif
+
+#if (__GNUC__ < 4 || \
+    (__GNUC__ == 4 && (__GNUC_MINOR__ < 8 || (__GNUC_MINOR__ ==  8  && __GNUC_PATCHLEVEL__ < 3))))
+  if (kDataSize_ > 128 * 1024)
+    return GTEST_SUCCEED();
+#endif
+
   Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
       endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
@@ -98,8 +110,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
 
   auto timeout(Parameters::default_response_timeout);
   const unsigned int kMessageCount(10);  // nodes send kMessageCount messages to other nodes
-  Parameters::default_response_timeout = std::chrono::steady_clock::duration(
-      std::chrono::seconds((10 * kDataSize_) / (128 * 1024) + 20));
+  Parameters::default_response_timeout *= kDataSize_ / 1024;
   int min_join_status(std::min(kServerCount, 8));
   std::vector<boost::promise<bool>> join_promises(kNetworkSize);
   std::vector<boost::future<bool>> join_futures;

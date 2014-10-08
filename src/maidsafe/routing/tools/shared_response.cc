@@ -58,14 +58,19 @@ void SharedResponse::PrintRoutingTable(std::string response) {
   }
 }
 
-void SharedResponse::CollectResponse(std::string response, bool print_performance) {
+bool SharedResponse::CollectResponse(std::string response, bool print_performance) {
   std::lock_guard<std::mutex> lock(mutex_);
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
 //   std::cout << "Response with size of " << response.size()
 //             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
+  std::cout << "a message from " << NodeId(response_id);
   auto duration((now - msg_send_time_).total_milliseconds());
   if (duration < Parameters::default_response_timeout.count()) {
+    if (responded_nodes_.find(NodeId(response_id)) != std::end(responded_nodes_)) {
+      std::cout << "Wrong message from " << NodeId(response_id);
+      return false;
+    }
     responded_nodes_.insert(NodeId(response_id));
     average_response_time_ += (now - msg_send_time_);
     if (print_performance) {
@@ -78,6 +83,7 @@ void SharedResponse::CollectResponse(std::string response, bool print_performanc
     std::cout << "timed out ( " << duration / 1000 << " s) to " << DebugId(NodeId(response_id))
               << " when data_size is " << response.size() << std::endl;
   }
+  return true;
 }
 
 void SharedResponse::PrintGroupPerformance(int data_size) {

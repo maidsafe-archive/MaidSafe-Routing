@@ -51,7 +51,8 @@ protobuf::Message CreateNodeLevelSingleToSingleResponseMessageProto(
 
   proto_message.set_direct(true);
   proto_message.set_replication(1);
-  proto_message.set_id(RandomUint32() % 10000);
+  proto_message.set_id(RandomUint32());
+  proto_message.set_ack_id(RandomUint32());
   proto_message.set_request(false);
   return proto_message;
 }

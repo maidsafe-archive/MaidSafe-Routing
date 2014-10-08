@@ -37,7 +37,6 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/rpcs.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/network_statistics.h"
 
 namespace fs = boost::filesystem;
 
@@ -75,6 +74,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
 
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(network_utils_.acknowledgement_.GetId());
 
   AddGroupSourceRelatedFields(message, proto_message,
                               detail::is_group_source<GroupToSingleRelayMessage>());
@@ -93,7 +93,6 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
 Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : network_status_mutex_(),
       network_status_(kNotJoined),
-      network_statistics_(node_id),
       routing_table_(maidsafe::make_unique<RoutingTable>(client_mode, node_id, keys)),
       kNodeId_(node_id),
       running_(true),
@@ -104,24 +103,39 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       client_routing_table_(node_id),
       message_handler_(),
       asio_service_(2),
-      network_(maidsafe::make_unique<NetworkUtils>(*routing_table_, client_routing_table_)),
+      network_utils_(node_id, asio_service_),
+      network_(maidsafe::make_unique<Network>(*routing_table_, client_routing_table_,
+                                              network_utils_.acknowledgement_)),
       timer_(asio_service_),
       re_bootstrap_timer_(asio_service_.service()),
       recovery_timer_(asio_service_.service()),
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
-                                            timer_, network_statistics_));
+                                            timer_, network_utils_, asio_service_));
   LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
 
 void Routing::Impl::Stop() {
   LOG(kVerbose) << "Routing::Impl::Stop() " << kNodeId_ << ", connection id "
-    << routing_table_->kConnectionId();
+                << routing_table_->kConnectionId();
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     running_ = false;
   }
+
+  // below is a work-around and not a fix for routing destruction issues.
+  // this must be replaced with an appropriate fix as soon as possible.
+  // TOBE FIXED  {
+  std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
+  while (this_ptr.use_count() > 6) {
+    Sleep(std::chrono::seconds(1));
+    LOG(kVerbose) << "Waiting for pending operations to complete";
+  }
+
+  // }  // TOBE FIXED
+
+  network_utils_.acknowledgement_.RemoveAll();
   timer_.CancelAll();
   re_bootstrap_timer_.cancel();
   recovery_timer_.cancel();
@@ -129,6 +143,7 @@ void Routing::Impl::Stop() {
   asio_service_.Stop();
   // Need to destroy network_ & routing_table_ as they hold a lambda capture (functor) of
   // shared_from_this()
+  message_handler_.reset();
   network_.reset();
   routing_table_.reset();
 }
@@ -460,6 +475,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
   proto_message.set_client_node(routing_table_->client_mode());
   proto_message.set_request(true);
   proto_message.set_hops_to_live(Parameters::hops_to_live);
+  proto_message.set_ack_id(network_utils_.acknowledgement_.GetId());
   unsigned int replication(1);
   if (DestinationType::kGroup == destination_type) {
     proto_message.set_visited(false);
@@ -492,7 +508,7 @@ NodeId Routing::Impl::RandomConnectedNode() { return routing_table_->RandomConne
 
 bool Routing::Impl::EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) {
   return ((routing_table_->size() > Parameters::routing_table_ready_to_response) &&
-          network_statistics_.EstimateInGroup(sender_id, info_id));
+          network_utils_.statistics_.EstimateInGroup(sender_id, info_id));
 }
 
 std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id) {
@@ -515,6 +531,7 @@ std::future<std::vector<NodeId>> Routing::Impl::GetGroup(const NodeId& group_id)
     promise->set_value(nodes_id);
   };
   protobuf::Message get_group_message(rpcs::GetGroup(group_id, kNodeId_));
+  get_group_message.set_ack_id(network_utils_.acknowledgement_.GetId());
   get_group_message.set_id(timer_.NewTaskId());
   timer_.AddTask(Parameters::default_response_timeout, callback, 1, get_group_message.id());
   network_->SendToClosestNode(get_group_message);
@@ -525,7 +542,7 @@ void Routing::Impl::OnMessageReceived(const std::string& message) {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (running_) {
     std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
-    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });  // NOLINT (Fraser)
+    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });
   }
 }
 
@@ -548,6 +565,10 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
       std::lock_guard<std::mutex> lock(running_mutex_);
       if (!running_)
         return;
+    }
+    if (network_utils_.acknowledgement_.IsSendingAckRequired(pb_message, kNodeId())) {
+      network_->SendAck(pb_message);
+      pb_message.clear_ack_node_ids();
     }
     message_handler_->HandleMessage(pb_message);
   } else {
@@ -772,7 +793,7 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
   if (routing_table_change.close_nodes_change != nullptr) {
     if (functors_.close_nodes_change)
       functors_.close_nodes_change(routing_table_change.close_nodes_change);
-    network_statistics_.UpdateLocalAverageDistance(
+    network_utils_.statistics_.UpdateLocalAverageDistance(
         routing_table_change.close_nodes_change->new_close_nodes());
     // IpcSendCloseNodes(); TO BE MOVED FROM RT TO UTILS
   }

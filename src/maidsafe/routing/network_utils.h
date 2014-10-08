@@ -19,100 +19,23 @@
 #ifndef MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 #define MAIDSAFE_ROUTING_NETWORK_UTILS_H_
 
-#include <mutex>
-#include <string>
-#include <vector>
-
-#include "boost/asio/ip/udp.hpp"
-
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/rudp/managed_connections.h"
-
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/bootstrap_file_operations.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/timer.h"
+#include "maidsafe/routing/acknowledgement.h"
+#include "maidsafe/routing/firewall.h"
+#include "maidsafe/routing/network_statistics.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf {
-class Message;
-}
+struct NetworkUtils {
+  NetworkUtils(const NodeId& local_node_id, AsioService& asio_service);
+  NetworkUtils& operator=(const NetworkUtils&) = delete;
+  NetworkUtils(const NetworkUtils&) = delete;
+  NetworkUtils(const NetworkUtils&&) = delete;
 
-class ClientRoutingTable;
-class RoutingTable;
-
-namespace test {
-class GenericNode;
-class MockNetworkUtils;
-}
-
-class NetworkUtils {
- public:
-  NetworkUtils(RoutingTable& routing_table, ClientRoutingTable& client_routing_table);
-  virtual ~NetworkUtils();
-  int Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                const rudp::ConnectionLostFunctor& connection_lost_functor);
-  int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                         const rudp::ConnectionLostFunctor& connection_lost_functor,
-                         boost::asio::ip::udp::endpoint local_endpoint);
-  virtual int GetAvailableEndpoint(const NodeId& peer_id,
-                                   const rudp::EndpointPair& peer_endpoint_pair,
-                                   rudp::EndpointPair& this_endpoint_pair,
-                                   rudp::NatType& this_nat_type);
-  virtual int Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
-                  const std::string& validation_data);
-  virtual int MarkConnectionAsValid(const NodeId& peer_id);
-  void Remove(const NodeId& peer_id);
-  // For sending relay requests, message with empty source ID may be provided, along with
-  // direct endpoint.
-  void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
-                    const rudp::MessageSentFunctor& message_sent_functor);
-  virtual void SendToDirect(const protobuf::Message& message, const NodeId& peer_node_id,
-                            const NodeId& peer_connection_id);
-  void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
-                                 const NodeId& peer_connection_id);
-  // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
-  // response message
-  virtual void SendToClosestNode(const protobuf::Message& message);
-  void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
-  void clear_bootstrap_connection_info();
-  NodeId bootstrap_connection_id() const;
-  NodeId this_node_relay_connection_id() const;
-  rudp::NatType nat_type() const;
-
-  friend class test::GenericNode;
-  friend class test::MockNetworkUtils;
-
- private:
-  NetworkUtils(const NetworkUtils&);
-  NetworkUtils(const NetworkUtils&&);
-  NetworkUtils& operator=(const NetworkUtils&);
-
-  // For zero-state, local_endpoint can be default-constructed.
-  int DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                  const rudp::ConnectionLostFunctor& connection_lost_functor,
-                  const BootstrapContacts& bootstrap_contacts,
-                  boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
-  void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
-                const rudp::MessageSentFunctor& message_sent_functor);
-  void SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
-              const NodeId& peer_connection_id);
-  void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
-                       int attempt_count = 0);
-  void AdjustRouteHistory(protobuf::Message& message);
-
-  bool running_;
-  std::mutex running_mutex_;
-  unsigned int bootstrap_attempt_;
-  NodeId bootstrap_connection_id_;
-  NodeId this_node_relay_connection_id_;
-  RoutingTable& routing_table_;
-  ClientRoutingTable& client_routing_table_;
-  rudp::NatType nat_type_;
-  rudp::ManagedConnections rudp_;
+  Acknowledgement acknowledgement_;
+  Firewall firewall_;
+  NetworkStatistics statistics_;
 };
 
 }  // namespace routing
@@ -120,3 +43,4 @@ class NetworkUtils {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_NETWORK_UTILS_H_
+
