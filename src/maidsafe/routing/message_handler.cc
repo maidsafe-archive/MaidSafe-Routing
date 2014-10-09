@@ -253,40 +253,26 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
 
 void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
   assert(!message.direct());
-  if (!network_utils_.firewall_.Add(NodeId(message.destination_id()), message.id())) {
-    message.Clear();
-    return;
-  }
 
-  network_.SendAck(message);
-
-  std::vector<std::string> route_history;
-  if (message.route_history().size() > 1)
-    route_history = std::vector<std::string>(message.route_history().begin(),
-                                             message.route_history().end() - 1);
-  else if ((message.route_history().size() == 1) &&
-           (message.route_history(0) != routing_table_.kNodeId().string()))
-    route_history.push_back(message.route_history(0));
-
-  message.clear_route_history();
   NodeId destination_id(message.destination_id());
-  auto close_nodes(routing_table_.GetClosestNodes(destination_id, Parameters::group_size));
+  auto close_nodes(routing_table_.GetClosestNodes(destination_id, Parameters::group_size + 1));
   close_nodes.erase(std::remove_if(std::begin(close_nodes), std::end(close_nodes),
                                    [&destination_id](const NodeInfo& node_info) {
                                      return node_info.id == destination_id;
                                    }), std::end(close_nodes));
+  while (close_nodes.size() > Parameters::group_size)
+    close_nodes.pop_back();
 
-  assert(close_nodes.size() <= Parameters::group_size);
-
+  std::string group_members;
   if (close_nodes.size() == Parameters::group_size &&
       NodeId::CloserToTarget(routing_table_.kNodeId(),
                              close_nodes.at(Parameters::group_size - 1).id, destination_id)) {
     //MAID-9 Check below
     close_nodes.erase(--close_nodes.rbegin().base());
+    group_members += "[" + DebugId(routing_table_.kNodeId()) + "]";
   }
 
   std::string group_id(message.destination_id());
-  std::string group_members("[" + DebugId(routing_table_.kNodeId()) + "]");
 
   for (const auto& i : close_nodes)
     group_members += std::string("[" + DebugId(i.id) + "]");    
@@ -307,6 +293,13 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       network_.SendToClosestNode(message);
     }
   }
+
+  if (!network_utils_.firewall_.Add(NodeId(group_id), message.id())) {
+    message.Clear();
+    return;
+  }
+
+  network_.SendAck(message);
 
   if (close_nodes.size() < Parameters::group_size) {
     message.clear_ack_node_ids();
@@ -338,8 +331,10 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (!message.source_id().empty() && !IsAck(message) &&
       (message.destination_id() != message.source_id()) &&
       (message.destination_id() == routing_table_.kNodeId().string()) &&
-      !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id()))
+      !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id())) {
+    LOG(kVerbose) << "Filtered " << NodeId(message.source_id()) << ", " << message.id();
     return;
+  }
 
   if (!ValidateMessage(message)) {
     LOG(kWarning) << "Validate message failed， id: " << message.id();

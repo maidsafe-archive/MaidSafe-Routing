@@ -69,16 +69,16 @@ struct AckTimer {
   unsigned int quantity;
 };
 
-struct GroupAckTimer {
-  GroupAckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
-                const std::map<NodeId, GroupMessageAckStatus> requested_peers_in)
-    : ack_id(ack_id_in), message(message_in), timer(timer_in),
-      requested_peers(requested_peers_in) {}
-  AckId ack_id;
-  protobuf::Message message;
-  TimerPointer timer;
-  std::map<NodeId, GroupMessageAckStatus> requested_peers;
-};
+//struct GroupAckTimer {
+//  GroupAckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
+//                const std::map<NodeId, GroupMessageAckStatus> requested_peers_in)
+//    : ack_id(ack_id_in), message(message_in), timer(timer_in),
+//      requested_peers(requested_peers_in) {}
+//  AckId ack_id;
+//  protobuf::Message message;
+//  TimerPointer timer;
+//  std::map<NodeId, GroupMessageAckStatus> requested_peers;
+//};
 
 class Acknowledgement {
  public:
@@ -91,14 +91,14 @@ class Acknowledgement {
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
-  void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
+//  void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(AckId ack_id);
-  void GroupQueueRemove(AckId ack_id);
+//  void GroupQueueRemove(AckId ack_id);
   void HandleMessage(AckId ack_id);
-  bool HandleGroupMessage(const protobuf::Message& message);
+//  bool HandleGroupMessage(const protobuf::Message& message);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
   bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& local_node_id);
-  NodeId AppendGroup(AckId ack_id, std::vector<std::string>& exclusion);
+//  NodeId AppendGroup(AckId ack_id, std::vector<std::string>& exclusion);
   void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
   void AdjustAckHistory(protobuf::Message& message);
   void RemoveAll();
@@ -112,7 +112,7 @@ class Acknowledgement {
   bool stop_handling_;
   AsioService& io_service_;
   std::vector<AckTimer> queue_;
-  std::vector<GroupAckTimer> group_queue_;
+//  std::vector<GroupAckTimer> group_queue_;
 };
 
 }  // namespace routing
