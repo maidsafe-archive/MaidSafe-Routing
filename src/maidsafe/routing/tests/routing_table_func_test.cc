@@ -524,7 +524,7 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
 }
 
 TEST_F(RoutingTableNetwork, FUNC_GroupMessaging) {
-  size_t kMaxNetworkSize(3000);
+  size_t kMaxNetworkSize(1000);
   LOG(kVerbose) << "Add new nodes";
   for (size_t index(0); index < 300; ++index)
     AddNewNode();

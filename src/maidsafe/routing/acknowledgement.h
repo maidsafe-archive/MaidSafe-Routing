@@ -69,17 +69,6 @@ struct AckTimer {
   unsigned int quantity;
 };
 
-//struct GroupAckTimer {
-//  GroupAckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
-//                const std::map<NodeId, GroupMessageAckStatus> requested_peers_in)
-//    : ack_id(ack_id_in), message(message_in), timer(timer_in),
-//      requested_peers(requested_peers_in) {}
-//  AckId ack_id;
-//  protobuf::Message message;
-//  TimerPointer timer;
-//  std::map<NodeId, GroupMessageAckStatus> requested_peers;
-//};
-
 class Acknowledgement {
  public:
   Acknowledgement(const NodeId& local_node_id, AsioService& io_service);
