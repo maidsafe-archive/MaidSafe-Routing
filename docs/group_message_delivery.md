@@ -1,4 +1,4 @@
-# Final Stage of Group Message Delivery
+# Group Message Delivery
 
 ### Introduction
 
@@ -17,6 +17,8 @@ However, this presents a weakness in that there is a single point of failure, wh
 The new approach will avoid the notion of a group leader.  In essence, all nodes which are close to the target will circulate the message amongst themselves.
 
 ### Implementation
+
+Every node will follow the below procedure for all group messages.  It should usually result in a group message being sent via single nodes for the first few hops, but as it gets close to the destination it will spread out in parallel to nodes close to the target.
 
 For a node with ID `X` which has received a group message destined for address `A`, the protocol is:
 
