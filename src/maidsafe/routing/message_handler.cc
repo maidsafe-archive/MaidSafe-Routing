@@ -214,7 +214,7 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   if (IsDirect(message)) {
     return HandleDirectMessageAsClosestNode(message);
   } else {
-    return HandleGroupMessageAsClosestNode(message);
+    return HandleGroupMessageAsCloseNode(message);
   }
 }
 
@@ -251,7 +251,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   }
 }
 
-void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message) {
+void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
   assert(!message.direct());
 
   NodeId destination_id(message.destination_id());
@@ -308,7 +308,7 @@ void MessageHandler::HandleGroupMessageAsClosestNode(protobuf::Message& message)
       LOG(kVerbose) << "HandleGroupMessageAsClosestNode if, msg id: " << message.id();
       HandleRoutingMessage(message);
     } else {
-      LOG(kVerbose) << "HandleGroupMessageAsClosestNode else, msg id: " << message.id();
+      LOG(kVerbose) << "HandleGroupMessageAsCloseNode else, msg id: " << message.id();
       HandleNodeLevelMessageForThisNode(message);
     }
   } else {
@@ -446,7 +446,7 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   } else if (!message.direct() &&
              routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                               Parameters::closest_nodes_size)) {
-    return HandleGroupRelayRequestMessageAsClosestNode(message);
+    return HandleGroupRelayRequestMessageAsCloseNode(message);
   }
 
   // This node is now the src ID for the relay message and will send back response to original node.
@@ -478,9 +478,9 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
   }
 }
 
-void MessageHandler::HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message) {
+void MessageHandler::HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message) {
   message.set_source_id(routing_table_.kNodeId().string());
-  HandleGroupMessageAsClosestNode(message);
+  HandleGroupMessageAsCloseNode(message);
 }
 
 // Special case when response of a relay comes through an alternative route.
@@ -558,7 +558,7 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kNodeId().string());
   assert(message.request());
   assert(!message.direct());
-  HandleGroupMessageAsClosestNode(message);
+  HandleGroupMessageAsCloseNode(message);
 }
 
 void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
