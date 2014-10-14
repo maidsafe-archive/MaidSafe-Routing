@@ -268,9 +268,11 @@ std::string CloseNodesChange::ReportConnection() const {
   {
     cereal::JSONOutputArchive archive{stringstream};
     if (!lost_node_.IsZero())
-      archive(cereal::make_nvp("oldId", lost_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
+      archive(cereal::make_nvp("vaultRemoved",
+                               lost_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
     if (!new_node_.IsZero())
-      archive(cereal::make_nvp("newId", new_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
+      archive(cereal::make_nvp("vaultAdded",
+                               new_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
 
     size_t closest_size_adjust(std::min(new_close_nodes_.size(),
                                         static_cast<size_t>(Parameters::group_size + 1U)));
@@ -278,10 +280,10 @@ std::string CloseNodesChange::ReportConnection() const {
     if (closest_size_adjust != 0) {
       std::vector<NodeId> closest_nodes(closest_size_adjust);
       std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
-        std::begin(closest_nodes), std::end(closest_nodes),
-        [&](const NodeId& lhs, const NodeId& rhs) {
-        return NodeId::CloserToTarget(lhs, rhs, this->node_id_);
-      });
+                             std::begin(closest_nodes), std::end(closest_nodes),
+                             [&](const NodeId& lhs, const NodeId& rhs) {
+                               return NodeId::CloserToTarget(lhs, rhs, this->node_id_);
+                             });
       if (node_id_ == closest_nodes.front())
         closest_nodes.erase(std::begin(closest_nodes));
       else if (closest_nodes.size() > Parameters::group_size)
@@ -290,8 +292,8 @@ std::string CloseNodesChange::ReportConnection() const {
       if (closest_nodes.size() != 0) {
         std::vector<std::string> closest_ids;
         for (auto& close_node : closest_nodes)
-          closest_ids.push_back(close_node.ToStringEncoded(NodeId::EncodingType::kHex));
-        archive(cereal::make_nvp("closestIds", closest_ids));
+          closest_ids.emplace_back(close_node.ToStringEncoded(NodeId::EncodingType::kHex));
+        archive(cereal::make_nvp("closeGroupVaults", closest_ids));
       }
     }
   }
