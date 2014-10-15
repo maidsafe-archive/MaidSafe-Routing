@@ -29,7 +29,7 @@ namespace routing {
 
   template <>
   void Timer<std::string>::RespondWithError(ResponseFunctor functor, maidsafe_error /*error*/) {
-    //functor(error.what());
+    // functor(error.what());
     functor("");
   }
 

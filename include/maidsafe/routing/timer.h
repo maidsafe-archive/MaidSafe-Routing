@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include "boost/asio/steady_timer.hpp"
 #include "boost/asio/error.hpp"
