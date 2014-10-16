@@ -477,7 +477,8 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
     LOG(kVerbose) << current->routing_table->kNodeId() << ", target: " << target;
     auto closests_to_self(
         current->routing_table->GetClosestNodes(
-            current->routing_table->kNodeId(), kNumberofClosestNode, true));
+            current->routing_table->kNodeId(), static_cast<unsigned int>(kNumberofClosestNode),
+            true));
 
     if (std::find(std::begin(expected_group), std::end(expected_group),
                   current->routing_table->kNodeId()) != std::end(expected_group)) {
