@@ -99,7 +99,7 @@ class MessageHandler {
   void HandleMessageForThisNode(protobuf::Message& message);
   void HandleMessageAsClosestNode(protobuf::Message& message);
   void HandleDirectMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupMessageAsCloseNode(protobuf::Message& message);
   void HandleMessageAsFarNode(protobuf::Message& message);
   void HandleRelayRequest(protobuf::Message& message);
   void HandleGroupMessageToSelfId(protobuf::Message& message);
@@ -109,7 +109,7 @@ class MessageHandler {
   void HandleClientMessage(protobuf::Message& message);
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
   void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message);
   bool HandleCacheLookup(protobuf::Message& message);
   void StoreCacheCopy(const protobuf::Message& message);
   bool IsValidCacheableGet(const protobuf::Message& message);

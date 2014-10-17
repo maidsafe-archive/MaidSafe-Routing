@@ -55,7 +55,7 @@ class RoutingNetworkTest : public testing::Test {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
-    EXPECT_TRUE(env_->SendDirect(3));
+    EXPECT_TRUE(env_->SendDirect(1));
     env_->ClearMessages();
   }
   {
@@ -122,9 +122,12 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
   EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
 
   unsigned int another_random_client(env_->RandomClientIndex());
-  EXPECT_EQ((random_client == another_random_client),
-            env_->SendDirect(env_->nodes_[random_client],
-                             env_->nodes_[another_random_client]->node_id(), kExpectClient));
+  if (random_client == another_random_client)
+    EXPECT_TRUE(env_->SendDirect(env_->nodes_[random_client],
+                                 env_->nodes_[another_random_client]->node_id(), kExpectClient));
+  else
+    EXPECT_FALSE(env_->SendDirect(env_->nodes_[random_client],
+                                  env_->nodes_[another_random_client]->node_id(), kExpectClient));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
