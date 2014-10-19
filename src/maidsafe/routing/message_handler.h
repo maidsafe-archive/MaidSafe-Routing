@@ -35,18 +35,16 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf {
-class Message;
-}
+namespace protobuf{class Message;}
 
 namespace test {
-class GenericNode;
-class MessageHandlerTest;
-class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
-class MessageHandlerTest_BEH_HandleRelay_Test;
-class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
-class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
-class MessageHandlerTest_BEH_ClientRoutingTable_Test;
+  class GenericNode;
+  class MessageHandlerTest;
+  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  class MessageHandlerTest_BEH_HandleRelay_Test;
+  class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
+  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
 namespace detail {
