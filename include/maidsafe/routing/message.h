@@ -31,33 +31,58 @@
 
 namespace maidsafe {
 
-namespace routing {
 
-enum class TypeTag {
+enum class TypeTag : unsigned char {
   kPing,
+  kPingResponse,
   kConnect,
-  kFindNodes,
-  kConnectSuccess,
-  kConnectSuccessAcknowledgement,
-  kGetGroup,
-  kInformClientOfNewCloseNode,
+  kConnectResponse,
+  kFindNode,
+  kFindNodeResponse,
+  kFindGroup,
+  kFindGroupResponse,
   kAcknowledgement,
-  kMaxRouting,
-  kNodeLevel
+  kNodeMessage,
+  kNodeMessageResponse
 };
 
-using MAP = GetMap<
-    KVPair<TypeTag::kPing, Ping>, KVPair<TypeTag::kConnect, kConnect>,
-    KVPair<TypeTag::kFindNodes, FindNodes>, KVPair<TypeTag::kConnectSuccess, ConnectSuccess>,
-    KVPair<TypeTag::kConnectSuceccessAcnowledgement, ConnectSuccessAcknowledgement>,
-    KVPair<TypeTag::kGetGroup, GetGroup>,
-    KVPair<TypeTag::kInformClientOfNewCloseNode, InformClientOfNewCloseNode>,
-    KVPair<TypeTag::kAcknowledgement, Acknowledgement>, KVPair<TypeTag::kMaxRouting, MaxRouting>,
-    KVPair<TypeTag::kNodeLevel, NodeLevel>>::MAP;
+namespace routing {
 
-template<TypeTag Key>
+class Ping;
+class PingResponse;
+class Connect;
+class ConnectResponse;
+class FindNode;
+class FindNodeResponse;
+class FindGroup;
+class FindGroupResponse;
+class Connect;
+class ConnectResponse;
+class NodeMessage;
+class NodeMessageResponse;
+
+using MAP = GetMap<
+    KVPair<TypeTag::kPing, Ping>, KVPair<TypeTag::kPingResponse, PingResponse>,
+    KVPair<TypeTag::kConnect, Connect>, KVPair<TypeTag::kConnectResponse, ConnectResponse>,
+    KVPair<TypeTag::kFindNode, FindNode>, KVPair<TypeTag::kFindNodeResponse, FindNodeResponse>,
+    KVPair<TypeTag::kFindGroup, FindGroup>, KVPair<TypeTag::kFindGroupResponse, FindGroupResponse>,
+    KVPair<TypeTag::kNodeMessage, NodeMessage>,
+    KVPair<TypeTag::kNodeMessageResponse, NodeMessageResponse>>::MAP;
+
+template <TypeTag Key>
 using CustomType = typename Find<MAP, Key>::ResultCustomType;
 
+template <TypeTag T>
+CustomType<T> Parse(std::stringstream& ref_binary_stream) {
+  CustomType<T> obj_deserialised;
+
+  {
+    cereal::BinaryInputArchive input_bin_archive{ref_binary_stream};
+    input_bin_archive(obj_deserialised);
+  }
+
+  return obj_deserialised;
+}
 
 
 
