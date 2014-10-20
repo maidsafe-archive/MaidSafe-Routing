@@ -102,7 +102,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
   // Signature 1
-  EXPECT_TRUE(env_->SendDirect(1 + RandomUint32() % 5));
+  EXPECT_TRUE(env_->SendDirect(2));
 
   // Signature 2
   EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode()->node_id()));
