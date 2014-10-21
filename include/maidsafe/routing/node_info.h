@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/type_check.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/tagged_value.h"
 
@@ -33,14 +34,18 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
-  typedef TaggedValue<NonEmptyString, struct SerialisedNodeInfoTag> serialised_type;
+  using serialised_type = TaggedValue<NonEmptyString, struct SerialisedNodeInfoTag>;
 
-  NodeInfo();
-
-  NodeInfo(const NodeInfo& other);
-  NodeInfo& operator=(NodeInfo other);
-  NodeInfo(NodeInfo&& other);
-  explicit NodeInfo(const serialised_type& serialised_message);
+  NodeInfo() = default;
+  NodeInfo(const NodeInfo& other) = default;
+  NodeInfo& operator=(const NodeInfo& other) = default;
+  NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
+                                                 connection_id(std::move(other.connection_id)),
+                                                 public_key(std::move(other.public_key)),
+                                                 rank(std::move(other.rank)),
+                                                 bucket(std::move(other.bucket)),
+                                                 nat_type(std::move(other.nat_type)) {}
+  explicit NodeInfo(const serialised_type& serialised_message);  // Parser
 
   serialised_type Serialise() const;
 
@@ -50,12 +55,12 @@ struct NodeInfo {
   int32_t rank;
   int32_t bucket;
   rudp::NatType nat_type;
-  std::vector<int32_t> dimension_list;
 
   static const int32_t kInvalidBucket;
+  // static_assert(is_regular<NodeInfo>::value, "Not a regular type");
 };
 
-void swap(NodeInfo& lhs, NodeInfo& rhs) MAIDSAFE_NOEXCEPT;
+
 
 }  // namespace routing
 

@@ -35,18 +35,16 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace protobuf {
-class Message;
-}
+namespace protobuf{class Message;}
 
 namespace test {
-class GenericNode;
-class MessageHandlerTest;
-class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
-class MessageHandlerTest_BEH_HandleRelay_Test;
-class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
-class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
-class MessageHandlerTest_BEH_ClientRoutingTable_Test;
+  class GenericNode;
+  class MessageHandlerTest;
+  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
+  class MessageHandlerTest_BEH_HandleRelay_Test;
+  class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
+  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
+  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
 }
 
 namespace detail {
@@ -99,7 +97,7 @@ class MessageHandler {
   void HandleMessageForThisNode(protobuf::Message& message);
   void HandleMessageAsClosestNode(protobuf::Message& message);
   void HandleDirectMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupMessageAsCloseNode(protobuf::Message& message);
   void HandleMessageAsFarNode(protobuf::Message& message);
   void HandleRelayRequest(protobuf::Message& message);
   void HandleGroupMessageToSelfId(protobuf::Message& message);
@@ -109,7 +107,7 @@ class MessageHandler {
   void HandleClientMessage(protobuf::Message& message);
   void HandleMessageForNonRoutingNodes(protobuf::Message& message);
   void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupRelayRequestMessageAsClosestNode(protobuf::Message& message);
+  void HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message);
   bool HandleCacheLookup(protobuf::Message& message);
   void StoreCacheCopy(const protobuf::Message& message);
   bool IsValidCacheableGet(const protobuf::Message& message);

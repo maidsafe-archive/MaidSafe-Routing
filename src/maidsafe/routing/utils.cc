@@ -36,6 +36,7 @@
 
 #include "maidsafe/routing/client_routing_table.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/message.h"
 #include "maidsafe/routing/network.h"
 #include "maidsafe/routing/return_codes.h"
 #include "maidsafe/routing/routing.pb.h"
@@ -60,16 +61,16 @@ int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_c
     LOG(kVerbose) << "rudp.Add succeeded for peer node [" << peer_id
                   << "]. Connection id : " << peer_connection_id;
   } else {
-    LOG(kError) << "rudp add failed for peer node [" << peer_id << "]. Connection id : "
-                << peer_connection_id << ". result : " << result;
+    LOG(kError) << "rudp add failed for peer node [" << peer_id
+                << "]. Connection id : " << peer_connection_id << ". result : " << result;
   }
   return result;
 }
 
 bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table,
-                                  const NodeId& peer_id, const NodeId& connection_id,
-                                  const asymm::PublicKey& public_key, bool client) {
+                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
+                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
+                                  bool client) {
   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
     LOG(kError) << "[" << routing_table.kNodeId()
                 << "]  Rudp failed to validate connection with  Peer id : " << peer_id
@@ -176,7 +177,7 @@ bool IsConnectSuccessAcknowledgement(const protobuf::Message& message) {
 bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
                                                  const bool is_destination_client) {
   return (is_destination_client && message.request() && message.client_node() &&
-            (message.destination_id() != message.source_id()));
+          (message.destination_id() != message.source_id()));
 }
 
 bool CheckId(const std::string& id_to_test) { return id_to_test.size() == NodeId::kSize; }
@@ -424,20 +425,19 @@ SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Messag
   NodeId connection_id(proto_message.relay_connection_id());
   SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
   SingleRelaySource single_relay_src(single_src,  // original sender
-                                     connection_id,
-                                     single_src_relay_node);
+                                     connection_id, single_src_relay_node);
 
   return SingleToGroupRelayMessage(proto_message.data(0),
-      single_relay_src,  // relay node
-          GroupId(NodeId(proto_message.group_destination())),
-              static_cast<Cacheable>(proto_message.cacheable()));
+                                   single_relay_src,  // relay node
+                                   GroupId(NodeId(proto_message.group_destination())),
+                                   static_cast<Cacheable>(proto_message.cacheable()));
 
-//  return SingleToGroupRelayMessage(proto_message.data(0),
-//      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
-//                        NodeId(proto_message.relay_connection_id()),
-//                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
-//          GroupId(NodeId(proto_message.group_destination())),
-//              static_cast<Cacheable>(proto_message.cacheable()));
+  //  return SingleToGroupRelayMessage(proto_message.data(0),
+  //      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
+  //                        NodeId(proto_message.relay_connection_id()),
+  //                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
+  //          GroupId(NodeId(proto_message.group_destination())),
+  //              static_cast<Cacheable>(proto_message.cacheable()));
 }
 
 }  // namespace routing

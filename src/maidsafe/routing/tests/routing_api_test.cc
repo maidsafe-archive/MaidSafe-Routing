@@ -628,12 +628,13 @@ TEST(APITest, BEH_API_NodeNetwork) {
 
   std::vector<NodeInfoAndPrivateKey> nodes;
   std::vector<std::shared_ptr<Routing>> routing_node;
-  for (auto i(0); i != kNetworkSize; ++i) {
+  for (auto i(0); i != kServerCount; ++i) {
     auto pmid(passport::CreatePmidAndSigner().first);
     NodeInfoAndPrivateKey node(MakeNodeInfoAndKeysWithPmid(pmid));
     nodes.push_back(node);
     key_map.insert(std::make_pair(node.node_info.id, pmid.public_key()));
     routing_node.push_back(std::make_shared<Routing>(pmid));
+    LOG(kVerbose) << "node.node_info.id " << node.node_info.id;
   }
 
   auto a1 = boost::async(boost::launch::async, [&] {
@@ -646,7 +647,7 @@ TEST(APITest, BEH_API_NodeNetwork) {
   EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
   EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
 
-  for (auto i(0); i != (kNetworkSize - 2); ++i) {
+  for (auto i(0); i != (kServerCount - 2); ++i) {
     std::shared_ptr<boost::promise<bool>> join_promise_ptr(
         std::make_shared<boost::promise<bool>>());
     std::shared_ptr<bool> promised(std::make_shared<bool>(false));

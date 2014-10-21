@@ -67,23 +67,23 @@ Network::~Network() {
 }
 
 int Network::Bootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                            const rudp::ConnectionLostFunctor& connection_lost_functor) {
-  BootstrapContacts bootstrap_contacts{ GetBootstrapContacts(routing_table_.client_mode()) };
+                       const rudp::ConnectionLostFunctor& connection_lost_functor) {
+  BootstrapContacts bootstrap_contacts{GetBootstrapContacts(routing_table_.client_mode())};
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts);
 }
 
 int Network::ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                                     const rudp::ConnectionLostFunctor& connection_lost_functor,
-                                     boost::asio::ip::udp::endpoint local_endpoint) {
-  BootstrapContacts bootstrap_contacts{ GetZeroStateBootstrapContacts(local_endpoint) };
+                                const rudp::ConnectionLostFunctor& connection_lost_functor,
+                                boost::asio::ip::udp::endpoint local_endpoint) {
+  BootstrapContacts bootstrap_contacts{GetZeroStateBootstrapContacts(local_endpoint)};
   return DoBootstrap(message_received_functor, connection_lost_functor, bootstrap_contacts,
                      local_endpoint);
 }
 
 int Network::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
-                              const rudp::ConnectionLostFunctor& connection_lost_functor,
-                              const BootstrapContacts& bootstrap_contacts,
-                              boost::asio::ip::udp::endpoint local_endpoint) {
+                         const rudp::ConnectionLostFunctor& connection_lost_functor,
+                         const BootstrapContacts& bootstrap_contacts,
+                         boost::asio::ip::udp::endpoint local_endpoint) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -114,9 +114,9 @@ int Network::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_fu
 }
 
 int Network::GetAvailableEndpoint(const NodeId& peer_id,
-                                       const rudp::EndpointPair& peer_endpoint_pair,
-                                       rudp::EndpointPair& this_endpoint_pair,
-                                       rudp::NatType& this_nat_type) {
+                                  const rudp::EndpointPair& peer_endpoint_pair,
+                                  rudp::EndpointPair& this_endpoint_pair,
+                                  rudp::NatType& this_nat_type) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -126,7 +126,7 @@ int Network::GetAvailableEndpoint(const NodeId& peer_id,
 }
 
 int Network::Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
-                      const std::string& validation_data) {
+                 const std::string& validation_data) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -160,16 +160,16 @@ void Network::Remove(const NodeId& peer_id) {
 }
 
 void Network::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
-                            const rudp::MessageSentFunctor& message_sent_functor) {
+                       const rudp::MessageSentFunctor& message_sent_functor) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kVerbose) << "  [" << routing_table_.kNodeId()
-                << "] send : " << MessageTypeString(message) << " to " << peer_id
-                << "   (id: " << message.id() << ")" << " --To Rudp--";
+  LOG(kVerbose) << "  [" << routing_table_.kNodeId() << "] send : " << MessageTypeString(message)
+                << " to " << peer_id << "   (id: " << message.id() << ")"
+                << " --To Rudp--";
 }
 
 void Network::SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
@@ -179,13 +179,11 @@ void Network::SendToDirect(const protobuf::Message& message, const NodeId& peer_
 
 void Network::SendToDirect(protobuf::Message& message, const NodeId& peer_node_id,
                            const NodeId& peer_connection_id) {
-  AdjustRouteHistory(message);
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
 void Network::SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
-                                             const NodeId& peer_connection_id) {
-  AdjustRouteHistory(message);
+                                        const NodeId& peer_connection_id) {
   SendTo(message, peer_node_id, peer_connection_id);
 }
 
@@ -237,7 +235,7 @@ void Network::SendToClosestNode(const protobuf::Message& message) {
 }
 
 void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
-                          const NodeId& peer_connection_id,  bool no_ack_timer) {
+                     const NodeId& peer_connection_id, bool no_ack_timer) {
   const std::string kThisId(routing_table_.kNodeId().string());
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
@@ -252,23 +250,23 @@ void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_i
   };
 
   if (!no_ack_timer && acknowledgement_.NeedsAck(message, peer_connection_id)) {
-    acknowledgement_.Add(message,
-                         [=](const boost::system::error_code& error) {
-                           {
-                             std::lock_guard<std::mutex> lock(running_mutex_);
-                             if (!running_)
-                               return;
-                           }
-                           if (!error)
-                             SendTo(message, peer_node_id, peer_connection_id);
-                         }, Parameters::ack_timeout);
+    acknowledgement_.Add(message, [=](const boost::system::error_code& error) {
+                                    {
+                                      std::lock_guard<std::mutex> lock(running_mutex_);
+                                      if (!running_)
+                                        return;
+                                    }
+                                    if (!error)
+                                      SendTo(message, peer_node_id, peer_connection_id);
+                                  },
+                         Parameters::ack_timeout);
   }
   LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id " << DebugId(peer_connection_id);
   RudpSend(peer_connection_id, message, message_sent_functor);
 }
 
 void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted,
-                                   int attempt_count) {
+                              int attempt_count) {
   {
     std::lock_guard<std::mutex> lock(running_mutex_);
     if (!running_)
@@ -289,7 +287,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
       // FIXME Should we remove this node or let rudp handle that?
       routing_table_.DropNode(last_node_attempted.connection_id, false);
       client_routing_table_.DropConnection(last_node_attempted.connection_id);
-      acknowledgement_.SetAsFailedPeer(message.ack_id(), last_node_attempted.id);
     }
   }
 
@@ -305,15 +302,11 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
     if (!running_)
       return;
     if (message.route_history().size() > 1)
-      route_history = std::vector<std::string>(
-          message.route_history().begin(), message.route_history().end());
+      route_history =
+          std::vector<std::string>(message.route_history().begin(), message.route_history().end());
     else if ((message.route_history().size() == 1) &&
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
-
-    auto group_target(acknowledgement_.AppendGroup(message.ack_id(), route_history));
-    if (!group_target.IsZero())
-      ignore_exact_match = true;
 
     peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
                                          route_history);
@@ -324,7 +317,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";
       return;
     }
-    AdjustRouteHistory(message);
   }
 
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
@@ -335,8 +327,7 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
     }
     if (rudp::kSuccess == message_sent) {
       LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id()
-                    << ")"
+                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id() << ")"
                     << " dst : " << HexSubstr(message.destination_id());
       SendAck(message);
     } else if (rudp::kSendFailure == message_sent) {
@@ -367,44 +358,15 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
   };
 
   if (acknowledgement_.NeedsAck(message, peer.id)) {
-    acknowledgement_.Add(message,
-                        [=](const boost::system::error_code& error) {
-                          if (error.value() == boost::system::errc::success)
-                            RecursiveSendOn(message);
-                        }, Parameters::ack_timeout);
+    acknowledgement_.Add(message, [=](const boost::system::error_code& error) {
+                                    if (error.value() == boost::system::errc::success)
+                                      RecursiveSendOn(message);
+                                  },
+                         Parameters::ack_timeout);
   }
   LOG(kVerbose) << "Rudp recursive send message to " << peer.connection_id;
   RudpSend(peer.connection_id, message, message_sent_functor);
 }
-
-void Network::AdjustRouteHistory(protobuf::Message& message) {
-  if (message.source_id().empty())
-    return;
-
-  acknowledgement_.AdjustAckHistory(message);
-
-  if (Parameters::hops_to_live == static_cast<unsigned int>(message.hops_to_live()) &&
-      NodeId(message.source_id()) == routing_table_.kNodeId())
-    return;
-  assert(static_cast<unsigned int>(message.route_history().size()) <=
-             Parameters::max_routing_table_size);
-  if (std::find(message.route_history().begin(), message.route_history().end(),
-                routing_table_.kNodeId().string()) == message.route_history().end()) {
-    message.add_route_history(routing_table_.kNodeId().string());
-    if (static_cast<unsigned int>(message.route_history().size()) > Parameters::max_route_history) {
-      std::vector<std::string> route_history(message.route_history().begin() + 1,
-                                             message.route_history().end());
-      message.clear_route_history();
-      for (const auto& route : route_history) {
-        if (!NodeId(route).IsZero())
-          message.add_route_history(route);
-      }
-    }
-  }
-  assert(static_cast<unsigned int>(message.route_history().size()) <=
-             Parameters::max_routing_table_size);
-}
-
 
 void Network::clear_bootstrap_connection_info() {
   bootstrap_connection_id_ = NodeId();
@@ -425,8 +387,7 @@ rudp::NatType Network::nat_type() const { return nat_type_; }
 
 void Network::SendAck(const protobuf::Message& message) {
   LOG(kVerbose) << "[" << routing_table_.kNodeId() << "] SendAck " << message.ack_id();
-
-  if (acknowledgement_.HandleGroupMessage(message))
+  if (message.ack_id() == 0)
     return;
 
   if (IsAck(message) || IsConnectSuccessAcknowledgement(message))
@@ -455,8 +416,8 @@ void Network::SendAck(const protobuf::Message& message) {
     acknowledgement_.Remove(message.ack_id());
   }
 
-  protobuf::Message ack_message(rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(),
-                                          message.ack_id()));
+  protobuf::Message ack_message(
+      rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(), message.ack_id()));
   LOG(kVerbose) << "Network::SendAck";
   SendToClosestNode(ack_message);
 }
