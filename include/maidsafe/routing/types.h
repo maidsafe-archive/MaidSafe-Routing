@@ -21,7 +21,6 @@
 #ifndef MAIDSAFE_ROUTING_TYPES_H_
 #define MAIDSAFE_ROUTING_TYPES_H_
 
-
 namespace maidsafe {
 
 enum class TypeTag : unsigned char {
