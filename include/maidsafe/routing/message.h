@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <string>
 #include <utility>
+#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/relay.h"
 
 #include "maidsafe/common/config.h"
@@ -31,46 +32,7 @@
 
 namespace maidsafe {
 
-
-enum class TypeTag : unsigned char {
-  kPing,
-  kPingResponse,
-  kConnect,
-  kConnectResponse,
-  kFindNode,
-  kFindNodeResponse,
-  kFindGroup,
-  kFindGroupResponse,
-  kAcknowledgement,
-  kNodeMessage,
-  kNodeMessageResponse
-};
-
 namespace routing {
-
-class Ping;
-class PingResponse;
-class Connect;
-class ConnectResponse;
-class FindNode;
-class FindNodeResponse;
-class FindGroup;
-class FindGroupResponse;
-class Connect;
-class ConnectResponse;
-class NodeMessage;
-class NodeMessageResponse;
-
-using MAP = GetMap<
-    KVPair<TypeTag::kPing, Ping>, KVPair<TypeTag::kPingResponse, PingResponse>,
-    KVPair<TypeTag::kConnect, Connect>, KVPair<TypeTag::kConnectResponse, ConnectResponse>,
-    KVPair<TypeTag::kFindNode, FindNode>, KVPair<TypeTag::kFindNodeResponse, FindNodeResponse>,
-    KVPair<TypeTag::kFindGroup, FindGroup>, KVPair<TypeTag::kFindGroupResponse, FindGroupResponse>,
-    KVPair<TypeTag::kNodeMessage, NodeMessage>,
-    KVPair<TypeTag::kNodeMessageResponse, NodeMessageResponse>>::MAP;
-
-template <TypeTag Key>
-using CustomType = typename Find<MAP, Key>::ResultCustomType;
 
 template <TypeTag T>
 CustomType<T> Parse(std::stringstream& ref_binary_stream) {
@@ -83,8 +45,6 @@ CustomType<T> Parse(std::stringstream& ref_binary_stream) {
 
   return obj_deserialised;
 }
-
-
 
 template <typename Sender, typename Receiver>
 struct Message {
