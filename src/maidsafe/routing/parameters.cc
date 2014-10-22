@@ -50,7 +50,7 @@ unsigned int Parameters::accepted_distance_tolerance(1);
 unsigned int Parameters::max_send_retry(3);
 unsigned int Parameters::ack_timeout(5);
 unsigned int Parameters::firewall_history_cleanup_factor(5000);
-unsigned int Parameters::firewall_message_life_in_seconds(300);
+std::chrono::seconds Parameters::firewall_message_life(300);
 unsigned int Parameters::public_key_holding_time(30);
 unsigned int Parameters::unidirectional_interest_range(Parameters::closest_nodes_size * 2);
 std::chrono::steady_clock::duration Parameters::local_retreival_timeout(std::chrono::seconds(2));
