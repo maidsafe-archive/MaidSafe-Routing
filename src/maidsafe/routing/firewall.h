@@ -19,14 +19,13 @@
 #ifndef MAIDSAFE_ROUTING_FIREWALL_H_
 #define MAIDSAFE_ROUTING_FIREWALL_H_
 
-#include <time.h>
-
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/global_fun.hpp"
 #include "boost/multi_index/mem_fun.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
 
+#include "maidsafe/common/clock.h"
 #include "maidsafe/routing/api_config.h"
 
 namespace maidsafe {
@@ -51,12 +50,12 @@ class Firewall {
 
   struct ProcessedEntry {
     ProcessedEntry(const NodeId& source_in, int32_t messsage_id_in)
-        : source(source_in), message_id(messsage_id_in), birth_time(std::time(NULL)) {}
+        : source(source_in), message_id(messsage_id_in), birth_time(common::Clock::now()) {}
     ProcessedEntry Key() const { return *this; }
-    std::time_t BirthTime() const { return birth_time; }
+    common::Clock::time_point BirthTime() const { return birth_time; }
     NodeId source;
     int32_t message_id;
-    std::time_t birth_time;
+    common::Clock::time_point birth_time;
   };
 
  private:
@@ -67,7 +66,7 @@ class Firewall {
       boost::multi_index::indexed_by<
           boost::multi_index::ordered_unique<boost::multi_index::identity<ProcessedEntry>>,
       boost::multi_index::ordered_non_unique<
-          BOOST_MULTI_INDEX_CONST_MEM_FUN(ProcessedEntry, std::time_t, BirthTime)>
+        BOOST_MULTI_INDEX_CONST_MEM_FUN(ProcessedEntry, common::Clock::time_point, BirthTime)>
     >
   > ProcessedEntrySet;
 
