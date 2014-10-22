@@ -23,7 +23,7 @@
 
 namespace maidsafe {
 
-enum class TypeTag : unsigned char {
+enum class SerialisableTypeTag : unsigned char {
   kPing,
   kPingResponse,
   kConnect,
@@ -52,20 +52,23 @@ class ConnectResponse;
 class NodeMessage;
 class NodeMessageResponse;
 
-using MAP = GetMap<
-    KVPair<TypeTag::kPing, Ping>, KVPair<TypeTag::kPingResponse, PingResponse>,
-    KVPair<TypeTag::kConnect, Connect>, KVPair<TypeTag::kConnectResponse, ConnectResponse>,
-    KVPair<TypeTag::kFindNode, FindNode>, KVPair<TypeTag::kFindNodeResponse, FindNodeResponse>,
-    KVPair<TypeTag::kFindGroup, FindGroup>, KVPair<TypeTag::kFindGroupResponse, FindGroupResponse>,
-    KVPair<TypeTag::kNodeMessage, NodeMessage>,
-    KVPair<TypeTag::kNodeMessageResponse, NodeMessageResponse>>::MAP;
+using Map =
+    GetMap<Serialisable<SerialisableTypeTag::kPing, Ping>,
+           Serialisable<SerialisableTypeTag::kPingResponse, PingResponse>,
+           Serialisable<SerialisableTypeTag::kConnect, Connect>,
+           Serialisable<SerialisableTypeTag::kConnectResponse, ConnectResponse>,
+           Serialisable<SerialisableTypeTag::kFindNode, FindNode>,
+           Serialisable<SerialisableTypeTag::kFindNodeResponse, FindNodeResponse>,
+           Serialisable<SerialisableTypeTag::kFindGroup, FindGroup>,
+           Serialisable<SerialisableTypeTag::kFindGroupResponse, FindGroupResponse>,
+           Serialisable<SerialisableTypeTag::kNodeMessage, NodeMessage>,
+           Serialisable<SerialisableTypeTag::kNodeMessageResponse, NodeMessageResponse>>::Map;
 
-template <TypeTag Key>
-using CustomType = typename Find<MAP, Key>::ResultCustomType;
+template <SerialisableTypeTag Tag>
+using CustomType = typename Find<Map, Tag>::ResultCustomType;
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_TYPES_H_
-
