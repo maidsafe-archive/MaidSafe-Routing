@@ -34,9 +34,9 @@ namespace maidsafe {
 
 namespace routing {
 
-template <TypeTag T>
-CustomType<T> Parse(std::stringstream& ref_binary_stream) {
-  CustomType<T> obj_deserialised;
+template <SerialisableTypeTag Tag>
+CustomType<Tag> Parse(std::stringstream& ref_binary_stream) {
+  CustomType<Tag> obj_deserialised;
 
   {
     cereal::BinaryInputArchive input_bin_archive{ref_binary_stream};
