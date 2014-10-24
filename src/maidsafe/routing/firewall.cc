@@ -56,7 +56,7 @@ void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
   auto upper(std::upper_bound(
       std::begin(history_), std::end(history_), dummy,
       [this](const ProcessedEntry& lhs, const ProcessedEntry& rhs) {
-        return (lhs.birth_time - rhs.birth_time < Parameters::firewall_message_life_in_seconds);
+        return (lhs.birth_time - rhs.birth_time < Parameters::firewall_message_life);
       }));
   if (upper != std::end(history_))
     history_.erase(std::begin(history_), upper);
