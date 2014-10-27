@@ -23,18 +23,11 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/common/serialisation.h"
-
+#include "maidsafe/routing/routing_api.h"
 #ifndef MAIDSAFE_ROUTING_TYPES_H_
 #define MAIDSAFE_ROUTING_TYPES_H_
 
 namespace maidsafe {
-using SingleDestination = TaggedValue<NodeId, struct singledestination>;
-using GroupDestination = TaggedValue<NodeId, struct groupdestination>;
-using SingleSource = TaggedValue<NodeId, struct singlesource>;
-using GroupSource = TaggedValue<NodeId, struct groupsource>;
-using OurEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct ourendpoint>;
-using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theirendpoint>;
-
 enum class SerialisableTypeTag : unsigned char {
   kPing,
   kPingResponse,
@@ -51,15 +44,22 @@ enum class SerialisableTypeTag : unsigned char {
 
 namespace routing {
 
+using SingleDestination = TaggedValue<NodeId, struct singledestination>;
+using GroupDestination = TaggedValue<NodeId, struct groupdestination>;
+using SingleSource = TaggedValue<NodeId, struct singlesource>;
+using GroupSource = TaggedValue<NodeId, struct groupsource>;
+using OurEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct ourendpoint>;
+using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theirendpoint>;
+NodeId OurId(NodeId);
 
 struct Ping {
   Ping(SingleDestination destination_address)
       : source_address(kNodeID),
         destinaton_address(destinaton_address),
         message_id(RandomUint32()) {}
-  Ping(SerialisedPing);  // actually ping type parsed but means serialising again ??
-  void operator() {
-    if (destination_address == kNodeId) {
+  // Ping(SerialisedPing);  // actually ping type parsed but means serialising again ??
+  void operator()() {
+    if (destination_address == OurId) {
       // rudp.send(DestinationEndpoint, PingResponse(*this).serialise());
     } else {
       // routing_table.closest_node(destinaton_address)
@@ -87,7 +87,7 @@ struct PingResponse {
 
 struct Connect {
   Connect(SingleDestination destinaton_address, OurEndPoint our_endpoint)
-      : our_endpoint(ourendpoint), our_id(kNodeId), their_id(destinaton_address) {}
+      : our_endpoint(ourendpoint), our_id(OurId), their_id(destinaton_address) {}
 
   OurEndPoint our_endpoint;
   SingleSource our_id;
