@@ -22,12 +22,15 @@
 #include <numeric>
 #include <random>
 #include <set>
+#include <sstream>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/test.h"
+#include "cereal/cereal.hpp"
+#include "cereal/archives/json.hpp"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/close_nodes_change.h"
@@ -38,17 +41,28 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-std::vector<std::string> SplitString(std::string input, const char& delimiter) {
-  std::vector<std::string> result;
-  auto delimiter_pos(input.find(delimiter));
-  while ((delimiter_pos > 0) && (delimiter_pos < input.size())) {
-    result.push_back(input.substr(0, delimiter_pos));
-    input = input.substr(delimiter_pos + 1);
-    delimiter_pos = input.find(delimiter);
+std::pair<NodeId, NodeId> ParseString(std::string input) {
+  NodeId old_node_id, new_node_id;
+  {
+    std::istringstream istringstream{input};
+    cereal::JSONInputArchive archive{istringstream};
+    archive.setNextName("old");
+    std::string node_str;
+    try {
+      archive(node_str);
+      old_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
+    } catch (const std::exception& e) {
+      LOG(kVerbose) << e.what();
+    }
+    archive.setNextName("new");
+    try {
+      archive(node_str);
+      new_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
+    } catch (const std::exception& e) {
+      LOG(kVerbose) << e.what();
+    }
   }
-  if (!input.empty())
-    result.push_back(input);
-  return result;
+  return std::make_pair(old_node_id, new_node_id);
 }
 
 class CloseNodesChangeTest : public testing::Test {
@@ -57,8 +71,8 @@ class CloseNodesChangeTest : public testing::Test {
       : old_close_nodes_(), new_close_nodes_(), kNodeId_(NodeId::IdType::kRandomId) {
     int old_close_nodes_size(20);
 
-//    old_close_nodes_.push_back(kNodeId_);
-//    new_close_nodes_.push_back(kNodeId_);
+    //    old_close_nodes_.push_back(kNodeId_);
+    //    new_close_nodes_.push_back(kNodeId_);
     for (auto i(0); i != old_close_nodes_size - 1; ++i) {
       old_close_nodes_.push_back(NodeId(NodeId::IdType::kRandomId));
       new_close_nodes_.push_back(old_close_nodes_.back());
@@ -81,16 +95,16 @@ class CloseNodesChangeTest : public testing::Test {
       --new_node_tail;
     if (old_close_nodes.front() != target)
       --old_node_tail;
-    bool now_in_range(NodeId::CloserToTarget(
-                        this->kNodeId_, new_close_nodes[new_node_tail], target));
-    bool was_in_range(NodeId::CloserToTarget(
-                        this->kNodeId_, old_close_nodes[old_node_tail], target));
+    bool now_in_range(
+        NodeId::CloserToTarget(this->kNodeId_, new_close_nodes[new_node_tail], target));
+    bool was_in_range(
+        NodeId::CloserToTarget(this->kNodeId_, old_close_nodes[old_node_tail], target));
     LOG(kVerbose) << "now_in_range : " << std::boolalpha << now_in_range
                   << " was_in_range : " << was_in_range;
-/*    // kNodeId_ is included in the new_close_nodes_
-    if (this->kNodeId_ == new_close_nodes[new_node_tail])
-      now_in_range = true;
-*/
+    /*    // kNodeId_ is included in the new_close_nodes_
+        if (this->kNodeId_ == new_close_nodes[new_node_tail])
+          now_in_range = true;
+    */
     CheckHoldersResult holders_result;
     holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
     if (now_in_range)
@@ -103,101 +117,101 @@ class CloseNodesChangeTest : public testing::Test {
     std::vector<NodeId> diff_new_holders;
     std::for_each(std::begin(new_close_nodes), new_close_nodes.begin() + new_node_tail + 1,
                   [&](const NodeId& new_holder) {
-                    if (std::find(std::begin(old_close_nodes),
-                                  old_close_nodes.begin() + old_node_tail + 1,
-                                  new_holder) == (old_close_nodes.begin() + old_node_tail + 1))
-                      diff_new_holders.push_back(new_holder);
-                    });
+      if (std::find(std::begin(old_close_nodes), old_close_nodes.begin() + old_node_tail + 1,
+                    new_holder) == (old_close_nodes.begin() + old_node_tail + 1))
+        diff_new_holders.push_back(new_holder);
+    });
     if (diff_new_holders.size() > 0)
       holders_result.new_holder = diff_new_holders.front();
     return holders_result;
-/*
-    // Radius
-    std::sort(new_close_nodes.begin(), new_close_nodes.end(),
-              [this](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, this->kNodeId_);
-    });
-    NodeId fcn_distance;
-    if (new_close_nodes.size() >= Parameters::closest_nodes_size)
-      fcn_distance = kNodeId_ ^ new_close_nodes[Parameters::closest_nodes_size - 1];
-    else
-      fcn_distance = kNodeId_ ^ NodeInNthBucket(kNodeId_, Parameters::closest_nodes_size);
-    crypto::BigInt radius(
-        crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
-        Parameters::proximity_factor);
+    /*
+        // Radius
+        std::sort(new_close_nodes.begin(), new_close_nodes.end(),
+                  [this](const NodeId& lhs, const NodeId& rhs) {
+          return NodeId::CloserToTarget(lhs, rhs, this->kNodeId_);
+        });
+        NodeId fcn_distance;
+        if (new_close_nodes.size() >= Parameters::closest_nodes_size)
+          fcn_distance = kNodeId_ ^ new_close_nodes[Parameters::closest_nodes_size - 1];
+        else
+          fcn_distance = kNodeId_ ^ NodeInNthBucket(kNodeId_, Parameters::closest_nodes_size);
+        crypto::BigInt radius(
+            crypto::BigInt((fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str())
+       *
+            Parameters::proximity_factor);
 
-    // sort by target
-    std::sort(old_close_nodes.begin(), old_close_nodes.end(),
-              [target](const NodeId& lhs,
-                       const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
+        // sort by target
+        std::sort(old_close_nodes.begin(), old_close_nodes.end(),
+                  [target](const NodeId& lhs,
+                           const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
-    std::sort(new_close_nodes.begin(), new_close_nodes.end(),
-              [target](const NodeId& lhs,
-                       const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
+        std::sort(new_close_nodes.begin(), new_close_nodes.end(),
+                  [target](const NodeId& lhs,
+                           const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
 
-    // Remove taget == node ids and adjust holder size
+        // Remove taget == node ids and adjust holder size
 
-    size_t group_size_adjust(Parameters::group_size + 1U);
-    size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
-    size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
+        size_t group_size_adjust(Parameters::group_size + 1U);
+        size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
+        size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
 
-    std::vector<NodeId> all_old_holders(old_close_nodes_.begin(),
-                                        old_close_nodes_.begin() + old_holders_size);
-    std::vector<NodeId> all_new_holders(new_close_nodes_.begin(),
-                                        new_close_nodes_.begin() + new_holders_size);
-    std::vector<NodeId> all_lost_nodes;
+        std::vector<NodeId> all_old_holders(old_close_nodes_.begin(),
+                                            old_close_nodes_.begin() + old_holders_size);
+        std::vector<NodeId> all_new_holders(new_close_nodes_.begin(),
+                                            new_close_nodes_.begin() + new_holders_size);
+        std::vector<NodeId> all_lost_nodes;
 
-    for (auto& drop_node : all_old_holders)
-      if (std::find(all_new_holders.begin(), all_new_holders.end(), drop_node) ==
-          all_new_holders.end())
-        all_lost_nodes.push_back(drop_node);
+        for (auto& drop_node : all_old_holders)
+          if (std::find(all_new_holders.begin(), all_new_holders.end(), drop_node) ==
+              all_new_holders.end())
+            all_lost_nodes.push_back(drop_node);
 
-    all_old_holders.erase(std::remove(all_old_holders.begin(), all_old_holders.end(), target),
-                          all_old_holders.end());
-    if (all_old_holders.size() > Parameters::group_size) {
-      all_old_holders.pop_back();
-      assert(all_old_holders.size() == Parameters::group_size);
-    }
-    all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), target),
-                          all_new_holders.end());
-    if (all_new_holders.size() > Parameters::group_size) {
-      all_new_holders.pop_back();
-      assert(all_new_holders.size() == Parameters::group_size);
-    }
-    all_lost_nodes.erase(std::remove(all_lost_nodes.begin(), all_lost_nodes.end(), target),
-                         all_lost_nodes.end());
-    // Range
-    if (target == kNodeId_)
-      holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
-    if (std::find(all_new_holders.begin(), all_new_holders.end(), kNodeId_) !=
-        all_new_holders.end()) {
-      holders_result.proximity_status = GroupRangeStatus::kInRange;
-    } else {
-      NodeId distance_id(kNodeId_ ^ target);
-      crypto::BigInt distance(
-          (distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
-      holders_result.proximity_status = (distance < radius) ? GroupRangeStatus::kInProximalRange
-                                                            : GroupRangeStatus::kOutwithRange;
-    }
-    // Old holders = All Old holder ∩ Lost nodes
-    for (const auto& i : all_lost_nodes)
-      if (std::find(all_old_holders.begin(), all_old_holders.end(), i) != all_old_holders.end())
-        holders_result.old_holders.push_back(i);
+        all_old_holders.erase(std::remove(all_old_holders.begin(), all_old_holders.end(), target),
+                              all_old_holders.end());
+        if (all_old_holders.size() > Parameters::group_size) {
+          all_old_holders.pop_back();
+          assert(all_old_holders.size() == Parameters::group_size);
+        }
+        all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), target),
+                              all_new_holders.end());
+        if (all_new_holders.size() > Parameters::group_size) {
+          all_new_holders.pop_back();
+          assert(all_new_holders.size() == Parameters::group_size);
+        }
+        all_lost_nodes.erase(std::remove(all_lost_nodes.begin(), all_lost_nodes.end(), target),
+                             all_lost_nodes.end());
+        // Range
+        if (target == kNodeId_)
+          holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
+        if (std::find(all_new_holders.begin(), all_new_holders.end(), kNodeId_) !=
+            all_new_holders.end()) {
+          holders_result.proximity_status = GroupRangeStatus::kInRange;
+        } else {
+          NodeId distance_id(kNodeId_ ^ target);
+          crypto::BigInt distance(
+              (distance_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str());
+          holders_result.proximity_status = (distance < radius) ? GroupRangeStatus::kInProximalRange
+                                                                : GroupRangeStatus::kOutwithRange;
+        }
+        // Old holders = All Old holder ∩ Lost nodes
+        for (const auto& i : all_lost_nodes)
+          if (std::find(all_old_holders.begin(), all_old_holders.end(), i) != all_old_holders.end())
+            holders_result.old_holders.push_back(i);
 
-    // New holders = All New holders - Old holders
-    for (const auto& i : all_old_holders) {
-      all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), i),
-                            all_new_holders.end());
-    }
+        // New holders = All New holders - Old holders
+        for (const auto& i : all_old_holders) {
+          all_new_holders.erase(std::remove(all_new_holders.begin(), all_new_holders.end(), i),
+                                all_new_holders.end());
+        }
 
-    holders_result.new_holders = all_new_holders;
-*/
-/*
-    if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
-      holders_result.new_holders.clear();
-      holders_result.old_holders.clear();
-    }
-*/
+        holders_result.new_holders = all_new_holders;
+    */
+    /*
+        if (GroupRangeStatus::kInRange != holders_result.proximity_status) {
+          holders_result.new_holders.clear();
+          holders_result.old_holders.clear();
+        }
+    */
   }
 
   void DoCheckHoldersTest(const CloseNodesChange& close_nodes_change) {
@@ -210,20 +224,16 @@ class CloseNodesChangeTest : public testing::Test {
       stream << "kNodeId_ is " << DebugId(kNodeId_) << " target is " << DebugId(target_id);
       stream << "\nnew_close_nodes :";
       std::for_each(std::begin(new_close_nodes_), std::end(new_close_nodes_),
-                    [&](const NodeId& new_holder) {
-                      stream << "\t" << DebugId(new_holder);
-                    });
+                    [&](const NodeId& new_holder) { stream << "\t" << DebugId(new_holder); });
       stream << "\nold_close_nodes :";
       std::for_each(std::begin(old_close_nodes_), std::end(old_close_nodes_),
-                    [&](const NodeId& old_holder) {
-                      stream << "\t" << DebugId(old_holder);
-                    });
+                    [&](const NodeId& old_holder) { stream << "\t" << DebugId(old_holder); });
       LOG(kInfo) << stream.str();
     }
     ASSERT_EQ(result.new_holder, test_result.new_holder);
     ASSERT_EQ(result.proximity_status, test_result.proximity_status);
     // shall check whether reported as leaving range
-//    ASSERT_EQ(result.old_holders, test_result.old_holders);
+    //    ASSERT_EQ(result.old_holders, test_result.old_holders);
     //     if ((result.proximity_status != test_result.proximity_status) ||
     //         (result.new_holders != test_result.new_holders) ||
     //         (result.old_holders != test_result.old_holders)) {
@@ -270,19 +280,17 @@ TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
       LOG(kVerbose) << "random target and node change, iteration " << i;
       NodeId target_node(NodeId::IdType::kRandomId);
       if (i % 2 == 0)
-          new_close_nodes_.push_back(target_node);
+        new_close_nodes_.push_back(target_node);
       else
-          old_close_nodes_.push_back(target_node);
+        old_close_nodes_.push_back(target_node);
       CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
       DoCheckHoldersTest(close_nodes_change);
       if (i % 2 == 0)
-        new_close_nodes_.erase(std::find(new_close_nodes_.begin(),
-                                         new_close_nodes_.end(),
-                                         target_node));
+        new_close_nodes_.erase(
+            std::find(new_close_nodes_.begin(), new_close_nodes_.end(), target_node));
       else
-        old_close_nodes_.erase(std::find(old_close_nodes_.begin(),
-                                         old_close_nodes_.end(),
-                                         target_node));
+        old_close_nodes_.erase(
+            std::find(old_close_nodes_.begin(), old_close_nodes_.end(), target_node));
     }
   }
 }
@@ -337,8 +345,8 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
   // Get the 5 closest to 'kTarget' as the owners.
   std::sort(std::begin(new_close_nodes), std::end(new_close_nodes),
             [&kTarget](const NodeId& lhs, const NodeId& rhs) {
-              return NodeId::CloserToTarget(lhs, rhs, kTarget);
-            });
+    return NodeId::CloserToTarget(lhs, rhs, kTarget);
+  });
   old_close_nodes = new_close_nodes;
   old_close_nodes.erase(std::begin(old_close_nodes) + 2);
   std::vector<CloseNodesChange> owners;
@@ -372,12 +380,12 @@ TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
 
 TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTableChangeFunctor routing_table_change_functor([&](
-      const RoutingTableChange& routing_table_change) {
-    EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
-    EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-    EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
-  });
+  RoutingTableChangeFunctor routing_table_change_functor(
+      [&](const RoutingTableChange& routing_table_change) {
+        EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
+        EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
+        EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
+      });
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   routing_table.InitialiseFunctors(routing_table_change_functor);
   while (routing_table.size() < Parameters::closest_nodes_size) {
@@ -388,67 +396,64 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  std::set<NodeId, std::function<bool(const NodeId & lhs, const NodeId & rhs)>> new_ids([node_id](
+  std::set<NodeId, std::function<bool(const NodeId& lhs, const NodeId& rhs)>> new_ids([node_id](
       const NodeId& lhs, const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, node_id); });
   NodeInfo new_node;
   NodeId removed;
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  RoutingTableChangeFunctor routing_table_change_functor([&](
-      const RoutingTableChange& routing_table_change) {
-    if (routing_table_change.close_nodes_change) {
-      std::vector<std::string> reported(
-              SplitString(routing_table_change.close_nodes_change->ReportConnection(), ','));
-      ASSERT_TRUE(reported.size() >= 2);
-      EXPECT_EQ(reported.at(1), DebugId(routing_table_change.close_nodes_change->lost_node()));
-      EXPECT_EQ(reported.at(0), DebugId(routing_table_change.close_nodes_change->new_node()));
-    }
-    if (routing_table.size() <= Parameters::closest_nodes_size) {
-      bool special_case((routing_table.size() == Parameters::closest_nodes_size) &&
-                         std::none_of(std::begin(new_ids), std::end(new_ids),
-                                      [&](const NodeId& new_node_id) {
-                                        return NodeId::CloserToTarget(removed, new_node_id,
-                                                                      node_id);
-                                      }));
-      if (!special_case)
-        EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
-      if (routing_table_change.insertion) {
-        EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-        EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
-      } else {
-        if (routing_table.size() != Parameters::closest_nodes_size)
-          EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
-        if (!special_case) {
-          EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
-          EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
+  RoutingTableChangeFunctor routing_table_change_functor(
+      [&](const RoutingTableChange& routing_table_change) {
+        if (routing_table_change.close_nodes_change) {
+          auto reported(ParseString(routing_table_change.close_nodes_change->ReportConnection()));
+          EXPECT_EQ(reported.first, routing_table_change.close_nodes_change->lost_node());
+          EXPECT_EQ(reported.second, routing_table_change.close_nodes_change->new_node());
         }
-        new_ids.erase(removed);
-      }
-    } else {
-      auto iter(new_ids.begin());
-      std::advance(iter, Parameters::closest_nodes_size - 1);
-      if (routing_table_change.insertion) {
-        if (NodeId::CloserToTarget(new_node.id, *iter, node_id)) {
-          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
-          EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-          EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
-          std::advance(iter, 1);
-          EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), *iter);
+        if (routing_table.size() <= Parameters::closest_nodes_size) {
+          bool special_case(
+              (routing_table.size() == Parameters::closest_nodes_size) &&
+              std::none_of(std::begin(new_ids), std::end(new_ids), [&](const NodeId& new_node_id) {
+                return NodeId::CloserToTarget(removed, new_node_id, node_id);
+              }));
+          if (!special_case)
+            EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
+          if (routing_table_change.insertion) {
+            EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
+            EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
+          } else {
+            if (routing_table.size() != Parameters::closest_nodes_size)
+              EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
+            if (!special_case) {
+              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
+            }
+            new_ids.erase(removed);
+          }
+        } else {
+          auto iter(new_ids.begin());
+          std::advance(iter, Parameters::closest_nodes_size - 1);
+          if (routing_table_change.insertion) {
+            if (NodeId::CloserToTarget(new_node.id, *iter, node_id)) {
+              EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
+              EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
+              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              std::advance(iter, 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), *iter);
+            }
+          } else {
+            if (!NodeId::CloserToTarget(*iter, removed, node_id)) {
+              EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
+              EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
+              std::advance(iter, 1);
+              EXPECT_EQ(routing_table_change.close_nodes_change->new_node(), *iter);
+              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
+            }
+          }
+          if (!routing_table_change.removed.node.id.IsZero())
+            new_ids.erase(routing_table_change.removed.node.id);
         }
-      } else {
-        if (!NodeId::CloserToTarget(*iter, removed, node_id)) {
-          EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
-          EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-          std::advance(iter, 1);
-          EXPECT_EQ(routing_table_change.close_nodes_change->new_node(), *iter);
-          EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
-          EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
-        }
-      }
-      if (!routing_table_change.removed.node.id.IsZero())
-        new_ids.erase(routing_table_change.removed.node.id);
-    }
-    EXPECT_LE(new_ids.size(), Parameters::max_routing_table_size);
-  });
+        EXPECT_LE(new_ids.size(), Parameters::max_routing_table_size);
+      });
   routing_table.InitialiseFunctors(routing_table_change_functor);
   auto iterations(200);
   while (iterations-- != 0) {
