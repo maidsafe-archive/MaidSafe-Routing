@@ -182,8 +182,9 @@ bool Acknowledgement::HandleGroupMessage(const protobuf::Message& message) {
     return true;
   }
 
-  auto expected(std::min(static_cast<unsigned int>(it->requested_peers.size()),
-                         Parameters::group_size / 2));
+  using expected_type = decltype(it->requested_peers.begin())::difference_type;
+  auto expected(std::min<expected_type>(it->requested_peers.size(),
+                                        Parameters::group_size / 2));
   if (std::count_if(it->requested_peers.begin(), it->requested_peers.end(),
                     [](const std::pair<NodeId, GroupMessageAckStatus>& member) {
                       return member.second == GroupMessageAckStatus::kSuccess;
