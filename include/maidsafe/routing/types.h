@@ -50,6 +50,7 @@ using GroupSourceId = TaggedValue<NodeId, struct groupsource>;
 using OurEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct ourendpoint>;
 using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theirendpoint>;
 NodeId OurId(NodeId::IdType::kRandomId);
+using maidsafe_serialised = std::string;
 
 struct Ping {
   Ping(SingleDestinationId destination_address)
@@ -57,15 +58,9 @@ struct Ping {
         destination_address(destination_address),
         message_id(RandomUint32()) {}
   // Ping(SerialisedPing);  // actually ping type parsed but means serialising again ??
-  void operator()() {
-    if (destination_address == OurId) {
-      // rudp.send(DestinationEndpoint, PingResponse(*this).serialise());
-    } else {
-      // routing_table.closest_node(destinaton_address)
-      // check for a closer node than us or drop/return error
-      // rudp.send(????)
-      // rt copy with manipulation free functions
-    }
+  template <typename Archive>
+  void serialise(Archive& archive) {
+    archive(destinaton_address, message_id, source_address);
   }
 
   SingleSourceId source_address;
