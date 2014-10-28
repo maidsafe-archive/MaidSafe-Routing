@@ -109,7 +109,7 @@ boost::filesystem::path DoGetBootstrapFilePath(bool is_client,
 void WriteBootstrapContacts(const BootstrapContacts& bootstrap_contacts,
                             const fs::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
-  sqlite::Tranasction transaction(database);
+  sqlite::Transaction transaction(database);
   PrepareBootstrapTable(database);
   InsertBootstrapContacts(database, bootstrap_contacts);
   transaction.Commit();
@@ -136,7 +136,7 @@ BootstrapContacts ReadBootstrapContacts(const fs::path& bootstrap_file_path) {
 void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact,
                                     const boost::filesystem::path& bootstrap_file_path) {
   sqlite::Database database(bootstrap_file_path, sqlite::Mode::kReadWriteCreate);
-  sqlite::Tranasction transaction(database);
+  sqlite::Transaction transaction(database);
   PrepareBootstrapTable(database);
   InsertBootstrapContacts(database, BootstrapContacts(1, bootstrap_contact));
   transaction.Commit();
