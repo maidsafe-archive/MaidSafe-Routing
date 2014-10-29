@@ -80,14 +80,10 @@ class Acknowledgement {
   ~Acknowledgement();
   AckId GetId();
   void Add(const protobuf::Message& message, Handler handler, int timeout);
-//  void AddGroup(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(AckId ack_id);
-//  void GroupQueueRemove(AckId ack_id);
   void HandleMessage(AckId ack_id);
-//  bool HandleGroupMessage(const protobuf::Message& message);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
   bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& local_node_id);
-//  NodeId AppendGroup(AckId ack_id, std::vector<std::string>& exclusion);
   void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
   void AdjustAckHistory(protobuf::Message& message);
   void RemoveAll();
@@ -101,7 +97,6 @@ class Acknowledgement {
   bool stop_handling_;
   AsioService& io_service_;
   std::vector<AckTimer> queue_;
-//  std::vector<GroupAckTimer> group_queue_;
 };
 
 }  // namespace routing
