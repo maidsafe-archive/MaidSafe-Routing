@@ -152,6 +152,7 @@ if(MaidsafeTesting)
   ms_update_test_timeout(Timeout)
   set_property(TEST Multiple_Functional_Tests PROPERTY TIMEOUT ${Timeout})
   set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/4 PROPERTY TIMEOUT ${Timeout})
+  set_property(TEST RoutingTableNetwork.FUNC_GroupMessaging PROPERTY TIMEOUT ${Timeout})
 # This test target can be run separately. Removed from Experimental target to reduce the ctest time.
   if(WEEKLY)
     ms_add_gtests(weekly_test_routing)
