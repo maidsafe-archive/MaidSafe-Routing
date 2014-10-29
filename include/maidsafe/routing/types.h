@@ -15,14 +15,18 @@
 
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
+#include <cstdint>
 
+#include "boost/asio/ip/address.hpp"
+#include "boost/asio/ip/udp.hpp"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/tagged_value.h"
 #include "maidsafe/common/serialisation.h"
-
 #ifndef MAIDSAFE_ROUTING_TYPES_H_
 #define MAIDSAFE_ROUTING_TYPES_H_
 
 namespace maidsafe {
-
 enum class SerialisableTypeTag : unsigned char {
   kPing,
   kPingResponse,
@@ -39,26 +43,76 @@ enum class SerialisableTypeTag : unsigned char {
 
 namespace routing {
 
-class Ping;
-class PingResponse;
-class Connect;
-class ConnectResponse;
-class FindNode;
-class FindNodeResponse;
-class FindGroup;
-class FindGroupResponse;
-class Connect;
-class ConnectResponse;
-class NodeMessage;
-class NodeMessageResponse;
+using SingleDestinationId = TaggedValue<NodeId, struct singledestination>;
+using GroupDestinationId = TaggedValue<NodeId, struct groupdestination>;
+using SingleSourceId = TaggedValue<NodeId, struct singlesource>;
+using GroupSourceId = TaggedValue<NodeId, struct groupsource>;
+using OurEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct ourendpoint>;
+using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theirendpoint>;
+NodeId OurId(NodeId::IdType::kRandomId);
+using maidsafe_serialised = std::string;
+
+struct Ping {
+  Ping(SingleDestinationId destination_address)
+      : source_address(OurId),
+        destination_address(destination_address),
+        message_id(RandomUint32()) {}
+  // Ping(SerialisedPing);  // actually ping type parsed but means serialising again ??
+  template <typename Archive>
+  void serialise(Archive& archive) {
+    archive(destinaton_address, message_id, source_address);
+  }
+
+  SingleSourceId source_address;
+  SingleDestinationId destination_address;
+  uint32_t message_id;
+};
+
+struct PingResponse {
+  PingResponse(Ping ping)
+      : source_address(OurId),
+        destinaton_address(SingleDestinationId(ping.source_address)),
+        message_id(ping.message_id) {}
+
+  SingleSourceId source_address;
+  SingleDestinationId destinaton_address;
+  uint32_t message_id;
+};
+
+struct Connect {
+  Connect(SingleDestinationId destinaton_address, OurEndPoint our_endpoint)
+      : our_endpoint(our_endpoint), our_id(OurId), their_id(destinaton_address) {}
+
+  OurEndPoint our_endpoint;
+  SingleSourceId our_id;
+  SingleDestinationId their_id;
+};
+
+struct ConnectResponse {
+  ConnectResponse(Connect connect, OurEndPoint our_endpoint)
+      : our_endpoint(our_endpoint),
+        their_endpoint(TheirEndPoint(connect.our_endpoint)),
+        our_id(SingleSourceId(connect.their_id)),
+        their_id(connect.our_id) {}
+
+  OurEndPoint our_endpoint;
+  TheirEndPoint their_endpoint;
+  SingleSourceId our_id;
+  SingleDestinationId their_id;
+};
+
+struct FindGroup {};
+
+struct FindGroupResponse {};
+
+struct NodeMessage;
+struct NodeMessageResponse;
 
 using Map =
     GetMap<Serialisable<SerialisableTypeTag::kPing, Ping>,
            Serialisable<SerialisableTypeTag::kPingResponse, PingResponse>,
            Serialisable<SerialisableTypeTag::kConnect, Connect>,
            Serialisable<SerialisableTypeTag::kConnectResponse, ConnectResponse>,
-           Serialisable<SerialisableTypeTag::kFindNode, FindNode>,
-           Serialisable<SerialisableTypeTag::kFindNodeResponse, FindNodeResponse>,
            Serialisable<SerialisableTypeTag::kFindGroup, FindGroup>,
            Serialisable<SerialisableTypeTag::kFindGroupResponse, FindGroupResponse>,
            Serialisable<SerialisableTypeTag::kNodeMessage, NodeMessage>,
@@ -72,3 +126,4 @@ using CustomType = typename Find<Map, Tag>::ResultCustomType;
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_TYPES_H_
+

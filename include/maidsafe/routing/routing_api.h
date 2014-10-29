@@ -54,7 +54,9 @@ namespace routing {
 
 struct NodeInfo;
 
-namespace test { class GenericNode; }
+namespace test {
+class GenericNode;
+}
 
 namespace detail {
 
@@ -106,9 +108,9 @@ class Routing {
   // a) the response is receieved or,
   // b) waiting time (Parameters::default_response_timeout) for receiving the response expires
   // Throws on invalid paramaters
-  void SendDirect(const NodeId& destination_id,                       // ID of final destination
+  void SendDirect(const NodeId& destination_id,                // ID of final destination
                   const std::string& message, bool cacheable,  // to cache message content
-                  ResponseFunctor response_functor);                  // Called on response
+                  ResponseFunctor response_functor);           // Called on response
 
   // Sends message to Parameters::group_size most closest nodes to destination_id. The node
   // having id equal to destination id is not considered as part of group and will not receive
@@ -119,7 +121,7 @@ class Routing {
   // Throws on invalid paramaters
   void SendGroup(const NodeId& destination_id,  // ID of final destination or group centre
                  const std::string& message, bool cacheable,  // to cache message content
-                 ResponseFunctor response_functor);                  // Called on each response
+                 ResponseFunctor response_functor);           // Called on each response
 
   // Compares own closeness to target against other known nodes' closeness to the target
   bool ClosestToId(const NodeId& target_id);
