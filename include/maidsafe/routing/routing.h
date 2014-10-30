@@ -22,6 +22,8 @@
 namespace maidsafe {
 
 namespace routing {
+using EndPoint = boost::asio::ip::endpoint;
+using PublicKey = asymm::PublicKey;
 
 class Routing {
  public:
@@ -46,14 +48,27 @@ class Routing {
   Routing& operator=(Routing&&) = delete;
 
   ~Routing();
+  // ##########################New API ideas###################################
+  // Used for bootstrapping (joining) and can be used as zero state network if both ends
+  // are started simultaneously or to join a explicit & specific node
+  void BootStrap(Endpoint our_endpoint, Endpoint their_endpoint, PublicKey their_public_key);
+  //  use hard coded nodes or cache file
+  void BootStrap();
+  // register callbacks / services
+  int32_t RegisterServiceX(std::function<void>(std::string()) callback) {
+    service_x.push_back(callback);  // iterate to call each callback in a range based for
+  }
 
-  // Joins the network. Valid method for requesting public key must be provided by the functor,
-  // otherwise no node will be added to the routing table and node will fail to join the network.
-  void Join(Functors functors);
+  void UnRegisterServiceX(int32_t) {
+    std::erase(std::remove_if())  // find and erase service
+  }
 
-  // WARNING: THIS FUNCTION SHOULD BE ONLY USED TO JOIN FIRST TWO ZERO STATE NODES.
-  int ZeroStateJoin(Functors functors, const boost::asio::ip::udp::endpoint& local_endpoint,
-                    const boost::asio::ip::udp::endpoint& peer_endpoint, const NodeInfo& peer_info);
+  void UnRegisterServiceXAll() { service_x.clear(); }
+
+  std::vector<std::pair<int32_t, std::function<void>(std::string))>> service_x;
+
+  //###########################end########################################
+
 
   // Sends message to a known destination. (Typed Message API).  Throws on invalid paramaters.
   template <typename T>

@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
-
+#include "maidsafe/routing/murmer2.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
