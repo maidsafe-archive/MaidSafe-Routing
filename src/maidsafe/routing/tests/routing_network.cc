@@ -972,7 +972,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
   size_t total_num_nodes(this->nodes_.size());
 
   auto timeout(Parameters::default_response_timeout);
-  Parameters::default_response_timeout *= repeats * 2;
+  Parameters::default_response_timeout *= repeats * 3;
 
   std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
   std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
