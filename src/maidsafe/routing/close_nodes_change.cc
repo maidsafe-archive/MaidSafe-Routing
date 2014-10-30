@@ -201,6 +201,11 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
+bool CloseNodesChange::CheckIsHolder(const Identity& /*target*/, const NodeId& /*node_id*/) {
+  // MAID-358 to be added
+  return true;
+}
+
 NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                         const NodeId& target) const {
   if (online_pmids.empty())
