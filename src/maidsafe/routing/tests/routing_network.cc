@@ -972,7 +972,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
   size_t total_num_nodes(this->nodes_.size());
 
   auto timeout(Parameters::default_response_timeout);
-  Parameters::default_response_timeout *= repeats * 2;
+  Parameters::default_response_timeout *= repeats * 3;
 
   std::shared_ptr<std::mutex> response_mutex(std::make_shared<std::mutex>());
   std::shared_ptr<std::condition_variable> cond_var(std::make_shared<std::condition_variable>());
@@ -1179,6 +1179,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
 
   size_t message_index(0);
   for (const auto& src : this->nodes_) {
+    if (src->IsClient() && destination_node_type != ExpectedNodeType::kExpectVault)
+      --*expected_count;
     ResponseFunctor response_functor;
     std::string data(std::to_string(message_index) + "<:>" +
                      RandomAlphaNumericString((RandomUint32() % 255 + 1) * 2 ^ 10));
@@ -1268,7 +1270,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const NodeId& destination_no
   if (!cond_var->wait_for(lock, std::chrono::seconds(25), [reply_count, expected_count]() {
          return *reply_count == *expected_count;
        })) {
-    //    ADD_FAILURE() << "Didn't get reply within allowed time!";
+    LOG(kError) << "Didn't get reply within allowed time!";
+    LOG(kVerbose) << *reply_count << ", " << *expected_count;
     return testing::AssertionFailure();
   }
 
@@ -1309,11 +1312,16 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
       cond_var->notify_one();
     };
   } else {
-    response_functor = [response_mutex, cond_var, failed](std::string reply) {
+    response_functor = [response_mutex, cond_var, failed, source_node, destination_node_id](
+        std::string reply) {
       std::lock_guard<std::mutex> lock(*response_mutex);
-      //      EXPECT_TRUE(reply.empty());
-      if (reply.empty())
+      if (source_node->IsClient() && (source_node->node_id() != destination_node_id)) {
+        EXPECT_TRUE(reply.empty());
         *failed = true;
+      } else {
+        if (reply.empty())
+          *failed = true;
+      }
       cond_var->notify_one();
     };
   }

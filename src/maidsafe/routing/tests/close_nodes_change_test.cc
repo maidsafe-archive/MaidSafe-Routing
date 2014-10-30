@@ -46,17 +46,15 @@ std::pair<NodeId, NodeId> ParseString(std::string input) {
   {
     std::istringstream istringstream{input};
     cereal::JSONInputArchive archive{istringstream};
-    archive.setNextName("old");
     std::string node_str;
     try {
-      archive(node_str);
+      archive(cereal::make_nvp("oldId", node_str));
       old_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
       LOG(kVerbose) << e.what();
     }
-    archive.setNextName("new");
     try {
-      archive(node_str);
+      archive(cereal::make_nvp("newId", node_str));
       new_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
       LOG(kVerbose) << e.what();
