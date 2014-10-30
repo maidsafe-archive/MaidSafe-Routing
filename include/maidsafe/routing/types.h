@@ -15,70 +15,101 @@
 
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
+
+#ifndef MAIDSAFE_ROUTING_TYPES_H_
+#define MAIDSAFE_ROUTING_TYPES_H_
+
+#include <array>
 #include <cstdint>
+#include <vector>
 
-#include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
-#include "cereal/archives/binary.hpp"
 
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/common/serialisation.h"
-#ifndef MAIDSAFE_ROUTING_TYPES_H_
-#define MAIDSAFE_ROUTING_TYPES_H_
 
 namespace maidsafe {
-enum class SerialisableTypeTag : unsigned char {
+
+namespace routing {
+
+enum class MessageType : unsigned char {
   kPing,
   kPingResponse,
   kConnect,
   kConnectResponse,
-  kFindNode,
-  kFindNodeResponse,
-  kFindGroup,
-  kFindGroupResponse,
-  kAcknowledgement,
-  kNodeMessage,
-  kNodeMessageResponse
+  kVaultMessage,
+  kCacheableGet,
+  kCacheableGetResponse
 };
 
-namespace routing {
+static const size_t kGroupSize = 32;
+static const size_t kQuorumSize = 29;
 
-using SingleDestinationId = TaggedValue<NodeId, struct singledestination>;
-using GroupDestinationId = TaggedValue<NodeId, struct groupdestination>;
-using SingleSourceId = TaggedValue<NodeId, struct singlesource>;
-using GroupSourceId = TaggedValue<NodeId, struct groupsource>;
-using OurEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct ourendpoint>;
-using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theirendpoint>;
+using SingleDestinationId = TaggedValue<NodeId, struct SingleDestinationTag>;
+using GroupDestinationId = TaggedValue<NodeId, struct GroupDestinationTag>;
+using SingleSourceId = TaggedValue<NodeId, struct SingleSourceTag>;
+using GroupSourceId = TaggedValue<NodeId, struct GroupSourceTag>;
+using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
+using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
+using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
 NodeId OurId(NodeId::IdType::kRandomId);
-using maidsafe_serialised = std::string;
+using SerialisedMessage = std::vector<unsigned char>;
 
-struct Header {
-  Header() = default;
-  Header(Header const&) = default;
-  Header(Header&&) = default MAIDSAFE_NOEXCEPT;
-  ~Header() = default;
-  Header& operator=(Header const&) = default;
-  Header& operator=(Header&&) = default MAIDSAFE_NOEXCEPT;
+// For use with small messages which aren't scatter/gathered
+template <typename Destination, typename Source>
+struct SmallHeader {
+  SmallHeader() = delete;
+  SmallHeader(SmallHeader const&) = delete;
+  SmallHeader(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
+  SmallHeader(Destination destination_in, Source source_in, MessageId message_id_in,
+              crypto::Murmur checksum_in)
+      : destination(std::move(destination_in)),
+        source(std::move(source_in)),
+        message_id(std::move(message_id_in)),
+        checksum(std::move(checksum_in)) {}
+  ~SmallHeader() = default;
+  SmallHeader& operator=(SmallHeader const&) = delete;
+  SmallHeader& operator=(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
 
-  bool operator==(const Header& other) const MAIDSAFE_NOEXCEPT {
-    return std::tie(destination, message_id, part_number) ==
-           std::tie(other.destination, other.message_id, other.part_number);
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(destination, source, message_id, checksum);
   }
-  bool operator!=(const Header& other) const MAIDSAFE_NOEXCEPT { return !operator==(*this, other); }
-  bool operator<(const Header& other) const MAIDSAFE_NOEXCEPT {
-    return std::tie(destination, message_id, part_number) <
-           std::tie(other.destination, other.message_id, other.part_number);
-  }
-  bool operator>(const Header& other) { return operator<(other, *this); }
-  bool operator<=(const Header& other) { return !operator>(*this, other); }
-  bool operator>=(const Header& other) { return !operator<(*this, other); }
 
-  DestinationType destination;
-  uint32_t message_id;
-  uint32_t part_number;
+  Destination destination;
+  Source source;
+  MessageId message_id;
+  crypto::Murmur checksum;
 };
+
+// For use with scatter/gather messages
+template <typename Destination, typename Source>
+struct Header {
+  Header() = delete;
+  Header(Header const&) = delete;
+  Header(Header&&) MAIDSAFE_NOEXCEPT = default;
+  Header(Destination destination_in, Source source_in, MessageId message_id_in,
+         crypto::Murmur payload_checksum_in, crypto::Murmur other_checksum_in)
+      : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
+                   std::move(payload_checksum_in)),
+        other_checksum(std::move(other_checksum_in)) {}
+  ~Header() = default;
+  Header& operator=(Header const&) = delete;
+  Header& operator=(Header&&) MAIDSAFE_NOEXCEPT = default;
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(basic_info, other_checksums);
+  }
+
+  SmallHeader<Destination, Source> basic_info;
+  std::array<crypto::Murmur, kGroupSize - 1> other_checksums;
+};
+
+
 
 struct Ping {
   Ping(SingleDestinationId destination_address)
@@ -86,13 +117,13 @@ struct Ping {
         destination_address(destination_address),
         message_id(RandomUint32()) {}
   template <typename Archive>
-  void serialise(Archive& archive) {
+  void serialize(Archive& archive) {
     archive(destination_address, message_id, source_address);
   }
 
   SingleSourceId source_address;
   SingleDestinationId destination_address;
-  uint32_t message_id;
+  MessageId message_id;
 };
 
 struct PingResponse {
@@ -101,13 +132,13 @@ struct PingResponse {
         destinaton_address(SingleDestinationId(ping.source_address)),
         message_id(ping.message_id) {}
   template <typename Archive>
-  void serialised_response(Archive& archive) {
+  void serialize(Archive& archive) {
     archive(destinaton_address, message_id, source_address);
   }
 
   SingleSourceId source_address;
   SingleDestinationId destinaton_address;
-  uint32_t message_id;
+  MessageId message_id;
 };
 
 struct Connect {
@@ -157,4 +188,3 @@ using CustomType = typename Find<Map, Tag>::ResultCustomType;
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_TYPES_H_
-
