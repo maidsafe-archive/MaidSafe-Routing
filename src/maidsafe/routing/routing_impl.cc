@@ -412,6 +412,11 @@ void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message&
     PartiallyJoinedSend(proto_message);
   } else {  // Normal node
     proto_message.set_source_id(kNodeId_.string());
+    if (!proto_message.direct() && !routing_table_->client_mode()) {
+      LOG(kInfo) << "handling group message";
+      OnMessageReceived(proto_message.SerializeAsString());
+      return;
+    }
     if (kNodeId_ != destination_id) {
       network_->SendToClosestNode(proto_message);
     } else if (routing_table_->client_mode()) {

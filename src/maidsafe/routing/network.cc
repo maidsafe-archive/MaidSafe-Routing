@@ -289,7 +289,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
       // FIXME Should we remove this node or let rudp handle that?
       routing_table_.DropNode(last_node_attempted.connection_id, false);
       client_routing_table_.DropConnection(last_node_attempted.connection_id);
-      acknowledgement_.SetAsFailedPeer(message.ack_id(), last_node_attempted.id);
     }
   }
 
@@ -310,10 +309,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
     else if ((message.route_history().size() == 1) &&
              (message.route_history(0) != routing_table_.kNodeId().string()))
       route_history.push_back(message.route_history(0));
-
-    auto group_target(acknowledgement_.AppendGroup(message.ack_id(), route_history));
-    if (!group_target.IsZero())
-      ignore_exact_match = true;
 
     peer = routing_table_.GetClosestNode(NodeId(message.destination_id()), ignore_exact_match,
                                          route_history);
@@ -425,8 +420,7 @@ rudp::NatType Network::nat_type() const { return nat_type_; }
 
 void Network::SendAck(const protobuf::Message& message) {
   LOG(kVerbose) << "[" << routing_table_.kNodeId() << "] SendAck " << message.ack_id();
-
-  if (acknowledgement_.HandleGroupMessage(message))
+  if (message.ack_id() == 0)
     return;
 
   if (IsAck(message) || IsConnectSuccessAcknowledgement(message))
