@@ -129,7 +129,7 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 if(MaidsafeTesting)
   ms_add_default_tests()
   add_test(NAME Multiple_Functional_Tests COMMAND test_routing_func)
-  set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional)
+  set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional ${TASK_LABEL})
   ms_add_gtests(test_routing)
   ms_add_gtests(test_routing_api)
   set(Timeout 300)
