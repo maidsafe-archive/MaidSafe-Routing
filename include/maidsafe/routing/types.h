@@ -19,6 +19,8 @@
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
+#include "cereal/archives/binary.hpp"
+
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/tagged_value.h"
@@ -52,15 +54,40 @@ using TheirEndPoint = TaggedValue<boost::asio::ip::udp::endpoint, struct theiren
 NodeId OurId(NodeId::IdType::kRandomId);
 using maidsafe_serialised = std::string;
 
+struct Header {
+  Header() = default;
+  Header(Header const&) = default;
+  Header(Header&&) = default MAIDSAFE_NOEXCEPT;
+  ~Header() = default;
+  Header& operator=(Header const&) = default;
+  Header& operator=(Header&&) = default MAIDSAFE_NOEXCEPT;
+
+  bool operator==(const Header& other) const MAIDSAFE_NOEXCEPT {
+    return std::tie(destination, message_id, part_number) ==
+           std::tie(other.destination, other.message_id, other.part_number);
+  }
+  bool operator!=(const Header& other) const MAIDSAFE_NOEXCEPT { return !operator==(*this, other); }
+  bool operator<(const Header& other) const MAIDSAFE_NOEXCEPT {
+    return std::tie(destination, message_id, part_number) <
+           std::tie(other.destination, other.message_id, other.part_number);
+  }
+  bool operator>(const Header& other) { return operator<(other, *this); }
+  bool operator<=(const Header& other) { return !operator>(*this, other); }
+  bool operator>=(const Header& other) { return !operator<(*this, other); }
+
+  DestinationType destination;
+  uint32_t message_id;
+  uint32_t part_number;
+};
+
 struct Ping {
   Ping(SingleDestinationId destination_address)
       : source_address(OurId),
         destination_address(destination_address),
         message_id(RandomUint32()) {}
-  // Ping(SerialisedPing);  // actually ping type parsed but means serialising again ??
   template <typename Archive>
   void serialise(Archive& archive) {
-    archive(destinaton_address, message_id, source_address);
+    archive(destination_address, message_id, source_address);
   }
 
   SingleSourceId source_address;
@@ -73,6 +100,10 @@ struct PingResponse {
       : source_address(OurId),
         destinaton_address(SingleDestinationId(ping.source_address)),
         message_id(ping.message_id) {}
+  template <typename Archive>
+  void serialised_response(Archive& archive) {
+    archive(destinaton_address, message_id, source_address);
+  }
 
   SingleSourceId source_address;
   SingleDestinationId destinaton_address;
