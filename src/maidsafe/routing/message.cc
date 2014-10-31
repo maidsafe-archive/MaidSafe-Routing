@@ -16,48 +16,58 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/message.h"
-
-namespace maidsafe {
-
-namespace routing {
-
-GroupSource::GroupSource() : group_id(), sender_id() {}
-
-GroupSource::GroupSource(GroupId group_id_in, SingleId sender_id_in)
-    : group_id(std::move(group_id_in)), sender_id(std::move(sender_id_in)) {}
-
-GroupSource::GroupSource(const GroupSource& other)
-    : group_id(other.group_id), sender_id(other.sender_id) {}
-
-GroupSource::GroupSource(GroupSource&& other)
-    : group_id(std::move(other.group_id)), sender_id(std::move(other.sender_id)) {}
-
-GroupSource& GroupSource::operator=(GroupSource other) {
-  swap(*this, other);
-  return *this;
-}
-
-void swap(GroupSource& lhs, GroupSource& rhs) {
-  using std::swap;
-  swap(lhs.group_id, rhs.group_id);
-  swap(lhs.sender_id, rhs.sender_id);
-}
-
-bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
-  return lhs.group_id == rhs.group_id &&
-         lhs.sender_id == rhs.sender_id;
-}
-
-namespace detail {
-
-SingleIdRelay GetRelayIdToReply(const SingleRelaySource &single_relay_src) {
-  return SingleIdRelay(SingleId(NodeId(single_relay_src.node_id->string())),
-      single_relay_src.connection_id, SingleId(NodeId(single_relay_src.relay_node->string())));
-}
-
-}  // namespace detail
-
-}  // namespace routing
-
-}  // namespace maidsafe
+// #include "maidsafe/routing/message.h"
+//
+// namespace maidsafe {
+//
+// namespace routing {
+//
+// // GroupSource::GroupSource() : group_id(), sender_id() {}
+// //
+// // GroupSource::GroupSource(GroupId group_id_in, SingleId sender_id_in)
+// //     : group_id(std::move(group_id_in)), sender_id(std::move(sender_id_in)) {}
+// //
+// // GroupSource::GroupSource(const GroupSource& other)
+// //     : group_id(other.group_id), sender_id(other.sender_id) {}
+// //
+// // GroupSource::GroupSource(GroupSource&& other)
+// //     : group_id(std::move(other.group_id)), sender_id(std::move(other.sender_id)) {}
+// //
+// // GroupSource& GroupSource::operator=(GroupSource other) {
+// //   swap(*this, other);
+// //   return *this;
+// // }
+// //
+// // void swap(GroupSource& lhs, GroupSource& rhs) {
+// //   using std::swap;
+// //   swap(lhs.group_id, rhs.group_id);
+// //   swap(lhs.sender_id, rhs.sender_id);
+// // }
+// //
+// // bool operator==(const GroupSource& lhs, const GroupSource& rhs) {
+// //   return lhs.group_id == rhs.group_id &&
+// //          lhs.sender_id == rhs.sender_id;
+// // }
+// // bool operator!=(const GroupSource& lhs, const GroupSource& rhs) {
+// //   return !operator==(lhs, rhs);
+// // }
+// //
+// // bool operator<(const GroupSource& lhs, const GroupSource& rhs) {
+// //   return std::tie(lhs.group_id, lhs.sender_id)
+// //     < std::tie(rhs.group_id, rhs.sender_id);
+// // }
+// //
+// //
+// // namespace detail {
+// //
+// // SingleIdRelay GetRelayIdToReply(const SingleRelaySource& single_relay_src) {
+// //   return SingleIdRelay(SingleId(NodeId(single_relay_src.node_id->string())),
+// //                        single_relay_src.connection_id,
+// //                        SingleId(NodeId(single_relay_src.relay_node->string())));
+// // }
+// //
+// // }  // namespace detail
+//
+// }  // namespace routing
+//
+// }  // namespace maidsafe

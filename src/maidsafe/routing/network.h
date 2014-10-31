@@ -107,7 +107,6 @@ class Network {
               const NodeId& peer_connection_id, bool no_ack_timer = false);
   void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
-  void AdjustRouteHistory(protobuf::Message& message);
 
   bool running_;
   std::mutex running_mutex_;
