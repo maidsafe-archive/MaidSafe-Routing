@@ -57,7 +57,7 @@ class CloseNodesChange {
   CloseNodesChange(CloseNodesChange&& other);
   CloseNodesChange& operator=(CloseNodesChange other);
   CheckHoldersResult CheckHolders(const NodeId& target) const;
-  bool CheckIsHolder(const Identity& target, const NodeId& node_id_);
+  bool CheckIsHolder(const NodeId& target, const NodeId& node_id);
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
   NodeId lost_node() const { return lost_node_; }
   NodeId new_node() const { return new_node_; }
