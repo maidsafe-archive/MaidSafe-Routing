@@ -65,4 +65,4 @@ static_assert(is_regular<GroupSource>::value, "Not a regular type");
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGE_H_
+#endif  // MAIDSAFE_ROUTING_GROUP_SOURCE_H_

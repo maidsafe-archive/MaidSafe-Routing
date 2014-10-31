@@ -62,7 +62,7 @@ using SerialisedMessage = std::vector<unsigned char>;
 template <typename Destination, typename Source>
 struct SmallHeader {
   SmallHeader() = delete;
-  SmallHeader(SmallHeader const&) = delete;
+  SmallHeader(const SmallHeader&) = delete;
   SmallHeader(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
   SmallHeader(Destination destination_in, Source source_in, MessageId message_id_in,
               crypto::Murmur checksum_in)
@@ -89,7 +89,7 @@ struct SmallHeader {
 template <typename Destination, typename Source>
 struct Header {
   Header() = delete;
-  Header(Header const&) = delete;
+  Header(const Header&) = delete;
   Header(Header&&) MAIDSAFE_NOEXCEPT = default;
   Header(Destination destination_in, Source source_in, MessageId message_id_in,
          crypto::Murmur payload_checksum_in, crypto::Murmur other_checksum_in)
@@ -112,7 +112,7 @@ struct Header {
 
 
 struct Ping {
-  Ping(SingleDestinationId destination_address)
+  explicit Ping(SingleDestinationId destination_address)
       : source_address(OurId),
         destination_address(destination_address),
         message_id(RandomUint32()) {}
@@ -127,7 +127,7 @@ struct Ping {
 };
 
 struct PingResponse {
-  PingResponse(Ping ping)
+  explicit PingResponse(Ping ping)
       : source_address(OurId),
         destinaton_address(SingleDestinationId(ping.source_address)),
         message_id(ping.message_id) {}
