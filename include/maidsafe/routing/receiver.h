@@ -34,7 +34,7 @@ class Receiver {
   Receiver(RoutingTable routing_table, rudp::ManagedConnections managed_connections, Sender sender)
       : routing_table_(routing_table), managed_connections_(managed_connections), sender_(sender) {}
 
-  Receiver(Receiver const&) = default;
+  Receiver(const Receiver&) = default;
   Receiver(Receiver&&) = default MAIDSAFE_NOEXCEPT;
   ~Receiver() = default;
   Receiver& operator=(Receiver const&) = default;
@@ -67,4 +67,3 @@ class Receiver {
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_RECEIVER_H_
-

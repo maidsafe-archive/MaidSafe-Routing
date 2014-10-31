@@ -16,9 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_SENDER_H
-#define MAIDSAFE_ROUTING_SENDER_H
+#ifndef MAIDSAFE_ROUTING_SENDER_H_
+#define MAIDSAFE_ROUTING_SENDER_H_
 
 
-#endif  // MAIDSAFE_ROUTING_SENDER_H
-
+#endif  // MAIDSAFE_ROUTING_SENDER_H_
