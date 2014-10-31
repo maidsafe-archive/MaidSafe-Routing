@@ -24,12 +24,12 @@
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
-#include "maidsafe/routing/murmer2.h"
-#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/common/serialisation.h"
+
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -65,7 +65,7 @@ struct SmallHeader {
   SmallHeader(const SmallHeader&) = delete;
   SmallHeader(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
   SmallHeader(Destination destination_in, Source source_in, MessageId message_id_in,
-              crypto::Murmur checksum_in)
+              Murmur checksum_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
@@ -82,7 +82,7 @@ struct SmallHeader {
   Destination destination;
   Source source;
   MessageId message_id;
-  crypto::Murmur checksum;
+  Murmur checksum;
 };
 
 // For use with scatter/gather messages
@@ -92,7 +92,7 @@ struct Header {
   Header(const Header&) = delete;
   Header(Header&&) MAIDSAFE_NOEXCEPT = default;
   Header(Destination destination_in, Source source_in, MessageId message_id_in,
-         crypto::Murmur payload_checksum_in, crypto::Murmur other_checksum_in)
+         Murmur payload_checksum_in, Murmur other_checksum_in)
       : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
                    std::move(payload_checksum_in)),
         other_checksum(std::move(other_checksum_in)) {}
@@ -106,7 +106,7 @@ struct Header {
   }
 
   SmallHeader<Destination, Source> basic_info;
-  std::array<crypto::Murmur, kGroupSize - 1> other_checksums;
+  std::array<Murmur, kGroupSize - 1> other_checksums;
 };
 
 
