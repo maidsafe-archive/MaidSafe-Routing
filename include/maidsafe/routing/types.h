@@ -55,24 +55,25 @@ using GroupSourceId = TaggedValue<NodeId, struct GroupSourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
 using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
-NodeId OurId(NodeId::IdType::kRandomId);
+using byte = unsigned char;
 using SerialisedMessage = std::vector<unsigned char>;
+NodeId OurId(NodeId::IdType::kRandomId);
 
 // For use with small messages which aren't scatter/gathered
 template <typename Destination, typename Source>
-struct SmallHeader {
-  SmallHeader() = delete;
-  SmallHeader(const SmallHeader&) = delete;
-  SmallHeader(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
-  SmallHeader(Destination destination_in, Source source_in, MessageId message_id_in,
-              Murmur checksum_in)
+struct SmallMessage {
+  SmallMessage() = delete;
+  SmallMessage(const SmallMessage&) = delete;
+  SmallMessage(SmallMessage&&) MAIDSAFE_NOEXCEPT = default;
+  SmallMessage(Destination destination_in, Source source_in, MessageId message_id_in,
+               Murmur checksum_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
         checksum(std::move(checksum_in)) {}
-  ~SmallHeader() = default;
-  SmallHeader& operator=(SmallHeader const&) = delete;
-  SmallHeader& operator=(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
+  ~SmallMessage() = default;
+  SmallMessage& operator=(SmallMessage const&) = delete;
+  SmallMessage& operator=(SmallMessage&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void serialize(Archive& archive) {
@@ -87,25 +88,25 @@ struct SmallHeader {
 
 // For use with scatter/gather messages
 template <typename Destination, typename Source>
-struct Header {
-  Header() = delete;
-  Header(const Header&) = delete;
-  Header(Header&&) MAIDSAFE_NOEXCEPT = default;
-  Header(Destination destination_in, Source source_in, MessageId message_id_in,
-         Murmur payload_checksum_in, Murmur other_checksum_in)
+struct Message {
+  Message() = delete;
+  Message(const Message&) = delete;
+  Message(Message&&) MAIDSAFE_NOEXCEPT = default;
+  Message(Destination destination_in, Source source_in, MessageId message_id_in,
+          Murmur payload_checksum_in, Murmur other_checksum_in)
       : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
                    std::move(payload_checksum_in)),
         other_checksum(std::move(other_checksum_in)) {}
-  ~Header() = default;
-  Header& operator=(Header const&) = delete;
-  Header& operator=(Header&&) MAIDSAFE_NOEXCEPT = default;
+  ~Message() = default;
+  Message& operator=(Message const&) = delete;
+  Message& operator=(Message&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(basic_info, other_checksums);
   }
 
-  SmallHeader<Destination, Source> basic_info;
+  SmallMessage<Destination, Source> basic_info;
   std::array<Murmur, kGroupSize - 1> other_checksums;
 };
 
