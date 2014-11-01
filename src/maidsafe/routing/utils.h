@@ -19,8 +19,23 @@
 #ifndef MAIDSAFE_ROUTING_UTILS_H_
 #define MAIDSAFE_ROUTING_UTILS_H_
 
-#include <string>
 #include <vector>
+
+namespace maidsafe {
+
+namespace routing {
+
+// NEW
+// ##################################################################################################
+
+// MurmurHash2 is based on the implementation written by Austin Appleby, and placed in the public
+// domain by him.
+using Murmur = uint32_t;
+Murmur MurmurHash2(const std::vector<unsigned char>& input);
+
+
+// OLD
+// ##################################################################################################
 
 #include "boost/asio/ip/udp.hpp"
 
@@ -36,10 +51,6 @@
 #include "maidsafe/routing/parameters.h"
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/public_key_holder.h"
-
-namespace maidsafe {
-
-namespace routing {
 
 namespace protobuf {
 
@@ -57,8 +68,9 @@ int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_c
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
 
 bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
-    ClientRoutingTable& client_routing_table, const NodeId& peer_id, const NodeId& connection_id,
-    const asymm::PublicKey& public_key, bool client);
+                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
+                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
+                                  bool client);
 
 void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
@@ -98,6 +110,8 @@ SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_m
 GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message);
 GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message);
 SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message);
+
+
 }  // namespace routing
 
 }  // namespace maidsafe

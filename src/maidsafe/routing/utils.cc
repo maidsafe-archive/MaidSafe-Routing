@@ -18,19 +18,86 @@
 
 #include "maidsafe/routing/utils.h"
 
-#ifndef MAIDSAFE_WIN32
+#include <limits>
+
+#include "maidsafe/common/utils.h"
+
+namespace maidsafe {
+
+namespace routing {
+
+// NEW
+// ##################################################################################################
+
+Murmur MurmurHash2(const std::vector<unsigned char>& input) {
+  static_assert(sizeof(int) == 4, "This implementation requires size of int to be 4 bytes.");
+  assert(input.size() < std::numeric_limits<uint32_t>::max());
+
+  // 'm' and 'r' are mixing constants generated offline.
+  // They're not really 'magic', they just happen to work well.
+
+  const uint32_t m = 0x5bd1e995;
+  const int r = 24;
+
+  // Initialize the hash to a 'random' value
+
+  uint32_t len = static_cast<uint32_t>(input.size());
+  uint32_t h = RandomUint32() ^ len;
+
+  // Mix 4 bytes at a time into the hash
+
+  const unsigned char* data = &input[0];
+
+  while (len >= 4) {
+    uint32_t k = *reinterpret_cast<const uint32_t*>(data);
+
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+
+    h *= m;
+    h ^= k;
+
+    data += 4;
+    len -= 4;
+  }
+
+  // Handle the last few bytes of the input array
+
+  switch (len) {
+    case 3:
+      h ^= data[2] << 16;
+    case 2:
+      h ^= data[1] << 8;
+    case 1:
+      h ^= data[0];
+      h *= m;
+  };
+
+  // Do a few final mixes of the hash to ensure the last few
+  // bytes are well-incorporated.
+
+  h ^= h >> 13;
+  h *= m;
+  h ^= h >> 15;
+
+  return h;
+}
+
+// OLD
+// ##################################################################################################
+
+#ifdef WIN32
 #include <pwd.h>
 #endif
 
 #include <string>
 #include <algorithm>
-#include <vector>
 
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/log.h"
-#include "maidsafe/common/utils.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/rudp/return_codes.h"
 
@@ -42,10 +109,6 @@
 #include "maidsafe/routing/routing.pb.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/rpcs.h"
-
-namespace maidsafe {
-
-namespace routing {
 
 int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
