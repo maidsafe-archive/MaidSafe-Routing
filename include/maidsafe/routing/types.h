@@ -33,17 +33,20 @@
 
 namespace maidsafe {
 
-namespace routing {
-
-enum class MessageType : unsigned char {
+enum class SerialisableTypeTag : unsigned char {
   kPing,
   kPingResponse,
+  kFindGroup,
+  kFindGroupResponse,
   kConnect,
   kConnectResponse,
-  kVaultMessage,
+  kNodeMessage,
   kCacheableGet,
   kCacheableGetResponse
 };
+
+
+namespace routing {
 
 static const size_t kGroupSize = 32;
 static const size_t kQuorumSize = 29;
@@ -56,6 +59,7 @@ using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
 using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
 using byte = unsigned char;
+using CheckSums = std::array<Murmur, kGroupSize - 1>;
 using SerialisedMessage = std::vector<unsigned char>;
 NodeId OurId(NodeId::IdType::kRandomId);
 
@@ -93,10 +97,10 @@ struct Message {
   Message(const Message&) = delete;
   Message(Message&&) MAIDSAFE_NOEXCEPT = default;
   Message(Destination destination_in, Source source_in, MessageId message_id_in,
-          Murmur payload_checksum_in, Murmur other_checksum_in)
+          Murmur payload_checksum_in, CheckSums other_checksum_in)
       : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
                    std::move(payload_checksum_in)),
-        other_checksum(std::move(other_checksum_in)) {}
+        other_checksums(std::move(other_checksum_in)) {}
   ~Message() = default;
   Message& operator=(Message const&) = delete;
   Message& operator=(Message&&) MAIDSAFE_NOEXCEPT = default;
@@ -107,7 +111,7 @@ struct Message {
   }
 
   SmallMessage<Destination, Source> basic_info;
-  std::array<Murmur, kGroupSize - 1> other_checksums;
+  CheckSums other_checksums;
 };
 
 
@@ -143,23 +147,23 @@ struct PingResponse {
 };
 
 struct Connect {
-  Connect(SingleDestinationId destinaton_address, OurEndPoint our_endpoint)
+  Connect(SingleDestinationId destinaton_address, OurEndpoint our_endpoint)
       : our_endpoint(our_endpoint), our_id(OurId), their_id(destinaton_address) {}
 
-  OurEndPoint our_endpoint;
+  OurEndpoint our_endpoint;
   SingleSourceId our_id;
   SingleDestinationId their_id;
 };
 
 struct ConnectResponse {
-  ConnectResponse(Connect connect, OurEndPoint our_endpoint)
+  ConnectResponse(Connect connect, OurEndpoint our_endpoint)
       : our_endpoint(our_endpoint),
-        their_endpoint(TheirEndPoint(connect.our_endpoint)),
+        their_endpoint(TheirEndpoint(connect.our_endpoint)),
         our_id(SingleSourceId(connect.their_id)),
         their_id(connect.our_id) {}
 
-  OurEndPoint our_endpoint;
-  TheirEndPoint their_endpoint;
+  OurEndpoint our_endpoint;
+  TheirEndpoint their_endpoint;
   SingleSourceId our_id;
   SingleDestinationId their_id;
 };
@@ -169,7 +173,10 @@ struct FindGroup {};
 struct FindGroupResponse {};
 
 struct NodeMessage;
-struct NodeMessageResponse;
+
+struct CacheableGet;
+struct CacheableGetResponse;
+
 
 using Map =
     GetMap<Serialisable<SerialisableTypeTag::kPing, Ping>,
@@ -179,7 +186,8 @@ using Map =
            Serialisable<SerialisableTypeTag::kFindGroup, FindGroup>,
            Serialisable<SerialisableTypeTag::kFindGroupResponse, FindGroupResponse>,
            Serialisable<SerialisableTypeTag::kNodeMessage, NodeMessage>,
-           Serialisable<SerialisableTypeTag::kNodeMessageResponse, NodeMessageResponse>>::Map;
+           Serialisable<SerialisableTypeTag::kCacheableGet, CacheableGet>,
+           Serialisable<SerialisableTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
 
 template <SerialisableTypeTag Tag>
 using CustomType = typename Find<Map, Tag>::ResultCustomType;

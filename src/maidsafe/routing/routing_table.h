@@ -35,8 +35,10 @@
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/close_nodes_change.h"
+#include "maidsafe/routing/routing_table_change.h"
 #include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
@@ -57,30 +59,6 @@ namespace protobuf {
 class Contact;
 }
 
-struct NodeInfo;
-
-struct RoutingTableChange {
-  struct Remove {
-    Remove() : node(), routing_only_removal(true) {}
-    Remove(NodeInfo& node_in, bool routing_only_removal_in)
-        : node(node_in), routing_only_removal(routing_only_removal_in) {}
-    NodeInfo node;
-    bool routing_only_removal;
-  };
-  RoutingTableChange() : added_node(), removed(), insertion(false), close_nodes_change(),
-                         health(0) {}
-  RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in,
-                     bool insertion_in, std::shared_ptr<CloseNodesChange> close_nodes_change_in,
-                     unsigned int health_in)
-      : added_node(added_node_in), removed(removed_in), insertion(insertion_in),
-        close_nodes_change(close_nodes_change_in), health(health_in) {}
-  NodeInfo added_node;
-  Remove removed;
-  bool insertion;
-  std::shared_ptr<CloseNodesChange> close_nodes_change;
-  unsigned int health;
-};
-
 typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
     RoutingTableChangeFunctor;
 
@@ -100,8 +78,7 @@ class RoutingTable {
 
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   // Returns default-constructed NodeId if routing table size is zero
-  NodeInfo GetClosestNode(const NodeId& target_id,
-                          bool ignore_exact_match = false,
+  NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false,
                           const std::vector<std::string>& exclude = std::vector<std::string>());
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
                                         bool ignore_exact_match = false);

@@ -38,7 +38,6 @@ struct NodeInfo {
 
   NodeInfo() = default;
   NodeInfo(const NodeInfo& other) = default;
-  NodeInfo& operator=(const NodeInfo& other) = default;
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                  connection_id(std::move(other.connection_id)),
                                                  public_key(std::move(other.public_key)),
@@ -46,6 +45,21 @@ struct NodeInfo {
                                                  bucket(std::move(other.bucket)),
                                                  nat_type(std::move(other.nat_type)) {}
   explicit NodeInfo(const serialised_type& serialised_message);  // Parser
+  NodeInfo& operator=(NodeInfo const&) = default;
+  NodeInfo& operator=(NodeInfo&&) = default;
+
+  //  for use with std::unique
+  bool operator==(const NodeInfo& other) const MAIDSAFE_NOEXCEPT {
+    return id == other.id || rsa::MatchingKeys(public_key, other.public_key);
+  }
+
+  bool operator!=(const NodeInfo& other) const MAIDSAFE_NOEXCEPT { return !operator==(other); }
+
+  bool operator<(const NodeInfo& other) const MAIDSAFE_NOEXCEPT { return id < other.id; }
+  bool operator>(const NodeInfo& other) { return id > other.id; }
+  bool operator<=(const NodeInfo& other) { return !operator>(other); }
+  bool operator>=(const NodeInfo& other) { return !operator<(other); }
+
 
   serialised_type Serialise() const;
 

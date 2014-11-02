@@ -36,82 +36,85 @@ Murmur MurmurHash2(const std::vector<unsigned char>& input);
 
 // OLD
 // ##################################################################################################
-
-#include "boost/asio/ip/udp.hpp"
-
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/node_id.h"
-
-#include "maidsafe/rudp/managed_connections.h"
-
-#include "maidsafe/passport/types.h"
-
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/parameters.h"
-#include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/public_key_holder.h"
-
-namespace protobuf {
-
-class Message;
-class Endpoint;
-
-}  // namespace protobuf
-
-class Network;
-class ClientRoutingTable;
-class RoutingTable;
-
-int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
-              const NodeId& peer_id, const NodeId& peer_connection_id,
-              rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
-
-bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
-                                  ClientRoutingTable& client_routing_table, const NodeId& peer_id,
-                                  const NodeId& connection_id, const asymm::PublicKey& public_key,
-                                  bool client);
-
-void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
-                                const NodeInfo& new_close_node, const NodeId& this_node_id);
-
-// GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
-//                                   const NodeId& this_node_id,
-//                                   const crypto::BigInt& proximity_radius,
-//                                   const std::vector<NodeId>& holders);
-
-bool IsRoutingMessage(const protobuf::Message& message);
-bool IsNodeLevelMessage(const protobuf::Message& message);
-bool IsRequest(const protobuf::Message& message);
-bool IsResponse(const protobuf::Message& message);
-bool IsDirect(const protobuf::Message& message);
-bool IsCacheableGet(const protobuf::Message& message);
-bool IsCacheablePut(const protobuf::Message& message);
-bool IsAck(const protobuf::Message& message);
-bool IsConnectSuccessAcknowledgement(const protobuf::Message& message);
-bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
-                                                 const bool is_destination_client);
-bool CheckId(const std::string& id_to_test);
-bool ValidateMessage(const protobuf::Message& message);
-NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
-void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
-                         protobuf::Endpoint* pb_endpoint);
-boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
-std::string MessageTypeString(const protobuf::Message& message);
-std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
-    std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
-protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
-rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
-std::string PrintMessage(const protobuf::Message& message);
-std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str);
-std::string SerializeNodeIdList(const std::vector<NodeId>& node_list);
-SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message);
-SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message);
-GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message);
-GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message);
-SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message);
-
-
+//
+// #include "boost/asio/ip/udp.hpp"
+//
+// #include "maidsafe/common/rsa.h"
+// #include "maidsafe/common/node_id.h"
+//
+// #include "maidsafe/rudp/managed_connections.h"
+//
+// #include "maidsafe/passport/types.h"
+//
+// #include "maidsafe/routing/api_config.h"
+// #include "maidsafe/routing/node_info.h"
+// #include "maidsafe/routing/parameters.h"
+// #include "maidsafe/routing/routing.pb.h"
+// #include "maidsafe/routing/public_key_holder.h"
+//
+// namespace protobuf {
+//
+// class Message;
+// class Endpoint;
+//
+// }  // namespace protobuf
+//
+// class Network;
+// class ClientRoutingTable;
+// class RoutingTable;
+//
+// int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
+//               const NodeId& peer_id, const NodeId& peer_connection_id,
+//               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
+//
+// bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
+//                                   ClientRoutingTable& client_routing_table, const NodeId&
+//                                   peer_id,
+//                                   const NodeId& connection_id, const asymm::PublicKey&
+//                                   public_key,
+//                                   bool client);
+//
+// void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
+//                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
+//
+// // GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
+// //                                   const NodeId& this_node_id,
+// //                                   const crypto::BigInt& proximity_radius,
+// //                                   const std::vector<NodeId>& holders);
+//
+// bool IsRoutingMessage(const protobuf::Message& message);
+// bool IsNodeLevelMessage(const protobuf::Message& message);
+// bool IsRequest(const protobuf::Message& message);
+// bool IsResponse(const protobuf::Message& message);
+// bool IsDirect(const protobuf::Message& message);
+// bool IsCacheableGet(const protobuf::Message& message);
+// bool IsCacheablePut(const protobuf::Message& message);
+// bool IsAck(const protobuf::Message& message);
+// bool IsConnectSuccessAcknowledgement(const protobuf::Message& message);
+// bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
+//                                                  const bool is_destination_client);
+// bool CheckId(const std::string& id_to_test);
+// bool ValidateMessage(const protobuf::Message& message);
+// NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
+// void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+//                          protobuf::Endpoint* pb_endpoint);
+// boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
+// std::string MessageTypeString(const protobuf::Message& message);
+// std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
+//     std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
+// protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
+// rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
+// std::string PrintMessage(const protobuf::Message& message);
+// std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str);
+// std::string SerializeNodeIdList(const std::vector<NodeId>& node_list);
+// SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message);
+// SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message);
+// GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message);
+// GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message);
+// SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message&
+// proto_message);
+//
+//
 }  // namespace routing
 
 }  // namespace maidsafe

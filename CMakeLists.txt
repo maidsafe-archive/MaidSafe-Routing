@@ -37,82 +37,18 @@ include(../../cmake_modules/standard_setup.cmake)
 
 
 #==================================================================================================#
-# Set up all files as GLOBs                                                                        #
-#==================================================================================================#
-set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
-ms_glob_dir(Routing ${RoutingSourcesDir} Routing)
-ms_glob_dir(RoutingTests ${RoutingSourcesDir}/tests Tests)
-ms_glob_dir(RoutingTools ${RoutingSourcesDir}/tools Tools)
-set(RoutingTestsHelperFiles ${RoutingSourcesDir}/tests/routing_network.cc
-                            ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/routing_network.h
-                            ${RoutingSourcesDir}/tests/zero_state_helpers.cc
-                            ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/tests/zero_state_helpers.h
-                            ${RoutingSourcesDir}/tests/test_utils.cc
-                            ${RoutingSourcesDir}/tests/test_utils.h)
-set(RoutingApiTestFiles ${RoutingSourcesDir}/tests/routing_api_test.cc
-                        ${RoutingSourcesDir}/tests/routing_api_param_test.cc)
-set(RoutingFuncTestFiles ${RoutingSourcesDir}/tests/routing_functional_test.cc
-                         ${RoutingSourcesDir}/tests/test_func_main.cc)
-set(RoutingBigTestFiles ${RoutingSourcesDir}/tests/cache_test.cc
-                        ${RoutingSourcesDir}/tests/routing_churn_test.cc
-                        ${RoutingSourcesDir}/tests/find_nodes_test.cc
-                        ${RoutingSourcesDir}/tests/routing_stand_alone_test.cc)
-
-list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
-                                      ${RoutingApiTestFiles}
-                                      ${RoutingFuncTestFiles}
-                                      ${RoutingBigTestFiles})
-
-
-#==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
+set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
+ms_add_static_library(maidsafe_routing ${RoutingSourcesDir}/routing_table.cc)
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
-if(MaidsafeTesting)
-  ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
-  target_link_libraries(maidsafe_routing_test_helper maidsafe_routing maidsafe_test)
-  target_link_libraries(maidsafe_routing maidsafe_network_viewer)
-  ms_add_executable(test_routing "Tests/Routing" ${RoutingTestsAllFiles})
-  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingApiTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  # new executable test_routing_func is created to contain func tests excluded from test_routing, can be run seperately
-  ms_add_executable(test_routing_func "Tests/Routing" ${RoutingFuncTestFiles})
-  # new executable weekly_test_routing is created to contain tests that each need their own network
-  ms_add_executable(weekly_test_routing "Tests/Routing" ${RoutingBigTestFiles} ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(create_client_bootstrap "Tools/Routing" ${RoutingSourcesDir}/tools/create_bootstrap.cc)
-  ms_add_executable(routing_key_helper "Tools/Routing" ${RoutingSourcesDir}/tools/key_helper.cc)
-  ms_add_executable(routing_node "Tools/Routing" ${RoutingSourcesDir}/tools/routing_node.cc
-                                                 ${RoutingSourcesDir}/tools/commands.h
-                                                 ${RoutingSourcesDir}/tools/commands.cc
-                                                 ${RoutingSourcesDir}/tools/shared_response.h
-                                                 ${RoutingSourcesDir}/tools/shared_response.cc)
-
-  target_include_directories(maidsafe_routing_test_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(test_routing_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(test_routing_func PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(weekly_test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(routing_key_helper PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(routing_node PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_include_directories(create_client_bootstrap PRIVATE ${PROJECT_SOURCE_DIR}/src)
-
-  target_link_libraries(test_routing maidsafe_routing_test_helper)
-  target_link_libraries(test_routing_api maidsafe_routing_test_helper)
-  target_link_libraries(test_routing_func maidsafe_routing_test_helper)
-  target_link_libraries(weekly_test_routing maidsafe_routing_test_helper)
-  target_link_libraries(create_client_bootstrap maidsafe_routing_test_helper)
-  target_link_libraries(routing_key_helper maidsafe_routing_test_helper)
-  target_link_libraries(routing_node maidsafe_routing_test_helper)
-  foreach(Target maidsafe_routing test_routing_func weekly_test_routing routing_node maidsafe_routing_test_helper)
-    target_compile_definitions(${Target} PRIVATE USE_GTEST)
-  endforeach()
-endif()
+ms_add_executable(test_routing_table "Tests/Routing" ${RoutingSourcesDir}/tests/routing_table_test.cc)
+target_link_libraries(test_routing_table maidsafe_routing)
 
 ms_rename_outdated_built_exes()
 
-add_subdirectory(${RoutingSourcesDir}/tools/network_viewer)
 
 
 #==================================================================================================#
@@ -126,52 +62,4 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(MaidsafeTesting)
-  ms_add_default_tests()
-  add_test(NAME Multiple_Functional_Tests COMMAND test_routing_func)
-  set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional ${TASK_LABEL})
-  ms_add_gtests(test_routing)
-  ms_add_gtests(test_routing_api)
-  set(Timeout 300)
-  ms_update_test_timeout(Timeout)
-  set_property(TEST CloseNodesChangeTest.BEH_FullSizeRoutingTable PROPERTY TIMEOUT ${Timeout})
-#  set_property(TEST ResponseHandlerTest.BEH_FindNodes PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST APITest.BEH_API_TypedMessagePartiallyJoinedSendReceive PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST APITest.BEH_API_NodeNetwork PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST APITest.BEH_API_NodeNetworkWithClient PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST PublicKeyHolderTest.BEH_MultipleAddFindRemove PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST PublicKeyHolderTest.BEH_MultipleAddFindTimeout PROPERTY TIMEOUT ${Timeout})  
-  set(Timeout 1200)
-  ms_update_test_timeout(Timeout)
-  set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/0 PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/1 PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/2 PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/3 PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST RoutingTableTest.FUNC_AddTooManyNodes PROPERTY TIMEOUT ${Timeout})
-  set(Timeout 2400)
-  ms_update_test_timeout(Timeout)
-  set_property(TEST Multiple_Functional_Tests PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST SendGroup/RoutingApi.FUNC_API_SendGroup/4 PROPERTY TIMEOUT ${Timeout})
-  set_property(TEST RoutingTableNetwork.FUNC_GroupMessaging PROPERTY TIMEOUT ${Timeout})
-# This test target can be run separately. Removed from Experimental target to reduce the ctest time.
-  if(WEEKLY)
-    ms_add_gtests(weekly_test_routing)
-  endif()
-  ms_test_summary_output()
-endif()
-
-
-#==================================================================================================#
-# Package                                                                                          #
-#==================================================================================================#
-install(TARGETS maidsafe_routing COMPONENT Development CONFIGURATIONS Debug Release ARCHIVE DESTINATION lib)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATION include)
-
-if(MaidsafeTesting)
-  install(TARGETS maidsafe_routing_test_helper test_routing test_routing_api test_routing_func
-                  weekly_test_routing create_client_bootstrap routing_key_helper routing_node
-                  COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug ARCHIVE DESTINATION lib)
-  install(TARGETS maidsafe_routing_test_helper test_routing test_routing_api test_routing_func
-                  weekly_test_routing create_client_bootstrap routing_key_helper routing_node
-                  COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
-endif()
+  ms_add_gtests(test_routing_table)
