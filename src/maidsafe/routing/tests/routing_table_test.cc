@@ -27,12 +27,11 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/types.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/test_utils.h"
 #include "maidsafe/routing/network_statistics.h"
 
-// TODO(Alison) - test IsNodeIdInGroupRange
 
 namespace maidsafe {
 
@@ -42,39 +41,39 @@ namespace test {
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(node_id, asymm::GenerateKeyPair());
   NodeInfo node;
   // check the node is useful when false is set
-  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
+  for (unsigned int i = 0; i < kGroupSize; ++i) {
     node.id = NodeId(RandomString(64));
     EXPECT_TRUE(routing_table.CheckNode(node));
   }
   EXPECT_EQ(routing_table.size(), 0);
   asymm::PublicKey dummy_key;
   // check we cannot input nodes with invalid public_keys
-  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
+  for (unsigned int i = 0; i < kGroupSize; ++i) {
     NodeInfo node(MakeNode());
     node.public_key = dummy_key;
     EXPECT_FALSE(routing_table.AddNode(node));
   }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
-  for (unsigned int i = 0; i < Parameters::closest_nodes_size; ++i) {
+  for (unsigned int i = 0; i < kGroupSize; ++i) {
     node = MakeNode();
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(Parameters::closest_nodes_size, routing_table.size());
+  EXPECT_EQ(kGroupSize, routing_table.size());
 }
 
 TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(node_id, asymm::GenerateKeyPair());
 
-  for (unsigned int i = 0; routing_table.size() < Parameters::max_routing_table_size; ++i) {
+  for (unsigned int i = 0; routing_table.size() < kRoutingTableSize; ++i) {
     NodeInfo node(MakeNode());
     EXPECT_TRUE(routing_table.AddNode(node));
   }
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), kRoutingTableSize);
   size_t count(0);
   for (unsigned int i = 0; i < 1000; ++i) {
     NodeInfo node(MakeNode());
@@ -85,13 +84,13 @@ TEST(RoutingTableTest, FUNC_AddTooManyNodes) {
   }
   if (count > 0)
     LOG(kInfo) << "made space for " << count << " node(s) in routing table";
-  EXPECT_EQ(routing_table.size(), Parameters::max_routing_table_size);
+  EXPECT_EQ(routing_table.size(), kRoutingTableSize);
 }
 
 TEST(RoutingTableTest, BEH_GetNthClosest) {
   std::vector<NodeId> nodes_id;
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(node_id, asymm::GenerateKeyPair());
   NodeId my_node(routing_table.kNodeId());
 
   for (unsigned int i(static_cast<unsigned int>(routing_table.size())); routing_table.size() < 10;
@@ -112,7 +111,7 @@ TEST(RoutingTableTest, BEH_GetNthClosest) {
 
 TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(node_id, asymm::GenerateKeyPair());
   std::vector<NodeId> nodes_id;
   std::vector<std::string> exclude;
   NodeInfo node_info;
@@ -145,7 +144,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   // routing_table with Parameters::group_size elements
   exclude.clear();
   for (unsigned int i(static_cast<unsigned int>(routing_table.size()));
-       routing_table.size() < Parameters::group_size; ++i) {
+       routing_table.size() < kGroupSize; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -155,7 +154,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
   EXPECT_EQ(node_info.id, node_info2.id);
 
-  unsigned int random_index = RandomUint32() % Parameters::group_size;
+  unsigned int random_index = RandomUint32() % kGroupSize;
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
   EXPECT_NE(node_info.id, node_info2.id);
@@ -175,7 +174,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   // routing_table with Parameters::Parameters::max_routing_table_size elements
   exclude.clear();
   for (unsigned int i = static_cast<unsigned int>(routing_table.size());
-       routing_table.size() < Parameters::max_routing_table_size; ++i) {
+       routing_table.size() < kGroupSize; ++i) {
     NodeInfo node(MakeNode());
     nodes_id.push_back(node.id);
     EXPECT_TRUE(routing_table.AddNode(node));
@@ -185,7 +184,7 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
   node_info2 = routing_table.GetClosestNode(my_node, true, exclude);
   EXPECT_EQ(node_info.id, node_info2.id);
 
-  random_index = RandomUint32() % Parameters::max_routing_table_size;
+  random_index = RandomUint32() % kGroupSize;
   node_info = routing_table.GetClosestNode(nodes_id[random_index], false, exclude);
   node_info2 = routing_table.GetClosestNode(nodes_id[random_index], true, exclude);
   EXPECT_NE(node_info.id, node_info2.id);
@@ -205,14 +204,14 @@ TEST(RoutingTableTest, FUNC_GetClosestNodeWithExclusion) {
 
 TEST(RoutingTableTest, FUNC_ClosestToId) {
   NodeId own_node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(own_node_id, asymm::GenerateKeyPair());
   std::vector<NodeInfo> known_nodes;
   std::vector<NodeInfo> known_targets;
   NodeId target;
   NodeInfo node_info;
   NodeId furthest_group_node;
 
-  auto test_known_ids = [&, this ]()->bool {
+  auto test_known_ids = [&, this]() -> bool {
     LOG(kInfo) << "\tTesting known ids...";
     bool passed(true);
     bool result(false);
@@ -230,7 +229,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
     return passed;
   };  // NOLINT
 
-  auto test_unknown_ids = [&, this ]()->bool {
+  auto test_unknown_ids = [&, this]() -> bool {
     LOG(kInfo) << "\tTesting unknown ids...";
     bool passed(true);
     bool result(false);
@@ -260,14 +259,14 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
 
   // ------- Partially populated routing table -------
   LOG(kInfo) << "Partially populating routing table...";
-  while (routing_table.size() < static_cast<size_t>(Parameters::max_routing_table_size / 4)) {
+  while (routing_table.size() < static_cast<size_t>(kRoutingTableSize / 4)) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     known_targets.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
-  PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
-  furthest_group_node = known_nodes.at(Parameters::group_size - 2).id;
+  PartialSortFromTarget(own_node_id, known_nodes, kGroupSize);
+  furthest_group_node = known_nodes.at(kGroupSize - 2).id;
 
   LOG(kInfo) << "Testing partially populated routing table...";
   EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
@@ -276,14 +275,14 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
 
   // ------- Fully populated routing table -------
   LOG(kInfo) << "Fully populating routing table...";
-  while (routing_table.size() < Parameters::max_routing_table_size) {
+  while (routing_table.size() < kRoutingTableSize) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     known_targets.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));
   }
-  PartialSortFromTarget(own_node_id, known_nodes, Parameters::group_size);
-  furthest_group_node = known_nodes.at(Parameters::group_size - 2).id;
+  PartialSortFromTarget(own_node_id, known_nodes, kGroupSize);
+  furthest_group_node = known_nodes.at(kGroupSize - 2).id;
 
   LOG(kInfo) << "Testing fully populated routing table...";
   EXPECT_FALSE(routing_table.IsThisNodeClosestTo(own_node_id, true));
@@ -293,7 +292,7 @@ TEST(RoutingTableTest, FUNC_ClosestToId) {
 
 TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
   NodeId own_node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, own_node_id, asymm::GenerateKeyPair());
+  RoutingTable routing_table(own_node_id, asymm::GenerateKeyPair());
   NodeInfo node_info;
   std::vector<NodeInfo> known_nodes;
 
@@ -309,7 +308,7 @@ TEST(RoutingTableTest, FUNC_GetRandomExistingNode) {
     ASSERT_FALSE(found == std::end(known_nodes));
   };
 
-  while (routing_table.size() < Parameters::max_routing_table_size) {
+  while (routing_table.size() < kRoutingTableSize) {
     node_info = MakeNode();
     known_nodes.push_back(node_info);
     EXPECT_TRUE(routing_table.AddNode(node_info));

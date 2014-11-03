@@ -28,66 +28,34 @@
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
-#include "boost/interprocess/ipc/message_queue.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/close_nodes_change.h"
+#include "maidsafe/routing/routing_table_change.h"
 #include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
-class GenericNode;
-class RoutingTableTest;
-class RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-class NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-class RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
-struct RoutingTableInfo;
-class RoutingTableNetwork;
-}
-
-namespace protobuf {
-class Contact;
-}
-
-struct NodeInfo;
-
-struct RoutingTableChange {
-  struct Remove {
-    Remove() : node(), routing_only_removal(true) {}
-    Remove(NodeInfo& node_in, bool routing_only_removal_in)
-        : node(node_in), routing_only_removal(routing_only_removal_in) {}
-    NodeInfo node;
-    bool routing_only_removal;
-  };
-  RoutingTableChange() : added_node(), removed(), insertion(false), close_nodes_change(),
-                         health(0) {}
-  RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in,
-                     bool insertion_in, std::shared_ptr<CloseNodesChange> close_nodes_change_in,
-                     unsigned int health_in)
-      : added_node(added_node_in), removed(removed_in), insertion(insertion_in),
-        close_nodes_change(close_nodes_change_in), health(health_in) {}
-  NodeInfo added_node;
-  Remove removed;
-  bool insertion;
-  std::shared_ptr<CloseNodesChange> close_nodes_change;
-  unsigned int health;
-};
 
 typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
     RoutingTableChangeFunctor;
 
 class RoutingTable {
  public:
-  RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys);
-  virtual ~RoutingTable();
+  RoutingTable(const NodeId& node_id, const asymm::Keys& keys);
+  RoutingTable(const RoutingTable&) = delete;
+  RoutingTable(const RoutingTable&&) = delete;
+  RoutingTable& operator=(const RoutingTable&) = delete;
+  RoutingTable& operator=(const RoutingTable&&) = delete;
+  virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(const NodeInfo& peer);
   bool CheckNode(const NodeInfo& peer);
@@ -100,8 +68,7 @@ class RoutingTable {
 
   bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
   // Returns default-constructed NodeId if routing table size is zero
-  NodeInfo GetClosestNode(const NodeId& target_id,
-                          bool ignore_exact_match = false,
+  NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false,
                           const std::vector<std::string>& exclude = std::vector<std::string>());
   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
                                         bool ignore_exact_match = false);
@@ -109,25 +76,11 @@ class RoutingTable {
   NodeId RandomConnectedNode();
 
   size_t size() const;
-  unsigned int kThresholdSize() const { return kThresholdSize_; }
-  unsigned int kMaxSize() const { return kMaxSize_; }
   NodeId kNodeId() const { return kNodeId_; }
   asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
   asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
-  NodeId kConnectionId() const { return kConnectionId_; }
-  bool client_mode() const { return kClientMode_; }
-
-  friend class test::GenericNode;
-  friend class test::RoutingTableTest;
-  friend class test::RoutingTableTest_BEH_CheckMockSendGroupChangeRpcs_Test;
-  friend class test::NetworkStatisticsTest_BEH_IsIdInGroupRange_Test;
-  friend class test::RoutingTableTest_FUNC_IsNodeIdInGroupRange_Test;
-  friend struct test::RoutingTableInfo;
-  friend class test::RoutingTableNetwork;
 
  private:
-  RoutingTable(const RoutingTable&);
-  RoutingTable& operator=(const RoutingTable&);
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
   bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
@@ -158,19 +111,14 @@ class RoutingTable {
 
   unsigned int NetworkStatus(unsigned int size) const;
 
-  void IpcSendCloseNodes();
   std::string PrintRoutingTable();
 
-  const bool kClientMode_;
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
   const asymm::Keys kKeys_;
-  const unsigned int kMaxSize_;
-  const unsigned int kThresholdSize_;
   mutable std::mutex mutex_;
   RoutingTableChangeFunctor routing_table_change_functor_;
   std::vector<NodeInfo> nodes_;
-  std::unique_ptr<boost::interprocess::message_queue> ipc_message_queue_;
 };
 
 }  // namespace routing
