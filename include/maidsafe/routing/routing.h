@@ -19,6 +19,11 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_H_
 #define MAIDSAFE_ROUTING_ROUTING_H_
 
+#include "boost/asio/ip/udp.hpp"
+
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/rudp/managed_connections.h"
+
 namespace maidsafe {
 
 namespace routing {
@@ -109,7 +114,7 @@ class Routing {
   bool EstimateInGroup(const NodeId& sender_id, const NodeId& info_id) const;
 
   // Returns this node's id.
-  NodeId kNodeId() const;
+  const NodeId OurId() const;
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
   int network_status();
