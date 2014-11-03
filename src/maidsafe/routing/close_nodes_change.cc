@@ -201,6 +201,20 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
+bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) const {
+  if (new_close_nodes_.size() < Parameters::group_size)
+    return true;
+
+  std::vector<NodeId> holders(Parameters::group_size);
+  std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                         std::begin(holders), std::end(holders),
+                         [target](const NodeId& lhs, const NodeId& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target);
+  });
+
+  return (std::find(std::begin(holders), std::end(holders), node_id) != std::end(holders));
+}
+
 NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                         const NodeId& target) const {
   if (online_pmids.empty())
