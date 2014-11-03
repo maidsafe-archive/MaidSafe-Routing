@@ -26,52 +26,18 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/tools/network_viewer.h"
 
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/return_codes.h"
-#include "maidsafe/routing/routing.pb.h"
+#include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/close_nodes_change.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
-    : kClientMode_(client_mode),
-      kNodeId_(node_id),
-      kConnectionId_(kClientMode_ ? NodeId(NodeId::IdType::kRandomId) : kNodeId_),
-      kKeys_(keys),
-      kMaxSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
-                             : Parameters::max_routing_table_size),
-      kThresholdSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
-                                   : Parameters::routing_table_size_threshold),
-      mutex_(),
-      routing_table_change_functor_(),
-      nodes_(),
-      ipc_message_queue_() {
-#ifdef TESTING
-  try {
-    ipc_message_queue_.reset(new boost::interprocess::message_queue(
-        boost::interprocess::open_only, network_viewer::kMessageQueueName.c_str()));
-    if (static_cast<unsigned int>(ipc_message_queue_->get_max_msg_size()) <
-        (Parameters::closest_nodes_size + 1) * Parameters::closest_nodes_size * 2 * NodeId::kSize) {
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-    }
-  } catch (const std::exception&) {
-    ipc_message_queue_.reset();
-  }
-#endif
-}
-
-RoutingTable::~RoutingTable() {
-  if (ipc_message_queue_) {
-    network_viewer::MatrixRecord matrix_record(kNodeId_);
-    std::string serialised_matrix(matrix_record.Serialise());
-    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
-  }
-}
+RoutingTable::RoutingTable(const NodeId& node_id, const asymm::Keys& keys)
+    : kNodeId_(node_id), kKeys_(keys), mutex_(), routing_table_change_functor_(), nodes_() {}
 
 void RoutingTable::InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor) {
   assert(routing_table_change_functor);
@@ -108,29 +74,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
       return false;
     }
 
-    auto close_nodes_size(
-        PartialSortFromTarget(kNodeId_, Parameters::max_routing_table_size, lock));
-
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
-        assert(peer.bucket != NodeInfo::kInvalidBucket);
-        if (!client_mode() &&
-            ((nodes_.size() < Parameters::closest_nodes_size) ||
-             NodeId::CloserToTarget(peer.id, nodes_.at(Parameters::closest_nodes_size - 1).id,
-                                    kNodeId()))) {
-          bool full_close_nodes(nodes_.size() >= Parameters::closest_nodes_size);
-          close_nodes_size = (full_close_nodes) ? (close_nodes_size - 1) : close_nodes_size;
-          std::for_each(std::begin(nodes_), std::begin(nodes_) + close_nodes_size,
-                        [&](const NodeInfo& node_info) {
-            old_close_nodes.push_back(node_info.id);
-            new_close_nodes.push_back(node_info.id);
-          });
-          new_close_nodes.push_back(peer.id);
-          if (full_close_nodes)
-            old_close_nodes.push_back(nodes_.at(Parameters::closest_nodes_size - 1).id);
-          close_nodes_change.reset(
-              new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
-        }
         nodes_.push_back(peer);
       }
       return_value = true;
@@ -156,26 +101,8 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
   std::shared_ptr<CloseNodesChange> close_nodes_change;
   {
     std::unique_lock<std::mutex> lock(mutex_);
-    auto close_nodes_size(
-        PartialSortFromTarget(kNodeId_, Parameters::closest_nodes_size + 1, lock));
     auto found(Find(node_to_drop, lock));
     if (found.first) {
-      if (!client_mode() &&
-          ((nodes_.size() < Parameters::closest_nodes_size) ||
-           !NodeId::CloserToTarget(nodes_.at(Parameters::closest_nodes_size - 1).id, node_to_drop,
-                                   kNodeId()))) {
-        std::for_each(
-            std::begin(nodes_),
-            std::begin(nodes_) + std::min(close_nodes_size, Parameters::closest_nodes_size),
-            [&](const NodeInfo& node_info) {
-              old_close_nodes.push_back(node_info.id);
-              if (node_info.id != node_to_drop)
-                new_close_nodes.push_back(node_info.id);
-            });
-        if (close_nodes_size == Parameters::closest_nodes_size + 1)
-          new_close_nodes.push_back(nodes_.at(Parameters::closest_nodes_size).id);
-        close_nodes_change.reset(new CloseNodesChange(kNodeId(), old_close_nodes, new_close_nodes));
-      }
       dropped_node = *found.second;
       nodes_.erase(found.second);
       routing_table_size = static_cast<unsigned int>(nodes_.size());
@@ -195,11 +122,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
 
 NodeId RoutingTable::RandomConnectedNode() {
   std::unique_lock<std::mutex> lock(mutex_);
-  // Commenting out assert as peer starts treating this node as joined as soon as it adds
-  // it into its routing table.
-  //  assert(nodes_.size() > Parameters::closest_nodes_size &&
-  //         "Shouldn't call RandomConnectedNode when routing table size is <= closest_nodes_size");
-  //   assert(nodes_.empty());
   if (nodes_.empty())
     return NodeId();
 
@@ -255,11 +177,9 @@ bool RoutingTable::Contains(const NodeId& node_id) const {
 }
 
 bool RoutingTable::ConfirmGroupMembers(const NodeId& node1, const NodeId& node2) {
-  NodeId difference =
-      kNodeId_ ^
-      GetNthClosestNode(kNodeId(), std::min(static_cast<unsigned>(nodes_.size()),
-                                            static_cast<unsigned>(Parameters::closest_nodes_size)))
-          .id;
+  NodeId difference = kNodeId_ ^
+                      GetNthClosestNode(kNodeId(), std::min(static_cast<unsigned>(nodes_.size()),
+                                                            static_cast<unsigned>(kGroupSize))).id;
   return (node1 ^ node2) < difference;
 }
 
@@ -298,19 +218,6 @@ bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node,
     return false;
   }
 
-  // If the endpoint is kNonRoutable then no need to check for endpoint duplication.
-  //  if (node.endpoint == rudp::kNonRoutable)
-  //    return true;
-  // If we already have a duplicate endpoint return false
-  //  if (std::find_if(nodes_.begin(),
-  //                   nodes_.end(),
-  //                   [node](const NodeInfo& node_info) {
-  //                     return (node_info.endpoint == node.endpoint);
-  //                   }) != nodes_.end()) {
-  //    LOG(kInfo) << "Already have node with this endpoint";
-  //    return false;
-  //  }
-
   return true;
 }
 
@@ -324,22 +231,12 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   if (remove && !CheckPublicKeyIsUnique(node, lock))
     return false;
 
-  if (nodes_.size() < kMaxSize_)
+  if (nodes_.size() < kRoutingTableSize)
     return true;
 
-  if (client_mode()) {
-    assert(nodes_.size() == kMaxSize_);
-    if (NodeId::CloserToTarget(node.id, nodes_.at(kMaxSize_ - 1).id, kNodeId())) {
-      removed_node = *nodes_.rbegin();
-      nodes_.pop_back();
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   unsigned int max_bucket(0), max_bucket_count(1);
-  std::for_each(std::begin(nodes_) + Parameters::unidirectional_interest_range, std::end(nodes_),
+  std::for_each(std::begin(nodes_) + kGroupSize, std::end(nodes_),
                 [&bucket_rank_map, &max_bucket, &max_bucket_count](const NodeInfo& node_info) {
     auto bucket_iter(bucket_rank_map.find(node_info.bucket));
     if (bucket_iter != std::end(bucket_rank_map))
@@ -360,8 +257,7 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
   if ((max_bucket_count == 1) && (nodes_.back().bucket < node.bucket))
     return false;
 
-  if (NodeId::CloserToTarget(nodes_.at(Parameters::unidirectional_interest_range).id, node.id,
-                             kNodeId()))
+  if (NodeId::CloserToTarget(nodes_.at(kGroupSize).id, node.id, kNodeId()))
     return false;
 
   for (auto it(nodes_.rbegin()); it != nodes_.rend(); ++it)
@@ -412,8 +308,7 @@ void RoutingTable::NthElementSortFromTarget(const NodeId& target, unsigned int n
 
 NodeInfo RoutingTable::GetClosestNode(const NodeId& target_id, bool ignore_exact_match,
                                       const std::vector<std::string>& exclude) {
-  auto closest_nodes(
-      GetClosestNodes(target_id, Parameters::closest_nodes_size, ignore_exact_match));
+  auto closest_nodes(GetClosestNodes(target_id, kGroupSize, ignore_exact_match));
   for (const auto& node_info : closest_nodes) {
     if (std::find(exclude.begin(), exclude.end(), node_info.id.string()) == exclude.end())
       return node_info;
@@ -477,41 +372,13 @@ std::pair<bool, std::vector<NodeInfo>::const_iterator> RoutingTable::Find(
 }
 
 unsigned int RoutingTable::NetworkStatus(unsigned int size) const {
-  return static_cast<unsigned int>((size)*100 / kMaxSize_);
+  return static_cast<unsigned int>((size)*100 / kRoutingTableSize);
 }
 
 size_t RoutingTable::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();
 }
-
-// to be moved to utils
-//  void RoutingTable::IpcSendCloseNodes() {
-//  if (ipc_message_queue_) {
-//    network_viewer::MatrixRecord close_nodes_record(kNodeId_);
-//    std::vector<NodeInfo> close;
-//    {
-//      std::unique_lock<std::mutex> lock(mutex_);
-//      auto count(PartialSortFromTarget(kNodeId(), Parameters::closest_nodes_size, lock));
-//      std::copy(std::begin(nodes_), std::begin(nodes_) + count, std::back_inserter(close));
-//    }
-
-//    size_t index(0);
-//    std::string printout("\tClose nodes sent by: " + DebugId(kNodeId_) + "\n");
-//    size_t limit(std::min(static_cast<size_t>(Parameters::group_size), close.size()));
-//    for (; index < limit; ++index) {
-//      matrix_record.AddElement(close[index].id, network_viewer::ChildType::kGroup);
-//      printout += "\t\t" + DebugId(close[index].id) + " - kGroup\n";
-//    }
-//    for (; index < close.size(); ++index) {
-//      matrix_record.AddElement(close[index].id, network_viewer::ChildType::kClosest);
-//      printout += "\t\t" + DebugId(close[index].id) + " - kClosest\n";
-//    }
-//    LOG(kInfo) << printout << '\n';
-//    std::string serialised_matrix(matrix_record.Serialise());
-//    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
-//  }
-//  }
 
 std::string RoutingTable::PrintRoutingTable() {
   std::vector<NodeInfo> rt;

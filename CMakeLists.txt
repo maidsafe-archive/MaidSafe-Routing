@@ -40,12 +40,22 @@ include(../../cmake_modules/standard_setup.cmake)
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
-ms_add_static_library(maidsafe_routing ${RoutingSourcesDir}/routing_table.cc)
+ms_add_static_library(maidsafe_routing 
+                     ${RoutingSourcesDir}/routing_table.cc
+                     ${RoutingSourcesDir}/utils.cc
+                     ${RoutingSourcesDir}/node_info.cc
+                     
+                     )
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
-ms_add_executable(test_routing_table "Tests/Routing" ${RoutingSourcesDir}/tests/routing_table_test.cc)
-target_link_libraries(test_routing_table maidsafe_routing)
+ms_add_executable(test_routing_table "Tests/Routing"
+                 ${RoutingSourcesDir}/tests/routing_table_test.cc
+                 ${RoutingSourcesDir}/tests/test_main.cc
+                 ${RoutingSourcesDir}/tests/test_utils.cc
+                 )
+target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(test_routing_table maidsafe_routing gtest)
 
 ms_rename_outdated_built_exes()
 

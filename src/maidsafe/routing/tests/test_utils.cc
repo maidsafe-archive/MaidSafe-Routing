@@ -33,7 +33,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/parameters.h"
+#include "maidsafe/routing/types.h"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -44,15 +44,15 @@ namespace routing {
 
 namespace test {
 
-ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
-    : kFilePath(detail::GetOverrideBootstrapFilePath<false>()) {
-  boost::filesystem::remove(kFilePath);
-  WriteBootstrapContacts(bootstrap_contacts, kFilePath);
-}
-
-ScopedBootstrapFile::~ScopedBootstrapFile() {
-  EXPECT_NO_THROW(boost::filesystem::remove(kFilePath));
-}
+// ScopedBootstrapFile::ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts)
+//     : kFilePath(detail::GetOverrideBootstrapFilePath<false>()) {
+//   boost::filesystem::remove(kFilePath);
+//   WriteBootstrapContacts(bootstrap_contacts, kFilePath);
+// }
+//
+// ScopedBootstrapFile::~ScopedBootstrapFile() {
+//   EXPECT_NO_THROW(boost::filesystem::remove(kFilePath));
+// }
 
 NodeInfo MakeNode() {
   NodeInfo node;
@@ -122,19 +122,11 @@ NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
   return new_node;
 }
 
-NodeId GenerateUniqueRandomId(unsigned int pos) {
-  return GenerateUniqueRandomId(NodeId(), pos);
-}
+NodeId GenerateUniqueRandomId(unsigned int pos) { return GenerateUniqueRandomId(NodeId(), pos); }
 
-NodeId GenerateUniqueNonRandomId(uint64_t pos) {
-  return GenerateUniqueNonRandomId(NodeId(), pos);
-}
+NodeId GenerateUniqueNonRandomId(uint64_t pos) { return GenerateUniqueNonRandomId(NodeId(), pos); }
 
-int NetworkStatus(bool client, int status) {
-  unsigned int max_size(client ? Parameters::max_routing_table_size_for_client
-                               : Parameters::max_routing_table_size);
-  return (status > 0) ? (status * 100 / max_size) : status;
-}
+int NetworkStatus(int status) { return (status > 0) ? (status * 100 / kRoutingTableSize) : status; }
 
 void SortFromTarget(const NodeId& target, std::vector<NodeInfo>& nodes) {
   std::sort(nodes.begin(), nodes.end(), [target](const NodeInfo& lhs, const NodeInfo& rhs) {

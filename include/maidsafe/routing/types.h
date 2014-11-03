@@ -50,7 +50,8 @@ namespace routing {
 
 static const size_t kGroupSize = 32;
 static const size_t kQuorumSize = 29;
-
+static const size_t kRoutingTableSize = 64;
+extern const NodeId OurId;
 using SingleDestinationId = TaggedValue<NodeId, struct SingleDestinationTag>;
 using GroupDestinationId = TaggedValue<NodeId, struct GroupDestinationTag>;
 using SingleSourceId = TaggedValue<NodeId, struct SingleSourceTag>;
@@ -61,7 +62,6 @@ using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEn
 using byte = unsigned char;
 using CheckSums = std::array<Murmur, kGroupSize - 1>;
 using SerialisedMessage = std::vector<unsigned char>;
-NodeId OurId(NodeId::IdType::kRandomId);
 
 // For use with small messages which aren't scatter/gathered
 template <typename Destination, typename Source>

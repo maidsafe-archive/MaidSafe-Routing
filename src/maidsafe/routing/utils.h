@@ -20,6 +20,9 @@
 #define MAIDSAFE_ROUTING_UTILS_H_
 
 #include <vector>
+#include <cstdint>
+
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
@@ -95,7 +98,7 @@ Murmur MurmurHash2(const std::vector<unsigned char>& input);
 //                                                  const bool is_destination_client);
 // bool CheckId(const std::string& id_to_test);
 // bool ValidateMessage(const protobuf::Message& message);
-// NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
+NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
 // void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
 //                          protobuf::Endpoint* pb_endpoint);
 // boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);

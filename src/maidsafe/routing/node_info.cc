@@ -27,30 +27,30 @@ namespace maidsafe {
 namespace routing {
 
 
-NodeInfo::NodeInfo(const serialised_type& serialised_message)
-    : connection_id(), public_key(), bucket(kInvalidBucket), nat_type(rudp::NatType::kUnknown) {
-  protobuf::NodeInfo proto_node_info;
-  if (!proto_node_info.ParseFromString(serialised_message->string()))
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-
-  id = NodeId(proto_node_info.node_id());
-  rank = proto_node_info.rank();
-}
-
-NodeInfo::serialised_type NodeInfo::Serialise() const {
-  serialised_type serialised_message;
-  try {
-    protobuf::NodeInfo proto_node_info;
-    proto_node_info.set_node_id(id.string());
-    proto_node_info.set_rank(rank);
-
-    serialised_message = serialised_type(NonEmptyString(proto_node_info.SerializeAsString()));
-  } catch (const std::exception&) {
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-  }
-
-  return serialised_message;
-}
+// NodeInfo::NodeInfo(const serialised_type& serialised_message)
+//     : connection_id(), public_key(), bucket(kInvalidBucket), nat_type(rudp::NatType::kUnknown) {
+//   protobuf::NodeInfo proto_node_info;
+//   if (!proto_node_info.ParseFromString(serialised_message->string()))
+//     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+//
+//   id = NodeId(proto_node_info.node_id());
+//   rank = proto_node_info.rank();
+// }
+//
+// NodeInfo::serialised_type NodeInfo::Serialise() const {
+//   serialised_type serialised_message;
+//   try {
+//     protobuf::NodeInfo proto_node_info;
+//     proto_node_info.set_node_id(id.string());
+//     proto_node_info.set_rank(rank);
+//
+//     serialised_message = serialised_type(NonEmptyString(proto_node_info.SerializeAsString()));
+//   } catch (const std::exception&) {
+//     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+//   }
+//
+//   return serialised_message;
+// }
 
 const int32_t NodeInfo::kInvalidBucket(std::numeric_limits<int32_t>::max());
 
