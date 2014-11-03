@@ -201,7 +201,7 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
-bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) {
+bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) const {
   if (new_close_nodes_.size() < Parameters::group_size)
     return true;
 
