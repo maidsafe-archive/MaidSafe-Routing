@@ -42,7 +42,7 @@ Murmur MurmurHash2(const std::vector<unsigned char>& input) {
   // Initialize the hash to a 'random' value
 
   uint32_t len = static_cast<uint32_t>(input.size());
-  uint32_t h = RandomUint32() ^ len;
+  uint32_t h = len;
 
   // Mix 4 bytes at a time into the hash
 

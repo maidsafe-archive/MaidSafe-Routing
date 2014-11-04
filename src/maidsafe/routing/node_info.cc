@@ -18,10 +18,6 @@
 
 #include "maidsafe/routing/node_info.h"
 
-#include <limits>
-
-#include "maidsafe/routing/routing.pb.h"
-
 namespace maidsafe {
 
 namespace routing {
