@@ -40,27 +40,45 @@ include(../../cmake_modules/standard_setup.cmake)
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
-set(RoutingLibFiles  
-                     ${RoutingSourcesDir}/routing_table.cc
-                     ${RoutingSourcesDir}/utils.cc
-                     ${RoutingSourcesDir}/node_info.cc
-)
-ms_add_static_library(maidsafe_routing  ${RoutingLibFiles})
+set(RoutingLibApiFiles
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/close_nodes_change.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
+    )
+source_group("Routing API Files" FILES ${RoutingLibApiFiles})
+set(RoutingLibHeaders
+    ${RoutingSourcesDir}/routing_table.h
+    ${RoutingSourcesDir}/utils.h
+    )
+source_group("Routing Header Files" FILES ${RoutingLibHeaders})
+set(RoutingLibSources
+    ${RoutingSourcesDir}/node_info.cc
+    ${RoutingSourcesDir}/routing_table.cc
+    ${RoutingSourcesDir}/utils.cc
+    )
+source_group("Routing Source Files" FILES ${RoutingLibSources})
+ms_add_static_library(maidsafe_routing  ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
-ms_add_executable(test_routing_table "Tests/Routing"
-                 ${RoutingSourcesDir}/tests/routing_table_test.cc
-                 ${RoutingSourcesDir}/tests/test_main.cc
-                 ${RoutingSourcesDir}/tests/test_utils.cc
-                 )
+if(MaidsafeTesting)
+  ms_add_executable(test_routing_table "Tests/Routing"
+      ${RoutingSourcesDir}/tests/routing_table_test.cc
+      ${RoutingSourcesDir}/tests/test_main.cc
+      ${RoutingSourcesDir}/tests/test_utils.cc
+      )
 
-target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(test_routing_table maidsafe_routing maidsafe_test)
+  target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(test_routing_table maidsafe_routing maidsafe_test)
+
+  # TODO - remove these targets - only added to avoid changing installers for now.
+  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
+  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
+endif()
 
 ms_rename_outdated_built_exes()
-
 
 
 #==================================================================================================#
@@ -68,10 +86,10 @@ ms_rename_outdated_built_exes()
 #==================================================================================================#
 include(standard_flags)
 
-target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUILD>)
-
 
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
+if(MaidsafeTesting)
   ms_add_gtests(test_routing_table)
+endif()
