@@ -50,30 +50,20 @@ typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
 
 class RoutingTable {
  public:
-  RoutingTable(const NodeId& node_id, const asymm::Keys& keys);
+  RoutingTable(const NodeId& our_id, const asymm::Keys& keys);
   RoutingTable(const RoutingTable&) = delete;
   RoutingTable(const RoutingTable&&) = delete;
   RoutingTable& operator=(const RoutingTable&) = delete;
   RoutingTable& operator=(const RoutingTable&&) = delete;
   virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
-  bool AddNode(const NodeInfo& peer);
-  bool CheckNode(const NodeInfo& peer);
+  bool AddNode(const NodeInfo& their_id);
+  bool CheckNode(const NodeInfo& their_id);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
-
-  bool IsThisNodeInRange(const NodeId& target_id, unsigned int range);
-  bool IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match = false);
-  bool Contains(const NodeId& node_id) const;
-  bool ConfirmGroupMembers(const NodeId& node1, const NodeId& node2);
-
-  bool GetNodeInfo(const NodeId& node_id, NodeInfo& node_info) const;
-  // Returns default-constructed NodeId if routing table size is zero
-  NodeInfo GetClosestNode(const NodeId& target_id, bool ignore_exact_match = false,
-                          const std::vector<std::string>& exclude = std::vector<std::string>());
-  std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, unsigned int number_to_get,
-                                        bool ignore_exact_match = false);
-  NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int index);
-  NodeId RandomConnectedNode();
+  // If more than 1 node returned then we are in close group so send to all !!
+  std::vector<NodeInfo> GetTargetNodes(NodeId their_id);
+  // our close group or at least as much of it as we currently know
+  std::vector<NodeInfo> GetGroupNodes();
 
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
@@ -83,7 +73,7 @@ class RoutingTable {
  private:
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
-  bool CheckPublicKeyIsUnique(const NodeInfo& node, std::unique_lock<std::mutex>& lock) const;
+  bool CheckPublicKeyIsUnique(const NodeInfo& node) const;
 
   /** Attempts to find or allocate memory for an incomming connect request, returning true
    * indicates approval
@@ -100,10 +90,6 @@ class RoutingTable {
   bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
                                  std::unique_lock<std::mutex>& lock);
 
-  unsigned int PartialSortFromTarget(const NodeId& target, unsigned int number,
-                                     std::unique_lock<std::mutex>& lock);
-  void NthElementSortFromTarget(const NodeId& target, unsigned int nth_element,
-                                std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
