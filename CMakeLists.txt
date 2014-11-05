@@ -68,18 +68,24 @@ target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(MaidsafeTesting)
-  ms_add_executable(test_routing_table "Tests/Routing"
-      ${RoutingSourcesDir}/tests/routing_table_test.cc
-      ${RoutingSourcesDir}/tests/test_main.cc
-      ${RoutingSourcesDir}/tests/test_utils.cc
-      )
+  file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
+  foreach(TestFile ${TestFiles})
+    get_filename_component(TestName ${TestFile} NAME_WE)
+    ms_add_executable(${TestName} "Tests/Routing"
+        ${TestFile}
+        ${RoutingSourcesDir}/tests/main/test_main.cc
+        ${RoutingSourcesDir}/tests/main/test_utils.h
+        ${RoutingSourcesDir}/tests/main/test_utils.cc
+        )
 
-  target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(test_routing_table maidsafe_routing maidsafe_test)
+    target_include_directories(${TestName} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(${TestName} maidsafe_routing maidsafe_test)
+    list(APPEND RoutingTests ${TestName})
+  endforeach()
 
   # TODO - remove these targets - only added to avoid changing installers for now.
-  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
+  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
+  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
 endif()
 
 ms_rename_outdated_built_exes()
@@ -95,19 +101,10 @@ include(standard_flags)
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  file (GLOB TESTS ${RoutingSourcesDir}/tests/*.cc)
-  foreach(test ${TESTS})
-    get_filename_component(name ${test} NAME_WE)
-    message("here " ${name})
-    add_executable(${name} 
-                     ${test}
-                     ${RoutingSourcesDir}/tests/main/test_main.cc
-                     ${RoutingSourcesDir}/tests/main/test_utils.cc
-                     )
-
-    target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${name} maidsafe_routing maidsafe_test)
-    ms_add_gtests(${name})
+  ms_add_default_tests()
+  foreach(RoutingTest ${RoutingTests})
+    ms_add_gtests(${RoutingTest})
   endforeach()
+  ms_test_summary_output()
 endif()
 
