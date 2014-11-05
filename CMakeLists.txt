@@ -50,15 +50,6 @@ ms_add_static_library(maidsafe_routing  ${RoutingLibFiles})
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
-ms_add_executable(test_routing_table "Tests/Routing"
-                 ${RoutingSourcesDir}/tests/routing_table_test.cc
-                 ${RoutingSourcesDir}/tests/test_main.cc
-                 ${RoutingSourcesDir}/tests/test_utils.cc
-                 )
-
-target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(test_routing_table maidsafe_routing maidsafe_test)
-
 ms_rename_outdated_built_exes()
 
 
@@ -74,4 +65,18 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-  ms_add_gtests(test_routing_table)
+file (GLOB TESTS ${RoutingSourcesDir}/tests/*.cc)
+foreach(test ${TESTS})
+  get_filename_component(name ${test} NAME_WE)
+  message("here " ${name})
+  add_executable(${name} 
+                   ${test}
+                   ${RoutingSourcesDir}/tests/main/test_main.cc
+                   ${RoutingSourcesDir}/tests/main/test_utils.cc
+                   )
+
+  target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(${name} maidsafe_routing maidsafe_test)
+  ms_add_gtests(${name})
+endforeach()
+

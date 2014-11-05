@@ -89,7 +89,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
           RoutingTableChange(peer, RoutingTableChange::Remove(removed_node, false), true,
                              close_nodes_change, NetworkStatus(routing_table_size)));
     }
-    LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;
 }
@@ -116,7 +115,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                              false, close_nodes_change, NetworkStatus(routing_table_size)));
     }
   }
-  LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }
 
@@ -164,21 +162,12 @@ void RoutingTable::SetBucketIndex(NodeInfo& node_info) const {
   node_info.bucket = NodeId::kSize - 1 - kNodeId_.CommonLeadingBits(node_info.id);
 }
 
-bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node) const {
-  return std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo& node_info) {
-           return asymm::MatchingKeys(node_info.public_key, node.public_key);
-         }) == nodes_.end();
-}
-
 bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
                                              NodeInfo& removed_node,
                                              std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
 
   std::map<uint32_t, unsigned int> bucket_rank_map;
-
-  if (remove && !CheckPublicKeyIsUnique(node))
-    return false;
 
   if (nodes_.size() < kRoutingTableSize)
     return true;
@@ -217,6 +206,9 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
           nodes_.erase(--(it.base()));
           LOG(kVerbose) << kNodeId_ << " Proposed removable " << removed_node.id;
         }
+        std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+          return NodeId::CloserToTarget(lhs.id, rhs.id, kNodeId_);
+        });
         return true;
       }
     }
