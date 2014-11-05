@@ -95,5 +95,19 @@ include(standard_flags)
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  ms_add_gtests(test_routing_table)
+  file (GLOB TESTS ${RoutingSourcesDir}/tests/*.cc)
+  foreach(test ${TESTS})
+    get_filename_component(name ${test} NAME_WE)
+    message("here " ${name})
+    add_executable(${name} 
+                     ${test}
+                     ${RoutingSourcesDir}/tests/main/test_main.cc
+                     ${RoutingSourcesDir}/tests/main/test_utils.cc
+                     )
+
+    target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(${name} maidsafe_routing maidsafe_test)
+    ms_add_gtests(${name})
+  endforeach()
 endif()
+
