@@ -48,11 +48,15 @@ set(RoutingLibApiFiles
     )
 source_group("Routing API Files" FILES ${RoutingLibApiFiles})
 set(RoutingLibHeaders
+    ${RoutingSourcesDir}/header.h
+    ${RoutingSourcesDir}/messages.h
+    ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
+    ${RoutingSourcesDir}/message_handler.cc
     ${RoutingSourcesDir}/node_info.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc

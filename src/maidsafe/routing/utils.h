@@ -22,7 +22,9 @@
 #include <vector>
 #include <cstdint>
 
-#include "maidsafe/routing/node_info.h"
+#include "maidsafe/common/node_id.h"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -34,7 +36,7 @@ namespace routing {
 // MurmurHash2 is based on the implementation written by Austin Appleby, and placed in the public
 // domain by him.
 using Murmur = uint32_t;
-Murmur MurmurHash2(const std::vector<unsigned char>& input);
+Murmur MurmurHash2(const std::vector<byte>& input);
 
 
 // OLD

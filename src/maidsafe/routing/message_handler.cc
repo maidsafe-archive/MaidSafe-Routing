@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -18,19 +18,19 @@
 
 #include "maidsafe/routing/message_handler.h"
 
-#include <vector>
-
-#include "maidsafe/common/log.h"
-#include "maidsafe/common/node_id.h"
-
-#include "maidsafe/routing/client_routing_table.h"
-#include "maidsafe/routing/message.h"
-#include "maidsafe/routing/network.h"
-#include "maidsafe/routing/network_utils.h"
-#include "maidsafe/routing/routing.pb.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/service.h"
-#include "maidsafe/routing/utils.h"
+//#include <vector>
+//
+//#include "maidsafe/common/log.h"
+//#include "maidsafe/common/node_id.h"
+//
+//#include "maidsafe/routing/client_routing_table.h"
+//#include "maidsafe/routing/message.h"
+//#include "maidsafe/routing/network.h"
+//#include "maidsafe/routing/network_utils.h"
+//#include "maidsafe/routing/routing.pb.h"
+//#include "maidsafe/routing/routing_table.h"
+//#include "maidsafe/routing/service.h"
+//#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 

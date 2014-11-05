@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -19,63 +19,17 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
-#include <string>
+#include <vector>
 
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/api_config.h"
-#include "maidsafe/routing/cache_manager.h"
-#include "maidsafe/routing/response_handler.h"
-#include "maidsafe/routing/service.h"
-#include "maidsafe/routing/timer.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/network_utils.h"
+#include "maidsafe/routing/header.h"
+#include "maidsafe/routing/messages.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-namespace protobuf{class Message;}
-
-namespace test {
-  class GenericNode;
-  class MessageHandlerTest;
-  class MessageHandlerTest_BEH_HandleInvalidMessage_Test;
-  class MessageHandlerTest_BEH_HandleRelay_Test;
-  class MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
-  class MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
-  class MessageHandlerTest_BEH_ClientRoutingTable_Test;
-}
-
-namespace detail {
-struct TypedMessageRecievedFunctors {
-  std::function<void(const SingleToSingleMessage& /*message*/)> single_to_single;
-  std::function<void(const SingleToGroupMessage& /*message*/)> single_to_group;
-  std::function<void(const GroupToSingleMessage& /*message*/)> group_to_single;
-  std::function<void(const GroupToGroupMessage& /*message*/)> group_to_group;
-  std::function<void(const SingleToGroupRelayMessage& /*message*/)> single_to_group_relay;
-};
-
-}  // unnamed detail
-
-class Network;
-struct NetworkUtils;
-class ClientRoutingTable;
-class RoutingTable;
-class NetworkStatistics;
-
-enum class MessageType : int32_t {
-  kPing = 1,
-  kConnect = 2,
-  kFindNodes = 3,
-  kConnectSuccess = 4,
-  kConnectSuccessAcknowledgement = 5,
-  kGetGroup = 6,
-  kInformClientOfNewCloseNode = 7,
-  kAcknowledgement = 8,
-  kMaxRouting = 100,
-  kNodeLevel = 101
-};
 
 class MessageHandler {
  public:
