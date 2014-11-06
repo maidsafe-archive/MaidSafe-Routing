@@ -50,6 +50,7 @@ typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
 
 class RoutingTable {
  public:
+  static const size_t kBucketSize = 2;
   RoutingTable(const NodeId& our_id, const asymm::Keys& keys);
   RoutingTable(const RoutingTable&) = default;
   RoutingTable(RoutingTable&&) = default;
@@ -57,7 +58,7 @@ class RoutingTable {
   RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
-  bool AddNode(const NodeInfo& their_id);
+  bool AddNode(NodeInfo their_id);
   bool CheckNode(const NodeInfo& their_id);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   // If more than 1 node returned then we are in close group so send to all !!
@@ -71,8 +72,8 @@ class RoutingTable {
   asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
 
  private:
-  bool AddOrCheckNode(NodeInfo node, bool remove);
-  void SetBucketIndex(NodeInfo& node_info) const;
+  bool AddOrCheckNode(NodeInfo node, bool check_only);
+  int32_t BucketIndex(const NodeId& node_id) const;
 
   /** Attempts to find or allocate space for an incomming connect request, returning true
    * indicates approval
@@ -86,9 +87,7 @@ class RoutingTable {
    * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
    *    bucket will be evicted
    * - remove the selected node and return true **/
-  bool MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove, NodeInfo& removed_node,
-                                 std::unique_lock<std::mutex>& lock);
-
+  std::vector<NodeInfo>::reverse_iterator MakeSpaceForNodeToBeAdded();
   std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
                                                         std::unique_lock<std::mutex>& lock);
   std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(

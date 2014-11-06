@@ -106,19 +106,6 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
       }()) {
-#ifdef TESTING
-  std::stringstream stream;
-  stream << " CloseNodesChange constructed having : ";
-  if (new_node_ != NodeId())
-    stream << " new node : " << new_node_;
-  stream << "\n new_nodes : ";
-  for (const auto& node_id : new_close_nodes_)
-    stream << "\t[ " << node_id << " ]";
-  stream << "\n old_nodes : ";
-  for (const auto& node_id : old_close_nodes_)
-    stream << "\t[ " << node_id << " ]";
- 
-#endif
 }
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
@@ -178,19 +165,6 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
         std::end(old_holders))
       diff_new_holders.push_back(new_holder);
   });
-#ifdef TESTING
-  std::stringstream stream;
-  stream << "checking against : " << target << "\n new_holders : ";
-  for (const auto& node_id : new_holders)
-    stream << "\t[ " << node_id << " ]";
-  stream << "\n old_holders : ";
-  for (const auto& node_id : old_holders)
-    stream << "\t[ " << node_id << " ]";
-  stream << "\n diff_new_holders : ";
-  for (const auto& node_id : diff_new_holders)
-    stream << "\t[ " << node_id << " ]";
- 
-#endif
   //   holders_result.new_holders = new_holders;
   //   holders_result.old_holders = old_holders;
   if (diff_new_holders.size() > 0)
