@@ -51,7 +51,7 @@ TEST(RoutingTableTest, FUNC_Add_1000Nodes) {
       EXPECT_FALSE(node->AddNode(nodeinfo_to_add));
       nodeinfo_to_add.public_key = node_to_add->kPublicKey();
       if (node->size() < kRoutingTableSize && node->kNodeId() != nodeinfo_to_add.id)
-        EXPECT_TRUE(node->AddNode(nodeinfo_to_add));
+        EXPECT_TRUE(node->CheckNode(nodeinfo_to_add));
       if (node->kNodeId() == nodeinfo_to_add.id)
         EXPECT_FALSE(node->AddNode(nodeinfo_to_add));
     }

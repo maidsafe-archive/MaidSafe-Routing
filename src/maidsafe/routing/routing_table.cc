@@ -51,7 +51,6 @@ bool RoutingTable::AddNode(NodeInfo peer) {
 
   NodeInfo removed_node;
   unsigned int routing_table_size(0);
-  std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
 
   peer.bucket = BucketIndex(peer.id);
@@ -63,7 +62,7 @@ bool RoutingTable::AddNode(NodeInfo peer) {
   auto found(std::find_if(nodes_.begin(), nodes_.end(),
                           [&peer](const NodeInfo& node_info) { return node_info.id == peer.id; }));
   auto remove_node(MakeSpaceForNodeToBeAdded());
-  if (found == std::end(nodes_) && close_node) {
+  if (found == std::end(nodes_) || close_node) {
     if (remove_node != nodes_.rend() && NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_))
       nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(peer);
@@ -87,7 +86,6 @@ bool RoutingTable::CheckNode(const NodeInfo& peer) {
     return false;
 
   NodeInfo removed_node;
-  std::vector<NodeId> old_close_nodes, new_close_nodes;
   std::shared_ptr<CloseNodesChange> close_nodes_change;
 
   auto bucket = BucketIndex(peer.id);
@@ -103,25 +101,25 @@ bool RoutingTable::CheckNode(const NodeInfo& peer) {
 }
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
+  bool removed(false);
   NodeInfo dropped_node;
-  unsigned int routing_table_size(0);
-  std::vector<NodeId> old_close_nodes, new_close_nodes;
-  std::shared_ptr<CloseNodesChange> close_nodes_change;
   {
-    std::unique_lock<std::mutex> lock(mutex_);
-    auto found(Find(node_to_drop, lock));
-    if (found.first) {
-      dropped_node = *found.second;
-      nodes_.erase(found.second);
-      routing_table_size = static_cast<unsigned int>(nodes_.size());
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto remove =
+        find_if(std::begin(nodes_), std::end(nodes_),
+                [&node_to_drop](const NodeInfo& node) { return node.id == node_to_drop; });
+    if (remove != std::end(nodes_)) {
+      dropped_node = *remove;
+      nodes_.erase(remove);
+      removed = true;
     }
   }
-
-  if (!dropped_node.id.IsZero()) {
+  if (removed) {
     if (routing_table_change_functor_) {
+      std::shared_ptr<CloseNodesChange> tmp;
       routing_table_change_functor_(
           RoutingTableChange(NodeInfo(), RoutingTableChange::Remove(dropped_node, routing_only),
-                             false, close_nodes_change, NetworkStatus(routing_table_size)));
+                             false, tmp, NetworkStatus(size())));
     }
   }
   return dropped_node;
