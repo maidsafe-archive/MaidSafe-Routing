@@ -51,13 +51,13 @@ std::pair<NodeId, NodeId> ParseString(std::string input) {
       archive(cereal::make_nvp("oldId", node_str));
       old_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
-      LOG(kVerbose) << e.what();
+     
     }
     try {
       archive(cereal::make_nvp("newId", node_str));
       new_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
-      LOG(kVerbose) << e.what();
+     
     }
   }
   return std::make_pair(old_node_id, new_node_id);
@@ -226,7 +226,7 @@ class CloseNodesChangeTest : public testing::Test {
       stream << "\nold_close_nodes :";
       std::for_each(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                     [&](const NodeId& old_holder) { stream << "\t" << DebugId(old_holder); });
-      LOG(kInfo) << stream.str();
+     
     }
     ASSERT_EQ(result.new_holder, test_result.new_holder);
     ASSERT_EQ(result.proximity_status, test_result.proximity_status);
@@ -235,27 +235,27 @@ class CloseNodesChangeTest : public testing::Test {
     //     if ((result.proximity_status != test_result.proximity_status) ||
     //         (result.new_holders != test_result.new_holders) ||
     //         (result.old_holders != test_result.old_holders)) {
-    // //         LOG(kVerbose) << result.proximity_status << " , " << test_result.proximity_status;
-    //       LOG(kVerbose) << "target : " << HexSubstr(target_id.string());
-    // //       LOG(kVerbose) << "dropping : " << HexSubstr(drop_node.string());
-    //       LOG(kVerbose) << "result.new_holders : ";
+    // //        
+    //      
+    // //      
+    //      
     //       for (auto& holder : result.new_holders)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-    //       LOG(kVerbose) << "test_result.new_holders : ";
+    //        
+    //      
     //       for (auto& holder : test_result.new_holders)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-    //       LOG(kVerbose) << "result.old_holders : ";
+    //        
+    //      
     //       for (auto& holder : result.old_holders)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-    //       LOG(kVerbose) << "test_result.old_holders : ";
+    //        
+    //      
     //       for (auto& holder : test_result.old_holders)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-    //       LOG(kVerbose) << "new_close_nodes containing : ";
+    //        
+    //      
     //       for (auto& holder : new_close_nodes_)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
-    //       LOG(kVerbose) << "old_close_nodes containing : ";
+    //        
+    //      
     //       for (auto& holder : old_close_nodes_)
-    //         LOG(kVerbose) << "    ----    " << HexSubstr(holder.string());
+    //        
     //       ASSERT_EQ(0, 1);
     //     }
   }
@@ -269,13 +269,13 @@ TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
   {
     CloseNodesChange close_nodes_change(kNodeId_, old_close_nodes_, new_close_nodes_);
     for (auto i(0); i != 1000; ++i) {
-      LOG(kVerbose) << "random target against same table, interation " << i;
+     
       DoCheckHoldersTest(close_nodes_change);
     }
   }
   {
     for (auto i(0); i != 1000; ++i) {
-      LOG(kVerbose) << "random target and node change, iteration " << i;
+     
       NodeId target_node(NodeId::IdType::kRandomId);
       if (i % 2 == 0)
         new_close_nodes_.push_back(target_node);

@@ -94,7 +94,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
       if (find != expect_affected_.end())
         expect_affected_.erase(find);
     }
-    LOG(kVerbose) << expect_affected_.size() << " nodes will be affected";
+   
     if (adding_node_) {
       new_close_nodes_.push_back(node_to_operate);
     }
@@ -103,12 +103,12 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
 
   bool IsAllExpectedResponded() {
     std::lock_guard<std::mutex> lock(checking_mutex_);
-    LOG(kVerbose) << "Following nodes expect to be affected : ";
+   
     for (const auto& node : expect_affected_)
-      LOG(kVerbose) << "     expect to be affected : " << HexSubstr(node.string());
-    LOG(kVerbose) << "Following nodes are affected : ";
+     
+   
     for (const auto& node : affected_nodes_)
-      LOG(kVerbose) << "                  affected : " << HexSubstr(node.string());
+     
     //     for(auto& node : affected_nodes_)
     //       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
     //           expect_affected_.end()) {
@@ -139,7 +139,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
                   << " containing following lost nodes :";
     //     bool not_found(true);
     if (!lost_node.IsZero()) {
-      LOG(kVerbose) << "    lost node : " << lost_node;
+     
       //       if (node_id == node_on_operation_)
       //         not_found = false;
     }
@@ -161,7 +161,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
                   << " containing following new nodes :";
     //     bool not_found(true);
     if (!new_node.IsZero()) {
-      LOG(kVerbose) << "    new node : " << new_node;
+     
       //       if (node_id == node_on_operation_)
       //         not_found = false;
     }
@@ -214,25 +214,25 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
   const size_t vault_network_size(20 + random % 10);
   const size_t clients_in_network(5 + random % 3);
   this->SetUpNetwork(vault_network_size, clients_in_network);
-  LOG(kInfo) << "Finished setting up network\n\n\n\n";
+ 
 
   std::vector<NodeId> existing_node_ids;
   for (const auto& node : this->nodes_)
     existing_node_ids.push_back(node->node_id());
-  LOG(kInfo) << "After harvesting node ids\n\n\n\n";
+ 
 
   std::vector<passport::Pmid> new_nodes;
   const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
   size_t downed(0);
   while (new_nodes.size() < up_count)
     new_nodes.emplace_back(passport::CreatePmidAndSigner().first);
-  LOG(kInfo) << "After generating new ids\n\n\n\n";
+ 
 
   // Start thread for messaging between clients and clients to groups
   std::string message(RandomString(4096));
   volatile bool run(true);
   auto messaging_handle = std::async(std::launch::async, [=, &run] {
-    LOG(kInfo) << "Before messaging loop";
+   
     while (run) {
       GenericNetwork::NodePtr sender_client(this->RandomClientNode());
       GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
@@ -249,11 +249,11 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false, [](std::string) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
-      LOG(kInfo) << "Ran messaging iteration";
+     
     }
-    LOG(kInfo) << "After messaging loop";
+   
   });
-  LOG(kInfo) << "Started messaging thread\n\n\n\n";
+ 
 
   // Start thread to bring down nodes
   auto down_handle = std::async(std::launch::async, [=, &run, &down_count, &downed] {

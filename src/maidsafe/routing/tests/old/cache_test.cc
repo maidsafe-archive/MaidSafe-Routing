@@ -97,7 +97,7 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   for (size_t index(0); index < ClientIndex(); ++index) {
     HaveCacheDataFunctor node_get_cache([index, this](const std::string& string,
                                                       ReplyFunctor reply) {
-      LOG(kVerbose) << "In Get looking for ";
+     
       auto node_cache_iter(network_cache.find(index));
       if (node_cache_iter == std::end(network_cache)) {
         reply(std::string());
@@ -123,7 +123,7 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   auto message(CreateNodeLevelSingleToSingleResponseMessageProto(single_to_single_message));
 //  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
 //  message.set_request(false);
-  LOG(kVerbose) << "Before sending " << message.id();
+ 
   nodes_[0]->SendMessage(single_to_single_message.receiver, message);
   Sleep(std::chrono::seconds(2));
 

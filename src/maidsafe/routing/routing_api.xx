@@ -113,7 +113,7 @@ void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mu
                           std::to_string(updated_health) + "% (was " +
                           std::to_string(current_health) + "%)"};
       if (updated_health >= current_health)
-        LOG(kVerbose) << message;
+       
       else
         LOG(kWarning) << message;
     } else {

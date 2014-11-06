@@ -523,7 +523,7 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     NodeId destination_id(GenerateUniqueRandomId(table_->kNodeId(), 4));
     auto closest_nodes(table_->GetClosestNodes(table_->kNodeId(), 4));
     for (auto closest_node : closest_nodes)
-      LOG(kVerbose) << closest_node.id;
+     
     EXPECT_CALL(*network_,
                 SendToClosestNode(testing::AllOf(
                     testing::Property(&protobuf::Message::request, false),

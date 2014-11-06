@@ -117,7 +117,7 @@ CloseNodesChange::CloseNodesChange(NodeId this_node_id, const std::vector<NodeId
   stream << "\n old_nodes : ";
   for (const auto& node_id : old_close_nodes_)
     stream << "\t[ " << node_id << " ]";
-  LOG(kVerbose) << stream.str();
+ 
 #endif
 }
 
@@ -189,7 +189,7 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   stream << "\n diff_new_holders : ";
   for (const auto& node_id : diff_new_holders)
     stream << "\t[ " << node_id << " ]";
-  LOG(kVerbose) << stream.str();
+ 
 #endif
   //   holders_result.new_holders = new_holders;
   //   holders_result.old_holders = old_holders;
@@ -206,12 +206,12 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
-  LOG(kInfo) << " new close nodes : ";
+ 
   for (const auto& node_id : new_close_nodes_)
-    LOG(kInfo) << "\t new close nodes ids     ---  " << node_id;
-  LOG(kInfo) << "\t target : " << target << " and following online pmids : ";
+   
+ 
   for (const auto& pmid : online_pmids)
-    LOG(kInfo) << "\tonline pmids    ---  " << pmid;
+   
 
   // In case storing to PublicPmid, the data shall not be stored on the Vault itself
   // However, the vault will appear in DM's routing table and affect result
@@ -220,9 +220,9 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
-  LOG(kInfo) << " own id : " << node_id_ << " and closest + 1 to the target are : ";
+ 
   for (const auto& node : temp)
-    LOG(kInfo) << "   sorted neighbours   ---  " << node;
+   
 
   auto temp_itr(std::begin(temp));
   auto pmids_itr(std::begin(online_pmids));
@@ -236,7 +236,7 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
     if (++pmids_itr == std::end(online_pmids))
       pmids_itr = std::begin(online_pmids);
   }
-  LOG(kVerbose) << "Chosen pmid " << *pmids_itr;
+ 
   return *pmids_itr;
 }
 
@@ -260,7 +260,7 @@ void CloseNodesChange::Print() const {
 
   stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
   stream << "\n\t\tentry in new_node\t------\t" << new_node_;
-  LOG(kInfo) << stream.str();
+ 
 }
 
 std::string CloseNodesChange::ReportConnection() const {

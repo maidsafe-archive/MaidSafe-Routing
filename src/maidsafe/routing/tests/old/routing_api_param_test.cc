@@ -143,7 +143,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
   functors.message_and_caching.message_received = [&](const std::string& message,
                                                       ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-    LOG(kVerbose) << "Message received and replied to message !!";
+   
   };
 
   auto a1 = boost::async(boost::launch::async, [&] {
@@ -176,7 +176,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
         if (promised.at(i)) {
           join_promises.at(i).set_value(true);
           promised.at(i) = false;
-          LOG(kVerbose) << "node - " << i << "joined";
+         
         }
       }
     });

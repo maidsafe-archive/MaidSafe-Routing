@@ -54,7 +54,7 @@ class RoutingTable {
   RoutingTable(const RoutingTable&) = default;
   RoutingTable(RoutingTable&&) = default;
   RoutingTable& operator=(const RoutingTable&) = delete;
-  RoutingTable& operator=(const RoutingTable&&) = delete;
+  RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(const NodeInfo& their_id);

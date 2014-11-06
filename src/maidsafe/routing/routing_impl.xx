@@ -112,7 +112,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
                                             timer_, network_utils_, asio_service_));
-  LOG(kInfo) << (client_mode ? "client " : "non-client ") << "node. Id : " << kNodeId_;
+ 
   assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
 }
 
@@ -130,7 +130,7 @@ void Routing::Impl::Stop() {
   std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
   while (this_ptr.use_count() > 6) {
     Sleep(std::chrono::seconds(1));
-    LOG(kVerbose) << "Waiting for pending operations to complete";
+   
   }
 
   // }  // TOBE FIXED
@@ -149,7 +149,7 @@ void Routing::Impl::Stop() {
 }
 
 void Routing::Impl::Join(const Functors& functors) {
-  LOG(kInfo) << "Doing a default join";
+ 
   ConnectFunctors(functors);
   Bootstrap();
 }
@@ -325,7 +325,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
   assert(!peer_info.id.IsZero() && "Zero NodeId passed");
   assert((network_->bootstrap_connection_id() == peer_info.id) &&
          "Should bootstrap only with known peer for zero state network");
-  LOG(kVerbose) << local_endpoint << " Bootstrapped with remote endpoint " << peer_endpoint;
+ 
   rudp::NatType nat_type(rudp::NatType::kUnknown);
   rudp::EndpointPair peer_endpoint_pair;  // zero state nodes must be directly connected endpoint
   rudp::EndpointPair this_endpoint_pair;
@@ -390,7 +390,7 @@ void Routing::Impl::SendGroup(const NodeId& destination_id, const std::string& d
 void Routing::Impl::Send(const NodeId& destination_id, const std::string& data,
                          const DestinationType& destination_type, bool cacheable,
                          ResponseFunctor response_functor) {
-  LOG(kVerbose) << "Routing::Impl::Send from " << kNodeId_ << " to " << destination_id;
+ 
   CheckSendParameters(destination_id, data);
   protobuf::Message proto_message =
       CreateNodeLevelPartialMessage(destination_id, destination_type, data, cacheable);
@@ -413,17 +413,17 @@ void Routing::Impl::SendMessage(const NodeId& destination_id, protobuf::Message&
   } else {  // Normal node
     proto_message.set_source_id(kNodeId_.string());
     if (!proto_message.direct() && !routing_table_->client_mode()) {
-      LOG(kInfo) << "handling group message";
+     
       OnMessageReceived(proto_message.SerializeAsString());
       return;
     }
     if (kNodeId_ != destination_id) {
       network_->SendToClosestNode(proto_message);
     } else if (routing_table_->client_mode()) {
-      LOG(kVerbose) << "Client sending request to self id";
+     
       network_->SendToClosestNode(proto_message);
     } else {
-      LOG(kInfo) << "Sending request to self";
+     
       OnMessageReceived(proto_message.SerializeAsString());
     }
   }
@@ -779,7 +779,7 @@ void Routing::Impl::OnRoutingTableChange(const RoutingTableChange& routing_table
     network_status_ = routing_table_change.health;
   }
   NotifyNetworkStatus(routing_table_change.health);
-  LOG(kVerbose) << kNodeId_ << " Updating network status !!! " << routing_table_change.health;
+ 
 
   if (routing_table_change.removed.node.id != NodeId()) {
     RemoveNode(routing_table_change.removed.node,
