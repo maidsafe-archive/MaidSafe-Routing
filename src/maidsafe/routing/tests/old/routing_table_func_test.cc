@@ -211,7 +211,7 @@ RoutingTablePtr RoutingTableNetwork::CreateRoutingTable(const passport::Pmid& pm
 void RoutingTableNetwork::OnRoutingTableChange(const NodeId& node_id,
                                                const RoutingTableChange& routing_table_change) {
   if (!routing_table_change.removed.node.id.IsZero()) {
-    LOG(kVerbose) << node_id << " removes removed " << routing_table_change.removed.node.id;
+   
     network_map_.at(routing_table_change.removed.node.id)->routing_table->DropNode(node_id, true);
     std::lock_guard<std::mutex> lock(mutex_);
     nodes_changed_.insert(node_id);
@@ -423,16 +423,16 @@ void RoutingTableNetwork::GetCloseNodeIndexStats() {
 
 void RoutingTableNetwork::RoutingTablesInfo() {
   for (const auto& info : nodes_info_) {
-    LOG(kVerbose) << info->routing_table->kNodeId() << " : " << info->routing_table->size();
+   
   }
 }
 
 TEST_F(RoutingTableNetwork, FUNC_AnalyseNetwork) {
   size_t kMaxNetworkSize(100), kReportInterval(50);
-  LOG(kVerbose) << "Add new nodes";
+ 
   for (size_t index(0); index < kMaxNetworkSize; ++index) {
     AddNewNode();
-    LOG(kVerbose) << "back id: " << nodes_info_.back()->routing_table->kNodeId();
+   
     if (index > this->kNumberofClosestNode) {
       ValidateRoutingTable(nodes_info_.back());
       if (index % kReportInterval == 0) {
@@ -469,12 +469,12 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
 
   std::set<NodeId> potential_members, found_group, tried;
   potential_members.insert(routing_table_info->routing_table->kNodeId());
-  LOG(kVerbose) << "ValidateNewGroupMessagingDetails " << target;
+ 
 
   do {
     bool self_added(false);
     auto current(network_map_.at(*potential_members.begin()));
-    LOG(kVerbose) << current->routing_table->kNodeId() << ", target: " << target;
+   
     auto closests_to_self(
         current->routing_table->GetClosestNodes(
             current->routing_table->kNodeId(), static_cast<unsigned int>(kNumberofClosestNode),
@@ -492,12 +492,12 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
           current->routing_table->GetClosestNodes(target, Parameters::group_size, true));
 
       for (const auto& close : closests_to_target)
-        LOG(kVerbose) << close.id;
+       
 
       auto limit(std::begin(closests_to_target));
       std::advance(limit, (Parameters::group_size - (self_added ? 1 : 0)));
       for (auto iter(std::begin(closests_to_target)); iter != limit; ++iter) {
-        LOG(kVerbose) << "inside: " << iter->id;
+       
         if (std::find(std::begin(tried), std::end(tried), iter->id) == std::end(tried)) {
           potential_members.insert(iter->id);
         }
@@ -512,11 +512,11 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
     }
 
     for (auto const& member : potential_members)
-      LOG(kVerbose) << member;
+     
     potential_members.erase(current->routing_table->kNodeId());
     tried.insert(current->routing_table->kNodeId());
     for (auto const& member : potential_members)
-      LOG(kVerbose) << member;
+     
   } while (!potential_members.empty());
 
   EXPECT_EQ(found_group.size(), expected_group.size());
@@ -526,14 +526,14 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
 
 TEST_F(RoutingTableNetwork, FUNC_GroupMessaging) {
   size_t kMaxNetworkSize(1000);
-  LOG(kVerbose) << "Add new nodes";
+ 
   for (size_t index(0); index < 300; ++index)
     AddNewNode();
 
   for (size_t index(300); index < kMaxNetworkSize; ++index) {
     AddNewNode();
     ValidateNewGroupMessaging();
-    LOG(kVerbose) << index << " current add index\n";
+   
   }
 }
 

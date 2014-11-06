@@ -59,7 +59,7 @@ void CacheManager::AddToCache(const protobuf::Message& message) {
   if (message_and_caching_functors_.store_cache_data) {
     message_and_caching_functors_.store_cache_data(message.data(0));
   } else {
-    LOG(kVerbose) << "CacheManager::AddToCache";
+   
     TypedMessageAddtoCache(message);
   }
 }
@@ -107,12 +107,12 @@ bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
                     << "   (id: " << message.id() << ")  --NodeLevel-- caching";
       ReplyFunctor response_functor = [=](const std::string& reply_message) {
           if (reply_message.empty()) {
-            LOG(kVerbose) << "No cache available, passing on the original request";
+           
             cache_hit->set_value(false);
             return;
           }
 
-          LOG(kVerbose) << "Cache contents: " << reply_message;
+         
 
           //  Responding with cached response
           protobuf::Message message_out;
@@ -133,7 +133,7 @@ bool CacheManager::HandleGetFromCache(protobuf::Message& message) {
           if (message.has_id())
             message_out.set_id(message.id());
           else
-            LOG(kInfo) << "Message to be sent back had no ID.";
+           
 
           if (message.has_relay_id())
             message_out.set_relay_id(message.relay_id());

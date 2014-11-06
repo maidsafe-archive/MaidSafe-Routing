@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     application.addLibraryPath(QCoreApplication::applicationDirPath() + "/plugins");
     application.quitOnLastWindowClosed();
     int result = application.exec();
-    LOG(kInfo) << "App exiting with result " << result;
+   
     return result;
   }
   catch (const std::exception& ex) {

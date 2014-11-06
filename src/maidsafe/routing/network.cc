@@ -144,7 +144,7 @@ int Network::MarkConnectionAsValid(const NodeId& peer_id) {
   Endpoint new_bootstrap_endpoint;
   int ret_val(rudp_.MarkConnectionAsValid(peer_id, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
-    LOG(kVerbose) << "Found usable endpoint for bootstrapping : " << new_bootstrap_endpoint;
+   
     InsertOrUpdateBootstrapContact(new_bootstrap_endpoint, routing_table_.client_mode());
   }
   return ret_val;
@@ -261,7 +261,7 @@ void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_i
                                   },
                          Parameters::ack_timeout);
   }
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id " << DebugId(peer_connection_id);
+ 
   RudpSend(peer_connection_id, message, message_sent_functor);
 }
 
@@ -364,7 +364,7 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
                                   },
                          Parameters::ack_timeout);
   }
-  LOG(kVerbose) << "Rudp recursive send message to " << peer.connection_id;
+ 
   RudpSend(peer.connection_id, message, message_sent_functor);
 }
 
@@ -386,7 +386,7 @@ maidsafe::NodeId Network::this_node_relay_connection_id() const {
 rudp::NatType Network::nat_type() const { return nat_type_; }
 
 void Network::SendAck(const protobuf::Message& message) {
-  LOG(kVerbose) << "[" << routing_table_.kNodeId() << "] SendAck " << message.ack_id();
+ 
   if (message.ack_id() == 0)
     return;
 
@@ -405,7 +405,7 @@ void Network::SendAck(const protobuf::Message& message) {
     return;
 
   for (const auto& hop : ack_node_ids)
-    LOG(kVerbose) << " hop in history: " << HexSubstr(hop) << "ack id:" << message.ack_id();
+   
 
   if ((message.relay_id() == routing_table_.kNodeId().string()) ||
       message.source_id() == routing_table_.kNodeId().string())
@@ -418,7 +418,7 @@ void Network::SendAck(const protobuf::Message& message) {
 
   protobuf::Message ack_message(
       rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(), message.ack_id()));
-  LOG(kVerbose) << "Network::SendAck";
+ 
   SendToClosestNode(ack_message);
 }
 

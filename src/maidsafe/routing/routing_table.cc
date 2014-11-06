@@ -50,11 +50,9 @@ bool RoutingTable::CheckNode(const NodeInfo& peer) { return AddOrCheckNode(peer,
 
 bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
   if (peer.id.IsZero() || peer.id == kNodeId_) {
-    LOG(kError) << "Attempt to add an invalid node " << peer.id;
     return false;
   }
   if (remove && !asymm::ValidateKey(peer.public_key)) {
-    LOG(kInfo) << "Invalid public key for node " << DebugId(peer.id);
     return false;
   }
 
@@ -70,7 +68,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(peer.id, lock));
     if (found.first) {
-      //       LOG(kVerbose) << "Node " << peer.id << " already in routing table.";
       return false;
     }
 
@@ -188,8 +185,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
     }
   });
 
-  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket << " count "
-                << max_bucket_count;
 
   // If no duplicate bucket exists, prioirity is given to closer nodes.
   if ((max_bucket_count == 1) && (nodes_.back().bucket < node.bucket))
@@ -204,7 +199,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
         if (remove) {
           removed_node = *it;
           nodes_.erase(--(it.base()));
-          LOG(kVerbose) << kNodeId_ << " Proposed removable " << removed_node.id;
         }
         std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo& lhs, const NodeInfo& rhs) {
           return NodeId::CloserToTarget(lhs.id, rhs.id, kNodeId_);

@@ -174,7 +174,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
       }
     }
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-    LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+   
     receivers_message_count = 0;
     ClearMessages();
   }

@@ -230,7 +230,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
     node->ClearMessages();
   }
   EXPECT_EQ(message_count * (Parameters::group_size) * kServerSize, receivers_message_count);
-  LOG(kVerbose) << "Total message received count : " << receivers_message_count;
+ 
   Parameters::default_response_timeout = timeout;
 }
 
@@ -263,7 +263,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   unsigned int message_count(1), receivers_message_count(0);
-  LOG(kVerbose) << "Network created";
+ 
   size_t last_index(env_->nodes_.size() - 1);
   NodeId dest_id(env_->nodes_[last_index]->node_id());
 
@@ -316,7 +316,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     node->ClearMessages();
   }
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-  LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+ 
   Parameters::default_response_timeout = timeout;
 }
 
@@ -364,7 +364,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   }
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-  LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+ 
   Parameters::default_response_timeout = timeout;
 }
 
@@ -413,7 +413,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   }
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-  LOG(kVerbose) << "Total message received count : " << message_count * (Parameters::group_size);
+ 
   Parameters::default_response_timeout = timeout;
 }
 

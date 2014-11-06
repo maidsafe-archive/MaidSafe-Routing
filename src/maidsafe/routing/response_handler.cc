@@ -130,7 +130,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
                           peer_node_id, peer_connection_id, peer_endpoint_pair, true,  // requestor
                           routing_table_.client_mode()));
     if (result != kSuccess)
-      LOG(kVerbose) << "Already added node";
+     
   }
 }
 
@@ -169,7 +169,7 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
     find_node_result += "[" + HexSubstr(find_nodes_response.nodes(i)) + "]\t";
   }
 
-  LOG(kVerbose) << find_node_result;
+ 
 
   for (int i = 0; i < find_nodes_response.nodes_size(); ++i) {
     if (!find_nodes_response.nodes(i).empty())
@@ -188,12 +188,12 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
   peer.id = peer_node_id;
 
   if (peer.id == NodeId(routing_table_.kNodeId())) {
-    //    LOG(kInfo) << "Can't send connect request to self !";
+    //   
     return;
   }
 
   if (routing_table_.CheckNode(peer)) {
-    LOG(kVerbose) << "CheckNode succeeded for node " << peer.id;
+   
     rudp::EndpointPair this_endpoint_pair, peer_endpoint_pair;
     rudp::NatType this_nat_type(rudp::NatType::kUnknown);
     int ret_val = network_.GetAvailableEndpoint(peer.id, peer_endpoint_pair,
@@ -207,7 +207,7 @@ void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
                     << ", peer_endpoint_pair.local = " << peer_endpoint_pair.local
                     << ". Rudp returned :" << ret_val;
       } else {
-        LOG(kVerbose) << "Already ongoing attempt to : " << DebugId(peer.id);
+       
       }
       return;
     }
@@ -270,10 +270,10 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
     }
   }
   if (!client_node) {
-    LOG(kInfo) << "Validation -- Need non-client's public key";
+   
     ValidateAndCompleteConnectionToNonClient(peer, from_requestor, close_ids);
   } else {
-    LOG(kInfo) << "Validation -- Not looking for client's public key";
+   
     ValidateAndCompleteConnectionToClient(peer, from_requestor, close_ids);
   }
   message.Clear();
@@ -296,7 +296,7 @@ void ResponseHandler::ValidateAndCompleteConnectionToNonClient(
     const NodeInfo& peer, bool from_requestor, const std::vector<NodeId>& close_ids) {
   auto peer_public_key(public_key_holder_.Find(peer.id));
   if (!peer_public_key) {
-    LOG(kVerbose) << "missing public key for " << peer.id;
+   
     return;
   }
   public_key_holder_.Remove(peer.id);
