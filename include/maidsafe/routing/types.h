@@ -28,8 +28,6 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
 
-#include "maidsafe/routing/utils.h"
-
 namespace maidsafe {
 
 enum class SerialisableTypeTag : unsigned char {
@@ -58,6 +56,7 @@ using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
 using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
 using byte = unsigned char;
+using Murmur = uint32_t;
 using CheckSums = std::array<Murmur, kGroupSize - 1>;
 using SerialisedMessage = std::vector<unsigned char>;
 
