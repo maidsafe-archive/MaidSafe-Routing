@@ -74,6 +74,9 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     if (MakeSpaceForNodeToBeAdded(peer, remove, removed_node, lock)) {
       if (remove) {
         nodes_.push_back(peer);
+        std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo& lhs, const NodeInfo& rhs) {
+          return NodeId::CloserToTarget(lhs.id, rhs.id, kNodeId_);
+        });
       }
       return_value = true;
     }
@@ -200,9 +203,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
           removed_node = *it;
           nodes_.erase(--(it.base()));
         }
-        std::sort(nodes_.begin(), nodes_.end(), [&](const NodeInfo& lhs, const NodeInfo& rhs) {
-          return NodeId::CloserToTarget(lhs.id, rhs.id, kNodeId_);
-        });
         return true;
       }
     }
