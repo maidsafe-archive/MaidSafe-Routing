@@ -51,8 +51,8 @@ typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
 class RoutingTable {
  public:
   RoutingTable(const NodeId& our_id, const asymm::Keys& keys);
-  RoutingTable(const RoutingTable&) = delete;
-  RoutingTable(const RoutingTable&&) = delete;
+  RoutingTable(const RoutingTable&) = default;
+  RoutingTable(RoutingTable&&) = default;
   RoutingTable& operator=(const RoutingTable&) = delete;
   RoutingTable& operator=(const RoutingTable&&) = delete;
   virtual ~RoutingTable() = default;
@@ -73,9 +73,8 @@ class RoutingTable {
  private:
   bool AddOrCheckNode(NodeInfo node, bool remove);
   void SetBucketIndex(NodeInfo& node_info) const;
-  bool CheckPublicKeyIsUnique(const NodeInfo& node) const;
 
-  /** Attempts to find or allocate memory for an incomming connect request, returning true
+  /** Attempts to find or allocate space for an incomming connect request, returning true
    * indicates approval
    * returns true if routing table is not full, otherwise, performs the following process to
    * possibly evict an existing node:
@@ -98,7 +97,6 @@ class RoutingTable {
   unsigned int NetworkStatus(unsigned int size) const;
 
   std::string PrintRoutingTable();
-
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
   const asymm::Keys kKeys_;

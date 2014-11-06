@@ -48,11 +48,15 @@ set(RoutingLibApiFiles
     )
 source_group("Routing API Files" FILES ${RoutingLibApiFiles})
 set(RoutingLibHeaders
+    ${RoutingSourcesDir}/header.h
+    ${RoutingSourcesDir}/messages.h
+    ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
+    ${RoutingSourcesDir}/message_handler.cc
     ${RoutingSourcesDir}/node_info.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
@@ -64,18 +68,24 @@ target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(MaidsafeTesting)
-  ms_add_executable(test_routing_table "Tests/Routing"
-      ${RoutingSourcesDir}/tests/routing_table_test.cc
-      ${RoutingSourcesDir}/tests/test_main.cc
-      ${RoutingSourcesDir}/tests/test_utils.cc
-      )
+  file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
+  foreach(TestFile ${TestFiles})
+    get_filename_component(TestName ${TestFile} NAME_WE)
+    ms_add_executable(${TestName} "Tests/Routing"
+        ${TestFile}
+        ${RoutingSourcesDir}/tests/main/test_main.cc
+        ${RoutingSourcesDir}/tests/main/test_utils.h
+        ${RoutingSourcesDir}/tests/main/test_utils.cc
+        )
 
-  target_include_directories(test_routing_table PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(test_routing_table maidsafe_routing maidsafe_test)
+    target_include_directories(${TestName} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(${TestName} maidsafe_routing maidsafe_test)
+    list(APPEND RoutingTests ${TestName})
+  endforeach()
 
   # TODO - remove these targets - only added to avoid changing installers for now.
-  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
-  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/test_main.cc)
+  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
+  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
 endif()
 
 ms_rename_outdated_built_exes()
@@ -91,5 +101,10 @@ include(standard_flags)
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  ms_add_gtests(test_routing_table)
+  ms_add_default_tests()
+  foreach(RoutingTest ${RoutingTests})
+    ms_add_gtests(${RoutingTest})
+  endforeach()
+  ms_test_summary_output()
 endif()
+
