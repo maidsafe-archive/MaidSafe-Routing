@@ -175,7 +175,7 @@ std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded(
   int bucket(0);
   if (nodes_.size() < kRoutingTableSize - 1)
     return nodes_.rend();
-  auto found = std::find_if(nodes_.rbegin(), nodes_.rend() + kGroupSize,
+  auto found = std::find_if(nodes_.rbegin(), nodes_.rend() - kGroupSize,
                             [&bucket_count, &bucket](const NodeInfo& node) {
     if (node.bucket != bucket) {
       bucket = node.bucket;
