@@ -35,7 +35,7 @@ namespace routing {
 namespace test {
 class CloseNodesChangeTest_BEH_CheckHolders_Test;
 class SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
-}
+}  // namespace test
 
 enum class GroupRangeStatus {
   kInRange,   // become in range (Parameter::group_size = 4)

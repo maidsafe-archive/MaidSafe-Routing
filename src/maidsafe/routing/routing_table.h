@@ -20,51 +20,40 @@
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <cstdint>
-#include <memory>
 #include <mutex>
-#include <string>
-#include <utility>
 #include <vector>
-
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/passport/types.h"
-
-#include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/close_nodes_change.h"
 #include "maidsafe/routing/routing_table_change.h"
-#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+struct NodeInfo;
 
 typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
     RoutingTableChangeFunctor;
 
 class RoutingTable {
  public:
-  static const size_t kBucketSize = 1;
-  RoutingTable(const NodeId& our_id, const asymm::Keys& keys);
+  static const size_t kBucketSize_ = 1;
+  RoutingTable(NodeId our_id, asymm::Keys keys);
   RoutingTable(const RoutingTable&) = default;
   RoutingTable(RoutingTable&&) = default;
   RoutingTable& operator=(const RoutingTable&) = delete;
   RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
-  bool AddNode(NodeInfo their_id);
-  bool CheckNode(NodeInfo their_id);
+  bool AddNode(NodeInfo their_info);
+  bool CheckNode(const NodeInfo& their_info);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<NodeInfo> GetTargetNodes(NodeId their_id);
+  std::vector<NodeInfo> GetTargetNodes(const NodeId& their_id) const;
   // our close group or at least as much of it as we currently know
-  std::vector<NodeInfo> GetGroupNodes();
+  std::vector<NodeInfo> GetGroupNodes() const;
 
   size_t size() const;
   NodeId kNodeId() const { return kNodeId_; }
@@ -89,9 +78,8 @@ class RoutingTable {
    * - remove the selected node and return true **/
   std::vector<NodeInfo>::reverse_iterator MakeSpaceForNodeToBeAdded();
 
-  unsigned int NetworkStatus(unsigned int size) const;
+  unsigned int NetworkStatus(size_t size) const;
 
-  std::string PrintRoutingTable();
   const NodeId kNodeId_;
   const NodeId kConnectionId_;
   const asymm::Keys kKeys_;
