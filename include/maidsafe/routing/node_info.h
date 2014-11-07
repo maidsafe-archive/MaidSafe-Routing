@@ -48,10 +48,9 @@ struct NodeInfo {
   bool operator!=(const NodeInfo& other) const { return !operator==(other); }
 
   bool operator<(const NodeInfo& other) const { return id < other.id; }
-  bool operator>(const NodeInfo& other) { return id > other.id; }
-  bool operator<=(const NodeInfo& other) { return !operator>(other); }
-  bool operator>=(const NodeInfo& other) { return !operator<(other); }
-
+  bool operator>(const NodeInfo& other) const { return id > other.id; }
+  bool operator<=(const NodeInfo& other) const { return !operator>(other); }
+  bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
   NonEmptyString Serialise() const;
 
@@ -65,8 +64,6 @@ struct NodeInfo {
   static const int32_t kInvalidBucket;
   // static_assert(is_regular<NodeInfo>::value, "Not a regular type");
 };
-
-
 
 }  // namespace routing
 
