@@ -62,7 +62,7 @@ class FindNodeNetwork : public GenericNetwork, public testing::Test {
 
   void PrintAllRoutingTables() {
     for (size_t index = 0; index < nodes_.size(); ++index) {
-      LOG(kInfo) << "Routing table of node # " << index;
+     
       nodes_[index]->PrintRoutingTable();
     }
   }
@@ -117,9 +117,9 @@ TEST_F(FindNodeNetwork, FUNC_VaultFindVaultNode) {
   EXPECT_FALSE(nodes_.at(dest)->IsClient());
   EXPECT_TRUE(nodes_[source]->RoutingTableHasNode(nodes_[dest]->node_id()));
   EXPECT_TRUE(nodes_[source]->DropNode(nodes_[dest]->node_id()));
-  LOG(kVerbose) << "before find " << HexSubstr(nodes_[dest]->node_id().string());
+ 
   Sleep(Parameters::recovery_time_lag);
-  LOG(kVerbose) << "after find " << HexSubstr(nodes_[dest]->node_id().string());
+ 
   EXPECT_TRUE(nodes_[source]->RoutingTableHasNode(nodes_[dest]->node_id()));
 }
 

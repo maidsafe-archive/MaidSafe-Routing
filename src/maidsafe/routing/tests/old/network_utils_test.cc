@@ -123,7 +123,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_hops_to_live(Parameters::hops_to_live);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-    LOG(kInfo) << " -- Received: " << message;
+   
   };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
@@ -142,15 +142,15 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-    LOG(kInfo) << " -- Received: " << message;
+   
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-      LOG(kInfo) << " -- Set promise";
+     
     }
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-    LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
+   
   };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
@@ -201,7 +201,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(node_id2, endpoint);
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
-  LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
+ 
 
   NodeId node_id(NodeId::IdType::kRandomId);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
@@ -277,7 +277,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   Network network(routing_table, client_routing_table, acknowledgement);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-    LOG(kInfo) << " -- Received: " << message;
+   
   };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
@@ -296,20 +296,20 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-    LOG(kInfo) << " -- Received: " << message;
+   
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-      LOG(kInfo) << " -- Set promise";
+     
     }
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-    LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
+   
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const NodeId& node_id) {
     routing_table.DropNode(node_id, true);
-    LOG(kInfo) << " -- Lost Connection with : " << HexSubstr(node_id.string());
+   
   };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
@@ -361,7 +361,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(node_id2, endpoint);
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
-  LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
+ 
 
   ScopedBootstrapFile bootstrap_file({endpoint2});
 
@@ -385,7 +385,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
-  LOG(kVerbose) << " ------------------------ 3rd node setup done ------------------------------ ";
+ 
 
   // setup 7 inactive & 1 active node
   std::vector<NodeInfoAndPrivateKey> nodes;

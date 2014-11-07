@@ -148,7 +148,7 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
   // prepare keys
   for (size_t index(0); index < kIterations; ++index) {
     nodes_details.push_back(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
-    LOG(kVerbose) << index;
+   
   }
 
   // store keys
