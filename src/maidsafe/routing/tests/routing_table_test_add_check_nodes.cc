@@ -54,6 +54,9 @@ TEST(RoutingTableTest, FUNC_AddCheck1000Nodes) {
       }
     }
   }
+  // confirm all routing tables fully populated
+  for (auto& node : routing_tables)
+    EXPECT_EQ(node->size(), kRoutingTableSize);
 }
 
 }  // namespace test

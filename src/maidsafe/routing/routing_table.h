@@ -50,7 +50,7 @@ typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
 
 class RoutingTable {
  public:
-  static const size_t kBucketSize = 2;
+  static const size_t kBucketSize = 1;
   RoutingTable(const NodeId& our_id, const asymm::Keys& keys);
   RoutingTable(const RoutingTable&) = default;
   RoutingTable(RoutingTable&&) = default;

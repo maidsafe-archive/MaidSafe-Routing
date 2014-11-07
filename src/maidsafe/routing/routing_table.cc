@@ -59,11 +59,12 @@ bool RoutingTable::AddNode(NodeInfo peer) {
 
   if (std::find_if(nodes_.begin(), nodes_.end(), [&peer](const NodeInfo& node_info) {
         return node_info.id == peer.id;
-      }) == std::end(nodes_))
+      }) != std::end(nodes_))
     return false;
   auto remove_node(MakeSpaceForNodeToBeAdded());
-  if (remove_node != nodes_.rend() && NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_)) {
-    removed_node = *remove_node;
+  if ((remove_node != nodes_.rend()) &&
+      NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_)) {
+    removed_node = *(std::next(remove_node).base());
     nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(peer);
   } else if (close_node || static_cast<size_t>(nodes_.size()) < kRoutingTableSize) {
@@ -89,15 +90,15 @@ bool RoutingTable::CheckNode(NodeInfo peer) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (std::find_if(nodes_.begin(), nodes_.end(), [&peer](const NodeInfo& node_info) {
         return node_info.id == peer.id;
-      }) == std::end(nodes_))
+      }) != std::end(nodes_))
     return false;
-  if (nodes_.size() <= kRoutingTableSize)
+  if (nodes_.size() < kRoutingTableSize)
     return true;
   bool close_node(NodeId::CloserToTarget(peer.id, nodes_.at(kGroupSize).id, kNodeId()));
   auto remove_node(MakeSpaceForNodeToBeAdded());
   return ((remove_node != nodes_.rend() &&
            NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_)) ||
-          ((static_cast<size_t>(nodes_.size()) < kRoutingTableSize) || close_node));
+          (static_cast<size_t>(nodes_.size()) < kRoutingTableSize - 1) || close_node);
 }
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
@@ -172,7 +173,7 @@ int32_t RoutingTable::BucketIndex(const NodeId& node_id) const {
 std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded() {
   size_t bucket_count(0);
   int bucket(0);
-  if (nodes_.size() <= kRoutingTableSize)
+  if (nodes_.size() < kRoutingTableSize - 1)
     return nodes_.rend();
   auto found = std::find_if(nodes_.rbegin(), nodes_.rend() + kGroupSize,
                             [&bucket_count, &bucket](const NodeInfo& node) {
