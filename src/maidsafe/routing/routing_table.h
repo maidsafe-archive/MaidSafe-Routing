@@ -59,7 +59,7 @@ class RoutingTable {
   virtual ~RoutingTable() = default;
   void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
   bool AddNode(NodeInfo their_id);
-  bool CheckNode(const NodeInfo& their_id);
+  bool CheckNode(NodeInfo their_id);
   NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
   // If more than 1 node returned then we are in close group so send to all !!
   std::vector<NodeInfo> GetTargetNodes(NodeId their_id);
@@ -88,10 +88,6 @@ class RoutingTable {
    *    bucket will be evicted
    * - remove the selected node and return true **/
   std::vector<NodeInfo>::reverse_iterator MakeSpaceForNodeToBeAdded();
-  std::pair<bool, std::vector<NodeInfo>::iterator> Find(const NodeId& node_id,
-                                                        std::unique_lock<std::mutex>& lock);
-  std::pair<bool, std::vector<NodeInfo>::const_iterator> Find(
-      const NodeId& node_id, std::unique_lock<std::mutex>& lock) const;
 
   unsigned int NetworkStatus(unsigned int size) const;
 
