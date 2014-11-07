@@ -62,8 +62,7 @@ bool RoutingTable::AddNode(NodeInfo peer) {
       }) != std::end(nodes_))
     return false;
   auto remove_node(MakeSpaceForNodeToBeAdded());
-  if ((remove_node != nodes_.rend()) &&
-      NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_)) {
+  if ((remove_node != nodes_.rend()) && peer.bucket > (std::next(remove_node).base())->bucket) {
     removed_node = *(std::next(remove_node).base());
     nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(peer);
@@ -165,9 +164,9 @@ size_t RoutingTable::size() const {
 
 // ################## Private ###################
 
-// bucket 0 is us, 511 is furthest bucket (should fill first)
+// bucket 511 is us, 0 is furthest bucket (should fill first)
 int32_t RoutingTable::BucketIndex(const NodeId& node_id) const {
-  return NodeId::kSize - 1 - kNodeId_.CommonLeadingBits(node_id);
+  return kNodeId_.CommonLeadingBits(node_id);
 }
 
 std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded() {
@@ -183,7 +182,7 @@ std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded(
     }
     return (++bucket_count > kBucketSize);
   });
-  if (found != nodes_.rend() + kGroupSize)
+  if (found != nodes_.rend() - kGroupSize)
     return found;
   else
     return nodes_.rend();
