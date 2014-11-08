@@ -57,7 +57,7 @@ namespace test {
 
 NodeInfo MakeNode() {
   NodeInfo node;
-  node.id = NodeId(RandomString(64));
+  node.id = NodeId(RandomIdTag{});
   asymm::Keys keys(asymm::GenerateKeyPair());
   node.public_key = keys.public_key;
   node.connection_id = node.id;
@@ -84,7 +84,7 @@ NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos) {
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
   while (new_node_string == "" || new_node_string == holder_id) {
-    new_node = NodeId(NodeId::IdType::kRandomId);
+    new_node = NodeId(RandomIdTag{});
     std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
     std::bitset<64 * 8> binary_bitset(new_id);
     for (unsigned int i(0); i < pos; ++i)
@@ -103,7 +103,7 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
   NodeId new_node;
   std::string new_node_string;
   // generate a random ID and make sure it has not been generated previously
-  new_node = NodeId(NodeId::IdType::kRandomId);
+  new_node = NodeId(RandomIdTag{});
   std::string new_id = new_node.ToStringEncoded(NodeId::EncodingType::kBinary);
   std::bitset<64> binary_bitset(id);
   for (unsigned int i(0); i < 64; ++i)
@@ -114,11 +114,11 @@ NodeId GenerateUniqueNonRandomId(const NodeId& holder, uint64_t id) {
 }
 
 NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids) {
-  NodeId new_node(NodeId::IdType::kRandomId);
+  NodeId new_node(RandomIdTag{});
   while (std::find_if(esisting_ids.begin(), esisting_ids.end(), [&new_node](const NodeId& element) {
            return element == new_node;
          }) != esisting_ids.end()) {
-    new_node = NodeId(NodeId::IdType::kRandomId);
+    new_node = NodeId(RandomIdTag{});
   }
   return new_node;
 }
@@ -178,8 +178,7 @@ std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {
   std::vector<std::unique_ptr<RoutingTable>> routing_tables;
   routing_tables.reserve(size);
   for (size_t i = 0; i < size; ++i)
-    routing_tables.emplace_back(
-        maidsafe::make_unique<RoutingTable>(NodeId(NodeId::IdType::kRandomId), keys));
+    routing_tables.emplace_back(maidsafe::make_unique<RoutingTable>(NodeId(RandomIdTag{}), keys));
 
   return routing_tables;
 }

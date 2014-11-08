@@ -45,7 +45,7 @@ void RoutingTable::InitialiseFunctors(RoutingTableChangeFunctor routing_table_ch
 }
 
 bool RoutingTable::AddNode(NodeInfo peer) {
-  if (peer.id.IsZero() || peer.id == kNodeId_ || !asymm::ValidateKey(peer.public_key))
+  if (!peer.id.IsValid() || peer.id == kNodeId_ || !asymm::ValidateKey(peer.public_key))
     return false;
 
   NodeInfo removed_node;
@@ -57,16 +57,25 @@ bool RoutingTable::AddNode(NodeInfo peer) {
   if (nodes_.size() > kGroupSize)
     close_node = (NodeId::CloserToTarget(peer.id, nodes_.at(kGroupSize).id, kNodeId()));
 
-  if (std::find_if(nodes_.begin(), nodes_.end(), [&peer](const NodeInfo& node_info) {
-        return node_info.id == peer.id;
-      }) != std::end(nodes_))
+  if (std::any_of(nodes_.begin(), nodes_.end(),
+                  [&peer](const NodeInfo& node_info) { return node_info.id == peer.id; }))
     return false;
   auto remove_node(MakeSpaceForNodeToBeAdded());
-  if ((remove_node != nodes_.rend()) && peer.bucket > (std::next(remove_node).base())->bucket) {
+
+  if (static_cast<size_t>(nodes_.size()) < kRoutingTableSize) {
+    nodes_.push_back(peer);
+  } else if ((remove_node != nodes_.rend()) &&
+             peer.bucket > (std::next(remove_node).base())->bucket) {
     removed_node = *(std::next(remove_node).base());
     nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(peer);
-  } else if (close_node || static_cast<size_t>(nodes_.size()) < kRoutingTableSize) {
+  } else if (close_node) {
+    // try to push another node out here as new node is also a close node
+    // rather than removing the old close node we keep it if possible and
+    // sacrifice a less importnt node
+    auto remove_node(MakeSpaceForNodeToBeAdded());
+    if (remove_node != nodes_.rend())
+      nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(peer);
   } else {
     return false;
@@ -82,22 +91,24 @@ bool RoutingTable::AddNode(NodeInfo peer) {
 }
 
 bool RoutingTable::CheckNode(NodeInfo peer) {
-  if (peer.id.IsZero() || peer.id == kNodeId_)
+  if (!peer.id.IsValid() || peer.id == kNodeId_)
     return false;
 
-  peer.bucket = BucketIndex(peer.id);
   std::lock_guard<std::mutex> lock(mutex_);
-  if (std::find_if(nodes_.begin(), nodes_.end(), [&peer](const NodeInfo& node_info) {
-        return node_info.id == peer.id;
-      }) != std::end(nodes_))
-    return false;
+
   if (nodes_.size() < kRoutingTableSize)
     return true;
-  bool close_node(NodeId::CloserToTarget(peer.id, nodes_.at(kGroupSize).id, kNodeId()));
+  // check for duplicates
+  if (std::any_of(nodes_.begin(), nodes_.end(),
+                  [&peer](const NodeInfo& node_info) { return node_info.id == peer.id; }))
+    return false;
+  // close node
+  if (NodeId::CloserToTarget(peer.id, nodes_.at(kGroupSize).id, kNodeId()))
+    return true;
+  // this node is a better fot than we currently have in the routing table
   auto remove_node(MakeSpaceForNodeToBeAdded());
-  return ((remove_node != nodes_.rend() &&
-           NodeId::CloserToTarget(peer.id, remove_node->id, kNodeId_)) ||
-          (static_cast<size_t>(nodes_.size()) < kRoutingTableSize - 1) || close_node);
+  return (remove_node != nodes_.rend() &&
+          BucketIndex(peer.id) > std::next(remove_node).base()->bucket);
 }
 
 NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
@@ -172,9 +183,9 @@ int32_t RoutingTable::BucketIndex(const NodeId& node_id) const {
 std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded() {
   size_t bucket_count(0);
   int bucket(0);
-  if (nodes_.size() < kRoutingTableSize - 1)
+  if (nodes_.size() < kRoutingTableSize)
     return nodes_.rend();
-  auto found = std::find_if(nodes_.rbegin(), nodes_.rend() - kGroupSize,
+  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + kGroupSize,
                             [&bucket_count, &bucket](const NodeInfo& node) {
     if (node.bucket != bucket) {
       bucket = node.bucket;
@@ -182,7 +193,7 @@ std::vector<NodeInfo>::reverse_iterator RoutingTable::MakeSpaceForNodeToBeAdded(
     }
     return (++bucket_count > kBucketSize);
   });
-  if (found != nodes_.rend() - kGroupSize)
+  if (found < nodes_.rbegin() + kGroupSize)
     return found;
   else
     return nodes_.rend();

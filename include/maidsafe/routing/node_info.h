@@ -36,9 +36,22 @@ namespace routing {
 struct NodeInfo {
   NodeInfo() = default;
   NodeInfo(const NodeInfo& other) = default;
-  NodeInfo(NodeInfo&& other) = default;
+  NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
+                                                 connection_id(std::move(other.connection_id)),
+                                                 public_key(std::move(other.public_key)),
+                                                 rank(std::move(other.rank)),
+                                                 bucket(std::move(other.rank)),
+                                                 nat_type(std::move(other.nat_type)) {}
   NodeInfo& operator=(NodeInfo const&) = default;
-  NodeInfo& operator=(NodeInfo&&) = default;
+  NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
+    id = std::move(other.id);
+    connection_id = std::move(other.connection_id);
+    public_key = std::move(other.public_key);
+    rank = std::move(other.rank);
+    bucket = std::move(other.rank);
+    nat_type = std::move(other.nat_type);
+    return *this;
+  }
 
   //  for use with std::unique
   bool operator==(const NodeInfo& other) const {
