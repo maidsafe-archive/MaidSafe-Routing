@@ -112,9 +112,7 @@ void UpdateNetworkHealth(int updated_health, int& current_health, std::mutex& mu
       std::string message{DebugId(this_node_id) + " - Network health is " +
                           std::to_string(updated_health) + "% (was " +
                           std::to_string(current_health) + "%)"};
-      if (updated_health >= current_health)
-        LOG(kVerbose) << message;
-      else
+      if (updated_health < current_health)
         LOG(kWarning) << message;
     } else {
       LOG(kWarning) << DebugId(this_node_id) << " - Network is down (" << updated_health << "%)";
