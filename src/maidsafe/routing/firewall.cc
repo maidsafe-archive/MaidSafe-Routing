@@ -42,7 +42,6 @@ bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
   if (found != std::end(history_))
     return false;
 
-  LOG(kVerbose) << "added to filter " << source_id << ", " << message_id;
   history_.insert(entry);
   if (history_.size() % Parameters::firewall_history_cleanup_factor == 0)
     Remove(lock);

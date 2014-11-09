@@ -159,7 +159,7 @@ class RoutingTable {
   unsigned int NetworkStatus(unsigned int size) const;
 
   void IpcSendCloseNodes();
-  std::string PrintRoutingTable();
+  std::string Print();
 
   const bool kClientMode_;
   const NodeId kNodeId_;
