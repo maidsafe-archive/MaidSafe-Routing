@@ -34,35 +34,30 @@ namespace routing {
 
 struct NodeInfo;
 
-typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
-    RoutingTableChangeFunctor;
-
-class RoutingTable {
+class routing_table {
  public:
   static const size_t kBucketSize_ = 1;
-  RoutingTable(NodeId our_id, asymm::Keys keys);
-  RoutingTable(const RoutingTable&) = default;
-  RoutingTable(RoutingTable&&) = default;
-  RoutingTable& operator=(const RoutingTable&) = delete;
-  RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
-  virtual ~RoutingTable() = default;
-  void InitialiseFunctors(RoutingTableChangeFunctor routing_table_change_functor);
-  bool AddNode(NodeInfo their_info);
-  bool CheckNode(const NodeInfo& their_info);
-  NodeInfo DropNode(const NodeId& node_to_drop, bool routing_only);
+  routing_table(const NodeId& our_id, const asymm::Keys& keys);
+  routing_table(const routing_table&) = default;
+  routing_table(routing_table&&) = default;
+  routing_table& operator=(const routing_table&) = delete;
+  routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
+  virtual ~routing_table() = default;
+  bool add_node(node_info their_info);
+  bool check_node(node_info their_info);
+  bool drop_node(const NodeId& node_to_drop);
   // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<NodeInfo> GetTargetNodes(const NodeId& their_id) const;
+  std::vector<node_info> target_nodes(const NodeId& their_id) const;
   // our close group or at least as much of it as we currently know
-  std::vector<NodeInfo> GetGroupNodes() const;
+  std::vector<node_info> our_close_group() const;
 
   size_t size() const;
-  NodeId kNodeId() const { return kNodeId_; }
-  asymm::PrivateKey kPrivateKey() const { return kKeys_.private_key; }
-  asymm::PublicKey kPublicKey() const { return kKeys_.public_key; }
+  NodeId our_id() const { return our_id_; }
+  asymm::PrivateKey our_private_key() const { return kKeys_.private_key; }
+  asymm::PublicKey our_public_key() const { return kKeys_.public_key; }
 
  private:
-  bool AddOrCheckNode(NodeInfo node, bool check_only);
-  int32_t BucketIndex(const NodeId& node_id) const;
+  int32_t bucket_index(const NodeId& node_id) const;
 
   /** Attempts to find or allocate space for an incomming connect request, returning true
    * indicates approval
@@ -76,16 +71,14 @@ class RoutingTable {
    * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
    *    bucket will be evicted
    * - remove the selected node and return true **/
-  std::vector<NodeInfo>::reverse_iterator MakeSpaceForNodeToBeAdded();
+  std::vector<node_info>::reverse_iterator is_node_viable_for_routing_table();
 
-  unsigned int NetworkStatus(size_t size) const;
+  unsigned int network_status(size_t size) const;
 
-  const NodeId kNodeId_;
-  const NodeId kConnectionId_;
+  const NodeId our_id_;
   const asymm::Keys kKeys_;
   mutable std::mutex mutex_;
-  RoutingTableChangeFunctor routing_table_change_functor_;
-  std::vector<NodeInfo> nodes_;
+  std::vector<node_info> nodes_;
 };
 
 }  // namespace routing

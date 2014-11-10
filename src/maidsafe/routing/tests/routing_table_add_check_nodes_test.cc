@@ -20,18 +20,13 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
 
 
 namespace maidsafe {
@@ -42,15 +37,15 @@ namespace test {
 
 TEST(RoutingTableTest, FUNC_AddCheck1000Nodes) {
   // create a network of 1000 nodes
-  auto routing_tables(RoutingTableNetwork(1000));
+  auto routing_tables(routing_tableNetwork(1000));
   // itterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->kNodeId();
-      nodeinfo_to_add.public_key = node_to_add->kPublicKey();
-      if (node->CheckNode(nodeinfo_to_add)) {
-        EXPECT_TRUE(node->AddNode(nodeinfo_to_add));
+      node_info nodeinfo_to_add;
+      nodeinfo_to_add.id = node_to_add->our_id();
+      nodeinfo_to_add.public_key = node_to_add->our_public_key();
+      if (node->check_node(nodeinfo_to_add)) {
+        EXPECT_TRUE(node->add_node(nodeinfo_to_add));
       }
     }
   }

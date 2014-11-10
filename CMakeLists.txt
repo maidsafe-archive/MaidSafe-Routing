@@ -86,6 +86,10 @@ if(MaidsafeTesting)
   # TODO - remove these targets - only added to avoid changing installers for now.
   ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
   ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
+  target_include_directories(test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_include_directories(test_routing_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(test_routing maidsafe_routing maidsafe_test)
+    target_link_libraries(test_routing_api maidsafe_routing maidsafe_test)
 endif()
 
 ms_rename_outdated_built_exes()
