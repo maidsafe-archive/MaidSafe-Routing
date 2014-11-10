@@ -35,8 +35,8 @@ namespace routing {
 namespace test {
 
 TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
-  const auto network_size(500);
-  auto nodes_to_remove(100);
+  const auto network_size(10000);
+  auto nodes_to_remove(6000);
 
   // create a network of 1000 nodes
   auto routing_tables(routing_tableNetwork(network_size));
