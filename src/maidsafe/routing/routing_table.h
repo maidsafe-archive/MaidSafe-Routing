@@ -23,28 +23,27 @@
 #include <mutex>
 #include <vector>
 
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/routing/routing_table_change.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct NodeInfo;
+struct node_info;
 
 class routing_table {
  public:
   static const size_t kBucketSize_ = 1;
-  routing_table(const NodeId& our_id, const asymm::Keys& keys);
+  routing_table(NodeId our_id, asymm::Keys keys);
   routing_table(const routing_table&) = default;
   routing_table(routing_table&&) = default;
   routing_table& operator=(const routing_table&) = delete;
   routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~routing_table() = default;
   bool add_node(node_info their_info);
-  bool check_node(node_info their_info);
+  bool check_node(const node_info& their_info) const;
   bool drop_node(const NodeId& node_to_drop);
   // If more than 1 node returned then we are in close group so send to all !!
   std::vector<node_info> target_nodes(const NodeId& their_id) const;
@@ -71,7 +70,7 @@ class routing_table {
    * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
    *    bucket will be evicted
    * - remove the selected node and return true **/
-  std::vector<node_info>::reverse_iterator is_node_viable_for_routing_table();
+  std::vector<node_info>::const_reverse_iterator is_node_viable_for_routing_table() const;
 
   unsigned int network_status(size_t size) const;
 

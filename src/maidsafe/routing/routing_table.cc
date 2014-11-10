@@ -32,26 +32,26 @@ namespace maidsafe {
 
 namespace routing {
 
-routing_table::routing_table(NodeId node_id, asymm::Keys keys)
-    : our_id_(std::move(node_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
+routing_table::routing_table(NodeId our_id, asymm::Keys keys)
+    : our_id_(std::move(our_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
 
 
 bool routing_table::add_node(node_info their_info) {
-  if (!their_info.id.IsValid() || their_info.id == our_id_ || !asymm::ValidateKey(their_info.public_key)) {
+  if (!their_info.id.IsValid() || their_info.id == our_id_ ||
+      !asymm::ValidateKey(their_info.public_key)) {
     return false;
   }
 
   node_info removed_node;
-  std::shared_ptr<CloseNodesChange> close_nodes_change;
-
   their_info.bucket = bucket_index(their_info.id);
   bool close_node(true);
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() > kGroupSize)
     close_node = (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id()));
 
-  if (std::any_of(nodes_.begin(), nodes_.end(),
-                  [&their_info](const node_info& node_info) { return node_info.id == their_info.id; })) {
+  if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
+        return node_info.id == their_info.id;
+      })) {
     return false;
   }
   auto remove_node(is_node_viable_for_routing_table());
@@ -80,18 +80,17 @@ bool routing_table::add_node(node_info their_info) {
   return true;
 }
 
-bool routing_table::check_node(node_info their_info) {
+bool routing_table::check_node(const node_info& their_info) const {
   if (!their_info.id.IsValid() || their_info.id == our_id_)
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-
-  }
   if (nodes_.size() < kRoutingTableSize)
     return true;
   // check for duplicates
-  if (std::any_of(nodes_.begin(), nodes_.end(),
-                  [&their_info](const node_info& node_info) { return node_info.id == their_info.id; }))
+  if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
+        return node_info.id == their_info.id;
+      }))
     return false;
   // close node
   if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id()))
@@ -103,15 +102,12 @@ bool routing_table::check_node(node_info their_info) {
 }
 
 bool routing_table::drop_node(const NodeId& node_to_drop) {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto remove =
-        find_if(std::begin(nodes_), std::end(nodes_),
-                [&node_to_drop](const node_info& node) { return node.id == node_to_drop; });
-    if (remove != std::end(nodes_)) {
-      nodes_.erase(remove);
-      return true;
-    }
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto remove = find_if(std::begin(nodes_), std::end(nodes_),
+                        [&node_to_drop](const node_info& node) { return node.id == node_to_drop; });
+  if (remove != std::end(nodes_)) {
+    nodes_.erase(remove);
+    return true;
   }
   return false;
 }
@@ -161,7 +157,8 @@ int32_t routing_table::bucket_index(const NodeId& node_id) const {
   return our_id_.CommonLeadingBits(node_id);
 }
 
-std::vector<node_info>::reverse_iterator routing_table::is_node_viable_for_routing_table() const {
+std::vector<node_info>::const_reverse_iterator routing_table::is_node_viable_for_routing_table()
+    const {
   size_t bucket_count(0);
   int bucket(0);
   if (nodes_.size() < kRoutingTableSize)
