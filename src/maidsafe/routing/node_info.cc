@@ -48,7 +48,7 @@ namespace routing {
 //   return serialised_message;
 // }
 
-const int32_t NodeInfo::kInvalidBucket(std::numeric_limits<int32_t>::max());
+const int32_t node_info::kInvalidBucket(std::numeric_limits<int32_t>::max());
 
 }  // namespace routing
 
