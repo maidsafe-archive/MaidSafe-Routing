@@ -22,10 +22,11 @@
 #include <cstdint>
 #include <vector>
 
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/tagged_value.h"
 #include "maidsafe/common/type_check.h"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/common/tagged_value.h"
 
 #include "maidsafe/rudp/nat_type.h"
 
@@ -37,11 +38,11 @@ struct node_info {
   node_info() = default;
   node_info(const node_info& other) = default;
   node_info(node_info&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
-                                                 connection_id(std::move(other.connection_id)),
-                                                 public_key(std::move(other.public_key)),
-                                                 rank(std::move(other.rank)),
-                                                 bucket(std::move(other.rank)),
-                                                 nat_type(std::move(other.nat_type)) {}
+                                                   connection_id(std::move(other.connection_id)),
+                                                   public_key(std::move(other.public_key)),
+                                                   rank(std::move(other.rank)),
+                                                   bucket(std::move(other.rank)),
+                                                   nat_type(std::move(other.nat_type)) {}
   node_info& operator=(node_info const&) = default;
   node_info& operator=(node_info&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
@@ -55,14 +56,11 @@ struct node_info {
 
   //  for use with std::unique
   bool operator==(const node_info& other) const { return id == other.id; }
-
   bool operator!=(const node_info& other) const { return !operator==(other); }
-
   bool operator<(const node_info& other) const { return id < other.id; }
-  bool operator>(const node_info& other) { return id > other.id; }
-  bool operator<=(const node_info& other) { return !operator>(other); }
-  bool operator>=(const node_info& other) { return !operator<(other); }
-
+  bool operator>(const node_info& other) const { return id > other.id; }
+  bool operator<=(const node_info& other) const { return !operator>(other); }
+  bool operator>=(const node_info& other) const { return !operator<(other); }
 
   NonEmptyString serialise() const;
 
@@ -76,8 +74,6 @@ struct node_info {
   static const int32_t kInvalidBucket;
   // static_assert(is_regular<node_info>::value, "Not a regular type");
 };
-
-
 
 }  // namespace routing
 

@@ -20,10 +20,7 @@
 #define MAIDSAFE_ROUTING_ROUTING_TABLE_H_
 
 #include <cstdint>
-#include <memory>
 #include <mutex>
-#include <string>
-#include <utility>
 #include <vector>
 
 
@@ -40,22 +37,24 @@ namespace maidsafe {
 
 namespace routing {
 
+struct node_info;
+
 class routing_table {
  public:
-  static const size_t kBucketSize = 1;
-  routing_table(const NodeId& our_id, const asymm::Keys& keys);
+  static const size_t kBucketSize_ = 1;
+  routing_table(NodeId our_id, asymm::Keys keys);
   routing_table(const routing_table&) = default;
   routing_table(routing_table&&) = default;
   routing_table& operator=(const routing_table&) = delete;
   routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~routing_table() = default;
-  bool add_node(node_info their_id);
-  bool check_node(node_info their_id);
+  bool add_node(node_info their_info);
+  bool check_node(const node_info& their_info) const;
   bool drop_node(const NodeId& node_to_drop);
   // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<node_info> target_nodes(NodeId their_id);
+  std::vector<node_info> target_nodes(const NodeId& their_id) const;
   // our close group or at least as much of it as we currently know
-  std::vector<node_info> our_close_group();
+  std::vector<node_info> our_close_group() const;
 
   size_t size() const;
   NodeId our_id() const { return our_id_; }
@@ -77,9 +76,9 @@ class routing_table {
    * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
    *    bucket will be evicted
    * - remove the selected node and return true **/
-  std::vector<node_info>::reverse_iterator is_node_viable_for_routing_table();
+  std::vector<node_info>::const_reverse_iterator is_node_viable_for_routing_table() const;
 
-  unsigned int network_status(unsigned int size) const;
+  unsigned int network_status(size_t size) const;
 
   const NodeId our_id_;
   const asymm::Keys kKeys_;
