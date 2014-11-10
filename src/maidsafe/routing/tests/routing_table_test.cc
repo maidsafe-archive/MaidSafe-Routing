@@ -49,6 +49,7 @@ TEST(routing_tableTest, BEH_AddCloseNodes) {
   // everything should be set to go now
   for (unsigned int i = 0; i < kGroupSize; ++i) {
     node.id = NodeId(RandomString(NodeId::kSize));
+    node.public_key = asymm::GenerateKeyPair().public_key;
     EXPECT_TRUE(routing_table.add_node(node));
   }
   EXPECT_EQ(kGroupSize, routing_table.size());
