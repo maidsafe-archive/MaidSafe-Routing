@@ -39,14 +39,14 @@ namespace routing {
 struct RoutingTableChange {
   struct Remove {
     Remove() : node(), routing_only_removal(true) {}
-    Remove(NodeInfo& node_in, bool routing_only_removal_in)
+    Remove(node_info& node_in, bool routing_only_removal_in)
         : node(node_in), routing_only_removal(routing_only_removal_in) {}
-    NodeInfo node;
+    node_info node;
     bool routing_only_removal;
   };
   RoutingTableChange()
       : added_node(), removed(), insertion(false), close_nodes_change(), health(0) {}
-  RoutingTableChange(const NodeInfo& added_node_in, const Remove& removed_in, bool insertion_in,
+  RoutingTableChange(const node_info& added_node_in, const Remove& removed_in, bool insertion_in,
                      std::shared_ptr<CloseNodesChange> close_nodes_change_in,
                      unsigned int health_in)
       : added_node(added_node_in),
@@ -54,7 +54,7 @@ struct RoutingTableChange {
         insertion(insertion_in),
         close_nodes_change(close_nodes_change_in),
         health(health_in) {}
-  NodeInfo added_node;
+  node_info added_node;
   Remove removed;
   bool insertion;
   std::shared_ptr<CloseNodesChange> close_nodes_change;

@@ -33,17 +33,17 @@ namespace maidsafe {
 
 namespace routing {
 
-struct NodeInfo {
-  NodeInfo() = default;
-  NodeInfo(const NodeInfo& other) = default;
-  NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
+struct node_info {
+  node_info() = default;
+  node_info(const node_info& other) = default;
+  node_info(node_info&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                  connection_id(std::move(other.connection_id)),
                                                  public_key(std::move(other.public_key)),
                                                  rank(std::move(other.rank)),
                                                  bucket(std::move(other.rank)),
                                                  nat_type(std::move(other.nat_type)) {}
-  NodeInfo& operator=(NodeInfo const&) = default;
-  NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
+  node_info& operator=(node_info const&) = default;
+  node_info& operator=(node_info&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     connection_id = std::move(other.connection_id);
     public_key = std::move(other.public_key);
@@ -54,19 +54,17 @@ struct NodeInfo {
   }
 
   //  for use with std::unique
-  bool operator==(const NodeInfo& other) const {
-    return id == other.id || asymm::MatchingKeys(public_key, other.public_key);
-  }
+  bool operator==(const node_info& other) const { return id == other.id; }
 
-  bool operator!=(const NodeInfo& other) const { return !operator==(other); }
+  bool operator!=(const node_info& other) const { return !operator==(other); }
 
-  bool operator<(const NodeInfo& other) const { return id < other.id; }
-  bool operator>(const NodeInfo& other) { return id > other.id; }
-  bool operator<=(const NodeInfo& other) { return !operator>(other); }
-  bool operator>=(const NodeInfo& other) { return !operator<(other); }
+  bool operator<(const node_info& other) const { return id < other.id; }
+  bool operator>(const node_info& other) { return id > other.id; }
+  bool operator<=(const node_info& other) { return !operator>(other); }
+  bool operator>=(const node_info& other) { return !operator<(other); }
 
 
-  NonEmptyString Serialise() const;
+  NonEmptyString serialise() const;
 
   NodeId id;
   NodeId connection_id;  // Id of a node as far as rudp is concerned
@@ -76,7 +74,7 @@ struct NodeInfo {
   rudp::NatType nat_type;
 
   static const int32_t kInvalidBucket;
-  // static_assert(is_regular<NodeInfo>::value, "Not a regular type");
+  // static_assert(is_regular<node_info>::value, "Not a regular type");
 };
 
 

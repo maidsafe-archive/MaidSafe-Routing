@@ -16,20 +16,16 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <bitset>
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
 #include "maidsafe/routing/network_statistics.h"
 
@@ -40,28 +36,20 @@ namespace routing {
 
 namespace test {
 
-TEST(RoutingTableTest, BEH_AddCloseNodes) {
-  NodeId node_id(RandomIdTag{});
-  RoutingTable routing_table(node_id, asymm::GenerateKeyPair());
-  NodeInfo node;
+TEST(routing_tableTest, BEH_AddCloseNodes) {
+  NodeId node_id(RandomString(NodeId::kSize));
+  routing_table routing_table(node_id, asymm::GenerateKeyPair());
+  node_info node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kGroupSize; ++i) {
-    node.id = NodeId(RandomString(64));
-    EXPECT_TRUE(routing_table.CheckNode(node));
+    node.id = NodeId(RandomString(NodeId::kSize));
+    EXPECT_TRUE(routing_table.check_node(node));
   }
-  // EXPECT_EQ(routing_table.size(), 0);
-  // asymm::PublicKey dummy_key;
-  // // check we cannot input nodes with invalid public_keys
-  // for (unsigned int i = 0; i < kGroupSize; ++i) {
-  //   NodeInfo node(MakeNode());
-  //   node.public_key = dummy_key;
-  //   EXPECT_FALSE(routing_table.AddNode(node));
-  // }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
   for (unsigned int i = 0; i < kGroupSize; ++i) {
-    node = MakeNode();
-    EXPECT_TRUE(routing_table.AddNode(node));
+    node.id = NodeId(RandomString(NodeId::kSize));
+    EXPECT_TRUE(routing_table.add_node(node));
   }
   EXPECT_EQ(kGroupSize, routing_table.size());
 }
