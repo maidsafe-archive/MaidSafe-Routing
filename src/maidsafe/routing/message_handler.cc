@@ -342,6 +342,13 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
     return;
   }
 
+  if (!message.client_node() && message.has_source_id()) {
+    NodeInfo node_info;
+    node_info.id = NodeId(message.source_id());
+    if (routing_table_.CheckNode(node_info))
+      response_handler_->CheckAndSendConnectRequest(node_info.id);
+  }
+
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 

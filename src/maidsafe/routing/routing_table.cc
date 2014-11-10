@@ -91,7 +91,7 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     return false;
   }
   if (remove && !asymm::ValidateKey(peer.public_key)) {
-    LOG(kInfo) << "Invalid public key for node " << DebugId(peer.id);
+    LOG(kInfo) << "Invalid public key for node " << peer.id;
     return false;
   }
 
