@@ -36,10 +36,13 @@ namespace test {
 
 TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
   const auto network_size(500);
+  auto nodes_to_remove(200);
+
   // create a network of 1000 nodes
   auto routing_tables(routing_tableNetwork(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
+
   // itterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
@@ -50,46 +53,44 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
       node->add_node(nodeinfo_to_add);
     }
   }
-  auto nodes_to_remove(10);
-  // now remove 90% of nodes
-  std::vector<NodeId> new_vec;
-  new_vec.reserve(nodes_to_remove);
+  // now remove nodes
+  std::vector<NodeId> drop_vec;
+  drop_vec.reserve(nodes_to_remove);
   std::copy(std::begin(node_ids), std::begin(node_ids) + (nodes_to_remove),
-            std::back_inserter(new_vec));
-  node_ids.erase(std::begin(node_ids), std::begin(node_ids) + (nodes_to_remove));
-  routing_tables.erase(std::begin(routing_tables), std::begin(routing_tables) + (nodes_to_remove));
+            std::back_inserter(drop_vec));
 
+  routing_tables.erase(std::remove_if(std::begin(routing_tables), std::end(routing_tables),
+                                      [&drop_vec](const std::unique_ptr<routing_table>& table) {
+                         return std::any_of(
+                             std::begin(drop_vec), std::end(drop_vec),
+                             [&table](const NodeId& id) { return table->our_id() == id; });
+                       }),
+                       std::end(routing_tables));
 
   for (auto& node : routing_tables) {
-    for (const auto& drop : node_ids)
+    for (const auto& drop : drop_vec)
       node->drop_node(drop);
   }
 
-  // simulate some sync calls
-  // for (auto& node : routing_tables) {
-  //   for (const auto& add : new_vec) {
-  //     node_info add_this;
-  //     add_this.id = add;
-  //     node->add_node(add_this);
-  //   }
-  // }
-
+  node_ids.erase(
+      std::remove_if(std::begin(node_ids), std::end(node_ids), [&drop_vec](const NodeId& id) {
+        return std::any_of(std::begin(drop_vec), std::end(drop_vec),
+                           [&id](const NodeId& drop_id) { return drop_id == id; });
+      }),
+      std::end(node_ids));
 
   for (auto& node : routing_tables) {
     size_t size = std::min(kGroupSize, static_cast<size_t>(node->size()));
     auto id = node->our_id();
     // + 1 as node_ids includes our ID
-    std::partial_sort(std::begin(new_vec), std::begin(new_vec) + size + 1, std::end(new_vec),
+    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + size + 1, std::end(node_ids),
                       [id](const NodeId& lhs,
                            const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
     auto groups = node->our_close_group();
     EXPECT_EQ(groups.size(), size);
     for (size_t i = 0; i < size; ++i) {
       // + 1 as node_ids includes our ID
-      if (new_vec.at(i) == id)
-        EXPECT_EQ(groups.at(i).id, new_vec.at(i + 1)) << "node mismatch at" << i;
-      else
-        EXPECT_EQ(groups.at(i).id, new_vec.at(i)) << "node mismatch at" << i;
+      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << "node mismatch at" << i;
     }
   }
 }
