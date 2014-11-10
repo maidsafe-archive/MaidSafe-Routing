@@ -26,13 +26,9 @@
 #include <utility>
 #include <vector>
 
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"

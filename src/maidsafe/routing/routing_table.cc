@@ -19,7 +19,6 @@
 #include "maidsafe/routing/routing_table.h"
 
 #include <algorithm>
-#include <bitset>
 #include <limits>
 #include <map>
 #include <sstream>
@@ -29,7 +28,6 @@
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/close_nodes_change.h"
 
 namespace maidsafe {
 
