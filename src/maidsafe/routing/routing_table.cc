@@ -53,7 +53,7 @@ bool routing_table::add_node(node_info their_info) {
 
   if (nodes_.size() < default_routing_table_size) {
     nodes_.push_back(their_info);
-  } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id())) {
+  } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
     // try to push another node out here as new node is also a close node
     // rather than removing the old close node we keep it if possible and
     // sacrifice a less importnt node
