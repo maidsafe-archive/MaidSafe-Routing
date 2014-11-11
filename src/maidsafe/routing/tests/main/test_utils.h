@@ -64,7 +64,6 @@ node_infoAndPrivateKey Makenode_infoAndKeysWithFob(FobType fob) {
   node_info node;
   node.id = NodeId(fob.name()->string());
   node.public_key = fob.public_key();
-  node.connection_id = node.id;
   node_infoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
   node_info_and_private_key.private_key = fob.private_key();

@@ -63,7 +63,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
     for (const auto& drop : drop_vec)
       node->drop_node(drop);
   }
-
+  // remove ids to
   node_ids.erase(
       std::remove_if(std::begin(node_ids), std::end(node_ids), [&drop_vec](const NodeId& id) {
         return std::any_of(std::begin(drop_vec), std::end(drop_vec),

@@ -29,9 +29,6 @@
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/close_nodes_change.h"
-#include "maidsafe/routing/routing_table_change.h"
-#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -64,19 +61,7 @@ class routing_table {
  private:
   int32_t bucket_index(const NodeId& node_id) const;
 
-  /** Attempts to find or allocate space for an incomming connect request, returning true
-   * indicates approval
-   * returns true if routing table is not full, otherwise, performs the following process to
-   * possibly evict an existing node:
-   * - sorts the nodes according to their distance from self-node-id
-   * - a candidate for eviction must have an index > Parameters::unidirectional_interest_range
-   * - count the number of nodes in each bucket for nodes with
-   *    index > Parameters::unidirectional_interest_range
-   * - choose the furthest node among the nodes with maximum bucket index
-   * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
-   *    bucket will be evicted
-   * - remove the selected node and return true **/
-  std::vector<node_info>::const_reverse_iterator is_node_viable_for_routing_table() const;
+  std::vector<node_info>::const_reverse_iterator find_candidate_for_removal() const;
 
   unsigned int network_status(size_t size) const;
 

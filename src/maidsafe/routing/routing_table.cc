@@ -42,7 +42,6 @@ bool routing_table::add_node(node_info their_info) {
   }
 
   node_info removed_node;
-  their_info.bucket = bucket_index(their_info.id);
   bool close_node(true);
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() > kGroupSize)
@@ -53,12 +52,12 @@ bool routing_table::add_node(node_info their_info) {
       })) {
     return false;
   }
-  auto remove_node(is_node_viable_for_routing_table());
+  auto remove_node(find_candidate_for_removal());
 
   if (nodes_.size() < kRoutingTableSize) {
     nodes_.push_back(their_info);
   } else if ((remove_node != nodes_.rend()) &&
-             their_info.bucket > (std::next(remove_node).base())->bucket) {
+             bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id)) {
     removed_node = *(std::next(remove_node).base());
     nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(their_info);
@@ -66,7 +65,7 @@ bool routing_table::add_node(node_info their_info) {
     // try to push another node out here as new node is also a close node
     // rather than removing the old close node we keep it if possible and
     // sacrifice a less importnt node
-    auto remove_node(is_node_viable_for_routing_table());
+    auto remove_node(find_candidate_for_removal());
     if (remove_node != nodes_.rend())
       nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(their_info);
@@ -95,9 +94,9 @@ bool routing_table::check_node(const node_info& their_info) const {
   if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id()))
     return true;
   // this node is a better fot than we currently have in the routing table
-  auto remove_node(is_node_viable_for_routing_table());
+  auto remove_node(find_candidate_for_removal());
   return (remove_node != nodes_.rend() &&
-          bucket_index(their_info.id) > std::next(remove_node).base()->bucket);
+          bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id));
 }
 
 bool routing_table::drop_node(const NodeId& node_to_drop) {
@@ -156,16 +155,16 @@ int32_t routing_table::bucket_index(const NodeId& node_id) const {
   return our_id_.CommonLeadingBits(node_id);
 }
 
-std::vector<node_info>::const_reverse_iterator routing_table::is_node_viable_for_routing_table()
-    const {
+std::vector<node_info>::const_reverse_iterator routing_table::find_candidate_for_removal() const {
   size_t bucket_count(0);
   int bucket(0);
   if (nodes_.size() < kRoutingTableSize)
     return nodes_.rend();
   auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + kGroupSize,
-                            [&bucket_count, &bucket](const node_info& node) {
-    if (node.bucket != bucket) {
-      bucket = node.bucket;
+                            [&bucket_count, &bucket, this](const node_info& node) {
+    auto node_bucket(bucket_index(node.id));
+    if (node_bucket != bucket) {
+      bucket = node_bucket;
       bucket_count = 0;
     }
     return (++bucket_count > kBucketSize_);
