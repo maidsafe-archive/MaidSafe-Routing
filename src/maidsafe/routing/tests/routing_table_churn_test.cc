@@ -36,9 +36,9 @@ namespace test {
 
 TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
   const auto network_size(500);
-  auto nodes_to_remove(150);
+  auto nodes_to_remove(100);
 
-  // create a network of 1000 nodes
+  // create a network
   auto routing_tables(routing_tableNetwork(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
