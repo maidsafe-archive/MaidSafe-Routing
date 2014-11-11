@@ -35,7 +35,7 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_add_many_nodes_check_target) {
+TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
   const auto network_size(200);
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
@@ -61,7 +61,7 @@ TEST(routing_tableTest, FUNC_add_many_nodes_check_target) {
       EXPECT_EQ(target.size(), kGroupSize);
       // check the close group is correct
       for (size_t i = 0; i < kGroupSize; ++i)
-        EXPECT_EQ(target.at(i).id, node_ids.at(i + 1)) << "node mismatch at" << i;
+        EXPECT_EQ(target.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
     }
     // nodes further than the close group, should return a single target
     for (size_t i = kGroupSize + 1; i < network_size; ++i) {

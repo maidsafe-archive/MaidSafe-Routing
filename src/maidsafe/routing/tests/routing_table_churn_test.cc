@@ -55,16 +55,9 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   // now remove nodes
   std::vector<NodeId> drop_vec;
   drop_vec.reserve(nodes_to_remove);
-  std::copy(std::begin(node_ids), std::begin(node_ids) + (nodes_to_remove),
+  std::copy(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove,
             std::back_inserter(drop_vec));
-
-  routing_tables.erase(std::remove_if(std::begin(routing_tables), std::end(routing_tables),
-                                      [&drop_vec](const std::unique_ptr<routing_table>& table) {
-                         return std::any_of(
-                             std::begin(drop_vec), std::end(drop_vec),
-                             [&table](const NodeId& id) { return table->our_id() == id; });
-                       }),
-                       std::end(routing_tables));
+  routing_tables.erase(std::begin(routing_tables), std::begin(routing_tables) + nodes_to_remove);
 
   for (auto& node : routing_tables) {
     for (const auto& drop : drop_vec)
