@@ -35,10 +35,9 @@ namespace routing {
 
 namespace test {
 
-TEST(RoutingTableTest, FUNC_AddCheck1000Nodes) {
-  // create a network of 1000 nodes
-  auto routing_tables(routing_tableNetwork(1000));
-  // itterate and try to add each node to each other node
+TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
+  auto routing_tables(routing_table_network(1000));
+  // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
@@ -50,7 +49,7 @@ TEST(RoutingTableTest, FUNC_AddCheck1000Nodes) {
     }
   }
   // confirm all routing tables fully populated
-  for (auto& node : routing_tables)
+  for (const auto& node : routing_tables)
     EXPECT_EQ(node->size(), kRoutingTableSize);
 }
 

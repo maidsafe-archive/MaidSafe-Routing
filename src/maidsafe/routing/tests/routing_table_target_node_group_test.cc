@@ -35,13 +35,12 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Target) {
+TEST(routing_tableTest, FUNC_add_many_nodes_check_target) {
   const auto network_size(200);
-  // create a network of 1000 nodes
-  auto routing_tables(routing_tableNetwork(network_size));
+  auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
-  // itterate and try to add each node to each other node
+  // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
@@ -51,7 +50,7 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Target) {
       node->add_node(nodeinfo_to_add);
     }
   }
-  for (auto& node : routing_tables) {
+  for (const auto& node : routing_tables) {
     auto id = node->our_id();
     std::sort(std::begin(node_ids), std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
       return NodeId::CloserToTarget(lhs, rhs, id);
