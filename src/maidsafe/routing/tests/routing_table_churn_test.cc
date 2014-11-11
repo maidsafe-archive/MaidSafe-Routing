@@ -55,31 +55,19 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   // now remove nodes
   std::vector<NodeId> drop_vec;
   drop_vec.reserve(nodes_to_remove);
-  std::copy(std::begin(node_ids), std::begin(node_ids) + (nodes_to_remove),
+  std::copy(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove,
             std::back_inserter(drop_vec));
-
-  routing_tables.erase(std::remove_if(std::begin(routing_tables), std::end(routing_tables),
-                                      [&drop_vec](const std::unique_ptr<routing_table>& table) {
-                         return std::any_of(
-                             std::begin(drop_vec), std::end(drop_vec),
-                             [&table](const NodeId& id) { return table->our_id() == id; });
-                       }),
-                       std::end(routing_tables));
+  routing_tables.erase(std::begin(routing_tables), std::begin(routing_tables) + nodes_to_remove);
 
   for (auto& node : routing_tables) {
     for (const auto& drop : drop_vec)
       node->drop_node(drop);
   }
-  // remove ids to
-  node_ids.erase(
-      std::remove_if(std::begin(node_ids), std::end(node_ids), [&drop_vec](const NodeId& id) {
-        return std::any_of(std::begin(drop_vec), std::end(drop_vec),
-                           [&id](const NodeId& drop_id) { return drop_id == id; });
-      }),
-      std::end(node_ids));
+  // remove ids too
+  node_ids.erase(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove);
 
   for (const auto& node : routing_tables) {
-    size_t size = std::min(kGroupSize, static_cast<size_t>(node->size()));
+    size_t size = std::min(group_size, static_cast<size_t>(node->size()));
     auto id = node->our_id();
     // + 1 as node_ids includes our ID
     std::partial_sort(std::begin(node_ids), std::begin(node_ids) + size + 1, std::end(node_ids),

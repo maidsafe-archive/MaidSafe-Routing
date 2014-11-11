@@ -42,18 +42,18 @@ TEST(routing_table_test, BEH_add_close_nodes) {
   routing_table routing_table(node_id, keys);
   node_info node;
   // check the node is useful when false is set
-  for (unsigned int i = 0; i < kGroupSize; ++i) {
+  for (unsigned int i = 0; i < group_size; ++i) {
     node.id = NodeId(RandomString(NodeId::kSize));
     EXPECT_TRUE(routing_table.check_node(node));
   }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
-  for (unsigned int i = 0; i < kGroupSize; ++i) {
+  for (unsigned int i = 0; i < group_size; ++i) {
     node.id = NodeId(RandomString(NodeId::kSize));
     node.public_key = keys.public_key;
     EXPECT_TRUE(routing_table.add_node(node));
   }
-  EXPECT_EQ(kGroupSize, routing_table.size());
+  EXPECT_EQ(group_size, routing_table.size());
 }
 
 }  // namespace test

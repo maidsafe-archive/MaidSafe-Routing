@@ -51,7 +51,7 @@ bool routing_table::add_node(node_info their_info) {
   }
   auto remove_node(find_candidate_for_removal());
 
-  if (nodes_.size() < kRoutingTableSize) {
+  if (nodes_.size() < default_routing_table_size) {
     nodes_.push_back(their_info);
   } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id())) {
     // try to push another node out here as new node is also a close node
@@ -80,7 +80,7 @@ bool routing_table::check_node(const node_info& their_info) const {
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < kRoutingTableSize)
+  if (nodes_.size() < default_routing_table_size)
     return true;
   // check for duplicates
   if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
@@ -88,7 +88,7 @@ bool routing_table::check_node(const node_info& their_info) const {
       }))
     return false;
   // close node
-  if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id()))
+  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id()))
     return true;
   // this node is a better fot than we currently have in the routing table
   auto remove_node(find_candidate_for_removal());
@@ -121,7 +121,7 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
     }
   }
 
-  if (index < kGroupSize) {
+  if (index < group_size) {
     return our_close_group();
   }
   {
@@ -132,10 +132,10 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
 
 std::vector<node_info> routing_table::our_close_group() const {
   std::vector<node_info> result;
-  result.reserve(kGroupSize);
+  result.reserve(group_size);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto size = std::min(kGroupSize, static_cast<size_t>(nodes_.size()));
+    auto size = std::min(group_size, static_cast<size_t>(nodes_.size()));
     std::copy(std::begin(nodes_), std::begin(nodes_) + size, std::back_inserter(result));
   }
   return result;
@@ -155,9 +155,9 @@ int32_t routing_table::bucket_index(const NodeId& node_id) const {
 std::vector<node_info>::const_reverse_iterator routing_table::find_candidate_for_removal() const {
   size_t bucket_count(0);
   int bucket(0);
-  if (nodes_.size() < kRoutingTableSize)
+  if (nodes_.size() < default_routing_table_size)
     return nodes_.rend();
-  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + kGroupSize,
+  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,
                             [&bucket_count, &bucket, this](const node_info& node) {
     auto node_bucket(bucket_index(node.id));
     if (node_bucket != bucket) {
@@ -166,14 +166,14 @@ std::vector<node_info>::const_reverse_iterator routing_table::find_candidate_for
     }
     return (++bucket_count > kBucketSize_);
   });
-  if (found < nodes_.rbegin() + kGroupSize)
+  if (found < nodes_.rbegin() + group_size)
     return found;
   else
     return nodes_.rend();
 }
 
 unsigned int routing_table::network_status(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / kRoutingTableSize);
+  return static_cast<unsigned int>(size * 100 / default_routing_table_size);
 }
 
 }  // namespace routing

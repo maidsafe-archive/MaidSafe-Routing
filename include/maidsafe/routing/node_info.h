@@ -20,15 +20,10 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
-#include <vector>
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/tagged_value.h"
-#include "maidsafe/common/type_check.h"
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/rudp/nat_type.h"
 
 namespace maidsafe {
 
@@ -48,13 +43,12 @@ struct node_info {
     return *this;
   }
 
-  //  for use with std::unique
-  bool operator==(const node_info& other) { return id == other.id; }
-  bool operator!=(const node_info& other) { return !operator==(other); }
-  bool operator<(const node_info& other) { return id < other.id; }
-  bool operator>(const node_info& other) { return id > other.id; }
-  bool operator<=(const node_info& other) { return !operator>(other); }
-  bool operator>=(const node_info& other) { return !operator<(other); }
+  bool operator==(const node_info& other) const { return id == other.id; }
+  bool operator!=(const node_info& other) const { return !operator==(other); }
+  bool operator<(const node_info& other) const { return id < other.id; }
+  bool operator>(const node_info& other) const { return id > other.id; }
+  bool operator<=(const node_info& other) const { return !operator>(other); }
+  bool operator>=(const node_info& other) const { return !operator<(other); }
 
   NonEmptyString serialise() const;
 
