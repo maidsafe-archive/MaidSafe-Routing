@@ -42,10 +42,7 @@ bool routing_table::add_node(node_info their_info) {
   }
 
   node_info removed_node;
-  bool close_node(true);
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() > kGroupSize)
-    close_node = (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id()));
 
   if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
         return node_info.id == their_info.id;
@@ -56,18 +53,18 @@ bool routing_table::add_node(node_info their_info) {
 
   if (nodes_.size() < kRoutingTableSize) {
     nodes_.push_back(their_info);
-  } else if ((remove_node != nodes_.rend()) &&
-             bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id)) {
-    removed_node = *(std::next(remove_node).base());
-    nodes_.erase(std::next(remove_node).base());
-    nodes_.push_back(their_info);
-  } else if (close_node) {
+  } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id())) {
     // try to push another node out here as new node is also a close node
     // rather than removing the old close node we keep it if possible and
     // sacrifice a less importnt node
     auto remove_node(find_candidate_for_removal());
     if (remove_node != nodes_.rend())
       nodes_.erase(std::next(remove_node).base());
+    nodes_.push_back(their_info);
+  } else if ((remove_node != nodes_.rend()) &&
+             bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id)) {
+    removed_node = *(std::next(remove_node).base());
+    nodes_.erase(std::next(remove_node).base());
     nodes_.push_back(their_info);
   } else {
     return false;

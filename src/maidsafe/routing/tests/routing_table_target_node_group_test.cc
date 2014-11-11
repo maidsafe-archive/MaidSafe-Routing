@@ -36,7 +36,7 @@ namespace routing {
 namespace test {
 
 TEST(routing_tableTest, FUNC_add_many_nodes_check_target) {
-  const auto network_size(200);
+  const auto network_size(500);
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);

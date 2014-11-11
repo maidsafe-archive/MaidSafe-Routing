@@ -35,8 +35,8 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
-  const auto network_size(10000);
-  auto nodes_to_remove(6000);
+  const auto network_size(500);
+  auto nodes_to_remove(100);
 
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
