@@ -35,7 +35,6 @@ namespace routing {
 routing_table::routing_table(NodeId our_id, asymm::Keys keys)
     : our_id_(std::move(our_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
 
-
 bool routing_table::add_node(node_info their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
       !asymm::ValidateKey(their_info.public_key)) {

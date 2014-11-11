@@ -92,7 +92,7 @@ void Sortnode_infosFromTarget(const NodeId& target, std::vector<node_info>& node
 
 bool CompareListOfnode_infos(const std::vector<node_info>& lhs, const std::vector<node_info>& rhs);
 
-std::vector<std::unique_ptr<routing_table>> routing_tableNetwork(size_t size);
+std::vector<std::unique_ptr<routing_table>> routing_table_network(size_t size);
 
 
 }  // namespace test

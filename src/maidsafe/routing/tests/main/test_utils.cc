@@ -180,14 +180,14 @@ namespace test {
 // }
 //
 
-std::vector<std::unique_ptr<routing_table>> routing_tableNetwork(size_t size) {
+std::vector<std::unique_ptr<routing_table>> routing_table_network(size_t size) {
   asymm::Keys keys(asymm::GenerateKeyPair());
   std::vector<std::unique_ptr<routing_table>> routing_tables;
   routing_tables.reserve(size);
-  for (size_t i = 0; i < size; ++i)
+  for (size_t i = 0; i < size; ++i) {
     routing_tables.emplace_back(
         maidsafe::make_unique<routing_table>(NodeId(RandomString(NodeId::kSize)), keys));
-
+  }
   return routing_tables;
 }
 

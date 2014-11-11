@@ -40,8 +40,8 @@ class routing_table {
  public:
   static const size_t kBucketSize_ = 1;
   routing_table(NodeId our_id, asymm::Keys keys);
-  routing_table(const routing_table&) = default;
-  routing_table(routing_table&&) = default;
+  routing_table(const routing_table&) = delete;
+  routing_table(routing_table&&) = delete;
   routing_table& operator=(const routing_table&) = delete;
   routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
   virtual ~routing_table() = default;

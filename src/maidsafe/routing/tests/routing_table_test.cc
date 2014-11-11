@@ -36,9 +36,10 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, BEH_AddCloseNodes) {
+TEST(routing_table_test, BEH_add_close_nodes) {
   NodeId node_id(RandomString(NodeId::kSize));
-  routing_table routing_table(node_id, asymm::GenerateKeyPair());
+  const auto keys = asymm::GenerateKeyPair();
+  routing_table routing_table(node_id, keys);
   node_info node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kGroupSize; ++i) {
@@ -49,7 +50,7 @@ TEST(routing_tableTest, BEH_AddCloseNodes) {
   // everything should be set to go now
   for (unsigned int i = 0; i < kGroupSize; ++i) {
     node.id = NodeId(RandomString(NodeId::kSize));
-    node.public_key = asymm::GenerateKeyPair().public_key;
+    node.public_key = keys.public_key;
     EXPECT_TRUE(routing_table.add_node(node));
   }
   EXPECT_EQ(kGroupSize, routing_table.size());
