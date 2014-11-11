@@ -35,20 +35,19 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_Add_1000Nodes) {
-  // create a network of 1000000 nodes
-  auto routing_tables(routing_tableNetwork(1000));
-  // itterate and try to add each node to each other node
-  for (auto& node : routing_tables) {
+TEST(routing_table_test, FUNC_add_multiple_nodes) {
+  auto routing_tables(routing_table_network(1000));
+  // iterate and try to add each node to each other node
+  for (const auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
-      node_info nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->our_id();
-      EXPECT_FALSE(node->add_node(nodeinfo_to_add));
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
-      if (node->size() < kRoutingTableSize && node->our_id() != nodeinfo_to_add.id)
-        EXPECT_TRUE(node->check_node(nodeinfo_to_add));
-      if (node->our_id() == nodeinfo_to_add.id)
-        EXPECT_FALSE(node->add_node(nodeinfo_to_add));
+      node_info node_info_to_add;
+      node_info_to_add.id = node_to_add->our_id();
+      EXPECT_FALSE(node->add_node(node_info_to_add));
+      node_info_to_add.public_key = node_to_add->our_public_key();
+      if (node->size() < kRoutingTableSize && node->our_id() != node_info_to_add.id)
+        EXPECT_TRUE(node->check_node(node_info_to_add));
+      if (node->our_id() == node_info_to_add.id)
+        EXPECT_FALSE(node->add_node(node_info_to_add));
     }
   }
 }

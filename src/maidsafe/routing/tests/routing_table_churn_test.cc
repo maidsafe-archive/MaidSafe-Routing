@@ -34,16 +34,15 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
+TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   const auto network_size(10000);
   auto nodes_to_remove(6000);
 
-  // create a network of 1000 nodes
-  auto routing_tables(routing_tableNetwork(network_size));
+  auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
 
-  // itterate and try to add each node to each other node
+  // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
@@ -79,7 +78,7 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
       }),
       std::end(node_ids));
 
-  for (auto& node : routing_tables) {
+  for (const auto& node : routing_tables) {
     size_t size = std::min(kGroupSize, static_cast<size_t>(node->size()));
     auto id = node->our_id();
     // + 1 as node_ids includes our ID
@@ -90,7 +89,7 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
     EXPECT_EQ(groups.size(), size);
     for (size_t i = 0; i < size; ++i) {
       // + 1 as node_ids includes our ID
-      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << "node mismatch at" << i;
+      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
     }
   }
 }

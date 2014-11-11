@@ -40,13 +40,12 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Close_Groups) {
+TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
   const auto network_size(500);
-  // create a network of 1000 nodes
-  auto routing_tables(routing_tableNetwork(network_size));
+  auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
-  // itterate and try to add each node to each other node
+  // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
@@ -56,7 +55,7 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Close_Groups) {
       node->add_node(nodeinfo_to_add);
     }
   }
-  for (auto& node : routing_tables) {
+  for (const auto& node : routing_tables) {
     auto id = node->our_id();
     // + 1 as node_ids includes our ID
     std::partial_sort(std::begin(node_ids), std::begin(node_ids) + kGroupSize + 1,
@@ -71,7 +70,7 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Close_Groups) {
     EXPECT_EQ(groups.size(), kGroupSize);
     for (size_t i = 0; i < kGroupSize; ++i) {
       // + 1 as node_ids includes our ID
-      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << "node mismatch at" << i;
+      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
     }
   }
 }
