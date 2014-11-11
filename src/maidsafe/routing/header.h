@@ -30,19 +30,19 @@ namespace routing {
 
 // For use with small messages which aren't scatter/gathered
 template <typename Destination, typename Source>
-struct SmallHeader {
-  SmallHeader() = default;
-  SmallHeader(const SmallHeader&) = delete;
-  SmallHeader(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
-  SmallHeader(Destination destination_in, Source source_in, MessageId message_id_in,
-              Murmur checksum_in)
+struct small_header {
+  small_header() = default;
+  small_header(const small_header&) = delete;
+  small_header(small_header&&) MAIDSAFE_NOEXCEPT = default;
+  small_header(Destination destination_in, Source source_in, message_id message_id_in,
+               murmur_hash checksum_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
         checksum(std::move(checksum_in)) {}
-  ~SmallHeader() = default;
-  SmallHeader& operator=(const SmallHeader&) = delete;
-  SmallHeader& operator=(SmallHeader&&) MAIDSAFE_NOEXCEPT = default;
+  ~small_header() = default;
+  small_header& operator=(const small_header&) = delete;
+  small_header& operator=(small_header&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void serialize(Archive& archive) {
@@ -51,32 +51,32 @@ struct SmallHeader {
 
   Destination destination;
   Source source;
-  MessageId message_id;
-  Murmur checksum;
+  message_id message_id;
+  murmur_hash checksum;
 };
 
 // For use with scatter/gather messages
 template <typename Destination, typename Source>
-struct Header {
-  Header() = default;
-  Header(const Header&) = delete;
-  Header(Header&&) MAIDSAFE_NOEXCEPT = default;
-  Header(Destination destination_in, Source source_in, MessageId message_id_in,
-         Murmur payload_checksum_in, CheckSums other_checksum_in)
+struct header {
+  header() = default;
+  header(const header&) = delete;
+  header(header&&) MAIDSAFE_NOEXCEPT = default;
+  header(Destination destination_in, Source source_in, message_id message_id_in,
+         murmur_hash payload_checksum_in, checksums other_checksum_in)
       : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
                    std::move(payload_checksum_in)),
         other_checksums(std::move(other_checksum_in)) {}
-  ~Header() = default;
-  Header& operator=(const Header&) = delete;
-  Header& operator=(Header&&) MAIDSAFE_NOEXCEPT = default;
+  ~header() = default;
+  header& operator=(const header&) = delete;
+  header& operator=(header&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(basic_info, other_checksums);
   }
 
-  SmallHeader<Destination, Source> basic_info;
-  CheckSums other_checksums;
+  small_header<Destination, Source> basic_info;
+  checksums other_checksums;
 };
 
 }  // namespace routing

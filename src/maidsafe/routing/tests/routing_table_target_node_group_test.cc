@@ -56,15 +56,15 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
       return NodeId::CloserToTarget(lhs, rhs, id);
     });
     // if target is in close group return the whole close group
-    for (size_t i = 1; i < kGroupSize + 1; ++i) {
+    for (size_t i = 1; i < group_size + 1; ++i) {
       auto target = node->target_nodes(node_ids.at(i));
-      EXPECT_EQ(target.size(), kGroupSize);
+      EXPECT_EQ(target.size(), group_size);
       // check the close group is correct
-      for (size_t i = 0; i < kGroupSize; ++i)
+      for (size_t i = 0; i < group_size; ++i)
         EXPECT_EQ(target.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
     }
     // nodes further than the close group, should return a single target
-    for (size_t i = kGroupSize + 1; i < network_size; ++i) {
+    for (size_t i = group_size + 1; i < network_size; ++i) {
       EXPECT_EQ((node->target_nodes(node_ids.at(i))).size(), 1) << "mismatch at index " << i;
     }
   }

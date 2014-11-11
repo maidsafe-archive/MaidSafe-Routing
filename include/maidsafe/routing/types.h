@@ -44,21 +44,21 @@ enum class SerialisableTypeTag : unsigned char {
 
 namespace routing {
 
-static const size_t kGroupSize = 32;
-static const size_t kQuorumSize = 29;
-static const size_t kRoutingTableSize = 64;
+static const size_t group_size = 32;
+static const size_t quorum_size = 29;
+static const size_t default_routing_table_size = 64;
 
-using SingleDestinationId = TaggedValue<NodeId, struct SingleDestinationTag>;
-using GroupDestinationId = TaggedValue<NodeId, struct GroupDestinationTag>;
-using SingleSourceId = TaggedValue<NodeId, struct SingleSourceTag>;
-using GroupSourceId = TaggedValue<NodeId, struct GroupSourceTag>;
-using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
-using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
-using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
+using single_destination_id = TaggedValue<NodeId, struct SingleDestinationTag>;
+using group_destination_id = TaggedValue<NodeId, struct GroupDestinationTag>;
+using single_source_id = TaggedValue<NodeId, struct SingleSourceTag>;
+using group_source_id = TaggedValue<NodeId, struct GroupSourceTag>;
+using message_id = TaggedValue<uint32_t, struct MessageIdTag>;
+using our_endpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
+using their_endpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
 using byte = unsigned char;
-using Murmur = uint32_t;
-using CheckSums = std::array<Murmur, kGroupSize - 1>;
-using SerialisedMessage = std::vector<unsigned char>;
+using murmur_hash = uint32_t;
+using checksums = std::array<murmur_hash, group_size - 1>;
+using serialised_message = std::vector<unsigned char>;
 
 }  // namespace routing
 

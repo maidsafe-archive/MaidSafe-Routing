@@ -58,17 +58,17 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
   for (const auto& node : routing_tables) {
     auto id = node->our_id();
     // + 1 as node_ids includes our ID
-    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + kGroupSize + 1,
+    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + group_size + 1,
                       std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
       return NodeId::CloserToTarget(lhs, rhs, id);
     });
     auto groups = node->our_close_group();
-    EXPECT_EQ(groups.size(), kGroupSize);
+    EXPECT_EQ(groups.size(), group_size);
     auto last = std::unique(std::begin(groups), std::end(groups));
     ASSERT_EQ(last, std::end(groups));
     groups.erase(last, std::end(groups));
-    EXPECT_EQ(groups.size(), kGroupSize);
-    for (size_t i = 0; i < kGroupSize; ++i) {
+    EXPECT_EQ(groups.size(), group_size);
+    for (size_t i = 0; i < group_size; ++i) {
       // + 1 as node_ids includes our ID
       EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
     }

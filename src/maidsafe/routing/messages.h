@@ -32,123 +32,123 @@ namespace maidsafe {
 
 namespace routing {
 
-struct Ping {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct ping {
+  using header = small_header<single_destination_id, single_source_id>;
 
-  Ping() = default;
-  Ping(const Ping&) = delete;
-  Ping(Ping&&) MAIDSAFE_NOEXCEPT = default;
-  Ping(SingleDestinationId destination_in, SingleSourceId source_in)
-      : header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit Ping(Header header_in) : header(std::move(header_in)) {}
-  ~Ping() = default;
-  Ping& operator=(const Ping&) = delete;
-  Ping& operator=(Ping&&) MAIDSAFE_NOEXCEPT = default;
+  ping() = default;
+  ping(const ping&) = delete;
+  ping(ping&&) MAIDSAFE_NOEXCEPT = default;
+  ping(single_destination_id destination_in, single_source_id source_in)
+      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
+               murmur_hash2(std::vector<byte>{})) {}
+  explicit ping(header header_in) : header(std::move(header_in)) {}
+  ~ping() = default;
+  ping& operator=(const ping&) = delete;
+  ping& operator=(ping&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void save(Archive& archive) const {
     archive(header);
   }
 
-  Header header;
+  header header;
 };
 
-struct PingResponse {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct ping_response {
+  using header = small_header<single_destination_id, single_source_id>;
 
-  PingResponse() = default;
-  PingResponse(const PingResponse&) = delete;
-  PingResponse(PingResponse&&) MAIDSAFE_NOEXCEPT = default;
-  explicit PingResponse(Ping ping)
-      : header(SingleDestinationId(std::move(ping.header.source.data)),
-               SingleSourceId(std::move(ping.header.destination.data)), ping.header.message_id,
+  ping_response() = default;
+  ping_response(const ping_response&) = delete;
+  ping_response(ping_response&&) MAIDSAFE_NOEXCEPT = default;
+  explicit ping_response(ping ping)
+      : header(single_destination_id(std::move(ping.header.source.data)),
+               single_source_id(std::move(ping.header.destination.data)), ping.header.message_id,
                ping.header.checksum)) {}
-  explicit PingResponse(Header header_in) : header(std::move(header_in)) {}
-  ~PingResponse() = default;
-  PingResponse& operator=(const PingResponse&) = delete;
-  PingResponse& operator=(PingResponse&&) MAIDSAFE_NOEXCEPT = default;
+  explicit ping_response(header header_in) : header(std::move(header_in)) {}
+  ~ping_response() = default;
+  ping_response& operator=(const ping_response&) = delete;
+  ping_response& operator=(ping_response&&) MAIDSAFE_NOEXCEPT = default;
 
   template <typename Archive>
   void save(Archive& archive) const {
     archive(header);
   }
 
-  Header header;
+  header header;
 };
 
-struct Connect {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct connect {
+  using header = small_header<single_destination_id, single_source_id>;
 
-  Connect() = default;
-  Connect(const Connect&) = delete;
-  Connect(Connect&&) MAIDSAFE_NOEXCEPT = default;
-  Connect(SingleDestinationId destination_in, SingleSourceId source_in, OurEndpoint our_endpoint_in)
+  connect() = default;
+  connect(const connect&) = delete;
+  connect(connect&&) MAIDSAFE_NOEXCEPT = default;
+  connect(single_destination_id destination_in, single_source_id source_in, our_endpoint our_endpoint_in)
       : our_endpoint(std::move(our_endpoint_in)),
-        header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit Connect(Header header_in) : header(std::move(header_in)) {}
-  ~Connect() = default;
-  Connect& operator=(const Connect&) = delete;
-  Connect& operator=(Connect&&) MAIDSAFE_NOEXCEPT = default;
+        header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
+               murmur_hash2(std::vector<byte>{})) {}
+  explicit connect(header header_in) : header(std::move(header_in)) {}
+  ~connect() = default;
+  connect& operator=(const connect&) = delete;
+  connect& operator=(connect&&) MAIDSAFE_NOEXCEPT = default;
 
 
-  Connect(SingleDestinationId destinaton_address)
+  connect(single_destination_id destinaton_address)
       : our_endpoint(our_endpoint), our_id(OurId), their_id(destinaton_address) {}
 
-  OurEndpoint our_endpoint;
-  Header header;
+  our_endpoint our_endpoint;
+  header header;
 };
 
-struct ConnectResponse {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct connect_response {
+  using header = small_header<single_destination_id, single_source_id>;
 
-  ConnectResponse() = default;
-  ConnectResponse(const ConnectResponse&) = delete;
-  ConnectResponse(ConnectResponse&&) MAIDSAFE_NOEXCEPT = default;
-  ConnectResponse(SingleDestinationId destination_in, SingleSourceId source_in)
-      : header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit ConnectResponse(Header header_in) : header(std::move(header_in)) {}
-  ~ConnectResponse() = default;
-  ConnectResponse& operator=(const ConnectResponse&) = delete;
-  ConnectResponse& operator=(ConnectResponse&&) MAIDSAFE_NOEXCEPT = default;
+  connect_response() = default;
+  connect_response(const connect_response&) = delete;
+  connect_response(connect_response&&) MAIDSAFE_NOEXCEPT = default;
+  connect_response(single_destination_id destination_in, single_source_id source_in)
+      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
+               murmur_hash2(std::vector<byte>{})) {}
+  explicit connect_response(header header_in) : header(std::move(header_in)) {}
+  ~connect_response() = default;
+  connect_response& operator=(const connect_response&) = delete;
+  connect_response& operator=(connect_response&&) MAIDSAFE_NOEXCEPT = default;
 
 
-  ConnectResponse(Connect connect, OurEndpoint our_endpoint)
+  connect_response(connect connect, our_endpoint our_endpoint)
       : our_endpoint(our_endpoint),
-        their_endpoint(TheirEndpoint(connect.our_endpoint)),
-        our_id(SingleSourceId(connect.their_id)),
+        their_endpoint(their_endpoint(connect.our_endpoint)),
+        our_id(single_source_id(connect.their_id)),
         their_id(connect.our_id) {}
 
-  OurEndpoint our_endpoint;
-  TheirEndpoint their_endpoint;
-  SingleSourceId our_id;
-  SingleDestinationId their_id;
+  our_endpoint our_endpoint;
+  their_endpoint their_endpoint;
+  single_source_id our_id;
+  single_destination_id their_id;
 };
 
-struct FindGroup {};
+struct find_group {};
 
-struct FindGroupResponse {};
+struct find_group_response {};
 
-struct VaultMessage;
+struct vault_message {};
 
-struct CacheableGet;
-struct CacheableGetResponse;
+struct cacheable_get {};
+struct cacheable_get_response {};
 
-using MessageMap =
-    GetMap<Serialisable<SerialisableTypeTag::kPing, Ping>,
-           Serialisable<SerialisableTypeTag::kPingResponse, PingResponse>,
-           Serialisable<SerialisableTypeTag::kConnect, Connect>,
-           Serialisable<SerialisableTypeTag::kConnectResponse, ConnectResponse>,
-           Serialisable<SerialisableTypeTag::kFindGroup, FindGroup>,
-           Serialisable<SerialisableTypeTag::kFindGroupResponse, FindGroupResponse>,
-           Serialisable<SerialisableTypeTag::kVaultMessage, VaultMessage>,
-           Serialisable<SerialisableTypeTag::kCacheableGet, CacheableGet>,
-           Serialisable<SerialisableTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
+using message_map =
+    GetMap<Serialisable<SerialisableTypeTag::kPing, ping>,
+           Serialisable<SerialisableTypeTag::kPingResponse, ping_response>,
+           Serialisable<SerialisableTypeTag::kConnect, connect>,
+           Serialisable<SerialisableTypeTag::kConnectResponse, connect_response>,
+           Serialisable<SerialisableTypeTag::kFindGroup, find_group>,
+           Serialisable<SerialisableTypeTag::kFindGroupResponse, find_group_response>,
+           Serialisable<SerialisableTypeTag::kVaultMessage, vault_message>,
+           Serialisable<SerialisableTypeTag::kCacheableGet, cacheable_get>,
+           Serialisable<SerialisableTypeTag::kCacheableGetResponse, cacheable_get_response>>::Map;
 
 template <SerialisableTypeTag Tag>
-using CustomType = typename Find<MessageMap, Tag>::ResultCustomType;
+using custom_type = typename Find<message_map, Tag>::ResultCustomType;
 
 }  // namespace routing
 

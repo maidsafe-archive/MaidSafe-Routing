@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_TESTS_MAIN_TEST_UTILS_H_
+#define MAIDSAFE_ROUTING_TESTS_MAIN_TEST_UTILS_H_
 
 #include <cstdint>
 #include <vector>
@@ -94,11 +94,10 @@ bool CompareListOfnode_infos(const std::vector<node_info>& lhs, const std::vecto
 
 std::vector<std::unique_ptr<routing_table>> routing_table_network(size_t size);
 
-
 }  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TESTS_TEST_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_TESTS_MAIN_TEST_UTILS_H_

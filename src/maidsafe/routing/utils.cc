@@ -29,7 +29,7 @@ namespace routing {
 // NEW
 // ##################################################################################################
 
-Murmur MurmurHash2(const std::vector<byte>& input) {
+murmur_hash murmur_hash2(const std::vector<byte>& input) {
   static_assert(sizeof(int) == 4, "This implementation requires size of int to be 4 bytes.");
   assert(input.size() < std::numeric_limits<uint32_t>::max());
 
