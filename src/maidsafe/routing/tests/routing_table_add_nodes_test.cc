@@ -44,7 +44,7 @@ TEST(routing_table_test, FUNC_add_multiple_nodes) {
       node_info_to_add.id = node_to_add->our_id();
       EXPECT_FALSE(node->add_node(node_info_to_add));
       node_info_to_add.public_key = node_to_add->our_public_key();
-      if (node->size() < kRoutingTableSize && node->our_id() != node_info_to_add.id)
+      if (node->size() < default_routing_table_size && node->our_id() != node_info_to_add.id)
         EXPECT_TRUE(node->check_node(node_info_to_add));
       if (node->our_id() == node_info_to_add.id)
         EXPECT_FALSE(node->add_node(node_info_to_add));

@@ -19,6 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_H_
 #define MAIDSAFE_ROUTING_MESSAGES_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "maidsafe/common/config.h"
@@ -31,6 +32,18 @@
 namespace maidsafe {
 
 namespace routing {
+
+enum class message_type_tag : uint16_t {
+  kPing,
+  kPingResponse,
+  kFindGroup,
+  kFindGroupResponse,
+  kConnect,
+  kConnectResponse,
+  kVaultMessage,
+  kCacheableGet,
+  kCacheableGetResponse
+};
 
 struct ping {
   using header = small_header<single_destination_id, single_source_id>;

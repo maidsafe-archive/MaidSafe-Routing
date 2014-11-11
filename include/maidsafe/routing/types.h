@@ -30,18 +30,6 @@
 
 namespace maidsafe {
 
-enum class SerialisableTypeTag : unsigned char {
-  kPing,
-  kPingResponse,
-  kFindGroup,
-  kFindGroupResponse,
-  kConnect,
-  kConnectResponse,
-  kVaultMessage,
-  kCacheableGet,
-  kCacheableGetResponse
-};
-
 namespace routing {
 
 static const size_t group_size = 32;

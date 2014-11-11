@@ -41,7 +41,6 @@ include(../../cmake_modules/standard_setup.cmake)
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/close_nodes_change.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
@@ -67,19 +66,20 @@ target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(MaidsafeTesting)
-  file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
-  foreach(TestFile ${TestFiles})
-    get_filename_component(TestName ${TestFile} NAME_WE)
-    string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
-    ms_add_executable(${TestName} "Tests/Routing"
-        ${TestFile}
+  ms_add_static_library(maidsafe_test_routing
         ${RoutingSourcesDir}/tests/main/test_main.cc
         ${RoutingSourcesDir}/tests/main/test_utils.h
         ${RoutingSourcesDir}/tests/main/test_utils.cc
         )
+  target_include_directories(maidsafe_test_routing PUBLIC ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
 
-    target_include_directories(${TestName} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${TestName} maidsafe_routing maidsafe_test)
+  file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
+  foreach(TestFile ${TestFiles})
+    get_filename_component(TestName ${TestFile} NAME_WE)
+    string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
+    ms_add_executable(${TestName} "Tests/Routing" ${TestFile})
+    target_link_libraries(${TestName} maidsafe_test_routing)
     list(APPEND RoutingTests ${TestName})
   endforeach()
 

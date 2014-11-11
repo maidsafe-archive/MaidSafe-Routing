@@ -31,8 +31,6 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
-
 
 namespace maidsafe {
 
