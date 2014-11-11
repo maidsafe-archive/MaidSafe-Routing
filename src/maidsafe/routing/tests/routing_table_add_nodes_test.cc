@@ -20,18 +20,13 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
 
 
 namespace maidsafe {

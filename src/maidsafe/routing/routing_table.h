@@ -23,9 +23,15 @@
 #include <mutex>
 #include <vector>
 
-#include "maidsafe/common/config.h"
+
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
+
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/close_nodes_change.h"
+#include "maidsafe/routing/routing_table_change.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
