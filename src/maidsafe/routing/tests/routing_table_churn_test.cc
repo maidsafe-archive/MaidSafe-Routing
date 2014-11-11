@@ -35,8 +35,8 @@ namespace routing {
 namespace test {
 
 TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
-  const auto network_size(10000);
-  auto nodes_to_remove(6000);
+  const auto network_size(500);
+  auto nodes_to_remove(150);
 
   // create a network of 1000 nodes
   auto routing_tables(routing_tableNetwork(network_size));
@@ -71,14 +71,14 @@ TEST(routing_tableTest, FUNC_Add_Many_Nodes_Check_Churn) {
     for (const auto& drop : drop_vec)
       node->drop_node(drop);
   }
-
+  // remove ids to
   node_ids.erase(
       std::remove_if(std::begin(node_ids), std::end(node_ids), [&drop_vec](const NodeId& id) {
         return std::any_of(std::begin(drop_vec), std::end(drop_vec),
                            [&id](const NodeId& drop_id) { return drop_id == id; });
       }),
       std::end(node_ids));
-
+  // check remaining nodes against each nodes close group.
   for (auto& node : routing_tables) {
     size_t size = std::min(kGroupSize, static_cast<size_t>(node->size()));
     auto id = node->our_id();
