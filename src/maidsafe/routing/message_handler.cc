@@ -36,26 +36,17 @@ namespace maidsafe {
 
 namespace routing {
 
-MessageHandler::MessageHandler(RoutingTable& routing_table,
-                               ClientRoutingTable& client_routing_table, Network& network,
-                               Timer<std::string>& timer, NetworkUtils& network_utils,
-                               AsioService& asio_service)
-    : routing_table_(routing_table),
-      client_routing_table_(client_routing_table),
-      network_utils_(network_utils),
-      network_(network),
-      cache_manager_(routing_table_.client_mode()
-                         ? nullptr
-                         : (new CacheManager(routing_table_.kNodeId(), network_))),
-      timer_(timer),
-      public_key_holder_(asio_service, network),
-      response_handler_(new ResponseHandler(routing_table, client_routing_table, network_,
-                                            public_key_holder_)),
-      service_(new Service(routing_table, client_routing_table, network_, public_key_holder_)),
-      message_received_functor_(),
-      typed_message_received_functors_() {}
+message_handler::message_handler(AsioService& asio_service,
+                                 rudp::ManagedConnections& managed_connections)
+    : asio_service_(asio_service), managed_connections_(managed_connections) {}
 
-void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
+void message_handler::OnMessageReceived(const serialised_message& serialised_message) {
+  message_map m;
+  (void)m;
+}
+
+/*
+void message_handler::HandleRoutingMessage(protobuf::Message& message) {
   bool request(message.request());
   switch (static_cast<MessageType>(message.type())) {
     case MessageType::kPing:
@@ -106,7 +97,7 @@ void MessageHandler::HandleRoutingMessage(protobuf::Message& message) {
     network_.SendToClosestNode(message);
 }
 
-void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
+void message_handler::HandleNodeLevelMessageForThisNode(protobuf::Message& message) {
   if (IsRequest(message) &&
       !IsClientToClientMessageWithDifferentNodeIds(message, routing_table_.client_mode())) {
     LOG(kSuccess) << " [" << DebugId(routing_table_.kNodeId())
@@ -115,7 +106,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                   << ")  --NodeLevel--";
     ReplyFunctor response_functor = [=](const std::string & reply_message) {
       if (reply_message.empty()) {
-       
+
         return;
       }
       LOG(kSuccess) << " [" << routing_table_.kNodeId() << "] repl : "
@@ -140,7 +131,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       if (message.has_id())
         message_out.set_id(message.id());
       else
-       
+
 
       if (message.has_relay_id())
         message_out.set_relay_id(message.relay_id());
@@ -156,15 +147,15 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       if (routing_table_.kNodeId().string() != message_out.destination_id()) {
         network_.SendToClosestNode(message_out);
       } else {
-       
+
         HandleMessage(message_out);
       }
     };
     if (message_received_functor_) {
-     
+
       message_received_functor_(message.data(0), response_functor);
     } else {
-     
+
       try {
         InvokeTypedMessageReceivedFunctor(message);  // typed message received
       } catch (...) {
@@ -195,7 +186,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
   }
 }
 
-void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
+void message_handler::HandleMessageForThisNode(protobuf::Message& message) {
   if (RelayDirectMessageIfNeeded(message))
     return;
 
@@ -207,7 +198,7 @@ void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
     HandleNodeLevelMessageForThisNode(message);
 }
 
-void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
+void message_handler::HandleMessageAsClosestNode(protobuf::Message& message) {
   LOG(kVerbose) << "This node is in closest proximity to this message destination ID [ "
                 << HexSubstr(message.destination_id()) << " ]."
                 << " id: " << message.id();
@@ -218,7 +209,7 @@ void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
   }
 }
 
-void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message) {
+void message_handler::HandleDirectMessageAsClosestNode(protobuf::Message& message) {
   assert(message.direct());
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or client_routing_table_.
@@ -251,7 +242,7 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
   }
 }
 
-void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
+void message_handler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
   assert(!message.direct());
 
   NodeId destination_id(message.destination_id());
@@ -275,7 +266,7 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
   std::string group_id(message.destination_id());
   for (const auto& i : close_nodes)
     group_members += std::string("[" + DebugId(i.id) + "]");
- 
+
 
   for (const auto& i : close_nodes) {
     LOG(kInfo) << "[" << routing_table_.kNodeId() << "] - "
@@ -305,10 +296,10 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
     message.set_destination_id(routing_table_.kNodeId().string());
 
     if (IsRoutingMessage(message)) {
-     
+
       HandleRoutingMessage(message);
     } else {
-     
+
       HandleNodeLevelMessageForThisNode(message);
     }
   } else {
@@ -316,7 +307,7 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
   }
 }
 
-void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
+void message_handler::HandleMessageAsFarNode(protobuf::Message& message) {
   LOG(kVerbose) << "[" << routing_table_.kNodeId()
                 << "] is not in closest proximity to this message destination ID [ "
                 << HexSubstr(message.destination_id()) << " ]; sending on."
@@ -324,14 +315,14 @@ void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
   network_.SendToClosestNode(message);
 }
 
-void MessageHandler::HandleMessage(protobuf::Message& message) {
+void message_handler::HandleMessage(protobuf::Message& message) {
   LOG(kVerbose) << "[" << routing_table_.kNodeId() << "]"
-                << " MessageHandler::HandleMessage handle message with id: " << message.id();
+                << " message_handler::HandleMessage handle message with id: " << message.id();
   if (!message.source_id().empty() && !IsAck(message) &&
       (message.destination_id() != message.source_id()) &&
       (message.destination_id() == routing_table_.kNodeId().string()) &&
       !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id())) {
-   
+
     return;
   }
 
@@ -348,25 +339,25 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsValidCacheableGet(message) && HandleCacheLookup(message))
     return;  // forwarding message is done by cache manager or vault
   if (IsValidCacheablePut(message)) {
-   
+
     StoreCacheCopy(message);  // Upper layer should take this on seperate thread
   }
 
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message)) {
-   
+
     return HandleGroupMessageToSelfId(message);
   }
 
   // If this node is a client
   if (routing_table_.client_mode()) {
-   
+
     return HandleClientMessage(message);
   }
 
   // Relay mode message
   if (message.source_id().empty()) {
-   
+
     return HandleRelayRequest(message);
   }
 
@@ -379,17 +370,17 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // Direct message
   if (message.destination_id() == routing_table_.kNodeId().string()) {
-   
+
     return HandleMessageForThisNode(message);
   }
 
   if (IsRelayResponseForThisNode(message)) {
-   
+
     return HandleRoutingMessage(message);
   }
 
   if (client_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id()
+    LOG(kInfo) << "message_handler::HandleMessage " << message.id()
                << " HandleMessageForNonRoutingNodes";
     return HandleMessageForNonRoutingNodes(message);
   }
@@ -397,15 +388,15 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                        Parameters::closest_nodes_size)) {
-   
+
     return HandleMessageAsClosestNode(message);
   } else {
-   
+
     return HandleMessageAsFarNode(message);
   }
 }
 
-void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
+void message_handler::HandleMessageForNonRoutingNodes(protobuf::Message& message) {
   auto client_routing_nodes(client_routing_table_.GetNodesInfo(NodeId(message.destination_id())));
   assert(!client_routing_nodes.empty() && message.direct());
 // Below bit is not needed currently as SendToClosestNode will do this check anyway
@@ -424,7 +415,7 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
   return network_.SendToClosestNode(message);
 }
 
-void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
+void message_handler::HandleRelayRequest(protobuf::Message& message) {
   assert(!message.has_source_id());
   if ((message.destination_id() == routing_table_.kNodeId().string()) && IsRequest(message)) {
     LOG(kVerbose) << "Relay request with this node's ID as destination ID"
@@ -454,7 +445,7 @@ void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   network_.SendToClosestNode(message);
 }
 
-void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message) {
+void message_handler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message) {
   assert(message.direct());
   // Dropping direct messages if this node is closest and destination node is not in routing_table_
   // or client_routing_table_.
@@ -478,26 +469,26 @@ void MessageHandler::HandleDirectRelayRequestMessageAsClosestNode(protobuf::Mess
   }
 }
 
-void MessageHandler::HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message) {
+void message_handler::HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message) {
   message.set_source_id(routing_table_.kNodeId().string());
   HandleGroupMessageAsCloseNode(message);
 }
 
 // Special case when response of a relay comes through an alternative route.
-bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
+bool message_handler::IsRelayResponseForThisNode(protobuf::Message& message) {
   if (IsRoutingMessage(message) && message.has_relay_id() &&
       (message.relay_id() == routing_table_.kNodeId().string())) {
-   
+
     return true;
   } else {
     return false;
   }
 }
 
-bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
+bool message_handler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kNodeId().string());
   if (!message.has_relay_id()) {
-    //   
+    //
     return false;
   }
 
@@ -521,11 +512,11 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   }
 
   // not a relay message response, its for this node
-  //   
+  //
   return false;
 }
 
-void MessageHandler::HandleClientMessage(protobuf::Message& message) {
+void message_handler::HandleClientMessage(protobuf::Message& message) {
   assert(routing_table_.client_mode() && "Only client node should handle client messages");
   if (message.source_id().empty()) {  // No relays allowed on client.
     LOG(kWarning) << "Stray message at client node. No relays allowed."
@@ -547,13 +538,13 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
 }
 
 // Special case : If group message request to self id
-bool MessageHandler::IsGroupMessageRequestToSelfId(protobuf::Message& message) {
+bool message_handler::IsGroupMessageRequestToSelfId(protobuf::Message& message) {
   return ((message.source_id() == routing_table_.kNodeId().string()) &&
           (message.destination_id() == routing_table_.kNodeId().string()) && message.request() &&
           !message.direct());
 }
 
-void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
+void message_handler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   assert(message.source_id() == routing_table_.kNodeId().string());
   assert(message.destination_id() == routing_table_.kNodeId().string());
   assert(message.request());
@@ -561,7 +552,7 @@ void MessageHandler::HandleGroupMessageToSelfId(protobuf::Message& message) {
   HandleGroupMessageAsCloseNode(message);
 }
 
-void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
+void message_handler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message) {
   if ((!proto_message.has_group_source() && !proto_message.has_group_destination()) &&
       typed_message_received_functors_.single_to_single) {  // Single to Single
     typed_message_received_functors_.single_to_single(CreateSingleToSingleMessage(proto_message));
@@ -585,14 +576,15 @@ void MessageHandler::InvokeTypedMessageReceivedFunctor(const protobuf::Message& 
   }
 }
 
-void MessageHandler::set_message_and_caching_functor(MessageAndCachingFunctors functors) {
+void message_handler::set_message_and_caching_functor(MessageAndCachingFunctors functors) {
   message_received_functor_ = functors.message_received;
   if (!routing_table_.client_mode())
     cache_manager_->InitialiseFunctors(functors);
   // Initialise caching functors here
 }
 
-void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors) {
+void message_handler::set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors)
+{
   typed_message_received_functors_.single_to_single = functors.single_to_single.message_received;
   typed_message_received_functors_.single_to_group = functors.single_to_group.message_received;
   typed_message_received_functors_.group_to_single = functors.group_to_single.message_received;
@@ -604,36 +596,36 @@ void MessageHandler::set_typed_message_and_caching_functor(TypedMessageAndCachin
     cache_manager_->InitialiseFunctors(functors);
 }
 
-void MessageHandler::set_request_public_key_functor(
+void message_handler::set_request_public_key_functor(
     RequestPublicKeyFunctor request_public_key_functor) {
   response_handler_->set_request_public_key_functor(request_public_key_functor);
   service_->set_request_public_key_functor(request_public_key_functor);
 }
 
-bool MessageHandler::HandleCacheLookup(protobuf::Message& message) {
+bool message_handler::HandleCacheLookup(protobuf::Message& message) {
   assert(!routing_table_.client_mode());
   assert(IsCacheableGet(message));
   return cache_manager_->HandleGetFromCache(message);
 }
 
-void MessageHandler::StoreCacheCopy(const protobuf::Message& message) {
+void message_handler::StoreCacheCopy(const protobuf::Message& message) {
   assert(!routing_table_.client_mode());
   assert(IsCacheablePut(message));
   cache_manager_->AddToCache(message);
 }
 
-bool MessageHandler::IsValidCacheableGet(const protobuf::Message& message) {
+bool message_handler::IsValidCacheableGet(const protobuf::Message& message) {
   // TODO(Prakash): need to differentiate between typed and un typed api
   return (IsCacheableGet(message) && IsNodeLevelMessage(message) && Parameters::caching &&
           !routing_table_.client_mode());
 }
 
-bool MessageHandler::IsValidCacheablePut(const protobuf::Message& message) {
+bool message_handler::IsValidCacheablePut(const protobuf::Message& message) {
   // TODO(Prakash): need to differentiate between typed and un typed api
   return (IsNodeLevelMessage(message) && Parameters::caching && !routing_table_.client_mode() &&
           IsCacheablePut(message));
 }
-
+*/
 }  // namespace routing
 
 }  // namespace maidsafe

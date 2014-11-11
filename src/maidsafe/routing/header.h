@@ -33,7 +33,10 @@ template <typename Destination, typename Source>
 struct small_header {
   small_header() = default;
   small_header(const small_header&) = delete;
-  small_header(small_header&&) MAIDSAFE_NOEXCEPT = default;
+  small_header(small_header&& other) MAIDSAFE_NOEXCEPT : destination(std::move(other.destination)),
+                                                         source(std::move(other.source)),
+                                                         message_id(std::move(other.message_id)),
+                                                         checksum(std::move(other.checksum)) {}
   small_header(Destination destination_in, Source source_in, message_id message_id_in,
                murmur_hash checksum_in)
       : destination(std::move(destination_in)),
@@ -42,7 +45,13 @@ struct small_header {
         checksum(std::move(checksum_in)) {}
   ~small_header() = default;
   small_header& operator=(const small_header&) = delete;
-  small_header& operator=(small_header&&) MAIDSAFE_NOEXCEPT = default;
+  small_header& operator=(small_header&&) MAIDSAFE_NOEXCEPT {
+    destination = std::move(other.destination);
+    source = std::move(other.source);
+    message_id = std::move(other.message_id);
+    checksum = std::move(other.checksum);
+    return *this;
+  }
 
   template <typename Archive>
   void serialize(Archive& archive) {
@@ -60,7 +69,8 @@ template <typename Destination, typename Source>
 struct header {
   header() = default;
   header(const header&) = delete;
-  header(header&&) MAIDSAFE_NOEXCEPT = default;
+  header(header&& other) MAIDSAFE_NOEXCEPT : basic_info(std::move(other.basic_info)),
+                                             other_checksums(std::move(other.other_checksums)) {}
   header(Destination destination_in, Source source_in, message_id message_id_in,
          murmur_hash payload_checksum_in, checksums other_checksum_in)
       : basic_info(std::move(destination_in), std::move(source_in), std::move(message_id_in),
@@ -68,7 +78,11 @@ struct header {
         other_checksums(std::move(other_checksum_in)) {}
   ~header() = default;
   header& operator=(const header&) = delete;
-  header& operator=(header&&) MAIDSAFE_NOEXCEPT = default;
+  header& operator=(header&& other) MAIDSAFE_NOEXCEPT {
+    basic_info = std::move(other.basic_info);
+    other_checksums = std::move(other.other_checksums);
+    return *this;
+  };
 
   template <typename Archive>
   void serialize(Archive& archive) {

@@ -31,62 +31,25 @@ namespace maidsafe {
 
 namespace routing {
 
-class MessageHandler {
+class message_handler {
  public:
-  MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
-                 Network& network, Timer<std::string>& timer,
-                 NetworkUtils& network_utils, AsioService& asio_service);
-  void HandleMessage(protobuf::Message& message);
-  void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
-  void set_message_and_caching_functor(MessageAndCachingFunctors functors);
-  void set_request_public_key_functor(RequestPublicKeyFunctor request_public_key_functor);
+  message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections);
+  message_handler() = delete;
+  message_handler(const message_handler&) = delete;
+  message_handler(const message_handler&&) = delete;
+  message_handler& operator=(const message_handler&) = delete;
+  message_handler& operator=(message_handler&&) = delete;
+
+  void OnMessageReceived(const serialised_message& serialised_message);
 
  private:
-  MessageHandler(const MessageHandler&);
-  MessageHandler(const MessageHandler&&);
-  MessageHandler& operator=(const MessageHandler&);
-  bool CheckCacheData(protobuf::Message& message);
-  void HandleRoutingMessage(protobuf::Message& message);
-  void HandleNodeLevelMessageForThisNode(protobuf::Message& message);
-  void HandleMessageForThisNode(protobuf::Message& message);
-  void HandleMessageAsClosestNode(protobuf::Message& message);
-  void HandleDirectMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupMessageAsCloseNode(protobuf::Message& message);
-  void HandleMessageAsFarNode(protobuf::Message& message);
-  void HandleRelayRequest(protobuf::Message& message);
-  void HandleGroupMessageToSelfId(protobuf::Message& message);
-  bool IsRelayResponseForThisNode(protobuf::Message& message);
-  bool IsGroupMessageRequestToSelfId(protobuf::Message& message);
-  bool RelayDirectMessageIfNeeded(protobuf::Message& message);
-  void HandleClientMessage(protobuf::Message& message);
-  void HandleMessageForNonRoutingNodes(protobuf::Message& message);
-  void HandleDirectRelayRequestMessageAsClosestNode(protobuf::Message& message);
-  void HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message& message);
-  bool HandleCacheLookup(protobuf::Message& message);
-  void StoreCacheCopy(const protobuf::Message& message);
-  bool IsValidCacheableGet(const protobuf::Message& message);
-  bool IsValidCacheablePut(const protobuf::Message& message);
-  void InvokeTypedMessageReceivedFunctor(const protobuf::Message& proto_message);
-  friend class test::MessageHandlerTest;
-  friend class test::MessageHandlerTest_BEH_HandleInvalidMessage_Test;
-  friend class test::MessageHandlerTest_BEH_HandleRelay_Test;
-  friend class test::MessageHandlerTest_DISABLED_BEH_HandleGroupMessage_Test;
-  friend class test::MessageHandlerTest_BEH_HandleNodeLevelMessage_Test;
-  friend class test::MessageHandlerTest_BEH_ClientRoutingTable_Test;
-  friend class test::GenericNode;
+  template <typename T>
+  void HandleMessage(const serialised_message& serialised_payload) {
 
+  }
 
-  RoutingTable& routing_table_;
-  ClientRoutingTable& client_routing_table_;
-  NetworkUtils& network_utils_;
-  Network& network_;
-  std::unique_ptr<CacheManager> cache_manager_;
-  Timer<std::string>& timer_;
-  PublicKeyHolder public_key_holder_;
-  std::shared_ptr<ResponseHandler> response_handler_;
-  std::shared_ptr<Service> service_;
-  MessageReceivedFunctor message_received_functor_;
-  detail::TypedMessageRecievedFunctors typed_message_received_functors_;
+  AsioService& asio_service_;
+  rudp::ManagedConnections& managed_connections_;
 };
 
 }  // namespace routing
