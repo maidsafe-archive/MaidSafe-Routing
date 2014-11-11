@@ -27,8 +27,6 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
-
 
 namespace maidsafe {
 
