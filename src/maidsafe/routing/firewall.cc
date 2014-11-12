@@ -53,8 +53,7 @@ bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
 void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
   static_cast<void>(lock);
-typedef typename boost::multi_index::index<ProcessedEntrySet,
-      BirthTimeTag>::type accounts_by_update_time;
+  using  accounts_by_update_time = boost::multi_index::index<ProcessedEntrySet, BirthTimeTag>::type;
   accounts_by_update_time& birth_time_index =
       boost::multi_index::get<BirthTimeTag>(history_);
   ProcessedEntry dummy(NodeId(NodeId::IdType::kRandomId), RandomInt32());
