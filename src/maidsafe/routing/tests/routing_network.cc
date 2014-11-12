@@ -996,9 +996,9 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
 //            EXPECT_TRUE(reply.empty());
 //            if (!reply.empty()) {
 //              *failed = true;
-              if (*reply_count == *expected_count)
-                cond_var->notify_one();
-              return;
+//              if (*reply_count == *expected_count)
+//                cond_var->notify_one();
+//              return;
 //            }
             if (*reply_count == *expected_count)
               cond_var->notify_one();
