@@ -47,7 +47,7 @@ class routing_table {
   virtual ~routing_table() = default;
   bool add_node(node_info their_info);
   bool check_node(const node_info& their_info) const;
-  bool drop_node(const NodeId& node_to_drop);
+  void drop_node(const NodeId& node_to_drop);
   // If more than 1 node returned then we are in close group so send to all !!
   std::vector<node_info> target_nodes(const NodeId& their_id) const;
   // our close group or at least as much of it as we currently know
@@ -61,7 +61,7 @@ class routing_table {
  private:
   int32_t bucket_index(const NodeId& node_id) const;
 
-  std::vector<node_info>::const_reverse_iterator find_candidate_for_removal() const;
+  std::vector<node_info>::const_iterator find_candidate_for_removal() const;
 
   unsigned int network_status(size_t size) const;
 

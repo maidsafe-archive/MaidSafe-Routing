@@ -36,7 +36,7 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
-  const auto network_size(200);
+  const auto network_size(500);
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
@@ -51,21 +51,23 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
     }
   }
   for (const auto& node : routing_tables) {
-    auto id = node->our_id();
-    std::sort(std::begin(node_ids), std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, id);
+    std::sort(std::begin(node_ids), std::end(node_ids),
+              [&node](const NodeId& lhs, const NodeId& rhs) {
+      return NodeId::CloserToTarget(lhs, rhs, node->our_id());
     });
     // if target is in close group return the whole close group
     for (size_t i = 1; i < group_size + 1; ++i) {
-      auto target = node->target_nodes(node_ids.at(i));
-      EXPECT_EQ(target.size(), group_size);
+      auto target_close_group = node->target_nodes(node_ids.at(i));
       // check the close group is correct
-      for (size_t i = 0; i < group_size; ++i)
-        EXPECT_EQ(target.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
+      for (size_t j = 0; j < group_size; ++j) {
+        EXPECT_EQ(target_close_group.at(j).id, node_ids.at(j + 1)) << " node mismatch at " << j;
+        EXPECT_EQ(group_size, (node->target_nodes(node_ids.at(j + 1))).size())
+            << "mismatch at index " << j;
+      }
     }
     // nodes further than the close group, should return a single target
-    for (size_t i = group_size + 1; i < network_size; ++i) {
-      EXPECT_EQ((node->target_nodes(node_ids.at(i))).size(), 1) << "mismatch at index " << i;
+    for (size_t i = group_size + 10; i < network_size - 1; ++i) {
+      EXPECT_EQ(1, (node->target_nodes(node_ids.at(i))).size()) << "mismatch at index " << i;
     }
   }
 }
