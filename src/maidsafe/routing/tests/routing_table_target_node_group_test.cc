@@ -66,7 +66,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
       }
     }
     // nodes further than the close group, should return a single target
-    for (size_t i = group_size + 10; i < network_size - 1; ++i) {
+    for (size_t i = group_size + quorum_size; i < network_size - 1; ++i) {
       EXPECT_EQ(1, (node->target_nodes(node_ids.at(i))).size()) << "mismatch at index " << i;
     }
   }
