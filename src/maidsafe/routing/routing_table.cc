@@ -142,7 +142,7 @@ size_t routing_table::size() const {
 // bucket 511 is us, 0 is furthest bucket (should fill first)
 int32_t routing_table::bucket_index(const NodeId& node_id) const {
   assert(node_id != our_id_);
-  return  our_id_.CommonLeadingBits(node_id);
+  return our_id_.CommonLeadingBits(node_id);
 }
 
 std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
