@@ -45,7 +45,7 @@ struct small_header {
         checksum(std::move(checksum_in)) {}
   ~small_header() = default;
   small_header& operator=(const small_header&) = delete;
-  small_header& operator=(small_header&&) MAIDSAFE_NOEXCEPT {
+  small_header& operator=(small_header&& other) MAIDSAFE_NOEXCEPT {
     destination = std::move(other.destination);
     source = std::move(other.source);
     message_id = std::move(other.message_id);

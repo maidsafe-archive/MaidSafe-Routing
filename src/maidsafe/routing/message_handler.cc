@@ -40,7 +40,7 @@ message_handler::message_handler(AsioService& asio_service,
                                  rudp::ManagedConnections& managed_connections)
     : asio_service_(asio_service), managed_connections_(managed_connections) {}
 
-void message_handler::OnMessageReceived(const serialised_message& serialised_message) {
+void message_handler::OnMessageReceived(const serialised_message& /*serialised_message*/) {
   message_map m;
   (void)m;
 }
