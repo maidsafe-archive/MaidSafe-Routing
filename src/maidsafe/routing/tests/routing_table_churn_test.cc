@@ -36,7 +36,7 @@ namespace test {
 
 TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   const auto network_size(500);
-  auto nodes_to_remove(100);
+  auto nodes_to_remove(50);
 
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
@@ -75,6 +75,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
                            const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
     auto groups = node->our_close_group();
     EXPECT_EQ(groups.size(), size);
+    size = std::min(quorum_size, static_cast<size_t>(node->size()));
     for (size_t i = 0; i < size; ++i) {
       // + 1 as node_ids includes our ID
       EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;

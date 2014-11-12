@@ -19,9 +19,8 @@
 #include "maidsafe/routing/routing_table.h"
 
 #include <algorithm>
-#include <limits>
 #include <memory>
-#include <iostream>
+#include <vector>
 
 #include "maidsafe/common/utils.h"
 
@@ -41,7 +40,6 @@ bool routing_table::add_node(node_info their_info) {
     return false;
   }
 
-  node_info removed_node;
   std::lock_guard<std::mutex> lock(mutex_);
 
   if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
@@ -56,15 +54,13 @@ bool routing_table::add_node(node_info their_info) {
   } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
     // try to push another node out here as new node is also a close node
     // rather than removing the old close node we keep it if possible and
-    // sacrifice a less importnt node
-    auto remove_node(find_candidate_for_removal());
-    if (remove_node != nodes_.rend())
-      nodes_.erase(std::next(remove_node).base());
+    // sacrifice a less important node
+    if (remove_node != std::end(nodes_))
+      nodes_.erase(remove_node);
     nodes_.push_back(their_info);
-  } else if ((remove_node != nodes_.rend()) &&
-             bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id)) {
-    removed_node = *(std::next(remove_node).base());
-    nodes_.erase(std::next(remove_node).base());
+  } else if ((remove_node != std::end(nodes_)) &&
+             bucket_index(their_info.id) > bucket_index(remove_node->id)) {
+    nodes_.erase(remove_node);
     nodes_.push_back(their_info);
   } else {
     return false;
@@ -90,21 +86,18 @@ bool routing_table::check_node(const node_info& their_info) const {
   // close node
   if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id()))
     return true;
-  // this node is a better fot than we currently have in the routing table
+  // this node is a better fit than we currently have in the routing table
   auto remove_node(find_candidate_for_removal());
-  return (remove_node != nodes_.rend() &&
-          bucket_index(their_info.id) > bucket_index(std::next(remove_node).base()->id));
+  return (remove_node != std::end(nodes_) &&
+          bucket_index(their_info.id) > bucket_index(remove_node->id));
 }
 
-bool routing_table::drop_node(const NodeId& node_to_drop) {
+void routing_table::drop_node(const NodeId& node_to_drop) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto remove = find_if(std::begin(nodes_), std::end(nodes_),
-                        [&node_to_drop](const node_info& node) { return node.id == node_to_drop; });
-  if (remove != std::end(nodes_)) {
-    nodes_.erase(remove);
-    return true;
-  }
-  return false;
+  nodes_.erase(
+      remove_if(std::begin(nodes_), std::end(nodes_),
+                [&node_to_drop](const node_info& node) { return node.id == node_to_drop; }),
+      std::end(nodes_));
 }
 
 std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const {
@@ -149,14 +142,14 @@ size_t routing_table::size() const {
 // bucket 511 is us, 0 is furthest bucket (should fill first)
 int32_t routing_table::bucket_index(const NodeId& node_id) const {
   assert(node_id != our_id_);
-  return our_id_.CommonLeadingBits(node_id);
+  return  our_id_.CommonLeadingBits(node_id);
 }
 
-std::vector<node_info>::const_reverse_iterator routing_table::find_candidate_for_removal() const {
+std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
   size_t bucket_count(0);
   int bucket(0);
   if (nodes_.size() < default_routing_table_size)
-    return nodes_.rend();
+    return std::end(nodes_);
   auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,
                             [&bucket_count, &bucket, this](const node_info& node) {
     auto node_bucket(bucket_index(node.id));
@@ -167,9 +160,9 @@ std::vector<node_info>::const_reverse_iterator routing_table::find_candidate_for
     return (++bucket_count > kBucketSize_);
   });
   if (found < nodes_.rbegin() + group_size)
-    return found;
+    return found.base();
   else
-    return nodes_.rend();
+    return std::end(nodes_);
 }
 
 unsigned int routing_table::network_status(size_t size) const {
