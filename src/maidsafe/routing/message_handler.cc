@@ -180,6 +180,9 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
     if (message.has_average_distace())
       network_utils_.statistics_.UpdateNetworkAverageDistance(NodeId(message.average_distace()));
   } else {
+    LOG(kWarning) << "This node [" << DebugId(routing_table_.kNodeId())
+                  << " Dropping message as client to client message not allowed."
+                  << PrintMessage(message);
     message.Clear();
   }
 }
@@ -217,6 +220,12 @@ void MessageHandler::HandleDirectMessageAsClosestNode(protobuf::Message& message
     } else {
       network_utils_.acknowledgement_.AdjustAckHistory(message);
       network_.SendAck(message);
+      LOG(kWarning) << "Dropping message. This node [" << routing_table_.kNodeId()
+                    << "] is the closest but is not connected to destination node ["
+                    << HexSubstr(message.destination_id())
+                    << "], Src ID: " << HexSubstr(message.source_id())
+                    << ", Relay ID: " << HexSubstr(message.relay_id()) << " id: " << message.id()
+                    << PrintMessage(message);
       return;
     }
   } else {

@@ -68,12 +68,12 @@ class ResponseHandler : public std::enable_shared_from_this<ResponseHandler> {
   void CloseNodeUpdateForClient(protobuf::Message& message);
   void InformClientOfNewCloseNode(protobuf::Message& message);
   void ConnectSuccess(protobuf::Message& message);
+  void CheckAndSendConnectRequest(const NodeId& node_id);
 
   friend class test::ResponseHandlerTest_BEH_ConnectAttempts_Test;
 
  private:
   void SendConnectRequest(const NodeId peer_node_id);
-  void CheckAndSendConnectRequest(const NodeId& node_id);
   void ValidateAndSendConnectRequest(const NodeId& peer_id);
   void HandleSuccessAcknowledgementAsRequestor(const std::vector<NodeId>& close_ids);
   void HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool client);

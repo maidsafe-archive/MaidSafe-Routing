@@ -21,7 +21,7 @@
 
 #include "boost/multi_index_container.hpp"
 #include "boost/multi_index/global_fun.hpp"
-#include "boost/multi_index/mem_fun.hpp"
+#include "boost/multi_index/member.hpp"
 #include "boost/multi_index/ordered_index.hpp"
 #include "boost/multi_index/identity.hpp"
 
@@ -52,7 +52,6 @@ class Firewall {
     ProcessedEntry(const NodeId& source_in, int32_t messsage_id_in)
         : source(source_in), message_id(messsage_id_in), birth_time(common::Clock::now()) {}
     ProcessedEntry Key() const { return *this; }
-    common::Clock::time_point BirthTime() const { return birth_time; }
     NodeId source;
     int32_t message_id;
     common::Clock::time_point birth_time;
@@ -61,12 +60,15 @@ class Firewall {
  private:
   friend class test::FirewallTest_BEH_AddRemove_Test;
 
+  struct BirthTimeTag {};
+
   typedef boost::multi_index_container<
       ProcessedEntry,
       boost::multi_index::indexed_by<
           boost::multi_index::ordered_unique<boost::multi_index::identity<ProcessedEntry>>,
       boost::multi_index::ordered_non_unique<
-        BOOST_MULTI_INDEX_CONST_MEM_FUN(ProcessedEntry, common::Clock::time_point, BirthTime)>
+          boost::multi_index::tag<BirthTimeTag>,
+          BOOST_MULTI_INDEX_MEMBER(ProcessedEntry, common::Clock::time_point, birth_time)>
     >
   > ProcessedEntrySet;
 

@@ -52,16 +52,18 @@ bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
 void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
   assert(lock.owns_lock());
   static_cast<void>(lock);
+  using  accounts_by_update_time = boost::multi_index::index<ProcessedEntrySet, BirthTimeTag>::type;
+  accounts_by_update_time& birth_time_index =
+      boost::multi_index::get<BirthTimeTag>(history_);
   ProcessedEntry dummy(NodeId(NodeId::IdType::kRandomId), RandomInt32());
   auto upper(std::upper_bound(
-      std::begin(history_), std::end(history_), dummy,
+      std::begin(birth_time_index), std::end(birth_time_index), dummy,
       [this](const ProcessedEntry& lhs, const ProcessedEntry& rhs) {
         return (lhs.birth_time - rhs.birth_time < Parameters::firewall_message_life);
       }));
-  if (upper != std::end(history_))
-    history_.erase(std::begin(history_), upper);
+  if (upper != std::end(birth_time_index))
+    birth_time_index.erase(std::begin(birth_time_index), upper);
 }
-
 
 }  // namespace routing
 
