@@ -23,6 +23,7 @@
 #include <mutex>
 #include <vector>
 
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -44,21 +45,21 @@ class routing_table {
   routing_table(routing_table&&) = delete;
   routing_table& operator=(const routing_table&) = delete;
   routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
-  virtual ~routing_table() = default;
-  bool add_node(node_info their_info);
+  ~routing_table() = default;
+  std::pair<bool, boost::optional<NodeId>> add_node(node_info their_info);
   bool check_node(const node_info& their_info) const;
   void drop_node(const NodeId& node_to_drop);
-  // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<node_info> target_nodes(const NodeId& their_id) const;
   // our close group or at least as much of it as we currently know
   std::vector<node_info> our_close_group() const;
-
-  size_t size() const;
+  // If more than 1 node returned then we are in close group so send to all !!
+  std::vector<node_info> target_nodes(const NodeId& their_id) const;
   NodeId our_id() const { return our_id_; }
+  size_t size() const;
+
+ private:
   asymm::PrivateKey our_private_key() const { return kKeys_.private_key; }
   asymm::PublicKey our_public_key() const { return kKeys_.public_key; }
 
- private:
   int32_t bucket_index(const NodeId& node_id) const;
 
   std::vector<node_info>::const_iterator find_candidate_for_removal() const;

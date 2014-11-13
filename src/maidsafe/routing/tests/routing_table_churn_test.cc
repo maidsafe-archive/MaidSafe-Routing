@@ -38,6 +38,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   const auto network_size(500);
   auto nodes_to_remove(50);
 
+  asymm::Keys key(asymm::GenerateKeyPair());
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
@@ -48,7 +49,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
+      nodeinfo_to_add.public_key = key.public_key;
       node->add_node(nodeinfo_to_add);
     }
   }

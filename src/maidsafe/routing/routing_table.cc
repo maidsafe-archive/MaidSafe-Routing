@@ -34,20 +34,25 @@ namespace routing {
 routing_table::routing_table(NodeId our_id, asymm::Keys keys)
     : our_id_(std::move(our_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
 
-bool routing_table::add_node(node_info their_info) {
+std::pair<bool, boost::optional<NodeId>> routing_table::add_node(node_info their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
       !asymm::ValidateKey(their_info.public_key)) {
-    return false;
+    return {false, boost::optional<NodeId>()};
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
-
+  // check not duplicate
   if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
         return node_info.id == their_info.id;
       })) {
-    return false;
+    return {false, boost::optional<NodeId>()};
   }
+  // is there a node we can remove
   auto remove_node(find_candidate_for_removal());
+  auto sacrificial_node(remove_node != std::end(nodes_));
+  NodeId remove_id;
+  if (sacrificial_node)
+    remove_id = find_candidate_for_removal()->id;
 
   if (nodes_.size() < default_routing_table_size) {
     nodes_.push_back(their_info);
@@ -55,20 +60,23 @@ bool routing_table::add_node(node_info their_info) {
     // try to push another node out here as new node is also a close node
     // rather than removing the old close node we keep it if possible and
     // sacrifice a less important node
-    if (remove_node != std::end(nodes_))
+    if (sacrificial_node)
       nodes_.erase(remove_node);
     nodes_.push_back(their_info);
-  } else if ((remove_node != std::end(nodes_)) &&
-             bucket_index(their_info.id) > bucket_index(remove_node->id)) {
+  } else if (sacrificial_node && bucket_index(their_info.id) > bucket_index(remove_node->id)) {
     nodes_.erase(remove_node);
     nodes_.push_back(their_info);
   } else {
-    return false;
+    return {false, boost::optional<NodeId>()};
   }
   std::sort(nodes_.begin(), nodes_.end(), [&](const node_info& lhs, const node_info& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
-  return true;
+
+  if (sacrificial_node)
+    return {true, boost::optional<NodeId>(remove_id)};
+  else
+    return {true, boost::optional<NodeId>()};
 }
 
 bool routing_table::check_node(const node_info& their_info) const {

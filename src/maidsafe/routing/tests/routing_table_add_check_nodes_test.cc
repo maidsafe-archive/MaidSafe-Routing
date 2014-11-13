@@ -37,14 +37,22 @@ namespace test {
 
 TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
   auto routing_tables(routing_table_network(1000));
+  asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
+      nodeinfo_to_add.public_key = key.public_key;
       if (node->check_node(nodeinfo_to_add)) {
-        EXPECT_TRUE(node->add_node(nodeinfo_to_add));
+        auto add_node_attempt = node->add_node(nodeinfo_to_add);
+        EXPECT_TRUE(add_node_attempt.first);
+        if (add_node_attempt.second) {
+          EXPECT_TRUE(NodeId::CloserToTarget(nodeinfo_to_add.id, *(add_node_attempt.second),
+                                             node->our_id()));
+          EXPECT_TRUE(node->our_id().CommonLeadingBits(*(add_node_attempt.second)) >
+                      (node->our_id().CommonLeadingBits(nodeinfo_to_add.id)));
+        }
       }
     }
   }

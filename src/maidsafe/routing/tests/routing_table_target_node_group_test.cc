@@ -38,6 +38,7 @@ namespace test {
 TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
   const auto network_size(500);
   auto routing_tables(routing_table_network(network_size));
+  asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
   // iterate and try to add each node to each other node
@@ -46,10 +47,11 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
+      nodeinfo_to_add.public_key = key.public_key;
       node->add_node(nodeinfo_to_add);
     }
   }
+
   for (const auto& node : routing_tables) {
     std::sort(std::begin(node_ids), std::end(node_ids),
               [&node](const NodeId& lhs, const NodeId& rhs) {
@@ -65,8 +67,15 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
             << "mismatch at index " << j;
       }
     }
+
     // nodes further than the close group, should return a single target
-    for (size_t i = group_size + quorum_size; i < network_size - 1; ++i) {
+    // as some nodes can be close the the end of the close group and the
+    // tested node then we need to put in place a buffer. This magic number is
+    // selected to be way past any chance of closeness to an colse group member
+    // but not so far as to not check any of the return values being == 1
+    // so magic number but for the best reasons we can think of.
+    auto xor_closeness_buffer(10);
+    for (size_t i = group_size + xor_closeness_buffer; i < network_size - 1; ++i) {
       EXPECT_EQ(1, (node->target_nodes(node_ids.at(i))).size()) << "mismatch at index " << i;
     }
   }
