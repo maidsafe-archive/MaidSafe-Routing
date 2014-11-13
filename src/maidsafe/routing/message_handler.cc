@@ -333,6 +333,13 @@ void message_handler::HandleMessage(protobuf::Message& message) {
     return;
   }
 
+  if (!message.routing_message() && !message.client_node() && message.has_source_id()) {
+    NodeInfo node_info;
+    node_info.id = NodeId(message.source_id());
+    if (routing_table_.CheckNode(node_info))
+      response_handler_->CheckAndSendConnectRequest(node_info.id);
+  }
+
   // Decrement hops_to_live
   message.set_hops_to_live(message.hops_to_live() - 1);
 
@@ -530,6 +537,7 @@ void message_handler::HandleClientMessage(protobuf::Message& message) {
   } else if ((message.destination_id() == routing_table_.kNodeId().string())) {
     LOG(kVerbose) << "Client NodeLevel Response for " << DebugId(routing_table_.kNodeId())
                   << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
+    message.set_client_node(true);
     HandleNodeLevelMessageForThisNode(message);
   } else {
     LOG(kWarning) << DebugId(routing_table_.kNodeId()) << " silently drop message "
