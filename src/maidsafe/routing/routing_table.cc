@@ -34,10 +34,10 @@ namespace routing {
 routing_table::routing_table(NodeId our_id, asymm::Keys keys)
     : our_id_(std::move(our_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
 
-std::pair<bool, boost::optional<NodeId>> routing_table::add_node(node_info their_info) {
+std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
       !asymm::ValidateKey(their_info.public_key)) {
-    return {false, boost::optional<NodeId>()};
+    return {false, boost::optional<node_info>()};
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -45,14 +45,14 @@ std::pair<bool, boost::optional<NodeId>> routing_table::add_node(node_info their
   if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
         return node_info.id == their_info.id;
       })) {
-    return {false, boost::optional<NodeId>()};
+    return {false, boost::optional<node_info>()};
   }
   // is there a node we can remove
   auto remove_node(find_candidate_for_removal());
   auto sacrificial_node(remove_node != std::end(nodes_));
-  NodeId remove_id;
+  node_info remove_id;
   if (sacrificial_node)
-    remove_id = find_candidate_for_removal()->id;
+    remove_id = *find_candidate_for_removal();
 
   if (nodes_.size() < default_routing_table_size) {
     nodes_.push_back(their_info);
@@ -67,16 +67,16 @@ std::pair<bool, boost::optional<NodeId>> routing_table::add_node(node_info their
     nodes_.erase(remove_node);
     nodes_.push_back(their_info);
   } else {
-    return {false, boost::optional<NodeId>()};
+    return {false, boost::optional<node_info>()};
   }
   std::sort(nodes_.begin(), nodes_.end(), [&](const node_info& lhs, const node_info& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
 
   if (sacrificial_node)
-    return {true, boost::optional<NodeId>(remove_id)};
+    return {true, boost::optional<node_info>(remove_id)};
   else
-    return {true, boost::optional<NodeId>()};
+    return {true, boost::optional<node_info>()};
 }
 
 bool routing_table::check_node(const node_info& their_info) const {
@@ -168,7 +168,7 @@ std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal
     return (++bucket_count > kBucketSize_);
   });
   if (found < nodes_.rbegin() + group_size)
-    return found.base();
+    return std::next(found.base());
   else
     return std::end(nodes_);
 }

@@ -45,12 +45,12 @@ TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
       nodeinfo_to_add.id = node_to_add->our_id();
       nodeinfo_to_add.public_key = key.public_key;
       if (node->check_node(nodeinfo_to_add)) {
-        auto add_node_attempt = node->add_node(nodeinfo_to_add);
-        EXPECT_TRUE(add_node_attempt.first);
-        if (add_node_attempt.second) {
-          EXPECT_TRUE(NodeId::CloserToTarget(nodeinfo_to_add.id, *(add_node_attempt.second),
-                                             node->our_id()));
-          EXPECT_TRUE(node->our_id().CommonLeadingBits(*(add_node_attempt.second)) >
+        auto removed_node = node->add_node(nodeinfo_to_add);
+        EXPECT_TRUE(removed_node.first);
+        if (removed_node.second) {
+          EXPECT_TRUE(
+              NodeId::CloserToTarget(nodeinfo_to_add.id, removed_node.second->id, node->our_id()));
+          EXPECT_TRUE(node->our_id().CommonLeadingBits(removed_node.second->id) <
                       (node->our_id().CommonLeadingBits(nodeinfo_to_add.id)));
         }
       }
