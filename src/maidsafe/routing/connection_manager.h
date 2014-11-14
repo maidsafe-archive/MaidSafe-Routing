@@ -22,16 +22,22 @@
 #define MAIDSAFE_ROUTING_CONNECTION_MANAGER_
 
 #include <vector>
-
+#include <mutex>
+#include <unordered_map>
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/rudp/managed_connections.h"
+namespace maidsafe {
+namespace routing {
+
+
 
 // object to be held by routing object
 struct connection_manager {
  public:
   using close_node_change = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
-  connection_manager(rudp::ManagedConnections& managed_connections) : connections_(), rudp_(rudp) {}
+  connection_manager(rudp::ManagedConnections& rudp, routing_table& routing_table)
+      : connections_(), mutex_(), routing_table_(routing_table), rudp_(rudp) {}
   connection_manager(connection_manager const&) = delete;
   connection_manager(connection_manager&&) = delete;
   ~connection_manager() = default;
@@ -39,16 +45,23 @@ struct connection_manager {
   connection_manager& operator=(connection_manager&&) = delete;
 
   bool suggest_node(NodeId node_to_add);
-  // always return close group even if no change
+  // always return close group even if no change to close nodes
   std::vector<node_info> lost_network_connection(NodeId connection_id);
-  // always return close group even if no change
-  std::vector<NodeInoid> add_node(NodeId node_to_remove);
+  // always return close group even if no change to close nodes
+  std::vector<node_info> add_node(node_info node_to_add, NodeId connection_id);
 
 
  private:
-  std::vector<std::vector<NodeId>> connections_;
-  rudp::ManagedConnections rudp_;
+  // connections_[index].[0] == connection id
+  // if connectoins_[index].size() > 1 the remaining nodes share this connection_id
+  std::map<NodeId, std::vector<NodeId>> connections_;
+  std::mutex mutex_;
+  routing_table& routing_table_;
+  rudp::ManagedConnections& rudp_;
 };
 
+}  // namespace routing
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_CONNECTION_MANAGER_

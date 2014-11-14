@@ -43,8 +43,8 @@ struct Relay {
   Relay(const Relay& other) = default;
   Relay(Relay&& other) MAIDSAFE_NOEXCEPT : node_id(std::move(other.node_id)),
                                            connection_id(std::move(other.connection_id)),
-                                           
-  Relay& operator=(const Relay&) = default;
+
+                                           Relay& operator=(const Relay&) = default;
 
   bool operator==(const Relay<T>& other) const MAIDSAFE_NOEXCEPT {
     return std::tie(node_id, connection_id, relay_node) ==

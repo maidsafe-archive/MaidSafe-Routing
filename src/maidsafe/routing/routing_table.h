@@ -47,7 +47,7 @@ class routing_table {
   routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
   ~routing_table() = default;
   std::pair<bool, boost::optional<node_info>> add_node(node_info their_info);
-  bool check_node(const node_info& their_info) const;
+  bool check_node(const NodeId& their_id) const;
   void drop_node(const NodeId& node_to_drop);
   // our close group or at least as much of it as we currently know
   std::vector<node_info> our_close_group() const;

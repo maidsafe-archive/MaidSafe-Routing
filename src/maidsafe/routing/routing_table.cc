@@ -79,25 +79,24 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     return {true, boost::optional<node_info>()};
 }
 
-bool routing_table::check_node(const node_info& their_info) const {
-  if (!their_info.id.IsValid() || their_info.id == our_id_)
+bool routing_table::check_node(const NodeId& their_id) const {
+  if (!their_id.IsValid() || their_id == our_id_)
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
   if (nodes_.size() < default_routing_table_size)
     return true;
   // check for duplicates
-  if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
-        return node_info.id == their_info.id;
-      }))
+  if (std::any_of(nodes_.begin(), nodes_.end(),
+                  [&their_id](const node_info& node_info) { return node_info.id == their_id; }))
     return false;
   // close node
-  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id()))
+  if (NodeId::CloserToTarget(their_id, nodes_.at(group_size).id, our_id()))
     return true;
   // this node is a better fit than we currently have in the routing table
   auto remove_node(find_candidate_for_removal());
   return (remove_node != std::end(nodes_) &&
-          bucket_index(their_info.id) > bucket_index(remove_node->id));
+          bucket_index(their_id) > bucket_index(remove_node->id));
 }
 
 void routing_table::drop_node(const NodeId& node_to_drop) {

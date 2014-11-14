@@ -55,7 +55,7 @@ set(RoutingLibHeaders
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
-    # ${RoutingSourcesDir}/message_handler.cc
+    ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     )

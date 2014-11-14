@@ -44,7 +44,7 @@ TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
       nodeinfo_to_add.public_key = key.public_key;
-      if (node->check_node(nodeinfo_to_add)) {
+      if (node->check_node(nodeinfo_to_add.id)) {
         auto removed_node = node->add_node(nodeinfo_to_add);
         EXPECT_TRUE(removed_node.first);
         if (removed_node.second) {
