@@ -41,7 +41,7 @@ include(../../cmake_modules/standard_setup.cmake)
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
     )
@@ -56,6 +56,8 @@ set(RoutingLibHeaders
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
     ${RoutingSourcesDir}/connection_manager.cc
+    ${RoutingSourcesDir}/message_handler.cc
+    ${RoutingSourcesDir}/node.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     )
