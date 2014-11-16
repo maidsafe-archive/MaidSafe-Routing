@@ -50,6 +50,7 @@ using checksums = std::array<murmur_hash, group_size - 1>;
 using serialised_message = std::vector<unsigned char>;
 using close_group_difference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
 using group_change = std::pair<bool, close_group_difference>;
+
 }  // namespace routing
 
 }  // namespace maidsafe

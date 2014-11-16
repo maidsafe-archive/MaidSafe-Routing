@@ -38,7 +38,26 @@ bool connection_manager::suggest_node(NodeId node_to_add) {
   return routing_table_.check_node(node_to_add);
 }
 
-// always return close group even if no change
+std::vector<node_info> connection_manager::get_target(NodeId target_node) {
+  auto targets(routing_table_.get_target_nodes(target_node));
+  std::vector<endpoint> endpoints;
+  if (targets.size() > 1) {
+    // gather endpoints
+    for (auto& target : targets) {
+      if (!target.their_endpoint.address.is_unspecified())
+        endpoints.push_back(target.their_endpoint);
+    }
+    // set unconnected nodes with a random endpoint
+    for (auto& target : targets) {
+      if (target.their_endpoint.address.is_unspecified()) {
+        std::random_shuffle(std::begin(endpoints, std::end(endpoints)));
+        target.their_endpoint = std::front(endpoints);
+      }
+    }
+  }
+  return targets;
+}
+
 group_change connection_manager::lost_network_connection(endpoint their_endpoint) {
   routing_table_.drop_node(their_endpoint);
   return group_changed();
@@ -50,7 +69,6 @@ group_change connection_manager::drop_node(NodeId their_id) {
 }
 
 
-// always return close group even if no change
 group_change connection_manager::add_node(node_info node_to_add, endpoint their_endpoint,
                                           rudp::NatType nat_type) {
   // do not try and add a non close node that is symmetric if we are also symmetric

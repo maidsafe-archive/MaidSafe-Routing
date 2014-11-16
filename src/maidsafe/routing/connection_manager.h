@@ -40,10 +40,7 @@ namespace routing {
 struct connection_manager {
  public:
   connection_manager(rudp::ManagedConnections& rudp, NodeId our_id, rudp::NatType our_nat_type)
-      : routing_table_(our_id),
-        rudp_(rudp),
-        our_nat_type_(our_nat_type),
-        current_close_group_() {}
+      : routing_table_(our_id), rudp_(rudp), our_nat_type_(our_nat_type), current_close_group_() {}
   connection_manager(connection_manager const&) = delete;
   connection_manager(connection_manager&&) = delete;
   ~connection_manager() = default;
@@ -51,14 +48,15 @@ struct connection_manager {
   connection_manager& operator=(connection_manager&&) = delete;
 
   bool suggest_node(NodeId node_to_add);
+  std::vector<node_info> get_target(NodeId target_node);
   // always return close group even if no change to close nodes
   group_change lost_network_connection(endpoint their_endpoint);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   group_change drop_node(NodeId their_id);
   // always return close group even if no change to close nodes
   group_change add_node(node_info node_to_add, endpoint their_endpoint, rudp::NatType nat_type);
-  std::vector<node_info> get_our_close_group() { return routing_table_.our_close_group(); }
-  std::vector<node_info> get_target(NodeId target_node);
+  std::vector<node_info> our_close_group() { return routing_table_.our_close_group(); }
+
  private:
   group_change group_changed();
   // connections_[index].[0] == connection id
