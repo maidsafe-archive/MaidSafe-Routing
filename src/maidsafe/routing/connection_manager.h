@@ -23,21 +23,27 @@
 
 #include <vector>
 #include <mutex>
-#include <unordered_map>
+#include <tuple>
+#include <map>
+#include <vector>
+
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/nat_type.h"
+
 namespace maidsafe {
 namespace routing {
 
-
-
-// object to be held by routing object
 struct connection_manager {
  public:
-  using close_node_change = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
-  connection_manager(rudp::ManagedConnections& rudp, routing_table& routing_table)
-      : connections_(), mutex_(), routing_table_(routing_table), rudp_(rudp) {}
+  connection_manager(rudp::ManagedConnections& rudp, NodeId our_id, rudp::NatType our_nat_type)
+      : routing_table_(our_id),
+        rudp_(rudp),
+        our_nat_type_(our_nat_type),
+        current_close_group_() {}
   connection_manager(connection_manager const&) = delete;
   connection_manager(connection_manager&&) = delete;
   ~connection_manager() = default;
@@ -46,18 +52,21 @@ struct connection_manager {
 
   bool suggest_node(NodeId node_to_add);
   // always return close group even if no change to close nodes
-  std::vector<node_info> lost_network_connection(NodeId connection_id);
+  group_change lost_network_connection(endpoint their_endpoint);
+  // routing wishes to drop a specific node (may be a node we cannot connect to)
+  group_change drop_node(NodeId their_id);
   // always return close group even if no change to close nodes
-  std::vector<node_info> add_node(node_info node_to_add, NodeId connection_id);
-
-
+  group_change add_node(node_info node_to_add, endpoint their_endpoint, rudp::NatType nat_type);
+  std::vector<node_info> get_our_close_group() { return routing_table_.our_close_group(); }
+  std::vector<node_info> get_target(NodeId target_node);
  private:
+  group_change group_changed();
   // connections_[index].[0] == connection id
   // if connectoins_[index].size() > 1 the remaining nodes share this connection_id
-  std::map<NodeId, std::vector<NodeId>> connections_;
-  std::mutex mutex_;
-  routing_table& routing_table_;
+  routing_table routing_table_;
   rudp::ManagedConnections& rudp_;
+  rudp::NatType our_nat_type_;
+  std::vector<node_info> current_close_group_;
 };
 
 }  // namespace routing

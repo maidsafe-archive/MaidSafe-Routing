@@ -40,7 +40,7 @@ struct node_info;
 class routing_table {
  public:
   static const size_t kBucketSize_ = 1;
-  routing_table(NodeId our_id, asymm::Keys keys);
+  routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
   routing_table& operator=(const routing_table&) = delete;
@@ -49,6 +49,7 @@ class routing_table {
   std::pair<bool, boost::optional<node_info>> add_node(node_info their_info);
   bool check_node(const NodeId& their_id) const;
   void drop_node(const NodeId& node_to_drop);
+  void drop_node(const endpoint& their_endpoint);
   // our close group or at least as much of it as we currently know
   std::vector<node_info> our_close_group() const;
   // If more than 1 node returned then we are in close group so send to all !!
@@ -57,9 +58,6 @@ class routing_table {
   size_t size() const;
 
  private:
-  asymm::PrivateKey our_private_key() const { return kKeys_.private_key; }
-  asymm::PublicKey our_public_key() const { return kKeys_.public_key; }
-
   int32_t bucket_index(const NodeId& node_id) const;
 
   std::vector<node_info>::const_iterator find_candidate_for_removal() const;
@@ -67,7 +65,6 @@ class routing_table {
   unsigned int network_status(size_t size) const;
 
   const NodeId our_id_;
-  const asymm::Keys kKeys_;
   mutable std::mutex mutex_;
   std::vector<node_info> nodes_;
 };

@@ -20,7 +20,7 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
-
+#include "maidsafe/routing/types.h"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -31,7 +31,7 @@ namespace routing {
 
 struct node_info {
   node_info() = default;
-  node_info(const node_info& other) = default;
+  node_info(const node_info&) = default;
   node_info(node_info&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                    public_key(std::move(other.public_key)),
                                                    rank(std::move(other.rank)) {}
@@ -55,6 +55,7 @@ struct node_info {
   NodeId id;
   asymm::PublicKey public_key;
   int32_t rank;
+  endpoint their_endpoint;
 };
 
 }  // namespace routing

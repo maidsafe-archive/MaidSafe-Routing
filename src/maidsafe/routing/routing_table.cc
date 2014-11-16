@@ -31,8 +31,8 @@ namespace maidsafe {
 
 namespace routing {
 
-routing_table::routing_table(NodeId our_id, asymm::Keys keys)
-    : our_id_(std::move(our_id)), kKeys_(std::move(keys)), mutex_(), nodes_() {}
+routing_table::routing_table(NodeId our_id)
+    : our_id_(std::move(our_id)), mutex_(), nodes_() {}
 
 std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
@@ -104,6 +104,15 @@ void routing_table::drop_node(const NodeId& node_to_drop) {
   nodes_.erase(
       remove_if(std::begin(nodes_), std::end(nodes_),
                 [&node_to_drop](const node_info& node) { return node.id == node_to_drop; }),
+      std::end(nodes_));
+ }
+
+ void routing_table::drop_node(const endpoint& their_endpoint) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  nodes_.erase(
+      remove_if(std::begin(nodes_), std::end(nodes_), [&their_endpoint](const node_info& node) {
+        return node.their_endpoint == their_endpoint;
+      }),
       std::end(nodes_));
 }
 

@@ -22,8 +22,11 @@
 #include <vector>
 #include <mutex>
 #include <algorithm>
+#include <utility>
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 
@@ -36,48 +39,45 @@ bool connection_manager::suggest_node(NodeId node_to_add) {
 }
 
 // always return close group even if no change
-std::vector<node_info> connection_manager::lost_network_connection(NodeId connection_id) {
-  auto found = connections_.find(connection_id);
-
-  if (found != std::end(connections_)) {
-    for (const auto& node : found->second)
-      routing_table_.drop_node(node);
-    connections_.erase(found);
-  }
-
-  return routing_table_.our_close_group();
+group_change connection_manager::lost_network_connection(endpoint their_endpoint) {
+  routing_table_.drop_node(their_endpoint);
+  return group_changed();
 }
+
+group_change connection_manager::drop_node(NodeId their_id) {
+  routing_table_.drop_node(their_id);
+  return group_changed();
+}
+
 
 // always return close group even if no change
-std::vector<node_info> connection_manager::add_node(node_info node_to_add, NodeId connection_id) {
-  auto added(routing_table_.add_node(node_to_add));
-  if (added.first) {  // node was added
-    auto found = connections_.find(connection_id);
-    if (found != std::end(connections_)) {
-      found->second.push_back({node_to_add.id});
-    } else {
-      connections_.insert({connection_id, {node_to_add.id}});
-    }
+group_change connection_manager::add_node(node_info node_to_add, endpoint their_endpoint,
+                                          rudp::NatType nat_type) {
+  // do not try and add a non close node that is symmetric if we are also symmetric
+  if (!(routing_table_.size() > group_size && nat_type == rudp::NatType::kSymmetric &&
+        our_nat_type_ == rudp::NatType::kSymmetric &&
+        routing_table_.target_nodes(node_to_add.id).size() > 1)) {
+    // get an rudp connection if possible
+    // FIXME - stub implementation
+    node_to_add.their_endpoint = their_endpoint;
+    routing_table_.add_node(node_to_add);
   }
 
-  if (added.second)  // this means that we removed a connection to add this one
-    for (auto& connection : connections_) {
-      auto nodes = std::find_if(
-          std::begin(connection.second), std::end(connection.second),
-          [&added](const NodeId& node_found) { return added.second->id == node_found; });
-      if (nodes != std::end(connection.second))
-        connection.second.erase(nodes);
-    }
-
-  for (auto i = std::begin(connections_); i != std::end(connections_); ++i) {
-    if (i->second.empty())
-      rudp_.Remove(i->first);
-    connections_.erase(i);
-  }
-
-
-  return routing_table_.our_close_group();
+  return group_changed();
 }
+
+group_change connection_manager::group_changed() {
+  auto new_group(routing_table_.our_close_group());
+  group_change changes;
+  if (new_group == current_close_group_) {
+    changes = {false, {new_group, current_close_group_}};
+  } else {
+    changes = {true, {new_group, current_close_group_}};
+    current_close_group_ = new_group;
+  }
+  return changes;
+}
+
 
 }  // namespace routing
 
