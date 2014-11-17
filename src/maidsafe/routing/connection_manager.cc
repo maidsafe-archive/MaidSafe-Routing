@@ -29,29 +29,27 @@
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-
 namespace maidsafe {
 namespace routing {
 
-
-bool connection_manager::suggest_node(NodeId node_to_add) {
+bool connection_manager::suggest_node_to_add(NodeId node_to_add) {
   return routing_table_.check_node(node_to_add);
 }
 
 std::vector<node_info> connection_manager::get_target(NodeId target_node) {
-  auto targets(routing_table_.get_target_nodes(target_node));
+  auto targets(routing_table_.target_nodes(target_node));
   std::vector<endpoint> endpoints;
   if (targets.size() > 1) {
     // gather endpoints
     for (auto& target : targets) {
-      if (!target.their_endpoint.address.is_unspecified())
+      if (target.their_endpoint != endpoint())
         endpoints.push_back(target.their_endpoint);
     }
-    // set unconnected nodes with a random endpoint
+    // set unconnected nodes with a random endpoint that we are connected to.
     for (auto& target : targets) {
-      if (target.their_endpoint.address.is_unspecified()) {
-        std::random_shuffle(std::begin(endpoints, std::end(endpoints)));
-        target.their_endpoint = std::front(endpoints);
+      if (target.their_endpoint == endpoint()) {
+        std::random_shuffle(std::begin(endpoints), std::end(endpoints));
+        target.their_endpoint = endpoints.front();
       }
     }
   }
@@ -68,10 +66,11 @@ group_change connection_manager::drop_node(NodeId their_id) {
   return group_changed();
 }
 
-
 group_change connection_manager::add_node(node_info node_to_add, endpoint their_endpoint,
                                           rudp::NatType nat_type) {
   // do not try and add a non close node that is symmetric if we are also symmetric
+  // better if we try and connect to ++endpoint and --endpoint as many symmetric NAT
+  // devices acutally increment or decrement the port they last got. 
   if (!(routing_table_.size() > group_size && nat_type == rudp::NatType::kSymmetric &&
         our_nat_type_ == rudp::NatType::kSymmetric &&
         routing_table_.target_nodes(node_to_add.id).size() > 1)) {
@@ -83,6 +82,7 @@ group_change connection_manager::add_node(node_info node_to_add, endpoint their_
 
   return group_changed();
 }
+//################### private #############################
 
 group_change connection_manager::group_changed() {
   auto new_group(routing_table_.our_close_group());
@@ -96,7 +96,5 @@ group_change connection_manager::group_changed() {
   return changes;
 }
 
-
 }  // namespace routing
-
 }  // namespace maidsafe

@@ -17,7 +17,17 @@
     use of the MaidSafe
     Software.
  */
+/* 
+This class is the API for the messages and routing object. It creates a routing table
+and allows that to be managed by itself. This object will provide endpoints to connect
+to that will allow routing to send a message closer to a target. If a close node cannot
+be directly connected a random endpoint close is provided. This continues until the
+message can be delivered by some of the nodes. To ensure we keep the close nodes current
+all messages to close nodes will require acknowldgement. Failure to acknowledge a node
+will create a routing ping to the node considered dead. The result of this ping will
+maintain the conneciton or disconnect it.
 
+   */
 #ifndef MAIDSAFE_ROUTING_CONNECTION_MANAGER_
 #define MAIDSAFE_ROUTING_CONNECTION_MANAGER_
 
@@ -47,13 +57,11 @@ struct connection_manager {
   connection_manager& operator=(connection_manager const&) = delete;
   connection_manager& operator=(connection_manager&&) = delete;
 
-  bool suggest_node(NodeId node_to_add);
+  bool suggest_node_to_add(NodeId node_to_add);
   std::vector<node_info> get_target(NodeId target_node);
-  // always return close group even if no change to close nodes
   group_change lost_network_connection(endpoint their_endpoint);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   group_change drop_node(NodeId their_id);
-  // always return close group even if no change to close nodes
   group_change add_node(node_info node_to_add, endpoint their_endpoint, rudp::NatType nat_type);
   std::vector<node_info> our_close_group() { return routing_table_.our_close_group(); }
 
