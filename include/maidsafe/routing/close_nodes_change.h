@@ -56,6 +56,8 @@ class CloseNodesChange {
   CloseNodesChange(const CloseNodesChange& other);
   CloseNodesChange(CloseNodesChange&& other);
   CloseNodesChange& operator=(CloseNodesChange other);
+  CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
+                   const std::vector<NodeId>& new_close_nodes);
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   bool CheckIsHolder(const NodeId& target, const NodeId& node_id) const;
   NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
@@ -71,9 +73,6 @@ class CloseNodesChange {
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 
  private:
-  CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-               const std::vector<NodeId>& new_close_nodes);
-
   NodeId node_id_;
   std::vector<NodeId> old_close_nodes_, new_close_nodes_;
   NodeId lost_node_, new_node_;
