@@ -107,15 +107,6 @@ void routing_table::drop_node(const NodeId& node_to_drop) {
       std::end(nodes_));
  }
 
- void routing_table::drop_node(const endpoint& their_endpoint) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  nodes_.erase(
-      remove_if(std::begin(nodes_), std::end(nodes_), [&their_endpoint](const node_info& node) {
-        return node.their_endpoint == their_endpoint;
-      }),
-      std::end(nodes_));
-}
-
 std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const {
   NodeId test_node(our_id_);
   size_t count(0), index(0);

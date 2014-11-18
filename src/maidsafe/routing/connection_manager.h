@@ -17,23 +17,31 @@
     use of the MaidSafe
     Software.
  */
-/* 
+/*
 This class is the API for the messages and routing object. It creates a routing table
-and allows that to be managed by itself. This object will provide endpoints to connect
+and allows that to be managed by itself. This object will provide id's to connect
 to that will allow routing to send a message closer to a target. If a close node cannot
-be directly connected a random endpoint close is provided. This continues until the
-message can be delivered by some of the nodes. To ensure we keep the close nodes current
-all messages to close nodes will require acknowldgement. Failure to acknowledge a node
-will create a routing ping to the node considered dead. The result of this ping will
-maintain the conneciton or disconnect it.
+be directly connected it will be added, only if, it is within the close nodes range.
 
-   */
+This requires that the message_handler
+1: On reciept of a message id (source + message id + destination) will
+  a: send on to any id provided and firewall the message
+  b: If multiple destinations are provided then the same happens
+2: Prior to sending the node must check the message is not already firewalled
+(outgoing message check)
+
+To maintain close nodes effectivly the message_handler should request a close_group
+request to its group when it sees any close group request in it's group. This is
+obvious as the destination nodes for a messag ein your close group has multiple
+destiations. In that case request a close_group message for this node.
+*/
+
 #ifndef MAIDSAFE_ROUTING_CONNECTION_MANAGER_
 #define MAIDSAFE_ROUTING_CONNECTION_MANAGER_
 
 #include <vector>
 #include <mutex>
-#include <tuple>
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -42,37 +50,37 @@ maintain the conneciton or disconnect it.
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/nat_type.h"
 
 namespace maidsafe {
 namespace routing {
 
 struct connection_manager {
  public:
-  connection_manager(rudp::ManagedConnections& rudp, NodeId our_id, rudp::NatType our_nat_type)
-      : routing_table_(our_id), rudp_(rudp), our_nat_type_(our_nat_type), current_close_group_() {}
+  connection_manager(rudp::ManagedConnections& rudp, NodeId our_id, std::function<void(close_group_difference)> group_changed_functor)
+      : routing_table_(our_id), rudp_(rudp), our_nat_type_(our_nat_type), current_close_group_(), group_changed_functor_(group_changed_functor) {
+      assert(group_changed_functor_ && "functor required to be set");
+      }
   connection_manager(connection_manager const&) = delete;
   connection_manager(connection_manager&&) = delete;
   ~connection_manager() = default;
   connection_manager& operator=(connection_manager const&) = delete;
   connection_manager& operator=(connection_manager&&) = delete;
 
-  bool suggest_node_to_add(NodeId node_to_add);
-  std::vector<node_info> get_target(NodeId target_node);
-  group_change lost_network_connection(endpoint their_endpoint);
+  bool suggest_node_to_add(const NodeId& node_to_add);
+  std::vector<node_info> get_target(const NodeId& target_node);
+  void lost_network_connection(const NodeId& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  group_change drop_node(NodeId their_id);
-  group_change add_node(node_info node_to_add, endpoint their_endpoint, rudp::NatType nat_type);
+  void drop_node(const NodeId& their_id);
+  void add_node(node_info node_to_add, rudp::EndpointPair their_endpoint_pair);
   std::vector<node_info> our_close_group() { return routing_table_.our_close_group(); }
 
  private:
-  group_change group_changed();
-  // connections_[index].[0] == connection id
-  // if connectoins_[index].size() > 1 the remaining nodes share this connection_id
+  void group_changed();
+
   routing_table routing_table_;
   rudp::ManagedConnections& rudp_;
-  rudp::NatType our_nat_type_;
   std::vector<node_info> current_close_group_;
+  std::function<void(close_group_difference)> group_changed_functor_;
 };
 
 }  // namespace routing

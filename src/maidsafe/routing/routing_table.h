@@ -49,7 +49,6 @@ class routing_table {
   std::pair<bool, boost::optional<node_info>> add_node(node_info their_info);
   bool check_node(const NodeId& their_id) const;
   void drop_node(const NodeId& node_to_drop);
-  void drop_node(const endpoint& their_endpoint);
   // our close group or at least as much of it as we currently know
   std::vector<node_info> our_close_group() const;
   // If more than 1 node returned then we are in close group so send to all !!

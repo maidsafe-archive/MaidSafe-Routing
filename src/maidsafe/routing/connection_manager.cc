@@ -32,68 +32,59 @@
 namespace maidsafe {
 namespace routing {
 
-bool connection_manager::suggest_node_to_add(NodeId node_to_add) {
+bool connection_manager::suggest_node_to_add(const NodeId& node_to_add) {
   return routing_table_.check_node(node_to_add);
 }
 
-std::vector<node_info> connection_manager::get_target(NodeId target_node) {
+std::vector<node_info> connection_manager::get_target(const NodeId& target_node) {
   auto targets(routing_table_.target_nodes(target_node));
-  std::vector<endpoint> endpoints;
-  if (targets.size() > 1) {
-    // gather endpoints
-    for (auto& target : targets) {
-      if (target.their_endpoint != endpoint())
-        endpoints.push_back(target.their_endpoint);
-    }
-    // set unconnected nodes with a random endpoint that we are connected to.
-    for (auto& target : targets) {
-      if (target.their_endpoint == endpoint()) {
-        std::random_shuffle(std::begin(endpoints), std::end(endpoints));
-        target.their_endpoint = endpoints.front();
-      }
-    }
-  }
+  // remove any nodes we are not connected to
+  targets.erase(std::remove_if(std::begin(targets), std::end(targets),
+                               [](const node_info& node) { return !node.connected; }),
+                std::end(targets));
   return targets;
 }
 
-group_change connection_manager::lost_network_connection(endpoint their_endpoint) {
-  routing_table_.drop_node(their_endpoint);
-  return group_changed();
+void connection_manager::lost_network_connection(const NodeId& node) {
+  routing_table_.drop_node(node);
+  group_changed();
 }
 
-group_change connection_manager::drop_node(NodeId their_id) {
+void connection_manager::drop_node(const NodeId& their_id) {
   routing_table_.drop_node(their_id);
-  return group_changed();
+  group_changed();
 }
 
-group_change connection_manager::add_node(node_info node_to_add, endpoint their_endpoint,
-                                          rudp::NatType nat_type) {
-  // do not try and add a non close node that is symmetric if we are also symmetric
-  // better if we try and connect to ++endpoint and --endpoint as many symmetric NAT
-  // devices acutally increment or decrement the port they last got. 
-  if (!(routing_table_.size() > group_size && nat_type == rudp::NatType::kSymmetric &&
-        our_nat_type_ == rudp::NatType::kSymmetric &&
-        routing_table_.target_nodes(node_to_add.id).size() > 1)) {
-    // get an rudp connection if possible
-    // FIXME - stub implementation
-    node_to_add.their_endpoint = their_endpoint;
-    routing_table_.add_node(node_to_add);
-  }
+void connection_manager::add_node(node_info node_to_add,
+                                          rudp::EndpointPair their_endpoint_pair) {
+  rudp::Contact contact;
+  contact.node_id = node_to_add.id;
+  contact.endpoint_pair = endpoint_pair;
+  contact.public_key = node_to_add.public_key;
 
-  return group_changed();
+
+  rudp_.Add(std::move(contact), [node_to_add, this](const NodeId& node, int result) {
+    if (result == rudp::kSucess)
+      bool added = routing_table_.add_node(node_to_add);
+    if (!added.first) {
+      rudp::drop_connection(node);
+    } else if (added.second) {
+      rudp.drop_connection(added->second.id);
+    }
+   group_changed();
+  });
 }
 //################### private #############################
 
-group_change connection_manager::group_changed() {
+void connection_manager::group_changed() {
   auto new_group(routing_table_.our_close_group());
+  std::vector<NodeId> empty_group;
   group_change changes;
-  if (new_group == current_close_group_) {
-    changes = {false, {new_group, current_close_group_}};
-  } else {
-    changes = {true, {new_group, current_close_group_}};
+  std::lock_guard<sd::mutex> lock(mutex_);
+  if (new_group != current_close_group_) {
+    group_changed_functor_(std::make_pair(new_group, current_close_group_));
     current_close_group_ = new_group;
   }
-  return changes;
 }
 
 }  // namespace routing
