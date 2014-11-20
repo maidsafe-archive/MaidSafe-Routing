@@ -35,13 +35,12 @@ using boost::asio::ip::address;
 
 BootstrapContacts GetHardCodedBootstrapContacts() {
   BootstrapContacts hard_coded_bootstrap_contacts{
-      udp::endpoint{ address::from_string("213.104.185.97"), kLivePort },
-      udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
-      udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
-      udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
-      udp::endpoint{ address::from_string("178.79.156.73"), kLivePort },
-      udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
-      udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
+     udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
+     udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
+     udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
+     udp::endpoint{ address::from_string("178.79.156.73"), kLivePort },
+     udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
+     udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
   };
   std::mt19937 rng(RandomUint32());
   std::shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end(), rng);

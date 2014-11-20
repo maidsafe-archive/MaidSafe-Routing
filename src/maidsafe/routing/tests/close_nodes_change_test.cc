@@ -48,13 +48,13 @@ std::pair<NodeId, NodeId> ParseString(std::string input) {
     cereal::JSONInputArchive archive{istringstream};
     std::string node_str;
     try {
-      archive(cereal::make_nvp("oldId", node_str));
+      archive(cereal::make_nvp("vaultRemoved", node_str));
       old_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
       LOG(kVerbose) << e.what();
     }
     try {
-      archive(cereal::make_nvp("newId", node_str));
+      archive(cereal::make_nvp("vaultRemoved", node_str));
       new_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
       LOG(kVerbose) << e.what();
