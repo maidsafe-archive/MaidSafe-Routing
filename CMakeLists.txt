@@ -68,8 +68,13 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
-target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
+target_include_directories(maidsafe_routing
+  PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/GeneratedProtoFiles
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer protobuf_lite)
 
 if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
