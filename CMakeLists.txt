@@ -67,7 +67,7 @@ ms_add_static_library(maidsafe_routing  ${RoutingLibSources})
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_common)
 
-if(INCLUDE_TESTS)
+if(${INCLUDE_TESTS})
   ms_add_static_library(maidsafe_test_routing
         ${RoutingSourcesDir}/tests/main/test_main.cc
         ${RoutingSourcesDir}/tests/main/test_utils.h
@@ -106,7 +106,7 @@ include(standard_flags)
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(INCLUDE_TESTS)
+if(${INCLUDE_TESTS})
   ms_add_default_tests()
   foreach(RoutingTest ${RoutingTests})
     ms_add_gtests(${RoutingTest})

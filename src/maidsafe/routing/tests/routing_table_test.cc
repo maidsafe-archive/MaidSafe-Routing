@@ -37,7 +37,7 @@ namespace test {
 TEST(routing_table_test, BEH_add_close_nodes) {
   NodeId node_id(RandomString(NodeId::kSize));
   const auto keys = asymm::GenerateKeyPair();
-  routing_table routing_table(node_id, keys);
+  routing_table routing_table(node_id);
   node_info node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < group_size; ++i) {

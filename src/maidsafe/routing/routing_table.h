@@ -41,6 +41,7 @@ class routing_table {
  public:
   static const size_t bucket_size;
   static const size_t parallelism;
+  static const size_t routing_table_size;
   routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
@@ -59,7 +60,7 @@ class routing_table {
 
  private:
   int32_t bucket_index(const NodeId& node_id) const;
-
+  void sort();
   std::vector<node_info>::const_iterator find_candidate_for_removal() const;
 
   unsigned int network_status(size_t size) const;

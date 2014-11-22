@@ -32,6 +32,7 @@ namespace maidsafe {
 namespace routing {
 
 
+const size_t routing_table::routing_table_size = 64;
 const size_t routing_table::parallelism = 4;
 const size_t routing_table::bucket_size = 1;
 
@@ -50,36 +51,44 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
       })) {
     return {false, boost::optional<node_info>()};
   }
+  // routing table small, just grab this node
+  if (nodes_.size() < routing_table_size) {
+    nodes_.push_back(their_info);
+    sort();
+    return {true, boost::optional<node_info>()};
+  }
+
+  // new close group member
+  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
+    // first push the new node in (its close) and then get antoher sacrificial node if we can
+    // this will make RT grow but only after several tens of millions of nodes
+    nodes_.push_back(their_info);
+    std::cout << "close group replacement \n";
+    auto remove_candidate(find_candidate_for_removal());
+    auto sacrificial_candidate(remove_candidate != std::end(nodes_));
+    if (sacrificial_candidate) {
+      nodes_.erase(remove_candidate);
+      std::cout << "found candidate for removal \n";
+      return {true, boost::optional<node_info>(*remove_candidate)};
+    }
+    sort();
+    return {true, boost::optional<node_info>()};
+  }
+
   // is there a node we can remove
   auto remove_node(find_candidate_for_removal());
   auto sacrificial_node(remove_node != std::end(nodes_));
   node_info remove_id;
+
   if (sacrificial_node)
     remove_id = *remove_node;
-
-  if (nodes_.size() < default_routing_table_size) {
-    nodes_.push_back(their_info);
-  } else if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
-    // try to push another node out here as new node is also a close node
-    // rather than removing the old close node we keep it if possible and
-    // sacrifice a less important node
-    if (sacrificial_node)
-      nodes_.erase(remove_node);
-    nodes_.push_back(their_info);
-  } else if (sacrificial_node && bucket_index(their_info.id) > bucket_index(remove_node->id)) {
+  if (sacrificial_node && bucket_index(their_info.id) > bucket_index(remove_node->id)) {
     nodes_.erase(remove_node);
     nodes_.push_back(their_info);
-  } else {
-    return {false, boost::optional<node_info>()};
+    sort();
+    std::cout << "improved far side routing table\n";
   }
-  std::sort(nodes_.begin(), nodes_.end(), [&](const node_info& lhs, const node_info& rhs) {
-    return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
-  });
-
-  if (sacrificial_node)
-    return {true, boost::optional<node_info>(remove_id)};
-  else
-    return {true, boost::optional<node_info>()};
+  return {false, boost::optional<node_info>()};
 }
 
 bool routing_table::check_node(const NodeId& their_id) const {
@@ -87,7 +96,7 @@ bool routing_table::check_node(const NodeId& their_id) const {
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < default_routing_table_size)
+  if (nodes_.size() < routing_table_size)
     return true;
   // check for duplicates
   if (std::any_of(nodes_.begin(), nodes_.end(),
@@ -162,28 +171,38 @@ int32_t routing_table::bucket_index(const NodeId& node_id) const {
   return our_id_.CommonLeadingBits(node_id);
 }
 
-std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
-  size_t bucket_count(0);
-  int bucket(0);
-  if (nodes_.size() < default_routing_table_size)
-    return std::end(nodes_);
-  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,
-                            [&bucket_count, &bucket, this](const node_info& node) {
-    auto node_bucket(bucket_index(node.id));
-    if (node_bucket != bucket) {
-      bucket = node_bucket;
-      bucket_count = 0;
-    }
-    return (++bucket_count > bucket_size);
+void routing_table::sort() {
+  std::sort(nodes_.begin(), nodes_.end(), [&](const node_info& lhs, const node_info& rhs) {
+    return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
-  if (std::next(found.base()) > std::begin(nodes_))
+}
+
+std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
+  // this is only ever called on full routing table
+  size_t number_in_bucket(0);
+  int bucket(NodeId::kSize);
+  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,
+                            [&number_in_bucket, &bucket, this](const node_info& node) {
+    if (bucket_index(node.id) != bucket) {
+      bucket = bucket_index(node.id);
+      number_in_bucket = 0;
+    }
+    return (++number_in_bucket > bucket_size);
+  });
+  if (bucket > 0)
+    std::cout << "bucket " << bucket << "\n";
+
+  if (std::next(found.base()) > std::begin(nodes_)) {
+    // std::cout << "got sacrificial node \n";
     return std::next(found.base());
-  else
+  } else {
+    // std::cout << "no sacrificial node \n";
     return std::end(nodes_);
+  }
 }
 
 unsigned int routing_table::network_status(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / default_routing_table_size);
+  return static_cast<unsigned int>(size * 100 / routing_table_size);
 }
 
 }  // namespace routing

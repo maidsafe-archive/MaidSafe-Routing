@@ -36,7 +36,7 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
-  auto routing_tables(routing_table_network(1000));
+  auto routing_tables(routing_table_network(500));
   asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
@@ -47,7 +47,7 @@ TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
       if (node->check_node(nodeinfo_to_add.id)) {
         auto removed_node = node->add_node(nodeinfo_to_add);
         EXPECT_TRUE(removed_node.first);
-        if (removed_node.second) {
+        if (removed_node.second && node->size() > group_size) {
           EXPECT_TRUE(
               NodeId::CloserToTarget(nodeinfo_to_add.id, removed_node.second->id, node->our_id()));
           EXPECT_TRUE(node->our_id().CommonLeadingBits(removed_node.second->id) <
