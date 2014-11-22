@@ -22,8 +22,10 @@
 #include <vector>
 
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/common/asio_service.h"
 
 #include "maidsafe/routing/header.h"
+#include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 
@@ -33,23 +35,30 @@ namespace routing {
 
 class message_handler {
  public:
-  message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections);
+  message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections, connection_manager& connection_mgr);
   message_handler() = delete;
+  ~message_handler() = default;
   message_handler(const message_handler&) = delete;
   message_handler(const message_handler&&) = delete;
-  message_handler& operator=(const message_handler&) = delete;
+  message_handler& operator=(const message_handler&) = delete;;
   message_handler& operator=(message_handler&&) = delete;
 
-  void OnMessageReceived(const serialised_message& serialised_message);
+  void OnMessageReceived(const std::vector<byte>& serialised_message);
 
  private:
-  template <typename T>
-  void HandleMessage(const serialised_message& serialised_payload) {
-
-  }
+  void HandleMessage(const ping& ping_msg);
+  void HandleMessage(const ping_response& ping_response_msg);
+  void HandleMessage(const connect& connect_msg);
+  void HandleMessage(const forward_connect& forward_connect_msg);
+  void HandleMessage(const find_group& find_group_msg);
+  void HandleMessage(const find_group_response& find_group_reponse_msg);
+  void HandleMessage(const vault_message& vault_msg);
+  void HandleMessage(const cacheable_get& cacheable_get_msg);
+  void HandleMessage(const cacheable_get_response& cacheable_get_response_msg);
 
   AsioService& asio_service_;
   rudp::ManagedConnections& managed_connections_;
+  connection_manager& connection_mgr_;
 };
 
 }  // namespace routing

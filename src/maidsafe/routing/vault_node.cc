@@ -16,13 +16,21 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/node.h"
+#include "maidsafe/routing/vault_node.h"
+
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/asio_service.h"
+#include "maidsafe/passport/types.h"
+#include "maidsafe/rudp/managed_connections.h"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-node::node(const passport::Pmid& pmid)
+vault_node::vault_node(AsioService& io_service, rudp::ManagedConnections rudp,
+                       const passport::Pmid& pmid)
     : asio_service_(2),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {

@@ -34,14 +34,14 @@ endif()
 project(routing)
 
 include(../../cmake_modules/standard_setup.cmake)
-
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/vault_node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
     )
@@ -55,19 +55,19 @@ set(RoutingLibHeaders
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
-    ${RoutingSourcesDir}/connection_manager.cc
+    # ${RoutingSourcesDir}/connection_manager.cc
     # ${RoutingSourcesDir}/message_handler.cc
     # ${RoutingSourcesDir}/node.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
-ms_add_static_library(maidsafe_routing  ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
+ms_add_static_library(maidsafe_routing  ${RoutingLibSources})
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
+target_link_libraries(maidsafe_routing maidsafe_common)
 
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_test_routing
         ${RoutingSourcesDir}/tests/main/test_main.cc
         ${RoutingSourcesDir}/tests/main/test_utils.h
@@ -106,7 +106,7 @@ include(standard_flags)
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_default_tests()
   foreach(RoutingTest ${RoutingTests})
     ms_add_gtests(${RoutingTest})

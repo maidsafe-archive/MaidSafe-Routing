@@ -79,8 +79,7 @@ void connection_manager::add_node(node_info node_to_add,
 void connection_manager::group_changed() {
   auto new_group(routing_table_.our_close_group());
   std::vector<NodeId> empty_group;
-  group_change changes;
-  std::lock_guard<sd::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
     group_changed_functor_(std::make_pair(new_group, current_close_group_));
     current_close_group_ = new_group;

@@ -39,7 +39,8 @@ struct node_info;
 
 class routing_table {
  public:
-  static const size_t kBucketSize_ = 1;
+  static const size_t bucket_size;
+  static const size_t parallelism;
   routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
