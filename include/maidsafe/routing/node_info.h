@@ -35,13 +35,13 @@ struct node_info {
   node_info(node_info&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                    public_key(std::move(other.public_key)),
                                                    rank(std::move(other.rank)),
-                                                   connected(other.connected) {}
+                                                   connected(std::move(other.connected)) {}
   node_info& operator=(node_info const&) = default;
   node_info& operator=(node_info&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     public_key = std::move(other.public_key);
     rank = std::move(other.rank);
-    connected = other.connected;
+    connected = std::move(other.connected);
     return *this;
   }
 
@@ -57,7 +57,7 @@ struct node_info {
   NodeId id;
   asymm::PublicKey public_key;
   int32_t rank;
-  bool connected;
+  bool connected{false};
 };
 
 }  // namespace routing

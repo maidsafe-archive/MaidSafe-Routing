@@ -63,13 +63,12 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     // first push the new node in (its close) and then get antoher sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     nodes_.push_back(their_info);
-    std::cout << "close group replacement \n";
     auto remove_candidate(find_candidate_for_removal());
     auto sacrificial_candidate(remove_candidate != std::end(nodes_));
     if (sacrificial_candidate) {
       nodes_.erase(remove_candidate);
-      std::cout << "found candidate for removal \n";
       return {true, boost::optional<node_info>(*remove_candidate)};
+    } else {
     }
     sort();
     return {true, boost::optional<node_info>()};
@@ -86,7 +85,6 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     nodes_.erase(remove_node);
     nodes_.push_back(their_info);
     sort();
-    std::cout << "improved far side routing table\n";
   }
   return {false, boost::optional<node_info>()};
 }
@@ -187,18 +185,14 @@ std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal
       bucket = bucket_index(node.id);
       number_in_bucket = 0;
     }
-    return (++number_in_bucket > bucket_size);
+    ++number_in_bucket;
+    return (number_in_bucket > bucket_size);
   });
-  if (bucket > 0)
-    std::cout << "bucket " << bucket << "\n";
 
   if (std::next(found.base()) > std::begin(nodes_)) {
-    // std::cout << "got sacrificial node \n";
     return std::next(found.base());
-  } else {
-    // std::cout << "no sacrificial node \n";
-    return std::end(nodes_);
   }
+  return std::end(nodes_);
 }
 
 unsigned int routing_table::network_status(size_t size) const {
