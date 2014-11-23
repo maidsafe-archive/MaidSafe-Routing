@@ -62,7 +62,7 @@ class CloseNodesChange {
   NodeId lost_node() const { return lost_node_; }
   NodeId new_node() const { return new_node_; }
   std::vector<NodeId> new_close_nodes() const { return new_close_nodes_; }
-  void Print() const;
+  std::string Print() const;
   std::string ReportConnection() const;
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;

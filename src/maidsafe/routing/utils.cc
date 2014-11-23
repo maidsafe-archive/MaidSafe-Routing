@@ -49,17 +49,13 @@ namespace routing {
 int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
               const NodeId& peer_id, const NodeId& peer_connection_id,
               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
-  LOG(kVerbose) << "AddToRudp. peer_id: " << peer_id << " ,connection id: " << peer_connection_id;
   protobuf::Message connect_success(
       rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
   int result =
       network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString());
   if (result == rudp::kConnectionAlreadyExists) {
     network.SendToDirect(connect_success, peer_id, peer_connection_id);
-  } else if (result == kSuccess) {
-    LOG(kVerbose) << "rudp.Add succeeded for peer node [" << peer_id
-                  << "]. Connection id : " << peer_connection_id;
-  } else {
+  } else if (result != kSuccess) {
     LOG(kError) << "rudp add failed for peer node [" << peer_id << "]. Connection id : "
                 << peer_connection_id << ". result : " << result;
   }
@@ -95,16 +91,8 @@ bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
   }
 
   if (routing_accepted_node) {
-    LOG(kVerbose) << "[" << routing_table.kNodeId() << "] "
-                  << "added " << (client ? "client-" : "") << "node to " << (client ? "non-" : "")
-                  << "routing table.  Node ID: " << HexSubstr(peer_id.string());
     return true;
   }
-
-  LOG(kInfo) << "[" << routing_table.kNodeId() << "] "
-             << "failed to add " << (client ? "client-" : "") << "node to "
-             << (client ? "non-" : "") << "routing table.  Node ID: " << HexSubstr(peer_id.string())
-             << ". Added rudp connection will be removed.";
   network.Remove(connection_id);
   return false;
 }
