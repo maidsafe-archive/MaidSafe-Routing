@@ -19,22 +19,18 @@
 #include "maidsafe/routing/routing_table.h"
 
 #include <algorithm>
-#include <memory>
-#include <vector>
 
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-
-const size_t routing_table::routing_table_size = 64;
-const size_t routing_table::parallelism = 4;
 const size_t routing_table::bucket_size = 1;
+const size_t routing_table::parallelism = 4;
+const size_t routing_table::routing_table_size = 64;
 
 routing_table::routing_table(NodeId our_id) : our_id_(std::move(our_id)), mutex_(), nodes_() {}
 
@@ -53,7 +49,7 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
   }
   // routing table small, just grab this node
   if (nodes_.size() < routing_table_size) {
-    nodes_.push_back(their_info);
+    nodes_.push_back(std::move(their_info));
     sort();
     return {true, boost::optional<node_info>()};
   }
@@ -62,14 +58,13 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
   if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
     // first push the new node in (its close) and then get antoher sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
-    nodes_.push_back(their_info);
+    nodes_.push_back(std::move(their_info));
     sort();
     auto remove_candidate(find_candidate_for_removal());
     auto sacrificial_candidate(remove_candidate != std::end(nodes_));
     if (sacrificial_candidate) {
       nodes_.erase(remove_candidate);
       return {true, boost::optional<node_info>(*remove_candidate)};
-    } else {
     }
     return {true, boost::optional<node_info>()};
   }
@@ -83,7 +78,7 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     remove_id = *remove_node;
   if (sacrificial_node && bucket_index(their_info.id) > bucket_index(remove_node->id)) {
     nodes_.erase(remove_node);
-    nodes_.push_back(their_info);
+    nodes_.push_back(std::move(their_info));
     sort();
   }
   return {false, boost::optional<node_info>()};
@@ -142,7 +137,7 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
   closer_to_target.erase(std::begin(closer_to_target) +
-                             std::min(parallelism, static_cast<size_t>(closer_to_target.size())),
+                             std::min(parallelism, closer_to_target.size()),
                          std::end(closer_to_target));
   return closer_to_target;
 }
@@ -152,7 +147,7 @@ std::vector<node_info> routing_table::our_close_group() const {
   result.reserve(group_size);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto size = std::min(group_size, static_cast<size_t>(nodes_.size()));
+    auto size = std::min(group_size, nodes_.size());
     std::copy(std::begin(nodes_), std::begin(nodes_) + size, std::back_inserter(result));
   }
   return result;

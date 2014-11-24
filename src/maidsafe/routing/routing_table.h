@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 #include "boost/optional.hpp"
@@ -29,7 +30,6 @@
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
@@ -42,7 +42,7 @@ class routing_table {
   static const size_t bucket_size;
   static const size_t parallelism;
   static const size_t routing_table_size;
-  routing_table(NodeId our_id);
+  explicit routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
   routing_table& operator=(const routing_table&) = delete;
