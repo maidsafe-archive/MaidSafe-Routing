@@ -22,7 +22,6 @@
 #include <array>
 #include <cstdint>
 #include <vector>
-
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/node_id.h"
@@ -42,12 +41,12 @@ using single_source_id = TaggedValue<NodeId, struct SingleSourceTag>;
 using group_source_id = TaggedValue<NodeId, struct GroupSourceTag>;
 using message_id = TaggedValue<uint32_t, struct MessageIdTag>;
 using endpoint = boost::asio::ip::udp::endpoint;
-//using our_endpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
-//using their_endpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
+using connection = boost::asio::ip::udp::endpoint;
 using byte = unsigned char;
 using murmur_hash = uint32_t;
 using checksums = std::array<murmur_hash, group_size - 1>;
 using serialised_message = std::vector<unsigned char>;
+using close_group_difference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
 
 }  // namespace routing
 

@@ -29,7 +29,6 @@
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/routing/tests/main/test_utils.h"
 
 namespace maidsafe {
@@ -43,13 +42,14 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
   auto routing_tables(routing_table_network(network_size));
   std::vector<NodeId> node_ids;
   node_ids.reserve(network_size);
+  asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
+      nodeinfo_to_add.public_key = key.public_key;
       node->add_node(nodeinfo_to_add);
     }
   }

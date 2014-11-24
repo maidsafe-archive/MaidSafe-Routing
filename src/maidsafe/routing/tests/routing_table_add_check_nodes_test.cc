@@ -16,8 +16,6 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <bitset>
-#include <memory>
 #include <vector>
 
 #include "maidsafe/common/node_id.h"
@@ -36,21 +34,21 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
-  auto routing_tables(routing_table_network(1000));
+  const auto size(50);
+  auto routing_tables(routing_table_network(size));
+  asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
-      if (node->check_node(nodeinfo_to_add)) {
-        EXPECT_TRUE(node->add_node(nodeinfo_to_add));
+      nodeinfo_to_add.public_key = key.public_key;
+      if (node->check_node(nodeinfo_to_add.id)) {
+        auto removed_node = node->add_node(nodeinfo_to_add);
+        EXPECT_TRUE(removed_node.first);
       }
     }
   }
-  // confirm all routing tables fully populated
-  for (const auto& node : routing_tables)
-    EXPECT_EQ(node->size(), default_routing_table_size);
 }
 
 }  // namespace test

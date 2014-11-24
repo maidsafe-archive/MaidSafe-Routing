@@ -41,7 +41,7 @@ include(../../cmake_modules/standard_setup.cmake)
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/vault_node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
     )
@@ -55,13 +55,14 @@ set(RoutingLibHeaders
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
-    ${RoutingSourcesDir}/message_handler.cc
-    ${RoutingSourcesDir}/node.cc
+    # ${RoutingSourcesDir}/connection_manager.cc
+    # ${RoutingSourcesDir}/message_handler.cc
+    # ${RoutingSourcesDir}/node.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
-ms_add_static_library(maidsafe_routing  ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
+ms_add_static_library(maidsafe_routing ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
