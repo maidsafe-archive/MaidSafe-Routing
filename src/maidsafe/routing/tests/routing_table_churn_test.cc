@@ -46,6 +46,9 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     node_ids.push_back(node->our_id());
+    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + size + 1, std::end(node_ids),
+                      [id](const NodeId& lhs,
+                           const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
@@ -76,7 +79,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
                            const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
     auto groups = node->our_close_group();
     EXPECT_EQ(groups.size(), size);
-    // currenlty disabled as nodes are not doing a get_close_group to begin and this
+    // currently disabled as nodes are not doing a get_close_group to begin and this
     // causes issues with tracking routing tables as the close group attraction for
     // routing tables means this test network is not currently as th enetwork shoudl be
     // FIXME(dirvine) Create a closer to reality netwokr join  :23/11/2014

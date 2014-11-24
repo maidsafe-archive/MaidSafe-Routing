@@ -34,7 +34,7 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
-  const auto size(5000);
+  const auto size(50);
   auto routing_tables(routing_table_network(size));
   asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node

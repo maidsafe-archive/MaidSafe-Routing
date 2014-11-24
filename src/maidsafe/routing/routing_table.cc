@@ -63,6 +63,7 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     // first push the new node in (its close) and then get antoher sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     nodes_.push_back(their_info);
+    sort();
     auto remove_candidate(find_candidate_for_removal());
     auto sacrificial_candidate(remove_candidate != std::end(nodes_));
     if (sacrificial_candidate) {
@@ -70,7 +71,6 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
       return {true, boost::optional<node_info>(*remove_candidate)};
     } else {
     }
-    sort();
     return {true, boost::optional<node_info>()};
   }
 
@@ -189,7 +189,7 @@ std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal
     return (number_in_bucket > bucket_size);
   });
 
-  if (std::next(found.base()) > std::begin(nodes_)) {
+  if (found != nodes_.rbegin() + group_size) {
     return std::next(found.base());
   }
   return std::end(nodes_);
