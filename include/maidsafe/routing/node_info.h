@@ -54,9 +54,9 @@ struct node_info {
 
   NonEmptyString serialise() const;
 
-  NodeId id;
-  asymm::PublicKey public_key;
-  int32_t rank;
+  NodeId id{};
+  asymm::PublicKey public_key{};
+  int32_t rank{0};
   bool connected{false};
 };
 

@@ -110,10 +110,7 @@ struct connect {
         their_id(std::move(their_id_in)),
         header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
                murmur_hash2(std::vector<byte>{})) {}
-  explicit connect(header header_in)
-      : header(std::move(header_in)),
-        our_endpoint(),
-        their_id() {}
+  explicit connect(header header_in) : header(std::move(header_in)), our_endpoint(), their_id() {}
   ~connect() = default;
   connect& operator=(const connect&) = delete;
   connect& operator=(connect&& other) MAIDSAFE_NOEXCEPT {
@@ -175,17 +172,38 @@ struct forward_connect {
   asymm::PublicKey requesters_public_key;
   header header;
 };
-
-struct find_group {
-  static const message_type_tag message_type = message_type_tag::find_group;
-};
-
-struct find_group_response {
-  static const message_type_tag message_type = message_type_tag::find_group_response;
-};
-
+// messages from a client are forwarded as is as well as being passed up. Upper layers
+// can act on this part as a whole chunk/message by multiplying size by group_size. If message from
+// a group (vault) then they are
+// synchronised (accumulated / re-constituted) and passed up.
 struct vault_message {
-  static const message_type_tag message_type = message_type_tag::vault_message;
+  vault_message() = default;
+  vault_message(vault_message const&) = default;
+  vault_message(vault_message&&) = default MAIDSAFE_NOEXCEPT : header(std::move(rhs.header)),
+  checksums(std::move(rhs.checksums)), close_group(std::move(rhs.close_group)) {}
+  ~vault_message() = default;
+  vault_message& operator=(vault_message const&) = default;
+  vault_message& operator=(vault_message&& rhs) MAIDSAFE_NOEXCEPT {
+    header = std::move(rhs.header), checksums = std::move(rhs.checksums),
+    close_group = std::move(rhs.close_group)
+  }
+
+  bool operator==(const vault_message& other) const {
+    return std::tie(header, checksums, close_group) ==
+           std::tie(other.header, other.checksums, other.close_group);
+  }
+  bool operator!=(const vault_message& other) const { return !operator==(*this, other); }
+  bool operator<(const vault_message& other) const {
+    return std::tie(header, checksums, close_group) <
+           std::tie(other.header, other.checksums, other.close_group);
+  }
+  bool operator>(const vault_message& other) { return operator<(other, *this); }
+  bool operator<=(const vault_message& other) { return !operator>(*this, other); }
+  bool operator>=(const vault_message& other) { return !operator<(*this, other); }
+
+  header header{};
+  std::vector<checksum> checksums{};
+  std::vector<node_info> close_group{};
 };
 
 struct cacheable_get {

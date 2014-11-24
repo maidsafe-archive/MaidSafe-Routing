@@ -81,6 +81,7 @@ void message_handler::HandleMessage(const connect& connect_msg) {
 }
 
 
+
 }  // namespace routing
 
 }  // namespace maidsafe
