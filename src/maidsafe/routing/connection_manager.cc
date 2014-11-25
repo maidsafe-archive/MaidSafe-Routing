@@ -14,8 +14,7 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe
-    Software.                                                                 */
+    use of the MaidSafe Software.                                                                 */
 
 #include "maidsafe/routing/connection_manager.h"
 
