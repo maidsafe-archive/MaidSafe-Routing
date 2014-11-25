@@ -88,10 +88,10 @@ void connection_manager::group_changed() {
   if (new_group != current_close_group_) {
     group_changed_functor_([new_group, this]() -> close_group_difference {
       return std::make_pair(new_group, current_close_group_);
-      )());
-      current_close_group_ = new_group;
+    }());
+    current_close_group_ = new_group;
   }
-  }
+}
 
 }  // namespace routing
 }  // namespace maidsafe
