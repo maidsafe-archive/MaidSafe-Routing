@@ -68,10 +68,15 @@ list(REMOVE_ITEM RoutingTestsAllFiles ${RoutingTestsHelperFiles}
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(maidsafe_routing ${RoutingAllFiles})
-target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer)
+target_include_directories(maidsafe_routing
+  PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/GeneratedProtoFiles
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport maidsafe_network_viewer protobuf_lite)
 
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_routing_test_helper ${RoutingTestsHelperFiles})
   target_link_libraries(maidsafe_routing_test_helper maidsafe_routing maidsafe_test)
   target_link_libraries(maidsafe_routing maidsafe_network_viewer)
@@ -126,7 +131,7 @@ target_compile_definitions(maidsafe_routing PRIVATE $<$<BOOL:${QA_BUILD}>:QA_BUI
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_default_tests()
   add_test(NAME Multiple_Functional_Tests COMMAND test_routing_func)
   set_property(TEST Multiple_Functional_Tests PROPERTY LABELS Routing Functional ${TASK_LABEL})
@@ -167,7 +172,7 @@ endif()
 install(TARGETS maidsafe_routing COMPONENT Development CONFIGURATIONS Debug Release ARCHIVE DESTINATION lib)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATION include)
 
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   install(TARGETS maidsafe_routing_test_helper test_routing test_routing_api test_routing_func
                   weekly_test_routing create_client_bootstrap routing_key_helper routing_node
                   COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug ARCHIVE DESTINATION lib)

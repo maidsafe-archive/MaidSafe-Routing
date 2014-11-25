@@ -43,7 +43,7 @@ include(../../../../../../../cmake_modules/maidsafe_find_qt5.cmake)
 if(NOT AllQt5_FOUND)
   message(STATUS "Didn't find all required modules of Qt5. Not building Network Viewer tool.")
   return()
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   message(STATUS "Will not build Network Viewer tool with Clang for now.")
   return()
 endif()
@@ -166,7 +166,7 @@ endif()
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_style_test()
 endif()
 
