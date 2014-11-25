@@ -56,10 +56,14 @@ namespace routing {
 
 struct connection_manager {
  public:
-  connection_manager(rudp::ManagedConnections& rudp, NodeId our_id, std::function<void(close_group_difference)> group_changed_functor)
-      : routing_table_(our_id), rudp_(rudp), our_nat_type_(our_nat_type), current_close_group_(), group_changed_functor_(group_changed_functor) {
-      assert(group_changed_functor_ && "functor required to be set");
-      }
+  connection_manager(rudp::managed_connections& rudp, NodeId our_id,
+                     std::function<void(close_group_difference)> group_changed_functor)
+      : routing_table_(our_id),
+        rudp_(rudp),
+        current_close_group_(),
+        group_changed_functor_(group_changed_functor) {
+    assert(group_changed_functor_ && "functor required to be set");
+  }
   connection_manager(connection_manager const&) = delete;
   connection_manager(connection_manager&&) = delete;
   ~connection_manager() = default;
@@ -71,15 +75,15 @@ struct connection_manager {
   void lost_network_connection(const NodeId& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   void drop_node(const NodeId& their_id);
-  void add_node(node_info node_to_add, rudp::EndpointPair their_endpoint_pair);
+  void add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair);
   std::vector<node_info> our_close_group() { return routing_table_.our_close_group(); }
 
  private:
   void group_changed();
-
+  std::mutex mutex_;
   routing_table routing_table_;
-  rudp::ManagedConnections& rudp_;
-  std::vector<node_info> current_close_group_;
+  rudp::managed_connections& rudp_;
+  std::vector<NodeId> current_close_group_;
   std::function<void(close_group_difference)> group_changed_functor_;
 };
 

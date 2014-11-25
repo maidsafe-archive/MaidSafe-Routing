@@ -28,6 +28,7 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/contact.h"
 
 namespace maidsafe {
 namespace routing {
@@ -55,36 +56,42 @@ void connection_manager::drop_node(const NodeId& their_id) {
   group_changed();
 }
 
-void connection_manager::add_node(node_info node_to_add,
-                                          rudp::EndpointPair their_endpoint_pair) {
-  rudp::Contact contact;
-  contact.node_id = node_to_add.id;
-  contact.endpoint_pair = endpoint_pair;
-  contact.public_key = node_to_add.public_key;
+void connection_manager::add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair) {
+  rudp::contact rudp_contact;
+  rudp_contact.id = rudp::node_id(node_to_add.id);
+  rudp_contact.endpoints = their_endpoint_pair;
+  rudp_contact.public_key = node_to_add.public_key;
 
 
-  rudp_.Add(std::move(contact), [node_to_add, this](const NodeId& node, int result) {
-    if (result == rudp::kSucess)
-      bool added = routing_table_.add_node(node_to_add);
-    if (!added.first) {
-      rudp::drop_connection(node);
-    } else if (added.second) {
-      rudp.drop_connection(added->second.id);
+  rudp_.add(std::move(rudp_contact), [node_to_add, this](maidsafe_error error) {
+    if (error.code() == make_error_code(CommonErrors::success)) {
+      auto added = routing_table_.add_node(node_to_add);
+      if (!added.first) {
+        rudp_.remove(rudp::node_id(node_to_add.id), nullptr);  // become invalid for us
+        group_changed();
+      } else if (added.second) {
+        rudp_.remove(rudp::node_id(added.second->id), nullptr);  // a sacrificlal node was found
+        group_changed();
+      }
     }
-   group_changed();
   });
 }
 //################### private #############################
 
 void connection_manager::group_changed() {
-  auto new_group(routing_table_.our_close_group());
-  std::vector<NodeId> empty_group;
+  auto new_nodeinfo_group(routing_table_.our_close_group());
+  std::vector<NodeId> new_group;
+  for (auto const& nodes : new_nodeinfo_group)
+    new_group.push_back(nodes.id);
+
   std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
-    group_changed_functor_(std::make_pair(new_group, current_close_group_));
-    current_close_group_ = new_group;
+    group_changed_functor_([new_group, this]() -> close_group_difference {
+      return std::make_pair(new_group, current_close_group_);
+      )());
+      current_close_group_ = new_group;
   }
-}
+  }
 
 }  // namespace routing
 }  // namespace maidsafe
