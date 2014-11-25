@@ -28,11 +28,15 @@ namespace maidsafe {
 
 namespace routing {
 
-const size_t routing_table::bucket_size = 1;
-const size_t routing_table::parallelism = 4;
-const size_t routing_table::routing_table_size = 64;
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+const size_t routing_table::bucket_size;
+const size_t routing_table::parallelism;
+const size_t routing_table::routing_table_size;
+#endif
 
-routing_table::routing_table(NodeId our_id) : our_id_(std::move(our_id)), mutex_(), nodes_() {}
+routing_table::routing_table(NodeId our_id) : our_id_(std::move(our_id)), mutex_(), nodes_() {
+  assert(our_id_.IsValid());
+}
 
 std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
@@ -171,7 +175,7 @@ void routing_table::sort() {
 }
 
 std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
-  // this is only ever called on full routing table
+  assert(nodes_.size() == routing_table_size);
   size_t number_in_bucket(0);
   int bucket(NodeId::kSize);
   auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,

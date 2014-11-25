@@ -69,9 +69,11 @@ target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
 
 if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_test_routing
-        ${RoutingSourcesDir}/tests/main/test_main.cc
-        ${RoutingSourcesDir}/tests/main/test_utils.h
-        ${RoutingSourcesDir}/tests/main/test_utils.cc
+        ${RoutingSourcesDir}/tests/utils/test_main.cc
+        ${RoutingSourcesDir}/tests/utils/test_utils.h
+        ${RoutingSourcesDir}/tests/utils/test_utils.cc
+        ${RoutingSourcesDir}/tests/utils/routing_table_fixture.h
+        ${RoutingSourcesDir}/tests/utils/routing_table_fixture.cc
         )
   target_include_directories(maidsafe_test_routing PUBLIC ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
@@ -86,8 +88,8 @@ if(INCLUDE_TESTS)
   endforeach()
 
   # TODO - remove these targets - only added to avoid changing installers for now.
-  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
-  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/main/test_main.cc)
+  ms_add_executable(test_routing "Tests/Routing" ${RoutingSourcesDir}/tests/utils/test_main.cc)
+  ms_add_executable(test_routing_api "Tests/Routing" ${RoutingSourcesDir}/tests/utils/test_main.cc)
   target_include_directories(test_routing PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_include_directories(test_routing_api PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(test_routing maidsafe_routing maidsafe_test)

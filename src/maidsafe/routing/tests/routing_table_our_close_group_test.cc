@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,17 +16,9 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <memory>
-#include <vector>
-
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
-
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/types.h"
-#include "maidsafe/routing/tests/utils/test_utils.h"
+
+#include "maidsafe/common/test.h"
 
 namespace maidsafe {
 
@@ -34,24 +26,8 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_add_close_nodes) {
-  NodeId node_id(RandomString(NodeId::kSize));
-  const auto keys = asymm::GenerateKeyPair();
-  routing_table routing_table(node_id);
-  node_info node;
-  // check the node is useful when false is set
-  for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
-    EXPECT_TRUE(routing_table.check_node(node.id));
-  }
-  EXPECT_EQ(0, routing_table.size());
-  // everything should be set to go now
-  for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
-    node.public_key = keys.public_key;
-    EXPECT_TRUE(routing_table.add_node(node).first);
-  }
-  EXPECT_EQ(group_size, routing_table.size());
+TEST(routing_table_test, BEH_our_close_group) {
+  GTEST_FAIL();
 }
 
 }  // namespace test

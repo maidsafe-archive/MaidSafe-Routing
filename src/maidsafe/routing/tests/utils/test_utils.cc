@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tests/main/test_utils.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 #include <vector>
 #include "maidsafe/common/node_id.h"
