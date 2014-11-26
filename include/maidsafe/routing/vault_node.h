@@ -30,9 +30,9 @@ namespace maidsafe {
 
 namespace routing {
 
-class vault_node : private rudp::ManagedConnections::Listener {
+class vault_node : private rudp::managed_connections::listener {
  public:
-  vault_node(AsioService& io_service, rudp::ManagedConnections managed_connections,
+  vault_node(AsioService& io_service, rudp::managed_connections managed_connections,
              const passport::Pmid& pmid);
 
   vault_node(const vault_node&) = delete;
@@ -44,7 +44,7 @@ class vault_node : private rudp::ManagedConnections::Listener {
 
   // Used for bootstrapping (joining) and can be used as zero state network if both ends are started
   // simultaneously or to connect to a specific vault_node.
-  void bootstrap(const our_endpoint& our_endpoint, const their_endpoint& their_endpoint,
+  void bootstrap(const endpoint& our_endpoint, const endpoint& their_endpoint,
                  const asymm::PublicKey& their_public_key);
   // Use hard coded vault_nodes or cache file
   void bootstrap();
@@ -56,8 +56,8 @@ class vault_node : private rudp::ManagedConnections::Listener {
   int network_status() const;
 
  private:
-  AsioServicei& asio_service_;
-  rudp::ManagedConnections rudp_;
+  AsioService& asio_service_;
+  rudp::managed_connections rudp_;
   const NodeId our_id_;
   const asymm::Keys keys_;
 };

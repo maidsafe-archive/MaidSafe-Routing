@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -22,8 +22,6 @@
 
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/node_info.h"
-
 namespace maidsafe {
 
 namespace routing {
@@ -31,7 +29,7 @@ namespace routing {
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
 const size_t routing_table::bucket_size;
 const size_t routing_table::parallelism;
-const size_t routing_table::routing_table_size;
+const size_t routing_table::default_size;
 #endif
 
 routing_table::routing_table(NodeId our_id) : our_id_(std::move(our_id)), mutex_(), nodes_() {
@@ -45,47 +43,42 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
+
   // check not duplicate
-  if (std::any_of(nodes_.begin(), nodes_.end(), [&their_info](const node_info& node_info) {
-        return node_info.id == their_info.id;
-      })) {
+  if (have_node(their_info))
     return {false, boost::optional<node_info>()};
-  }
+
   // routing table small, just grab this node
-  if (nodes_.size() < routing_table_size) {
-    nodes_.push_back(std::move(their_info));
-    sort();
+  if (nodes_.size() < default_size) {
+    push_back_then_sort(std::move(their_info));
     return {true, boost::optional<node_info>()};
   }
 
   // new close group member
-  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id())) {
-    // first push the new node in (its close) and then get antoher sacrificial node if we can
+  auto result =
+      std::make_pair<bool, boost::optional<node_info>>(true, boost::optional<node_info>());
+  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id_)) {
+    // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
-    nodes_.push_back(std::move(their_info));
-    sort();
-    auto remove_candidate(find_candidate_for_removal());
-    auto sacrificial_candidate(remove_candidate != std::end(nodes_));
-    if (sacrificial_candidate) {
-      nodes_.erase(remove_candidate);
-      return {true, boost::optional<node_info>(*remove_candidate)};
+    push_back_then_sort(std::move(their_info));
+    auto removal_candidate(find_candidate_for_removal());
+    if (removal_candidate != std::end(nodes_)) {
+      result.second = *removal_candidate;
+      nodes_.erase(removal_candidate);
     }
-    return {true, boost::optional<node_info>()};
+    return result;
   }
 
   // is there a node we can remove
-  auto remove_node(find_candidate_for_removal());
-  auto sacrificial_node(remove_node != std::end(nodes_));
-  node_info remove_id;
-
-  if (sacrificial_node)
-    remove_id = *remove_node;
-  if (sacrificial_node && bucket_index(their_info.id) > bucket_index(remove_node->id)) {
-    nodes_.erase(remove_node);
-    nodes_.push_back(std::move(their_info));
-    sort();
+  auto removal_candidate(find_candidate_for_removal());
+  if (new_node_is_better_than_existing(their_info.id, removal_candidate)) {
+    result.second = *removal_candidate;
+    nodes_.erase(removal_candidate);
+    push_back_then_sort(std::move(their_info));
+  } else {
+    result.first = false;
   }
-  return {false, boost::optional<node_info>()};
+  return result;
 }
 
 bool routing_table::check_node(const NodeId& their_id) const {
@@ -93,19 +86,20 @@ bool routing_table::check_node(const NodeId& their_id) const {
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < routing_table_size)
+  if (nodes_.size() < default_size)
     return true;
+
   // check for duplicates
-  if (std::any_of(nodes_.begin(), nodes_.end(),
-                  [&their_id](const node_info& node_info) { return node_info.id == their_id; }))
+  static node_info their_info;
+  their_info.id = their_id;
+  if (have_node(their_info))
     return false;
+
   // close node
-  if (NodeId::CloserToTarget(their_id, nodes_.at(group_size).id, our_id()))
+  if (NodeId::CloserToTarget(their_id, nodes_.at(group_size).id, our_id_))
     return true;
-  // this node is a better fit than we currently have in the routing table
-  auto remove_node(find_candidate_for_removal());
-  return (remove_node != std::end(nodes_) &&
-          bucket_index(their_id) > bucket_index(remove_node->id));
+
+  return new_node_is_better_than_existing(their_id, find_candidate_for_removal());
 }
 
 void routing_table::drop_node(const NodeId& node_to_drop) {
@@ -168,34 +162,48 @@ int32_t routing_table::bucket_index(const NodeId& node_id) const {
   return our_id_.CommonLeadingBits(node_id);
 }
 
-void routing_table::sort() {
-  std::sort(nodes_.begin(), nodes_.end(), [&](const node_info& lhs, const node_info& rhs) {
+bool routing_table::have_node(const node_info& their_info) const {
+  auto comparison = [&](const node_info& lhs, const node_info& rhs) {
+    return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
+  };
+  assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison));
+  return std::binary_search(std::begin(nodes_), std::end(nodes_), their_info, comparison);
+}
+
+bool routing_table::new_node_is_better_than_existing(
+    const NodeId& their_id, std::vector<node_info>::const_iterator removal_candidate) const {
+  return removal_candidate != std::end(nodes_) &&
+         bucket_index(their_id) > bucket_index(removal_candidate->id);
+}
+
+void routing_table::push_back_then_sort(node_info&& their_info) {
+  nodes_.push_back(std::move(their_info));
+  std::sort(std::begin(nodes_), std::end(nodes_), [&](const node_info& lhs, const node_info& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
 }
 
 std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
-  assert(nodes_.size() == routing_table_size);
+  assert(nodes_.size() >= default_size);
   size_t number_in_bucket(0);
-  int bucket(NodeId::kSize);
-  auto found = std::find_if(nodes_.rbegin(), nodes_.rbegin() + group_size,
+  int bucket(0);
+  // TODO(Fraser#5#): 2014-11-26 - Should 'default_size' be 'nodes_.size()'?
+  auto furthest_group_member = nodes_.rbegin() + default_size - group_size;
+  auto found = std::find_if(nodes_.rbegin(), furthest_group_member,
                             [&number_in_bucket, &bucket, this](const node_info& node) {
     if (bucket_index(node.id) != bucket) {
       bucket = bucket_index(node.id);
       number_in_bucket = 0;
     }
     ++number_in_bucket;
-    return (number_in_bucket > bucket_size);
+    return number_in_bucket > bucket_size;
   });
 
-  if (found != nodes_.rbegin() + group_size) {
-    return std::next(found.base());
-  }
-  return std::end(nodes_);
+  return found == furthest_group_member ? std::end(nodes_) : found.base();
 }
 
 unsigned int routing_table::network_status(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / routing_table_size);
+  return static_cast<unsigned int>(size * 100 / default_size);
 }
 
 }  // namespace routing

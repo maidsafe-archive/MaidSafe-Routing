@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -29,19 +29,18 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct node_info;
-
 class routing_table {
  public:
   static const size_t bucket_size = 1;
   static const size_t parallelism = 4;
-  static const size_t routing_table_size = 64;
+  static const size_t default_size = 64;
   explicit routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
@@ -53,16 +52,18 @@ class routing_table {
   void drop_node(const NodeId& node_to_drop);
   // our close group or at least as much of it as we currently know
   std::vector<node_info> our_close_group() const;
-  // If more than 1 node returned then we are in close group so send to all !!
+  // If more than 1 node returned then we are in close group so send to all
   std::vector<node_info> target_nodes(const NodeId& their_id) const;
   NodeId our_id() const { return our_id_; }
   size_t size() const;
 
  private:
   int32_t bucket_index(const NodeId& node_id) const;
-  void sort();
+  bool have_node(const node_info& their_info) const;
+  bool new_node_is_better_than_existing(
+      const NodeId& their_id, std::vector<node_info>::const_iterator removal_candidate) const;
+  void push_back_then_sort(node_info&& their_info);
   std::vector<node_info>::const_iterator find_candidate_for_removal() const;
-
   unsigned int network_status(size_t size) const;
 
   const NodeId our_id_;

@@ -33,7 +33,6 @@ namespace routing {
 
 static const size_t group_size = 32;
 static const size_t quorum_size = 29;
-static const size_t default_routing_table_size = 64;
 
 using single_destination_id = TaggedValue<NodeId, struct SingleDestinationTag>;
 using group_destination_id = TaggedValue<NodeId, struct GroupDestinationTag>;

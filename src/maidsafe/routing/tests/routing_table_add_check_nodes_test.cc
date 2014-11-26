@@ -24,7 +24,7 @@
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/tests/main/test_utils.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 
 namespace maidsafe {
