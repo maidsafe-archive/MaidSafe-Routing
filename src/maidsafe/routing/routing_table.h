@@ -40,7 +40,7 @@ class routing_table {
  public:
   static const size_t bucket_size = 1;
   static const size_t parallelism = 4;
-  static const size_t default_size = 64;
+  static const size_t optimal_size = 64;
   explicit routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
@@ -58,6 +58,15 @@ class routing_table {
   size_t size() const;
 
  private:
+  class comparison {
+   public:
+    explicit comparison(NodeId our_id) : our_id_(std::move(our_id)) {}
+    bool operator()(const node_info& lhs, const node_info& rhs) const {
+      return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
+    }
+   private:
+    const NodeId our_id_;
+  };
   int32_t bucket_index(const NodeId& node_id) const;
   bool have_node(const node_info& their_info) const;
   bool new_node_is_better_than_existing(
@@ -67,6 +76,7 @@ class routing_table {
   unsigned int network_status(size_t size) const;
 
   const NodeId our_id_;
+  const comparison comparison_;
   mutable std::mutex mutex_;
   std::vector<node_info> nodes_;
 };
