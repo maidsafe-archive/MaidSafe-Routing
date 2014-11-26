@@ -116,8 +116,8 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
 
   unsigned int random_vault(env_->RandomVaultIndex());
   unsigned int random_client(env_->RandomClientIndex());
-  EXPECT_FALSE(env_->SendDirect(env_->nodes_[random_vault], env_->nodes_[random_client]->node_id(),
-                                kExpectClient));
+  EXPECT_TRUE(env_->SendDirect(env_->nodes_[random_vault], env_->nodes_[random_client]->node_id(),
+                               kExpectClient));
 
   EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
 
