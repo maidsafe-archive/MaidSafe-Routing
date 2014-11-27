@@ -16,7 +16,13 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/tests/utils/routing_table_fixture.h"
+#include "maidsafe/common/test.h"
+
+#include <array>
+
+#include "maidsafe/common/node_id.h"
+
+#include "maidsafe/routing/routing_table.h"
 
 namespace maidsafe {
 
@@ -24,6 +30,34 @@ namespace routing {
 
 namespace test {
 
+class routing_table_unit_test : testing::Test {
+ protected:
+  struct bucket {
+    bucket() = default;
+    bucket(const NodeId& furthest_from_tables_own_id, unsigned index_in);
+    const unsigned index;
+    const NodeId far_contact, mid_contact, close_contact;
+  };
+
+  using buckets = std::array<bucket, 100>;
+
+  routing_table_unit_test();
+
+  // const NodeId& bucket0_far_contact() const;
+  // const NodeId& bucket0_mid_contact() const;
+  // const NodeId& bucket0_close_contact() const;
+  // const NodeId& bucket1_far_contact() const;
+  // const NodeId& bucket1_mid_contact() const;
+  // const NodeId& bucket1_close_contact() const;
+  // std::vector<NodeId> other_contacts() const;
+
+  routing_table table_;
+  const NodeId furthest_id_;
+  const buckets buckets_;
+
+ private:
+  buckets initialise_buckets(const NodeId& furthest_from_tables_own_id);
+};
 
 }  // namespace test
 

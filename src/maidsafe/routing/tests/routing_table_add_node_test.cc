@@ -18,10 +18,10 @@
 
 #include "maidsafe/routing/routing_table.h"
 
-#include <bitset>
-
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/routing/tests/utils/routing_table_unit_test.h"
 
 namespace maidsafe {
 
@@ -29,48 +29,47 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_add_node) {
-  routing_table table{NodeId{RandomString(NodeId::kSize)}};
+TEST_F(routing_table_unit_test, BEH_add_node) {
   // Set up 'their_id' as furthest from our ID.
-  const NodeId their_id{table.our_id() ^ NodeId(std::string(NodeId::kSize, -1))};
+  const NodeId their_id{table_.our_id() ^ NodeId(std::string(NodeId::kSize, -1))};
   const asymm::Keys their_keys{asymm::GenerateKeyPair()};
 
   // Try with invalid NodeId (should fail)
   node_info their_info;
   their_info.public_key = their_keys.public_key;
-  auto result_of_add = table.add_node(their_info);
+  auto result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(0, table.size());
+  EXPECT_EQ(0, table_.size());
 
   // Try with invalid public key (should fail)
   their_info.id = their_id;
   their_info.public_key = asymm::PublicKey();
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(0, table.size());
+  EXPECT_EQ(0, table_.size());
 
   // Try with our ID (should fail)
-  their_info.id = table.our_id();
+  their_info.id = table_.our_id();
   their_info.public_key = their_keys.public_key;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(0, table.size());
+  EXPECT_EQ(0, table_.size());
 
   // Add first contact
   their_info.id = their_id;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(1U, table.size());
+  EXPECT_EQ(1U, table_.size());
 
   // Try with the same contact (should fail)
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(1U, table.size());
+  EXPECT_EQ(1U, table_.size());
 
   // Add further 'optimal_size' - 1 contacts (should all succeed with no removals).  Set this up so
   // that bucket 0 (furthest) and bucket 1 have 3 contacts each and all others have 0 or 1 contacts.
@@ -83,86 +82,86 @@ TEST(routing_table_test, BEH_add_node) {
   const NodeId bucket0_mid_contact = NodeId{id.to_string(), NodeId::EncodingType::kBinary};
   id.flip(0);
   their_info.id = bucket0_mid_contact;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(2U, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(2U, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(2U, table.size());
+  EXPECT_EQ(2U, table_.size());
 
   id.flip(1);
   const NodeId bucket0_close_contact = NodeId{id.to_string(), NodeId::EncodingType::kBinary};
   id.flip(1);
   their_info.id = bucket0_close_contact;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(3U, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(3U, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(3U, table.size());
+  EXPECT_EQ(3U, table_.size());
 
   // Bucket 1
   id.flip((NodeId::kSize * 8) - 1);
   const NodeId bucket1_far_contact = NodeId{id.to_string(), NodeId::EncodingType::kBinary};
   their_info.id = bucket1_far_contact;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(4U, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(4U, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(4U, table.size());
+  EXPECT_EQ(4U, table_.size());
 
   id.flip(0);
   const NodeId bucket1_mid_contact = NodeId{id.to_string(), NodeId::EncodingType::kBinary};
   id.flip(0);
   their_info.id = bucket1_mid_contact;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(5U, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(5U, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(5U, table.size());
+  EXPECT_EQ(5U, table_.size());
 
   id.flip(1);
   const NodeId bucket1_close_contact = NodeId{id.to_string(), NodeId::EncodingType::kBinary};
   id.flip(1);
   their_info.id = bucket1_close_contact;
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(6U, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(6U, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(6U, table.size());
+  EXPECT_EQ(6U, table_.size());
 
   // Check test logic - that these six contacts are ordered as expected
-  ASSERT_TRUE(NodeId::CloserToTarget(bucket0_mid_contact, bucket0_far_contact, table.our_id()));
-  ASSERT_TRUE(NodeId::CloserToTarget(bucket0_close_contact, bucket0_mid_contact, table.our_id()));
-  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_far_contact, bucket0_close_contact, table.our_id()));
-  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_mid_contact, bucket1_far_contact, table.our_id()));
-  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_close_contact, bucket1_mid_contact, table.our_id()));
+  ASSERT_TRUE(NodeId::CloserToTarget(bucket0_mid_contact, bucket0_far_contact, table_.our_id()));
+  ASSERT_TRUE(NodeId::CloserToTarget(bucket0_close_contact, bucket0_mid_contact, table_.our_id()));
+  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_far_contact, bucket0_close_contact, table_.our_id()));
+  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_mid_contact, bucket1_far_contact, table_.our_id()));
+  ASSERT_TRUE(NodeId::CloserToTarget(bucket1_close_contact, bucket1_mid_contact, table_.our_id()));
 
   // Add remaining contacts
   for (size_t i = 2; i < routing_table::optimal_size - 4; ++i) {
     id.flip((NodeId::kSize * 8) - i);
     their_info.id = NodeId{ id.to_string(), NodeId::EncodingType::kBinary };
-    result_of_add = table.add_node(their_info);
+    result_of_add = table_.add_node(their_info);
     EXPECT_TRUE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
-    EXPECT_EQ(i + 5, table.size());
-    result_of_add = table.add_node(their_info);
+    EXPECT_EQ(i + 5, table_.size());
+    result_of_add = table_.add_node(their_info);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
-    EXPECT_EQ(i + 5, table.size());
+    EXPECT_EQ(i + 5, table_.size());
   }
 
   // Check next 4 closer additions return 'bucket0_far_contact', 'bucket0_mid_contact',
@@ -171,15 +170,15 @@ TEST(routing_table_test, BEH_add_node) {
   for (size_t i = routing_table::optimal_size - 4; i < routing_table::optimal_size; ++i) {
     id.flip((NodeId::kSize * 8) - i);
     their_info.id = NodeId{ id.to_string(), NodeId::EncodingType::kBinary };
-    result_of_add = table.add_node(their_info);
+    result_of_add = table_.add_node(their_info);
     EXPECT_TRUE(result_of_add.first);
     ASSERT_TRUE(result_of_add.second.is_initialized());
     dropped.push_back(result_of_add.second.get().id);
-    EXPECT_EQ(routing_table::optimal_size, table.size());
-    result_of_add = table.add_node(their_info);
+    EXPECT_EQ(routing_table::optimal_size, table_.size());
+    result_of_add = table_.add_node(their_info);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
-    EXPECT_EQ(routing_table::optimal_size, table.size());
+    EXPECT_EQ(routing_table::optimal_size, table_.size());
   }
   EXPECT_EQ(bucket0_far_contact, dropped.at(0));
   EXPECT_EQ(bucket0_mid_contact, dropped.at(1));
@@ -189,23 +188,23 @@ TEST(routing_table_test, BEH_add_node) {
   // Try to add far contacts again (should fail)
   for (const auto& far_contact : dropped) {
     their_info.id = far_contact;
-    result_of_add = table.add_node(their_info);
+    result_of_add = table_.add_node(their_info);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
-    EXPECT_EQ(routing_table::optimal_size, table.size());
+    EXPECT_EQ(routing_table::optimal_size, table_.size());
   }
 
-  // Add final close contact to push size of table above optimal_size
+  // Add final close contact to push size of table_ above optimal_size
   id.flip((NodeId::kSize * 8) - routing_table::optimal_size);
   their_info.id = NodeId{ id.to_string(), NodeId::EncodingType::kBinary };
-  result_of_add = table.add_node(their_info);
+  result_of_add = table_.add_node(their_info);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(routing_table::optimal_size + 1, table.size());
-  result_of_add = table.add_node(their_info);
+  EXPECT_EQ(routing_table::optimal_size + 1, table_.size());
+  result_of_add = table_.add_node(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(routing_table::optimal_size + 1, table.size());
+  EXPECT_EQ(routing_table::optimal_size + 1, table_.size());
 }
 
 }  // namespace test

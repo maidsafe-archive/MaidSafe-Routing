@@ -72,8 +72,8 @@ if(INCLUDE_TESTS)
         ${RoutingSourcesDir}/tests/utils/test_main.cc
         ${RoutingSourcesDir}/tests/utils/test_utils.h
         ${RoutingSourcesDir}/tests/utils/test_utils.cc
-        ${RoutingSourcesDir}/tests/utils/routing_table_fixture.h
-        ${RoutingSourcesDir}/tests/utils/routing_table_fixture.cc
+        ${RoutingSourcesDir}/tests/utils/routing_table_unit_test.h
+        ${RoutingSourcesDir}/tests/utils/routing_table_unit_test.cc
         )
   target_include_directories(maidsafe_test_routing PUBLIC ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
