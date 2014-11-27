@@ -26,12 +26,6 @@ namespace maidsafe {
 
 namespace routing {
 
-#if !defined(_MSC_VER) || _MSC_VER >= 1900
-const size_t routing_table::bucket_size;
-const size_t routing_table::parallelism;
-const size_t routing_table::optimal_size;
-#endif
-
 routing_table::routing_table(NodeId our_id)
     : our_id_(std::move(our_id)), comparison_(our_id_), mutex_(), nodes_() {
   assert(our_id_.IsValid());
@@ -50,7 +44,7 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
     return {false, boost::optional<node_info>()};
 
   // routing table small, just grab this node
-  if (nodes_.size() < optimal_size) {
+  if (nodes_.size() < optimal_size()) {
     push_back_then_sort(std::move(their_info));
     return {true, boost::optional<node_info>()};
   }
@@ -87,7 +81,7 @@ bool routing_table::check_node(const NodeId& their_id) const {
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < optimal_size)
+  if (nodes_.size() < optimal_size())
     return true;
 
   // check for duplicates
@@ -136,7 +130,7 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
   closer_to_target.erase(std::begin(closer_to_target) +
-                             std::min(parallelism, closer_to_target.size()),
+                             std::min(parallelism(), closer_to_target.size()),
                          std::end(closer_to_target));
   return closer_to_target;
 }
@@ -180,7 +174,7 @@ void routing_table::push_back_then_sort(node_info&& their_info) {
 }
 
 std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
-  assert(nodes_.size() >= optimal_size);
+  assert(nodes_.size() >= optimal_size());
   size_t number_in_bucket(0);
   int bucket(0);
   auto furthest_group_member = nodes_.rbegin() + nodes_.size() - group_size;
@@ -191,14 +185,14 @@ std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal
       number_in_bucket = 0;
     }
     ++number_in_bucket;
-    return number_in_bucket > bucket_size;
+    return number_in_bucket > bucket_size();
   });
 
   return found == furthest_group_member ? std::end(nodes_) : found.base();
 }
 
 unsigned int routing_table::network_status(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / optimal_size);
+  return static_cast<unsigned int>(size * 100 / optimal_size());
 }
 
 }  // namespace routing

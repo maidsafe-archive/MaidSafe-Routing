@@ -38,9 +38,9 @@ namespace routing {
 
 class routing_table {
  public:
-  static const size_t bucket_size = 1;
-  static const size_t parallelism = 4;
-  static const size_t optimal_size = 64;
+  static size_t bucket_size() { return 1; }
+  static size_t parallelism() { return 4; }
+  static size_t optimal_size() { return 64; }
   explicit routing_table(NodeId our_id);
   routing_table(const routing_table&) = delete;
   routing_table(routing_table&&) = delete;
