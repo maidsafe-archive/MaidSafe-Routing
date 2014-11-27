@@ -113,7 +113,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                   << "] rcvd : " << MessageTypeString(message) << " from "
                   << HexSubstr(message.source_id()) << "   (id: " << message.id()
                   << ")  --NodeLevel--";
-    ReplyFunctor response_functor = [=](const std::string & reply_message) {
+    ReplyFunctor response_functor = [=](const std::string& reply_message) {
       if (reply_message.empty()) {
         LOG(kInfo) << "Empty response for message id :" << message.id();
         return;
@@ -129,7 +129,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       message_out.set_type(message.type());
       message_out.set_direct(true);
       message_out.clear_data();
-      message_out.set_client_node(message.client_node());
+      message_out.set_client_node(routing_table_.client_mode());
       message_out.set_routing_message(message.routing_message());
       message_out.add_data(reply_message);
       if (IsCacheableGet(message))
@@ -546,7 +546,6 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
   } else if ((message.destination_id() == routing_table_.kNodeId().string())) {
     LOG(kVerbose) << "Client NodeLevel Response for " << DebugId(routing_table_.kNodeId())
                   << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
-    message.set_client_node(true);
     HandleNodeLevelMessageForThisNode(message);
   } else {
     LOG(kWarning) << DebugId(routing_table_.kNodeId()) << " silently drop message "
