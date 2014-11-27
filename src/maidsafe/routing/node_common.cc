@@ -16,38 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TYPES_H_
-#define MAIDSAFE_ROUTING_TYPES_H_
+#include "maidsafe/routing/node_common.h"
 
-#include <array>
-#include <cstdint>
-#include <vector>
-#include "boost/asio/ip/udp.hpp"
-
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/tagged_value.h"
-
-namespace maidsafe {
-
-namespace routing {
-
-static const size_t group_size = 32;
-static const size_t quorum_size = 29;
-static const size_t default_routing_table_size = 64;
-
-using destination_id = TaggedValue<NodeId, struct DestinationTag>;
-using source_id = TaggedValue<NodeId, struct SourceTag>;
-using message_id = TaggedValue<uint32_t, struct MessageIdTag>;
-using endpoint = boost::asio::ip::udp::endpoint;
-using connection = boost::asio::ip::udp::endpoint;
-using byte = unsigned char;
-using murmur_hash = uint32_t;
-using checksums = std::array<murmur_hash, group_size - 1>;
-using serialised_message = std::vector<unsigned char>;
-using close_group_difference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
-
-}  // namespace routing
-
-}  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_TYPES_H_
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/common/asio_service.h"
+#include "maidsafe/routing/connnection_manager.h"

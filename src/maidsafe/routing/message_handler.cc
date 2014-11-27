@@ -33,7 +33,7 @@ message_handler::message_handler(AsioService& asio_service,
                                  connection_manager& connection_mgr)
     : asio_service_(asio_service), managed_connections_(managed_connections) {}
 
-void message_handler::OnMessageReceived(const serialised_message& serialised_message) {
+void message_handler::on_message_received(const serialised_message& serialised_message) {
   auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
   // FIXME (dirvine) Check firewall 19/11/2014
   HandleMessage(message);
