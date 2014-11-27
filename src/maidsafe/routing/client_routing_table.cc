@@ -52,8 +52,6 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
   if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
     if (add) {
       nodes_.push_back(node);
-      LOG(kInfo) << "Added to ClientRoutingTable :" << node.id;
-      LOG(kVerbose) << PrintClientRoutingTable();
     }
     return true;
   }
@@ -118,7 +116,6 @@ size_t ClientRoutingTable::size() const {
 bool ClientRoutingTable::CheckValidParameters(const NodeInfo& node) const {
   // bucket index is not used in ClientRoutingTable
   if (node.bucket != NodeInfo::kInvalidBucket) {
-    LOG(kInfo) << "Invalid bucket index.";
     return false;
   }
   return CheckParametersAreUnique(node);
@@ -129,7 +126,6 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   if (std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo & node_info) {
         return (node_info.connection_id == node.connection_id);
       }) != nodes_.end()) {
-    LOG(kInfo) << "Already have node with this connection_id.";
     return false;
   }
 
@@ -140,7 +136,6 @@ bool ClientRoutingTable::CheckParametersAreUnique(const NodeInfo& node) const {
   //                     return (asymm::MatchingKeys(node_info.public_key, node.public_key) &&
   //                             (node_info.id != node.id));
   //                   }) != nodes_.end()) {
-  //    LOG(kInfo) << "Already have a different node ID with this public key.";
   //    return false;
   //  }
   return true;
@@ -150,12 +145,10 @@ bool ClientRoutingTable::CheckRangeForNodeToBeAdded(NodeInfo& node,
                                                     const NodeId& furthest_close_node_id,
                                                     bool add) const {
   if (nodes_.size() >= Parameters::max_client_routing_table_size) {
-    LOG(kInfo) << "ClientRoutingTable full.";
     return false;
   }
 
   if (add && !CheckValidParameters(node)) {
-    LOG(kInfo) << "Invalid Parameters.";
     return false;
   }
 

@@ -108,8 +108,6 @@ int Network::DoBootstrap(const rudp::MessageReceivedFunctor& message_received_fu
   }
 
   this_node_relay_connection_id_ = routing_table_.kConnectionId();
-  LOG(kInfo) << "Bootstrap successful, bootstrap connection id - "
-             << DebugId(bootstrap_connection_id_);
   return kSuccess;
 }
 
@@ -144,7 +142,6 @@ int Network::MarkConnectionAsValid(const NodeId& peer_id) {
   Endpoint new_bootstrap_endpoint;
   int ret_val(rudp_.MarkConnectionAsValid(peer_id, new_bootstrap_endpoint));
   if ((ret_val == kSuccess) && !new_bootstrap_endpoint.address().is_unspecified()) {
-    LOG(kVerbose) << "Found usable endpoint for bootstrapping : " << new_bootstrap_endpoint;
     InsertOrUpdateBootstrapContact(new_bootstrap_endpoint, routing_table_.client_mode());
   }
   return ret_val;
@@ -167,9 +164,6 @@ void Network::RudpSend(const NodeId& peer_id, const protobuf::Message& message,
       return;
   }
   rudp_.Send(peer_id, message.SerializeAsString(), message_sent_functor);
-  LOG(kVerbose) << "  [" << routing_table_.kNodeId()
-                << "] send : " << MessageTypeString(message) << " to " << peer_id
-                << "   (id: " << message.id() << ")" << " --To Rudp--";
 }
 
 void Network::SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
@@ -201,14 +195,7 @@ void Network::SendToClosestNode(const protobuf::Message& message) {
                       << PrintMessage(message);
         return;
       }
-      LOG(kVerbose) << "This node [" << routing_table_.kNodeId() << "] has "
-                    << client_routing_nodes.size()
-                    << " destination node(s) in its non-routing table."
-                    << " id: " << message.id();
-
       for (const auto& i : client_routing_nodes) {
-        LOG(kVerbose) << "Sending message to NRT node with ID " << message.id() << " node_id "
-                      << DebugId(i.id) << " connection id " << DebugId(i.connection_id);
         SendTo(message, i.id, i.connection_id);
       }
     } else if (routing_table_.size() > 0) {  // getting closer nodes from routing table
@@ -242,8 +229,6 @@ void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_i
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
       SendAck(message);
-      LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << peer_node_id << "   (id: " << message.id() << ")";
     } else {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
                   << HexSubstr(kThisId) << " to " << peer_node_id << " failed with code "
@@ -263,7 +248,6 @@ void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_i
                              SendTo(message, peer_node_id, peer_connection_id);
                          }, Parameters::ack_timeout);
   }
-  LOG(kVerbose) << " >>>>>>>>> rudp send message to connection id " << DebugId(peer_connection_id);
   RudpSend(peer_connection_id, message, message_sent_functor);
 }
 
@@ -329,10 +313,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
         return;
     }
     if (rudp::kSuccess == message_sent) {
-      LOG(kVerbose) << "  [" << HexSubstr(kThisId) << "] sent : " << MessageTypeString(message)
-                    << " to   " << HexSubstr(peer.id.string()) << "   (id: " << message.id()
-                    << ")"
-                    << " dst : " << HexSubstr(message.destination_id());
       SendAck(message);
     } else if (rudp::kSendFailure == message_sent) {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
@@ -368,7 +348,6 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
                             RecursiveSendOn(message);
                         }, Parameters::ack_timeout);
   }
-  LOG(kVerbose) << "Rudp recursive send message to " << peer.connection_id;
   RudpSend(peer.connection_id, message, message_sent_functor);
 }
 
@@ -419,7 +398,6 @@ maidsafe::NodeId Network::this_node_relay_connection_id() const {
 rudp::NatType Network::nat_type() const { return nat_type_; }
 
 void Network::SendAck(const protobuf::Message& message) {
-  LOG(kVerbose) << "[" << routing_table_.kNodeId() << "] SendAck " << message.ack_id();
   if (message.ack_id() == 0)
     return;
 
@@ -437,9 +415,6 @@ void Network::SendAck(const protobuf::Message& message) {
   if (message.ack_node_ids_size() == 0)
     return;
 
-  for (const auto& hop : ack_node_ids)
-    LOG(kVerbose) << " hop in history: " << HexSubstr(hop) << "ack id:" << message.ack_id();
-
   if ((message.relay_id() == routing_table_.kNodeId().string()) ||
       message.source_id() == routing_table_.kNodeId().string())
     return;
@@ -451,7 +426,6 @@ void Network::SendAck(const protobuf::Message& message) {
 
   protobuf::Message ack_message(rpcs::Ack(NodeId(message.ack_node_ids(0)), routing_table_.kNodeId(),
                                           message.ack_id()));
-  LOG(kVerbose) << "Network::SendAck";
   SendToClosestNode(ack_message);
 }
 

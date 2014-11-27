@@ -54,7 +54,7 @@ std::pair<NodeId, NodeId> ParseString(std::string input) {
       LOG(kVerbose) << e.what();
     }
     try {
-      archive(cereal::make_nvp("vaultRemoved", node_str));
+      archive(cereal::make_nvp("vaultAdded", node_str));
       new_node_id = NodeId(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
       LOG(kVerbose) << e.what();

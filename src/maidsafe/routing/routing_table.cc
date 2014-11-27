@@ -91,7 +91,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     return false;
   }
   if (remove && !asymm::ValidateKey(peer.public_key)) {
-    LOG(kInfo) << "Invalid public key for node " << peer.id;
     return false;
   }
 
@@ -107,7 +106,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
     std::unique_lock<std::mutex> lock(mutex_);
     auto found(Find(peer.id, lock));
     if (found.first) {
-//       LOG(kVerbose) << "Node " << peer.id << " already in routing table.";
       return false;
     }
 
@@ -147,7 +145,6 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
           RoutingTableChange(peer, RoutingTableChange::Remove(removed_node, false), true,
                              close_nodes_change, NetworkStatus(routing_table_size)));
     }
-    LOG(kInfo) << PrintRoutingTable();
   }
   return return_value;
 }
@@ -192,7 +189,6 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
                              false, close_nodes_change, NetworkStatus(routing_table_size)));
     }
   }
-  LOG(kInfo) << PrintRoutingTable();
   return dropped_node;
 }
 
@@ -227,8 +223,6 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const unsigned int
     return true;
 
   auto count(PartialSortFromTarget(target_id, range + 1, lock));
-  LOG(kVerbose) << "[kNodeId_ , " << DebugId(kNodeId_) << "] [target_id , " << DebugId(target_id)
-                << "] [count , " << count << "] [tail , " << DebugId(nodes_[count - 1].id) << "]";
   bool skip_front(target_id == nodes_[0].id);
   if (skip_front && (count == range))
     return true;
@@ -299,7 +293,6 @@ bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node,
   if (std::find_if(nodes_.begin(), nodes_.end(), [node](const NodeInfo & node_info) {
         return asymm::MatchingKeys(node_info.public_key, node.public_key);
       }) != nodes_.end()) {
-    LOG(kInfo) << "Already have node with this public key";
     return false;
   }
 
@@ -312,7 +305,6 @@ bool RoutingTable::CheckPublicKeyIsUnique(const NodeInfo& node,
   //                   [node](const NodeInfo& node_info) {
   //                     return (node_info.endpoint == node.endpoint);
   //                   }) != nodes_.end()) {
-  //    LOG(kInfo) << "Already have node with this endpoint";
   //    return false;
   //  }
 
@@ -358,9 +350,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
                    }
                 });
 
-  LOG(kVerbose) << "[" << DebugId(kNodeId_) << "] max_bucket " << max_bucket << " count "
-                << max_bucket_count;
-
   // If no duplicate bucket exists, prioirity is given to closer nodes.
   if ((max_bucket_count == 1) && (nodes_.back().bucket < node.bucket))
     return false;
@@ -375,7 +364,6 @@ bool RoutingTable::MakeSpaceForNodeToBeAdded(const NodeInfo& node, bool remove,
         if (remove) {
           removed_node = *it;
           nodes_.erase(--(it.base()));
-          LOG(kVerbose) << kNodeId_ << " Proposed removable " << removed_node.id;
         }
         return true;
       }
@@ -514,13 +502,12 @@ size_t RoutingTable::size() const {
 //      matrix_record.AddElement(close[index].id, network_viewer::ChildType::kClosest);
 //      printout += "\t\t" + DebugId(close[index].id) + " - kClosest\n";
 //    }
-//    LOG(kInfo) << printout << '\n';
 //    std::string serialised_matrix(matrix_record.Serialise());
 //    ipc_message_queue_->try_send(serialised_matrix.c_str(), serialised_matrix.size(), 0);
 //  }
 //  }
 
-std::string RoutingTable::PrintRoutingTable() {
+std::string RoutingTable::Print() {
   std::vector<NodeInfo> rt;
   {
     std::lock_guard<std::mutex> lock(mutex_);

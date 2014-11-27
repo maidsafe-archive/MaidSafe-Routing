@@ -27,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include "boost/asio/steady_timer.hpp"
 #include "boost/asio/error.hpp"
@@ -73,12 +74,14 @@ class Timer {
 
   friend class test::TimerTest;
 
-  void PrintTaskIds() {
+  std::string PrintTaskIds() {
     std::lock_guard<std::mutex> lock(mutex_);
-    LOG(kVerbose) << "This timer containing following tasks : ";
+  std::stringstream stream;
+    stream << "This timer containing following tasks : ";
     for (auto& task : tasks_) {
-      LOG(kVerbose) << "      task id   ---   " << task.first;
+      stream << "  task id  ---   " << task.first;
     }
+    return stream.str();
   }
 
  private:
@@ -140,20 +143,15 @@ Timer<Response>::Timer(AsioService& asio_service)
 
 template <typename Response>
 Timer<Response>::~Timer() {
-  LOG(kVerbose) << "Timer<Response>::Destructor";
   CancelAll();
-  LOG(kVerbose) << "Timer<Response>::Destructor completed";
 }
 
 template <typename Response>
 void Timer<Response>::CancelAll() {
-  LOG(kVerbose) << "Timer<Response>::CancelAll";
   std::unique_lock<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::CancelAll task count " << tasks_.size();
   for (const auto& task : tasks_)
     task.second.timer->cancel();
   cond_var_.wait(lock, [&] { return tasks_.empty(); });
-  LOG(kVerbose) << "Timer<Response>::CancelAll completed";
 }
 
 
@@ -161,15 +159,12 @@ template <typename Response>
 void Timer<Response>::AddTask(const std::chrono::steady_clock::duration& timeout,
                               const ResponseFunctor& response_functor,
                               int expected_response_count, TaskId task_id) {
-  LOG(kVerbose) << "Timer<Response>::AddTask add task " << task_id
-                << " with expected_response_count as " << expected_response_count;
   if (!response_functor || expected_response_count < 1) {
     LOG(kError) << "Timer<Response>::AddTask response_functor not initialised or "
                 << " incorrect expected_response_count";
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   std::lock_guard<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::AddTask process adding task " << task_id;
   auto result(tasks_.insert(std::move(
       std::make_pair(task_id, std::move(Task(asio_service_.service(), timeout, response_functor,
                                              expected_response_count))))));
@@ -183,18 +178,14 @@ template <typename Response>
 void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code& error) {
   int outstanding_response_count(0);
   ResponseFunctor functor;
-  LOG(kVerbose) << "Timer<Response>::FinishTask finish task " << task_id;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    LOG(kVerbose) << "Timer<Response>::FinishTask process finishing task " << task_id;
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Timer<Response>::FinishTask Task " << task_id << " not held by Timer.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
     }
     assert(itr->second.outstanding_response_count >= 0);
-    LOG(kVerbose) << "Timer<Response>::FinishTask outstanding_response_count for Task "
-                  << task_id << " is " << itr->second.outstanding_response_count;
     if (itr->second.outstanding_response_count != 0) {
       outstanding_response_count = itr->second.outstanding_response_count;
       functor = itr->second.functor;
@@ -207,7 +198,6 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
         LOG(kWarning) << "Timed out waiting for task " << task_id;
         break;
       case boost::asio::error::operation_aborted:  // Cancelled via CancelTask
-        LOG(kInfo) << "Cancelled task " << task_id;
         break;
       default:
         LOG(kError) << "Error waiting for task " << task_id << " - " << error.message();
@@ -215,32 +205,25 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
   }
   for (int i(0); i != outstanding_response_count; ++i)
     asio_service_.service().dispatch([=] { functor(Response()); });
-  LOG(kVerbose) << "Timer<Response> notifying condition_variable";
   cond_var_.notify_one();
-  LOG(kVerbose) << "Timer<Response>::FinishTask completed";
 }
 
 template <typename Response>
 void Timer<Response>::CancelTask(TaskId task_id) {
-  LOG(kVerbose) << "Timer<Response>::CancelTask task " << task_id << " is to be canceled";
   std::lock_guard<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::CancelTask process cancelling task " << task_id;
   auto itr(tasks_.find(task_id));
   if (itr == std::end(tasks_)) {
     LOG(kError) << "Task " << task_id << " not held by Timer.";
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   itr->second.timer->cancel();
-  LOG(kVerbose) << "Timer<Response>::CancelTask completed";
 }
 
 template <typename Response>
 void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
   ResponseFunctor functor;
-  LOG(kVerbose) << "Timer<Response>::AddResponse add response to task " << task_id;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    LOG(kVerbose) << "Timer<Response>::AddResponse process adding response to task " << task_id;
     auto itr(tasks_.find(task_id));
     if (itr == std::end(tasks_)) {
       LOG(kError) << "Task " << task_id << " not held by Timer.";
@@ -251,21 +234,16 @@ void Timer<Response>::AddResponse(TaskId task_id, const Response& response) {
       return;
     }
     --(itr->second.outstanding_response_count);
-    LOG(kVerbose) << "Task " << task_id << " now having " << itr->second.outstanding_response_count
-                  << " outstanding_response_count.";
     functor = itr->second.functor;
     if (itr->second.outstanding_response_count == 0)
       itr->second.timer->cancel();  // Invokes 'FinishTask'
   }
   asio_service_.service().dispatch([=] { functor(response); });
-  LOG(kVerbose) << "Timer<Response>::AddResponse completed";
 }
 
 template <typename Response>
 TaskId Timer<Response>::NewTaskId() {
-  LOG(kVerbose) << "Timer<Response>::NewTaskId";
   std::lock_guard<std::mutex> lock(mutex_);
-  LOG(kVerbose) << "Timer<Response>::NewTaskId completed";
   return new_task_id_++;
 }
 
