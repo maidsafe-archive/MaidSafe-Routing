@@ -33,17 +33,18 @@ struct header {
   header(const header&) = delete;
   header(header&& other) MAIDSAFE_NOEXCEPT : destination(std::move(other.destination)),
                                              source(std::move(other.source)),
-                                             message_id(std::move(other.message_id)),
-                                             checksum(std::move(other.checksum)),
-                                             other_checksums(std::move(other.checksums)) {}
-  header(Destination destination_in, Source source_in, message_id message_id_in,
-               murmur_hash checksum_in, checksums other_checksums_in)
+                                             message_id(std::move(other.message_id)) {}
+  header(destination_id destination_in, source_id source_in, message_id message_id_in,
+         murmur_hash checksum_in, checksums other_checksums_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
         checksum(std::move(checksum_in)),
-        other_checksums((std::move(other_checksums_in))
-  {}
+        other_checksums((std::move(other_checksums_in))) {}
+  header(destination_id destination_in, source_id source_in, message_id message_id_in)
+      : destination(std::move(destination_in)),
+        source(std::move(source_in)),
+        message_id(std::move(message_id_in)) {}
   ~header() = default;
   header& operator=(const header&) = delete;
   header& operator=(header&& other) MAIDSAFE_NOEXCEPT {
@@ -59,11 +60,11 @@ struct header {
     archive(destination, source, message_id, checksum);
   }
 
-  NodeId destination[];
-  NodeId source[];
-  message_id message_id[];
-  murmur_hash checksum[];
-  checksums other_checksums[];
+  destination_id destination{};
+  source_id source{};
+  message_id message_id{};
+  murmur_hash checksum{};
+  checksums other_checksums{};
 };
 
 }  // namespace routing

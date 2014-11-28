@@ -33,7 +33,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class message_handler {
+message_handler {
  public:
   message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections, connection_manager& connection_mgr);
   message_handler() = delete;
@@ -42,8 +42,7 @@ class message_handler {
   message_handler(const message_handler&&) = delete;
   message_handler& operator=(const message_handler&) = delete;;
   message_handler& operator=(message_handler&&) = delete;
-
-  void OnMessageReceived(const std::vector<byte>& serialised_message);
+  void on_message_received(const std::vector<byte>& serialised_message);
 
  private:
   void HandleMessage(const ping& ping_msg);

@@ -25,7 +25,6 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/serialisation.h"
-#include "maidsafe/rudp/nat_type.h"
 
 #include "maidsafe/routing/header.h"
 #include "maidsafe/routing/types.h"
@@ -52,9 +51,8 @@ struct ping {
   ping() = default;
   ping(const ping&) = delete;
   ping(ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  ping(single_destination_id destination_in, single_source_id source_in)
-      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
-               murmur_hash2(std::vector<byte>{})) {}
+  ping(destination_id destination_in, source_id source_in)
+      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   explicit ping(header header_in) : header(std::move(header_in)) {}
   ~ping() = default;
   ping& operator=(const ping&) = delete;
@@ -64,7 +62,7 @@ struct ping {
   };
 
   template <typename Archive>
-  void save(Archive& archive) const {
+  void Serialise(Archive& archive) const {
     archive(header);
   }
 
@@ -78,10 +76,9 @@ struct ping_response {
   ping_response(const ping_response&) = delete;
   ping_response(ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
   explicit ping_response(ping ping)
-      : header(single_destination_id(std::move(ping.header.source.data)),
-               single_source_id(std::move(ping.header.destination.data)), ping.header.message_id,
-               ping.header.checksum) {}
-  explicit ping_response(header header_in) : header(std::move(header_in)) {}
+      : header(destination_id(std::move(ping.header.source.data)),
+               source_id(std::move(ping.header.destination.data)),
+               message_id(std::move(ping.header.message_id))) {}
   ~ping_response() = default;
   ping_response& operator=(const ping_response&) = delete;
   ping_response& operator=(ping_response&& other) MAIDSAFE_NOEXCEPT {
@@ -90,7 +87,7 @@ struct ping_response {
   };
 
   template <typename Archive>
-  void save(Archive& archive) const {
+  void Serialise(Archive& archive) const {
     archive(header);
   }
 
@@ -102,35 +99,25 @@ struct connect {
 
   connect() = default;
   connect(const connect&) = delete;
-  connect(connect&& other) MAIDSAFE_NOEXCEPT : our_endpoint(std::move(other.our_endpoint)),
+  connect(connect&& other) MAIDSAFE_NOEXCEPT : our_endpoints(std::move(other.our_endpoints)),
                                                header(std::move(other.header)) {}
-  connect(group_destination_id destination_in, single_source_id source_in, endpoint our_endpoint_in,
-          NodeId their_id_in)
-      : our_endpoint(std::move(our_endpoint_in)),
-        their_id(std::move(their_id_in)),
-        header(std::move(destination_in), std::move(source_in), message_id(RandomUint32()),
-               murmur_hash2(std::vector<byte>{})) {}
-  explicit connect(header header_in) : header(std::move(header_in)), our_endpoint(), their_id() {}
+  connect(destination_id destination_in, source_id source_in, rudp::endpoint_pair our_endpoint_in)
+      : our_endpoints(std::move(our_endpoint_in)),
+        header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   ~connect() = default;
   connect& operator=(const connect&) = delete;
   connect& operator=(connect&& other) MAIDSAFE_NOEXCEPT {
-    our_endpoint = std::move(other.our_endpoint);
+    our_endpoints = std::move(other.our_endpoints);
     header = std::move(other.header);
     return *this;
   };
 
   template <typename Archive>
-  void save(Archive& archive) const {
-    calculate murmur hash archive(x, y, z);
+  void Serialise(Archive& archive) const {
+    archive(header);
   }
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(x, y, z);
-  }
-
-  rudp::endpoint_pair our_endpoint;
-  NodeId their_id;
+  rudp::endpoint_pair our_endpoints;
   header header;
 };
 
@@ -159,8 +146,7 @@ struct forward_connect {
     return *this;
   };
 
-  forward_connect(group_source_id source_in, connect connect,
-                  asymm::PublicKey requesters_public_key_in)
+  forward_connect(source_id source_in, connect connect, asymm::PublicKey requesters_public_key_in)
       : requesters_endpoint(std::move(connect.our_endpoint)),
         requesters_nat_type(std::move(connect.our_nat_type)),
         requesters_public_key(std::move(requesters_public_key_in)),
