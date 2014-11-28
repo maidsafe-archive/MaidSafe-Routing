@@ -48,9 +48,7 @@ void Acknowledgement::RemoveAll() {
       ack_ids.push_back(timer.ack_id);
     }
   }
- 
   for (const auto& ack_id : ack_ids) {
-   
     Remove(ack_id);
   }
 }
@@ -76,9 +74,7 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
                                                 boost::posix_time::seconds(timeout)));
     timer->async_wait(handler);
     queue_.emplace_back(AckTimer(ack_id, message, timer, 0));
-   
   } else {
-   
     it->quantity++;
     it->timer->expires_from_now(boost::posix_time::seconds(timeout));
     if (it->quantity == Parameters::max_send_retry) {
@@ -100,15 +96,11 @@ void Acknowledgement::Remove(AckId ack_id) {
   if (it != std::end(queue_)) {
     it->timer->cancel();
     queue_.erase(it);
-   
-  } else {
-   
   }
 }
 
 void Acknowledgement::HandleMessage(AckId ack_id) {
   assert((ack_id != 0) && "Invalid acknowledgement id");
- 
   Remove(ack_id);
 }
 
@@ -120,9 +112,7 @@ bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
          (message.destination_id() != message.relay_id());
 }
 
-bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& node_id) {
- 
-
+bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& /*node_id*/) {
   if (message.ack_id() == 0)
     return false;
 
@@ -143,13 +133,10 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const NodeId& n
 
   if (message.source_id().empty())
     return false;
-
- 
   return true;
 }
 
 void Acknowledgement::AdjustAckHistory(protobuf::Message& message) {
- 
   if (message.relay_id() == kNodeId_.string())
     return;
   assert((message.ack_node_ids_size() <= 2) && "size of ack list must be smaller than 3");

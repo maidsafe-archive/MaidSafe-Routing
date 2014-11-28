@@ -175,17 +175,24 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   return holders_result;
 }
 
+bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) const {
+  if (new_close_nodes_.size() < Parameters::group_size)
+    return true;
+
+  std::vector<NodeId> holders(Parameters::group_size);
+  std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
+                         std::begin(holders), std::end(holders),
+                         [target](const NodeId& lhs, const NodeId& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target);
+  });
+
+  return (std::find(std::begin(holders), std::end(holders), node_id) != std::end(holders));
+}
+
 NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                         const NodeId& target) const {
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-
- 
-  for (const auto& node_id : new_close_nodes_)
-   
- 
-  for (const auto& pmid : online_pmids)
-   
 
   // In case storing to PublicPmid, the data shall not be stored on the Vault itself
   // However, the vault will appear in DM's routing table and affect result
@@ -194,9 +201,6 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
     return NodeId::CloserToTarget(lhs, rhs, target);
   });
- 
-  for (const auto& node : temp)
-   
 
   auto temp_itr(std::begin(temp));
   auto pmids_itr(std::begin(online_pmids));
@@ -210,7 +214,6 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
     if (++pmids_itr == std::end(online_pmids))
       pmids_itr = std::begin(online_pmids);
   }
- 
   return *pmids_itr;
 }
 
@@ -225,15 +228,6 @@ void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 }
 
 void CloseNodesChange::Print() const {
-  std::stringstream stream;
-  for (const auto& node_id : old_close_nodes_)
-    stream << "\n\t\tentry in old_close_nodes\t------\t" << node_id;
-
-  for (const auto& node_id : new_close_nodes_)
-    stream << "\n\t\tentry in new_close_nodes\t------\t" << node_id;
-
-  stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
-  stream << "\n\t\tentry in new_node\t------\t" << new_node_;
  
 }
 
