@@ -136,9 +136,9 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
             [this, &their_id](const node_info& lhs, const node_info& rhs) {
     return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
-  closer_to_target.erase(std::begin(closer_to_target) +
-                             std::min(parallelism, closer_to_target.size()),
-                         std::end(closer_to_target));
+  closer_to_target.erase(
+      std::begin(closer_to_target) + std::min(parallelism, closer_to_target.size()),
+      std::end(closer_to_target));
   return closer_to_target;
 }
 
