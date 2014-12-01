@@ -26,19 +26,22 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/ping.h"
 
-struct ping_response {
-  static const message_type_tag message_type = message_type_tag::ping_response;
+namespace maidsafe {
+namespace routing {
 
-  ping_response() = default;
-  ping_response(const ping_response&) = delete;
-  ping_response(ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  explicit ping_response(ping ping)
-      : header(destination_id(std::move(ping.header.source.data)),
-               source_id(std::move(ping.header.destination.data)),
-               message_id(std::move(ping.header.message_id))) {}
-  ~ping_response() = default;
-  ping_response& operator=(const ping_response&) = delete;
-  ping_response& operator=(ping_response&& other) MAIDSAFE_NOEXCEPT {
+struct Ping_response {
+  static const message_type_tag message_type = message_type_tag::Ping_response;
+
+  Ping_response() = default;
+  Ping_response(const Ping_response&) = delete;
+  Ping_response(Ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+  explicit Ping_response(Ping Ping)
+      : header(destination_id(std::move(Ping.header.source.data)),
+               source_id(std::move(Ping.header.destination.data)),
+               message_id(std::move(Ping.header.message_id))) {}
+  ~Ping_response() = default;
+  Ping_response& operator=(const Ping_response&) = delete;
+  Ping_response& operator=(Ping_response&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     return *this;
   };
@@ -50,6 +53,9 @@ struct ping_response {
 
   header header;
 };
+
+}  // namespace routing
+}  // namespace maidsafe
 
 
 #endif  // MAIDSAFE_ROUTING_PING_REPONSE_H_

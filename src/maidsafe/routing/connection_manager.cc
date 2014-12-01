@@ -32,11 +32,11 @@
 namespace maidsafe {
 namespace routing {
 
-bool connection_manager::suggest_node_to_add(const NodeId& node_to_add) {
+bool ConnectionManager::suggest_node_to_add(const NodeId& node_to_add) {
   return routing_table_.check_node(node_to_add);
 }
 
-std::vector<node_info> connection_manager::get_target(const NodeId& target_node) {
+std::vector<node_info> ConnectionManager::get_target(const NodeId& target_node) {
   auto targets(routing_table_.target_nodes(target_node));
   // remove any nodes we are not connected to
   targets.erase(std::remove_if(std::begin(targets), std::end(targets),
@@ -45,17 +45,17 @@ std::vector<node_info> connection_manager::get_target(const NodeId& target_node)
   return targets;
 }
 
-void connection_manager::lost_network_connection(const NodeId& node) {
+void ConnectionManager::lost_network_connection(const NodeId& node) {
   routing_table_.drop_node(node);
   group_changed();
 }
 
-void connection_manager::drop_node(const NodeId& their_id) {
+void ConnectionManager::drop_node(const NodeId& their_id) {
   routing_table_.drop_node(their_id);
   group_changed();
 }
 
-void connection_manager::add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair) {
+void ConnectionManager::add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair) {
   rudp::contact rudp_contact;
   rudp_contact.id = rudp::node_id(node_to_add.id);
   rudp_contact.endpoints = their_endpoint_pair;
@@ -77,7 +77,7 @@ void connection_manager::add_node(node_info node_to_add, rudp::endpoint_pair the
 }
 //################### private #############################
 
-void connection_manager::group_changed() {
+void ConnectionManager::group_changed() {
   auto new_nodeinfo_group(routing_table_.our_close_group());
   std::vector<NodeId> new_group;
   for (auto const& nodes : new_nodeinfo_group)

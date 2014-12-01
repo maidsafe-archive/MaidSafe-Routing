@@ -27,23 +27,23 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 
-struct connect {
-  connect() = default;
-  connect(const connect&) = delete;
-  connect(connect&& other) MAIDSAFE_NOEXCEPT
+struct Connect {
+  Connect() = default;
+  Connect(const connect&) = delete;
+  Connect(connect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
-  connect(destination_id destination_in, source_id source_in,
-          rudp::endpoint_pair requester_endpoints, NodeId receiver_id, NodeId receiver_id)
+  Connect(destination_id destination_in, source_id source_in,
+          rudp::EndpointPair requester_endpoints, NodeId receiver_id, NodeId receiver_id)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
         requester_id(std::move(requester_id)),
         receiver_id(std::move(receiver_id)) {}
-  ~connect() = default;
-  connect& operator=(const connect&) = delete;
-  connect& operator=(connect&& other) MAIDSAFE_NOEXCEPT {
+  ~Connect() = default;
+  Connect& operator=(const Connect&) = delete;
+  Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     requester_id = std::move(other.requester_id);
@@ -56,8 +56,8 @@ struct connect {
     archive(header, requester_endpoints, requester_id, receiver_id);
   }
 
-  header header;
-  rudp::endpoint_pair requester_endpoints;
+  MessageHeader header;
+  rudp::EndpointPair requester_endpoints;
   NodeId requester_id;
   NodeId receiver_id;
 };

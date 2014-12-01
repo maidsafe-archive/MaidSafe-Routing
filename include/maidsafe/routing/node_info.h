@@ -29,15 +29,15 @@ namespace maidsafe {
 
 namespace routing {
 
-struct node_info {
-  node_info() = default;
-  node_info(const node_info&) = default;
-  node_info(node_info&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
+struct NodeInfo {
+  NodeInfo() = default;
+  NodeInfo(const NodeInfo&) = default;
+  NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                    public_key(std::move(other.public_key)),
                                                    rank(std::move(other.rank)),
                                                    connected(std::move(other.connected)) {}
-  node_info& operator=(node_info const&) = default;
-  node_info& operator=(node_info&& other) MAIDSAFE_NOEXCEPT {
+  NodeInfo& operator=(NodeInfo const&) = default;
+  NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     public_key = std::move(other.public_key);
     rank = std::move(other.rank);
@@ -45,12 +45,12 @@ struct node_info {
     return *this;
   }
 
-  bool operator==(const node_info& other) const { return id == other.id; }
-  bool operator!=(const node_info& other) const { return !operator==(other); }
-  bool operator<(const node_info& other) const { return id < other.id; }
-  bool operator>(const node_info& other) const { return id > other.id; }
-  bool operator<=(const node_info& other) const { return !operator>(other); }
-  bool operator>=(const node_info& other) const { return !operator<(other); }
+  bool operator==(const NodeInfo& other) const { return id == other.id; }
+  bool operator!=(const NodeInfo& other) const { return !operator==(other); }
+  bool operator<(const NodeInfo& other) const { return id < other.id; }
+  bool operator>(const NodeInfo& other) const { return id > other.id; }
+  bool operator<=(const NodeInfo& other) const { return !operator>(other); }
+  bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
   NonEmptyString serialise() const;
 

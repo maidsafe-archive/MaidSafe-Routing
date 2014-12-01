@@ -35,39 +35,39 @@ namespace maidsafe {
 
 namespace routing {
 
-struct node_info;
+struct NodeInfo;
 
-class routing_table {
+class RoutingTable {
  public:
   static const size_t bucket_size;
   static const size_t parallelism;
-  static const size_t routing_table_size;
-  explicit routing_table(NodeId our_id);
-  routing_table(const routing_table&) = delete;
-  routing_table(routing_table&&) = delete;
-  routing_table& operator=(const routing_table&) = delete;
-  routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
-  ~routing_table() = default;
-  std::pair<bool, boost::optional<node_info>> add_node(node_info their_info);
+  static const size_t RoutingTable_size;
+  explicit RoutingTable(NodeId our_id);
+  RoutingTable(const RoutingTable&) = delete;
+  RoutingTable(RoutingTable&&) = delete;
+  RoutingTable& operator=(const RoutingTable&) = delete;
+  RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
+  ~RoutingTable() = default;
+  std::pair<bool, boost::optional<NodeInfo>> add_node(NodeInfo their_info);
   bool check_node(const NodeId& their_id) const;
   void drop_node(const NodeId& node_to_drop);
   // our close group or at least as much of it as we currently know
-  std::vector<node_info> our_close_group() const;
+  std::vector<NodeInfo> our_close_group() const;
   // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<node_info> target_nodes(const NodeId& their_id) const;
+  std::vector<NodeInfo> target_nodes(const NodeId& their_id) const;
   NodeId our_id() const { return our_id_; }
   size_t size() const;
 
  private:
   int32_t bucket_index(const NodeId& node_id) const;
   void sort();
-  std::vector<node_info>::const_iterator find_candidate_for_removal() const;
+  std::vector<NodeInfo>::const_iterator find_candidate_for_removal() const;
 
   unsigned int network_status(size_t size) const;
 
   const NodeId our_id_;
   mutable std::mutex mutex_;
-  std::vector<node_info> nodes_;
+  std::vector<NodeInfo> nodes_;
 };
 
 }  // namespace routing

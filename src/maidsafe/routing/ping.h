@@ -26,17 +26,19 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 
-struct ping {
+namespace maidsafe {
+namespace routing {
 
-  ping() = default;
-  ping(const ping&) = delete;
-  ping(ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  ping(destination_id destination_in, source_id source_in)
+struct Ping {
+  Ping() = default;
+  Ping(const Ping&) = delete;
+  Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+  Ping(destination_id destination_in, source_id source_in)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
-  explicit ping(header header_in) : header(std::move(header_in)) {}
-  ~ping() = default;
-  ping& operator=(const ping&) = delete;
-  ping& operator=(ping&& other) MAIDSAFE_NOEXCEPT {
+  explicit Ping(header header_in) : header(std::move(header_in)) {}
+  ~Ping() = default;
+  Ping& operator=(const Ping&) = delete;
+  Ping& operator=(Ping&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     return *this;
   };
@@ -48,6 +50,10 @@ struct ping {
 
   message_header header;
 };
+
+}  // namespace routing
+}  // namespace maidsafe
+
 
 
 #endif  // MAIDSAFE_ROUTING_PING_H_

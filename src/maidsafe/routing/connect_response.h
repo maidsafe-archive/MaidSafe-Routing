@@ -17,8 +17,8 @@
     use of the MaidSafe Software.
  */
 
-#ifndef MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
-#define MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_ConnectResponse_H_
+#define MAIDSAFE_ROUTING_ConnectResponse_H_
 
 #include "maidsafe/common/serialisation.h"
 #include "maidsafe/common/node_id.h"
@@ -28,24 +28,24 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/connect.h"
 
-struct connect_response {
-  connect_response() = default;
-  connect_response(const connect_response&) = delete;
-  connect_response(connect_response&& other) MAIDSAFE_NOEXCEPT
+struct ConnectResponse {
+  ConnectResponse() = default;
+  ConnectResponse(const ConnectResponse&) = delete;
+  ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
-  connect_response(connect originator, rudp::endpoint_pair receiver_endpoints)
+  ConnectResponse(connect originator, rudp::endpoint_pair receiver_endpoints)
       : header(std::move(originator.header.requester_id), std::move(originator.header.receiver_id), message_id(originator.header.message_id),
         requester_endpoints(std::move(originator.requester_endpoints)),
         receiver_endpoints(std::move(receiver_endpoints)),
         requester_id(std::move(originator.requester_id)),
         receiver_id(std::move(originato.receiver_id)) {}
-  ~connect_response() = default;
-  connect_response& operator=(const connect_response&) = delete;
-  connect_response& operator=(connect_response&& other) MAIDSAFE_NOEXCEPT {
+  ~ConnectResponse() = default;
+  ConnectResponse& operator=(const ConnectResponse&) = delete;
+  ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     requester_id = std::move(other.requester_id);
@@ -58,11 +58,11 @@ struct connect_response {
     archive(header, requester_endpoints, receiver_endpoints, requester_id, receiver_id);
   }
 
-  message_header header;
-  rudp::endpoint_pair requester_endpoints;
-  rudp::endpoint_pair receiver_endpoints;
+  MessageHeader header;
+  rudp::EndpointPair requester_endpoints;
+  rudp::EndpointPair receiver_endpoints;
   NodeId requester_id;
   NodeId receiver_id;
 };
 
-#endif  //  MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
+#endif  //  MAIDSAFE_ROUTING_ConnectResponse_H_

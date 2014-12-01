@@ -29,17 +29,16 @@
 
 namespace maidsafe {
 namespace routing {
-const std::chrono::seconds time_to_live;
 
-void filter::block(message_header header) {
+void Filter::Block(MessageHeader header) {
   if (!check(header)) {
     std::lock_guard<std::mutex> lock(mutex_);
     messages_.push_back({header, std::chrono::system_clock::now()});
   }
-  purge();
+  Purge();
 }
 
-bool filter::check(const message_header& header) {
+bool Filter::check(const MessageHeader& header) {
   std::lock_guard<std::mutex> lock(mutex_);
   return std::find_any(
       std::begin(messages_), std::end(mesages_),
@@ -47,7 +46,7 @@ bool filter::check(const message_header& header) {
                                        item) { return header == item.first; });
 }
 
-void filter::purge() {
+void Filter::Purge() {
   messages_.erase(std::remove_if(std::begin(messages_), std::end(messages_),
                                  [this](const std::pair < header,
                                         std::chrono::time_point<std::chrono::system_clock> & item) {

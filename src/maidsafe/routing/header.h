@@ -28,27 +28,27 @@ namespace maidsafe {
 
 namespace routing {
 
-struct message_header {
-  message_header() = default;
-  message_header(const message_header&) = delete;
-  message_header(message_header&& other) MAIDSAFE_NOEXCEPT
+struct MessageHeader {
+  MessageHeader() = default;
+  MessageHeader(const MessageHeader&) = delete;
+  MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
         message_id(std::move(other.message_id)) {}
-  message_header(destination_id destination_in, source_id source_in, message_id message_id_in,
-                 murmur_hash checksum_in, checksums other_checksums_in)
+  MessageHeader(DestinationId destination_in, SourceId source_in, MessageId message_id_in,
+                murmur_hash checksum_in, checksums other_checksums_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
         checksum(std::move(checksum_in)),
         other_checksums((std::move(other_checksums_in))) {}
-  message_header(destination_id destination_in, source_id source_in, message_id message_id_in)
+  MessageHeader(DestinationId destination_in, SourceId source_in, MessageId message_id_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)) {}
-  ~message_header() = default;
-  message_header& operator=(const message_header&) = delete;
-  message_header& operator=(message_header&& other) MAIDSAFE_NOEXCEPT {
+  ~MessageHeader() = default;
+  MessageHeader& operator=(const MessageHeader&) = delete;
+  MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination = std::move(other.destination);
     source = std::move(other.source);
     message_id = std::move(other.message_id);
@@ -56,7 +56,7 @@ struct message_header {
   }
 
   template <typename Archive>
-  void serialize(Archive& archive) {
+  void Serialize(Archive& archive) {
     archive(destination, source, message_id);
   }
 

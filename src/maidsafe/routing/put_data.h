@@ -28,19 +28,22 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 
-struct put_data {
-  put_data() = default;
-  put_data(const put_data&) = delete;
-  put_data(put_data&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name)) signature(std::move(other.signature)), data(std::move(other.data)), part(std::move(other.part)) {}
-  put_data(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature, std::vector<byte> data, uint8_t part)
+namespace maidsafe {
+namespace routing {
+
+struct PutData {
+  PutData() = default;
+  PutData(const PutData&) = delete;
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name)) signature(std::move(other.signature)), data(std::move(other.data)), part(std::move(other.part)) {}
+  PutData(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature, std::vector<byte> data, uint8_t part)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         data_name(std::move(other.data_name)),
         signature(std::move(signature)),
         data(std::move(data)),
         part(std::move(part)) {}
-  ~put_data() = default;
-  put_data& operator=(const put_data&) = delete;
-  put_data& operator=(put_data&& other) MAIDSAFE_NOEXCEPT {
+  ~PutData() = default;
+  PutData& operator=(const PutData&) = delete;
+  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     return *this;
   };
@@ -50,12 +53,16 @@ struct put_data {
     archive(header, signature, data, part);
   }
 
-  message_header header;
+  MessageHeader header;
   NodeId data_name;
   Signature signature;
   std::vector<byte> data;
   uint8_t part;
 };
+
+}  // namespace routing
+}  // namespace maidsafe
+
 
 
 #endif  // MAIDSAFE_ROUTING_PUT_DATA_H_

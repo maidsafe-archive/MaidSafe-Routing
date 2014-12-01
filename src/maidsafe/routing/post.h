@@ -28,19 +28,27 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 
-struct post {
-  post() = default;
-  post(const post&) = delete;
-  post(post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name)) signature(std::move(other.signature)), data(std::move(other.data)), part(std::move(other.part)) {}
-  post(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature, std::vector<byte> data, uint8_t part)
+namespace maidsafe {
+namespace routing {
+
+struct Post {
+  Post() = default;
+  Post(const Post&) = delete;
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                         data_name(std::move(other.data_name))
+                                         signature(std::move(other.signature)),
+                                         data(std::move(other.data)),
+                                         part(std::move(other.part)) {}
+  Post(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature,
+       std::vector<byte> data, uint8_t part)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         data_name(std::move(other.data_name)),
         signature(std::move(signature)),
         data(std::move(data)),
         part(std::move(part)) {}
-  ~post() = default;
-  post& operator=(const post&) = delete;
-  post& operator=(post&& other) MAIDSAFE_NOEXCEPT {
+  ~Post() = default;
+  Post& operator=(const Post&) = delete;
+  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     return *this;
   };
@@ -56,6 +64,9 @@ struct post {
   std::vector<byte> data;
   uint8_t part;
 };
+
+}  // namespace routing
+}  // namespace maidsafe
 
 
 #endif  // MAIDSAFE_ROUTING_POST_H_

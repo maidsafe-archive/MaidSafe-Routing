@@ -31,20 +31,20 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t group_size = 32;
-static const size_t quorum_size = 29;
-static const size_t default_routing_table_size = 64;
+static const size_t GroupSize = 32;
+static const size_t QuorumSize = 29;
+static const size_t DefaultRoutingTableSize = 64;
 
-using destination_id = TaggedValue<NodeId, struct DestinationTag>;
-using source_id = TaggedValue<NodeId, struct SourceTag>;
-using message_id = TaggedValue<uint32_t, struct MessageIdTag>;
-using endpoint = boost::asio::ip::udp::endpoint;
-using connection = boost::asio::ip::udp::endpoint;
+using DestinationId = TaggedValue<NodeId, struct DestinationTag>;
+using SourceId = TaggedValue<NodeId, struct SourceTag>;
+using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
+using Endpoint = boost::asio::ip::udp::endpoint;
+using Connection = boost::asio::ip::udp::endpoint;
 using byte = unsigned char;
-using murmur_hash = uint32_t;
-using checksums = std::array<murmur_hash, group_size - 1>;
-using serialised_message = std::vector<unsigned char>;
-using close_group_difference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
+using MurmurHash = uint32_t;
+using Checksums = std::array<murmur_hash, group_size - 1>;
+using SerialisedMessage = std::vector<unsigned char>;
+using CloseGroupDifference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
 
 }  // namespace routing
 

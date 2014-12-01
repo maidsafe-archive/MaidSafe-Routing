@@ -27,20 +27,20 @@
 namespace maidsafe {
 namespace routing {
 
-class filter {
+class Filter {
  public:
   static const std::chrono::seconds time_to_live(30);
-  filter() = default;
-  filter(filter const&) = default;
-  filter(filter&&) = delete;
-  ~filter() = default;
-  filter& operator=(filter const&) = default;
-  filter& operator=(filter&& rhs) = delete;
-  void block(message_header header);
-  bool check(const message_header&);
+  Filter() = default;
+  Filter(Filter const&) = default;
+  Filter(Filter&&) = delete;
+  ~Filter() = default;
+  Filter& operator=(filter const&) = default;
+  Filter& operator=(filter&& rhs) = delete;
+  void Block(MessageHeader header);
+  bool Check(const MessageHeader&);
 
  private:
-  void purge();
+  void Purge();
 
   std::vector<std::pair<header, std::chrono::time_point<std::chrono::system_clock>>> messages_;
   mutable std::mutex mutex_;
