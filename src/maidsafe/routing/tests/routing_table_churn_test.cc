@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -40,12 +40,12 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
 
   asymm::Keys key(asymm::GenerateKeyPair());
   auto routing_tables(routing_table_network(network_size));
-  std::vector<NodeId> node_ids;
-  node_ids.reserve(network_size);
+  std::vector<Address> Addresss;
+  Addresss.reserve(network_size);
 
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
-    node_ids.push_back(node->our_id());
+    Addresss.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
@@ -54,9 +54,9 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
     }
   }
   // now remove nodes
-  std::vector<NodeId> drop_vec;
+  std::vector<Address> drop_vec;
   drop_vec.reserve(nodes_to_remove);
-  std::copy(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove,
+  std::copy(std::begin(Addresss), std::begin(node_ids) + nodes_to_remove,
             std::back_inserter(drop_vec));
   routing_tables.erase(std::begin(routing_tables), std::begin(routing_tables) + nodes_to_remove);
 
@@ -65,15 +65,15 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
       node->drop_node(drop);
   }
   // remove ids too
-  node_ids.erase(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove);
+  Addresss.erase(std::begin(node_ids), std::begin(node_ids) + nodes_to_remove);
 
   for (const auto& node : routing_tables) {
     size_t size = std::min(group_size, static_cast<size_t>(node->size()));
     auto id = node->our_id();
-    // + 1 as node_ids includes our ID
-    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + size + 1, std::end(node_ids),
-                      [id](const NodeId& lhs,
-                           const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
+    // + 1 as Addresss includes our ID
+    std::partial_sort(std::begin(Addresss), std::begin(node_ids) + size + 1, std::end(node_ids),
+                      [id](const Address& lhs,
+                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, id); });
     auto groups = node->our_close_group();
     EXPECT_EQ(groups.size(), size);
     // currently disabled as nodes are not doing a get_close_group to begin and this
@@ -82,8 +82,8 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_churn) {
     // FIXME(dirvine) Create a closer to reality netwokr join  :23/11/2014
     // size = std::min(quorum_size, static_cast<size_t>(node->size()));
     // for (size_t i = 0; i < size; ++i) {
-    //   // + 1 as node_ids includes our ID
-    //   EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
+    //   // + 1 as Addresss includes our ID
+    //   EXPECT_EQ(groups.at(i).id, Addresss.at(i + 1)) << " node mismatch at " << i;
     // }
   }
 }

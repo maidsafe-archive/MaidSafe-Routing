@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_H_
 #define MAIDSAFE_ROUTING_ROUTING_H_
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -50,7 +50,7 @@ class VaultNode : private rudp::ManagedConnections::Listener {
   void Bootstrap();
 
 
-  const NodeId OurId() const;
+  const Address OurId() const;
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
   int NetworkStatus() const;
@@ -58,7 +58,7 @@ class VaultNode : private rudp::ManagedConnections::Listener {
  private:
   AsioServicei& asio_service_;
   rudp::ManagedConnections rudp_;
-  const NodeId our_id_;
+  const Address our_id_;
   const asymm::Keys keys_;
 };
 

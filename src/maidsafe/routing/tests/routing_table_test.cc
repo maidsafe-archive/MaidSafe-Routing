@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -35,19 +35,19 @@ namespace routing {
 namespace test {
 
 TEST(routing_table_test, BEH_add_close_nodes) {
-  NodeId node_id(RandomString(NodeId::kSize));
+  Address Address(RandomString(NodeId::kSize));
   const auto keys = asymm::GenerateKeyPair();
-  routing_table routing_table(node_id);
+  routing_table routing_table(Address);
   node_info node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
+    node.id = Address(RandomString(NodeId::kSize));
     EXPECT_TRUE(routing_table.check_node(node.id));
   }
   EXPECT_EQ(0, routing_table.size());
   // everything should be set to go now
   for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
+    node.id = Address(RandomString(NodeId::kSize));
     node.public_key = keys.public_key;
     EXPECT_TRUE(routing_table.add_node(node).first);
   }

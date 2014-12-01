@@ -22,7 +22,6 @@
 #include <cstdint>
 #include "maidsafe/routing/types.h"
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
 namespace maidsafe {
@@ -33,9 +32,9 @@ struct NodeInfo {
   NodeInfo() = default;
   NodeInfo(const NodeInfo&) = default;
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
-                                                   public_key(std::move(other.public_key)),
-                                                   rank(std::move(other.rank)),
-                                                   connected(std::move(other.connected)) {}
+                                                 public_key(std::move(other.public_key)),
+                                                 rank(std::move(other.rank)),
+                                                 connected(std::move(other.connected)) {}
   NodeInfo& operator=(NodeInfo const&) = default;
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
@@ -54,7 +53,7 @@ struct NodeInfo {
 
   NonEmptyString serialise() const;
 
-  NodeId id{};
+  Address id{};
   asymm::PublicKey public_key{};
   int32_t rank{0};
   bool connected{false};

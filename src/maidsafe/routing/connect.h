@@ -21,7 +21,7 @@
 #define MAIDSAFE_ROUTING_CONNECT_H_
 
 #include "maidsafe/common/serialisation.h"
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 
 
 #include "maidsafe/routing/message_header.h"
@@ -35,8 +35,8 @@ struct Connect {
         requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
-  Connect(destination_id destination_in, source_id source_in,
-          rudp::EndpointPair requester_endpoints, NodeId receiver_id, NodeId receiver_id)
+  Connect(DestinationAddress destination_in, SourceAddress source_in,
+          rudp::EndpointPair requester_endpoints, Address receiver_id, NodeId receiver_id)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
         requester_id(std::move(requester_id)),
@@ -58,8 +58,8 @@ struct Connect {
 
   MessageHeader header;
   rudp::EndpointPair requester_endpoints;
-  NodeId requester_id;
-  NodeId receiver_id;
+  Address requester_id;
+  Address receiver_id;
 };
 
 #endif  // MAIDSAFE_ROUTING_CONNECT_H_

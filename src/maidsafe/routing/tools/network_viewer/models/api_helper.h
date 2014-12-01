@@ -44,7 +44,7 @@ class APIHelper : public QObject {
   std::vector<network_viewer::ViewableNode> GetCloseNodes(int state_id,
                                                           const std::string& id) const;
   void NetworkUpdated(int state_id);
-  QString GetShortNodeId(std::string node_id) const;
+  QString GetShortAddress(std::string Address) const;
 
  signals:
   void RequestGraphRefresh(int state_id);

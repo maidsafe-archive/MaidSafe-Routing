@@ -21,7 +21,7 @@
 #define MAIDSAFE_ROUTING_ConnectResponse_H_
 
 #include "maidsafe/common/serialisation.h"
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 
 
 #include "maidsafe/routing/message_header.h"
@@ -61,8 +61,8 @@ struct ConnectResponse {
   MessageHeader header;
   rudp::EndpointPair requester_endpoints;
   rudp::EndpointPair receiver_endpoints;
-  NodeId requester_id;
-  NodeId receiver_id;
+  Address requester_id;
+  Address receiver_id;
 };
 
 #endif  //  MAIDSAFE_ROUTING_ConnectResponse_H_

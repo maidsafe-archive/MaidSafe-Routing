@@ -35,7 +35,7 @@ struct PutData {
   PutData() = default;
   PutData(const PutData&) = delete;
   PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name)) signature(std::move(other.signature)), data(std::move(other.data)), part(std::move(other.part)) {}
-  PutData(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature, std::vector<byte> data, uint8_t part)
+  PutData(DestinationAddress destination_in, SourceAddress source_in, Address data_name, Signature signature, std::vector<byte> data, uint8_t part)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         data_name(std::move(other.data_name)),
         signature(std::move(signature)),
@@ -54,7 +54,7 @@ struct PutData {
   }
 
   MessageHeader header;
-  NodeId data_name;
+  Address data_name;
   Signature signature;
   std::vector<byte> data;
   uint8_t part;

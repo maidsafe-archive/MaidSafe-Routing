@@ -35,8 +35,8 @@ struct node_common {
     message_handle = std::move(rhs.message_handle)
   }
 
-  void send(destination_id destination, std::string message);
-  void send_direct(destination_id destination, std::string message);
+  void send(DestinationAddress destination, std::string message);
+  void send_direct(DestinationAddress destination, std::string message);
 
 
 

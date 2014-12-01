@@ -62,27 +62,27 @@ class Commands {
   void PrintRoutingTable();
   void ZeroStateJoin();
   void Join();
-  void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key);
+  void Validate(const Address& Address, GivePublicKeyFunctor give_public_key);
   void SendMessages(int identity_index, const DestinationType& destination_type,
                     bool is_routing_req, int messages_count);
 
-  NodeId CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
+  Address CalculateClosests(const Address& target_id, std::vector<Address>& closests,
                            unsigned int num_of_closests);
   unsigned int MakeMessage(int id_index, const DestinationType& destination_type,
-                       std::vector<NodeId>& closest_nodes, NodeId& dest_id);
+                       std::vector<Address>& closest_nodes, Address& dest_id);
 
   void CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time);
 
   void SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
                     std::mutex& mutex, std::condition_variable& cond_var, int messages_count,
-                    unsigned int expect_respondent, std::vector<NodeId> closest_nodes,
-                    NodeId dest_id, std::string data);
+                    unsigned int expect_respondent, std::vector<Address> closest_nodes,
+                    Address dest_id, std::string data);
   void PerformanceTest();
   void RunPerformanceTest(bool is_send_group);
 
   std::shared_ptr<GenericNode> demo_node_;
   std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys_;
-  std::vector<NodeId> all_ids_;
+  std::vector<Address> all_ids_;
   int identity_index_;
   boost::asio::ip::udp::endpoint bootstrap_peer_ep_;
   size_t data_size_;

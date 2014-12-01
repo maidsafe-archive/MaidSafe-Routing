@@ -32,7 +32,7 @@ struct GetData {
   GetData() = default;
   GetData(const GetData&) = delete;
   GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name))  {}
-  GetData(destination_id destination_in, source_id source_in, NodeId data_name)
+  GetData(DestinationAddress destination_in, SourceAddress source_in, Address data_name)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         data_name(std::move(data_name)) {}
   ~GetData() = default;
@@ -48,7 +48,7 @@ struct GetData {
   }
 
   message_header header;
-  NodeId data_name;
+  Address data_name;
 };
 
 

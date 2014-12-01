@@ -39,7 +39,7 @@ struct Post {
                                          signature(std::move(other.signature)),
                                          data(std::move(other.data)),
                                          part(std::move(other.part)) {}
-  Post(destination_id destination_in, source_id source_in, NodeId data_name, Signature signature,
+  Post(DestinationAddress destination_in, SourceAddress source_in, Address data_name, Signature signature,
        std::vector<byte> data, uint8_t part)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
         data_name(std::move(other.data_name)),
@@ -59,7 +59,7 @@ struct Post {
   }
 
   message_header header;
-  NodeId data_name;
+  Address data_name;
   Signature signature;
   std::vector<byte> data;
   uint8_t part;

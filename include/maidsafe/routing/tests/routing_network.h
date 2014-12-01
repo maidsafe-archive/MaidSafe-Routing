@@ -28,7 +28,7 @@
 //
 // #include "boost/asio/ip/udp.hpp"
 //
-// #include "maidsafe/common/node_id.h"
+// #include "maidsafe/common/Address.h"
 // #include "maidsafe/common/test.h"
 // #include "maidsafe/common/utils.h"
 //
@@ -85,9 +85,9 @@
 //   GenericNode(const passport::Maid& maid, bool has_symmetric_nat = false);
 //   virtual ~GenericNode();
 //   int GetStatus() const;
-//   NodeId node_id() const;
+//   Address Address() const;
 //   size_t id() const;
-//   NodeId connection_id() const;
+//   Address connection_id() const;
 //   boost::asio::ip::udp::endpoint endpoint() const;
 //   std::shared_ptr<Routing> routing() const;
 //   NodeInfo node_info() const;
@@ -103,11 +103,11 @@
 //   int ZeroStateJoin(const boost::asio::ip::udp::endpoint& peer_endpoint,
 //                     const NodeInfo& peer_node_info);
 //   void Join();
-//   void SendDirect(const NodeId& destination_id, const std::string& data, bool cacheable,
+//   void SendDirect(const Address& DestinationAddress, const std::string& data, bool cacheable,
 //                   ResponseFunctor response_functor);
-//   void SendGroup(const NodeId& destination_id, const std::string& data, bool cacheable,
+//   void SendGroup(const Address& DestinationAddress, const std::string& data, bool cacheable,
 //                  ResponseFunctor response_functor);
-//   void SendMessage(const NodeId& destination_id, protobuf::Message& proto_message);
+//   void SendMessage(const Address& DestinationAddress, protobuf::Message& proto_message);
 //
 //   template <typename T>
 //   void Send(const T& message);
@@ -115,26 +115,26 @@
 //   void AddTask(const ResponseFunctor& response_functor, int expected_response_count,
 //                TaskId task_id);
 //
-//   std::future<std::vector<NodeId>> GetGroup(const NodeId& info_id);
-//   GroupRangeStatus IsNodeIdInGroupRange(const NodeId& node_id);
+//   std::future<std::vector<Address>> GetGroup(const Address& info_id);
+//   GroupRangeStatus IsAddressInGroupRange(const Address& Address);
 //   void SendToClosestNode(const protobuf::Message& message);
-//   void RudpSend(const NodeId& peer_endpoint, const protobuf::Message& message,
+//   void RudpSend(const Address& peer_endpoint, const protobuf::Message& message,
 //                 rudp::MessageSentFunctor message_sent_functor);
 //   void PrintRoutingTable();
-//   std::vector<NodeId> ReturnRoutingTable();
-//   bool RoutingTableHasNode(const NodeId& node_id);
-//   bool ClientRoutingTableHasNode(const NodeId& node_id);
+//   std::vector<Address> ReturnRoutingTable();
+//   bool RoutingTableHasNode(const Address& Address);
+//   bool ClientRoutingTableHasNode(const Address& Address);
 //   NodeInfo GetRemovableNode();
-//   NodeInfo GetNthClosestNode(const NodeId& target_id, unsigned int node_number);
-//   testing::AssertionResult DropNode(const NodeId& node_id);
+//   NodeInfo GetNthClosestNode(const Address& target_id, unsigned int node_number);
+//   testing::AssertionResult DropNode(const Address& Address);
 //   std::vector<NodeInfo> RoutingTable() const;
-//   NodeId GetRandomExistingNode() const;
+//   Address GetRandomExistingNode() const;
 //   std::vector<NodeInfo> ClosestNodes();
-//   bool IsConnectedVault(const NodeId& node_id);
-//   bool IsConnectedClient(const NodeId& node_id);
-//   void AddNodeToRandomNodeHelper(const NodeId& node_id);
-//   void RemoveNodeFromRandomNodeHelper(const NodeId& node_id);
-//   bool NodeSubscribedForGroupUpdate(const NodeId& node_id);
+//   bool IsConnectedVault(const Address& Address);
+//   bool IsConnectedClient(const Address& Address);
+//   void AddNodeToRandomNodeHelper(const Address& Address);
+//   void RemoveNodeFromRandomNodeHelper(const Address& Address);
+//   bool NodeSubscribedForGroupUpdate(const Address& Address);
 //   void SetCloseNodesChangeFunctor(CloseNodesChangeFunctor close_nodes_change_functor);
 //
 //   void PostTaskToAsioService(std::function<void()> functor);
@@ -142,7 +142,7 @@
 //   std::string SerializeRoutingTable();
 //   passport::Maid GetMaid();
 //
-//   static size_t next_node_id_;
+//   static size_t next_Address_;
 //   size_t MessagesSize() const;
 //   void ClearMessages();
 //   asymm::PublicKey public_key();
@@ -203,12 +203,12 @@
 //   void AddClient(bool has_symmetric_nat = false);
 //   void AddMutatingClient(bool has_symmetric_nat = false);
 //   void AddVault(bool has_symmetric_nat = false);
-//   bool RemoveNode(const NodeId& node_id);
+//   bool RemoveNode(const Address& Address);
 //   bool WaitForNodesToJoin();
 //   bool WaitForNodesToJoin(size_t num_total_nodes);
-//   void Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) const;
+//   void Validate(const Address& Address, GivePublicKeyFunctor give_public_key) const;
 //   void SetNodeValidationFunctor(NodePtr node);
-//   std::vector<NodeId> GroupIds(const NodeId& node_id) const;
+//   std::vector<Address> GroupIds(const Address& Address) const;
 //   void PrintRoutingTables() const;
 //   unsigned int RandomNodeIndex() const;
 //   unsigned int RandomClientIndex() const;
@@ -218,40 +218,40 @@
 //   void RemoveRandomClient();
 //   void RemoveRandomVault();
 //   void ClearMessages();
-//   int NodeIndex(const NodeId& node_id) const;
+//   int NodeIndex(const Address& Address) const;
 //   size_t ClientIndex() const { return client_index_; }
-//   std::vector<NodeId> GetAllNodeIds() const;
-//   std::vector<NodeId> GetGroupForId(const NodeId& node_id) const;
-//   std::vector<NodeInfo> GetClosestNodes(const NodeId& target_id, uint32_t quantity,
+//   std::vector<Address> GetAllNodeIds() const;
+//   std::vector<Address> GetGroupForId(const Address& Address) const;
+//   std::vector<NodeInfo> GetClosestNodes(const Address& target_id, uint32_t quantity,
 //                                         bool vault_only = false) const;
-//   std::vector<NodeInfo> GetClosestVaults(const NodeId& target_id, uint32_t quantity) const;
-//   void ValidateExpectedNodeType(const NodeId& node_id,
+//   std::vector<NodeInfo> GetClosestVaults(const Address& target_id, uint32_t quantity) const;
+//   void ValidateExpectedNodeType(const Address& Address,
 //                                 const ExpectedNodeType& expected_node_type) const;
 //   bool RestoreComposition();
 //   // For num. vaults <= max_routing_table_size
 //   bool WaitForHealthToStabilise() const;
-//   bool NodeHasSymmetricNat(const NodeId& node_id) const;
+//   bool NodeHasSymmetricNat(const Address& Address) const;
 //   // Do SendDirect between each pair of nodes and monitor results (do this 'repeats' times)
 //   testing::AssertionResult SendDirect(size_t repeats, size_t message_size = (2 ^ 10) * 256);
 //   // Do SendGroup from source_index node to target ID and monitor results (do this 'repeats'
 //   times)
-//   testing::AssertionResult SendGroup(const NodeId& target_id, size_t repeats,
+//   testing::AssertionResult SendGroup(const Address& target_id, size_t repeats,
 //                                      unsigned int source_index = 0,
 //                                      size_t message_size = (2 ^ 10) * 256);
-//   // Do SendDirect from each node to destination_node_id and monitor results. The
+//   // Do SendDirect from each node to destination_Address and monitor results. The
 //   ExpectedNodeType
-//   // of destination_node_id should be correctly specified when calling this function.
-//   testing::AssertionResult SendDirect(const NodeId& destination_node_id,
+//   // of destination_Address should be correctly specified when calling this function.
+//   testing::AssertionResult SendDirect(const Address& destination_Address,
 //                                       const ExpectedNodeType& destination_node_type =
 //                                       kExpectVault);
-//   // Do SendDirect from source_node to destination_node_id and monitor results. The
+//   // Do SendDirect from source_node to destination_Address and monitor results. The
 //   ExpectedNodeType
-//   // of destination_node_id should be correctly specified when calling this function.
+//   // of destination_Address should be correctly specified when calling this function.
 //   testing::AssertionResult SendDirect(std::shared_ptr<GenericNode> source_node,
-//                                       const NodeId& destination_node_id,
+//                                       const Address& destination_Address,
 //                                       const ExpectedNodeType& destination_node_type =
 //                                       kExpectVault);
-//   void AddPublicKey(const NodeId& node_id, const asymm::PublicKey& public_key);
+//   void AddPublicKey(const Address& Address, const asymm::PublicKey& public_key);
 //
 //   friend class NodesEnvironment;
 //
@@ -261,7 +261,7 @@
 //   void AddNodeDetails(NodePtr node);
 //
 //   mutable std::mutex mutex_, fobs_mutex_;
-//   std::map<NodeId, asymm::PublicKey> public_keys_;
+//   std::map<Address, asymm::PublicKey> public_keys_;
 //   unsigned int client_index_;
 //   bool nat_info_available_;
 //   std::unique_ptr<ScopedBootstrapFile> bootstrap_file_;

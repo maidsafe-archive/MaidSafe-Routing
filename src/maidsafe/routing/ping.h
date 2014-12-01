@@ -33,7 +33,7 @@ struct Ping {
   Ping() = default;
   Ping(const Ping&) = delete;
   Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  Ping(destination_id destination_in, source_id source_in)
+  Ping(DestinationAddress destination_in, SourceAddress source_in)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   explicit Ping(header header_in) : header(std::move(header_in)) {}
   ~Ping() = default;

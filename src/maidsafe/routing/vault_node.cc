@@ -18,7 +18,7 @@
 
 #include "maidsafe/routing/vault_node.h"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"

@@ -21,7 +21,7 @@
 
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -43,7 +43,7 @@ murmur_hash murmur_hash2(const std::vector<byte>& input);
 // #include "boost/asio/ip/udp.hpp"
 //
 // #include "maidsafe/common/rsa.h"
-// #include "maidsafe/common/node_id.h"
+// #include "maidsafe/common/Address.h"
 //
 // #include "maidsafe/rudp/managed_connections.h"
 //
@@ -66,24 +66,24 @@ murmur_hash murmur_hash2(const std::vector<byte>& input);
 // class ClientRoutingTable;
 // class RoutingTable;
 //
-// int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
-//               const NodeId& peer_id, const NodeId& peer_connection_id,
+// int AddToRudp(Network& network, const Address& this_Address, const Address& this_connection_id,
+//               const Address& peer_id, const Address& peer_connection_id,
 //               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client);
 //
 // bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
-//                                   ClientRoutingTable& client_routing_table, const NodeId&
+//                                   ClientRoutingTable& client_routing_table, const Address&
 //                                   peer_id,
-//                                   const NodeId& connection_id, const asymm::PublicKey&
+//                                   const Address& connection_id, const asymm::PublicKey&
 //                                   public_key,
 //                                   bool client);
 //
 // void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
-//                                 const NodeInfo& new_close_node, const NodeId& this_node_id);
+//                                 const NodeInfo& new_close_node, const Address& this_Address);
 //
-// // GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
-// //                                   const NodeId& this_node_id,
+// // GroupRangeStatus GetProximalRange(const Address& target_id, const Address& Address,
+// //                                   const Address& this_Address,
 // //                                   const crypto::BigInt& proximity_radius,
-// //                                   const std::vector<NodeId>& holders);
+// //                                   const std::vector<Address>& holders);
 //
 // bool IsRoutingMessage(const protobuf::Message& message);
 // bool IsNodeLevelMessage(const protobuf::Message& message);
@@ -94,11 +94,11 @@ murmur_hash murmur_hash2(const std::vector<byte>& input);
 // bool IsCacheablePut(const protobuf::Message& message);
 // bool IsAck(const protobuf::Message& message);
 // bool IsConnectSuccessAcknowledgement(const protobuf::Message& message);
-// bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
+// bool IsClientToClientMessageWithDifferentAddresss(const protobuf::Message& message,
 //                                                  const bool is_destination_client);
 // bool CheckId(const std::string& id_to_test);
 // bool ValidateMessage(const protobuf::Message& message);
-NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
+Address NodeInNthBucket(const Address& Address, int bucket);
 // void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
 //                          protobuf::Endpoint* pb_endpoint);
 // boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
@@ -108,8 +108,8 @@ NodeId NodeInNthBucket(const NodeId& node_id, int bucket);
 // protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 // rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 // std::string PrintMessage(const protobuf::Message& message);
-// std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str);
-// std::string SerializeNodeIdList(const std::vector<NodeId>& node_list);
+// std::vector<Address> DeserializeNodeIdList(const std::string& node_list_str);
+// std::string SerializeAddressList(const std::vector<Address>& node_list);
 // SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message);
 // SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message);
 // GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message);

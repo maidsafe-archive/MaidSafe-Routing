@@ -36,8 +36,8 @@ struct Ping_response {
   Ping_response(const Ping_response&) = delete;
   Ping_response(Ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
   explicit Ping_response(Ping Ping)
-      : header(destination_id(std::move(Ping.header.source.data)),
-               source_id(std::move(Ping.header.destination.data)),
+      : header(DestinationAddress(std::move(Ping.header.source.data)),
+               SourceAddress(std::move(Ping.header.destination.data)),
                message_id(std::move(Ping.header.message_id))) {}
   ~Ping_response() = default;
   Ping_response& operator=(const Ping_response&) = delete;

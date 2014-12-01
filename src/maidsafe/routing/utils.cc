@@ -98,7 +98,7 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 // #include "boost/filesystem/path.hpp"
 //
 // #include "maidsafe/common/log.h"
-// #include "maidsafe/common/node_id.h"
+// #include "maidsafe/common/Address.h"
 // #include "maidsafe/rudp/return_codes.h"
 //
 // #include "maidsafe/routing/client_routing_table.h"
@@ -110,13 +110,13 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 // #include "maidsafe/routing/routing_table.h"
 // #include "maidsafe/routing/rpcs.h"
 //
-// int AddToRudp(Network& network, const NodeId& this_node_id, const NodeId& this_connection_id,
-//               const NodeId& peer_id, const NodeId& peer_connection_id,
+// int AddToRudp(Network& network, const Address& this_Address, const Address& this_connection_id,
+//               const Address& peer_id, const Address& peer_connection_id,
 //               rudp::EndpointPair peer_endpoint_pair, bool requestor, bool client) {
 //   LOG(kVerbose) << "AddToRudp. peer_id: " << peer_id << " ,connection id: " <<
 //   peer_connection_id;
 //   protobuf::Message connect_success(
-//       rpcs::ConnectSuccess(peer_id, this_node_id, this_connection_id, requestor, client));
+//       rpcs::ConnectSuccess(peer_id, this_Address, this_connection_id, requestor, client));
 //   int result =
 //       network.Add(peer_connection_id, peer_endpoint_pair, connect_success.SerializeAsString());
 //   if (result == rudp::kConnectionAlreadyExists) {
@@ -132,13 +132,13 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 // }
 //
 // bool ValidateAndAddToRoutingTable(Network& network, RoutingTable& routing_table,
-//                                   ClientRoutingTable& client_routing_table, const NodeId&
+//                                   ClientRoutingTable& client_routing_table, const Address&
 //                                   peer_id,
-//                                   const NodeId& connection_id, const asymm::PublicKey&
+//                                   const Address& connection_id, const asymm::PublicKey&
 //                                   public_key,
 //                                   bool client) {
 //   if (network.MarkConnectionAsValid(connection_id) != kSuccess) {
-//     LOG(kError) << "[" << routing_table.kNodeId()
+//     LOG(kError) << "[" << routing_table.kAddress()
 //                 << "]  Rudp failed to validate connection with  Peer id : " << peer_id
 //                 << " , Connection id : " << connection_id;
 //     return false;
@@ -150,11 +150,11 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   peer.connection_id = connection_id;
 //   bool routing_accepted_node(false);
 //   if (client) {
-//     NodeId furthest_close_node_id =
-//         routing_table.GetNthClosestNode(NodeId(routing_table.kNodeId()),
+//     Address furthest_close_Address =
+//         routing_table.GetNthClosestNode(Address(routing_table.kNodeId()),
 //                                         2 * Parameters::closest_nodes_size).id;
 //
-//     if (client_routing_table.AddNode(peer, furthest_close_node_id))
+//     if (client_routing_table.AddNode(peer, furthest_close_Address))
 //       routing_accepted_node = true;
 //   } else {  // Vaults
 //     if (routing_table.AddNode(peer))
@@ -162,14 +162,14 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   }
 //
 //   if (routing_accepted_node) {
-//     LOG(kVerbose) << "[" << routing_table.kNodeId() << "] "
+//     LOG(kVerbose) << "[" << routing_table.kAddress() << "] "
 //                   << "added " << (client ? "client-" : "") << "node to " << (client ? "non-" :
 //                   "")
 //                   << "routing table.  Node ID: " << HexSubstr(peer_id.string());
 //     return true;
 //   }
 //
-//   LOG(kInfo) << "[" << routing_table.kNodeId() << "] "
+//   LOG(kInfo) << "[" << routing_table.kAddress() << "] "
 //              << "failed to add " << (client ? "client-" : "") << "node to "
 //              << (client ? "non-" : "") << "routing table.  Node ID: " <<
 //              HexSubstr(peer_id.string())
@@ -179,35 +179,35 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 // }
 //
 // void InformClientOfNewCloseNode(Network& network, const NodeInfo& client,
-//                                 const NodeInfo& new_close_node, const NodeId& this_node_id) {
+//                                 const NodeInfo& new_close_node, const Address& this_Address) {
 //   protobuf::Message inform_client_of_new_close_node(
-//       rpcs::InformClientOfNewCloseNode(new_close_node.id, this_node_id, client.id));
+//       rpcs::InformClientOfNewCloseNode(new_close_node.id, this_Address, client.id));
 //   network.SendToDirect(inform_client_of_new_close_node, client.id, client.connection_id);
 // }
 //
-// // GroupRangeStatus GetProximalRange(const NodeId& target_id, const NodeId& node_id,
-// //                                   const NodeId& this_node_id,
+// // GroupRangeStatus GetProximalRange(const Address& target_id, const Address& Address,
+// //                                   const Address& this_Address,
 // //                                   const crypto::BigInt& proximity_radius,
-// //                                   const std::vector<NodeId>& holders) {
+// //                                   const std::vector<Address>& holders) {
 // //   assert((std::find(holders.begin(), holders.end(), target_id) == holders.end()) &&
 // //          "Ensure to remove target id entry from holders, if present");
 // //   assert(std::is_sorted(holders.begin(), holders.end(),
-// //                         [target_id](const NodeId & lhs, const NodeId & rhs) {
-// //            return NodeId::CloserToTarget(lhs, rhs, target_id);
+// //                         [target_id](const Address & lhs, const NodeId & rhs) {
+// //            return Address::CloserToTarget(lhs, rhs, target_id);
 // //          }) &&
 // //          "Ensure to sort holders in order of distance to targer_id");
 // //   assert(holders.size() <= Parameters::group_size);
 // //
-// //   if ((target_id == node_id) || (target_id == this_node_id))
+// //   if ((target_id == Address) || (target_id == this_node_id))
 // //     return GroupRangeStatus::kOutwithRange;
 // //
-// //   if (std::find(holders.begin(), holders.end(), node_id) != holders.end()) {
+// //   if (std::find(holders.begin(), holders.end(), Address) != holders.end()) {
 // //     return GroupRangeStatus::kInRange;
 // //   }
 // //
-// //   NodeId distance_id(node_id ^ target_id);
+// //   Address distance_id(Address ^ target_id);
 // //   crypto::BigInt distance((distance_id.ToStringEncoded(
-// //       NodeId::EncodingType::kHex) + 'h').c_str());
+// //       Address::EncodingType::kHex) + 'h').c_str());
 // //   return (distance < proximity_radius) ? GroupRangeStatus::kInProximalRange
 // //                                        : GroupRangeStatus::kOutwithRange;
 // // }
@@ -242,13 +242,13 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   return message.type() == static_cast<int>(MessageType::kConnectSuccessAcknowledgement);
 // }
 //
-// bool IsClientToClientMessageWithDifferentNodeIds(const protobuf::Message& message,
+// bool IsClientToClientMessageWithDifferentAddresss(const protobuf::Message& message,
 //                                                  const bool is_destination_client) {
 //   return (is_destination_client && message.request() && message.client_node() &&
-//           (message.destination_id() != message.source_id()));
+//           (message.DestinationAddress() != message.SourceAddress()));
 // }
 //
-// bool CheckId(const std::string& id_to_test) { return id_to_test.size() == NodeId::kSize; }
+// bool CheckId(const std::string& id_to_test) { return id_to_test.size() == Address::kSize; }
 //
 // bool ValidateMessage(const protobuf::Message& message) {
 //   if (!message.IsInitialized()) {
@@ -264,36 +264,36 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //     LOG(kError) << "Message has traversed more hops than expected. "
 //                 << Parameters::max_route_history
 //                 << " last hops in route history are: " << route_history
-//                 << " \nMessage source: " << HexSubstr(message.source_id())
-//                 << ", \nMessage destination: " << HexSubstr(message.destination_id())
+//                 << " \nMessage source: " << HexSubstr(message.SourceAddress())
+//                 << ", \nMessage destination: " << HexSubstr(message.DestinationAddress())
 //                 << ", \nMessage type: " << message.type() << ", \nMessage id: " << message.id();
 //     return false;
 //   }
 //   // Invalid destination id, unknown message
-//   if (!CheckId(message.destination_id())) {
+//   if (!CheckId(message.DestinationAddress())) {
 //     LOG(kWarning) << "Stray message dropped, need destination ID for processing."
 //                   << " id: " << message.id();
 //     return false;
 //   }
 //
-//   if (!(message.has_source_id() || (message.has_relay_id() &&
+//   if (!(message.has_SourceAddress() || (message.has_relay_id() &&
 //   message.has_relay_connection_id()))) {
 //     LOG(kWarning) << "Message should have either src id or relay information.";
 //     assert(false && "Message should have either src id or relay information.");
 //     return false;
 //   }
 //
-//   if (message.has_source_id() && !CheckId(message.source_id())) {
+//   if (message.has_SourceAddress() && !CheckId(message.source_address())) {
 //     LOG(kWarning) << "Invalid source id field.";
 //     return false;
 //   }
 //
-//   if (message.has_relay_id() && NodeId(message.relay_id()).IsZero()) {
+//   if (message.has_relay_id() && Address(message.relay_id()).IsZero()) {
 //     LOG(kWarning) << "Invalid relay id field.";
 //     return false;
 //   }
 //
-//   if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).IsZero()) {
+//   if (message.has_relay_connection_id() && Address(message.relay_connection_id()).IsZero()) {
 //     LOG(kWarning) << "Invalid relay connection id field.";
 //     return false;
 //   }
@@ -314,14 +314,14 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   return true;
 // }
 
-// NodeId NodeInNthBucket(const NodeId& node_id, int bucket) {
-//   // assert(bucket < NodeId::kSize * 8);
-//   auto binary_string(node_id.ToStringEncoded(NodeId::EncodingType::kBinary));
+// Address NodeInNthBucket(const Address& Address, int bucket) {
+//   // assert(bucket < Address::kSize * 8);
+//   auto binary_string(Address.ToStringEncoded(Address::EncodingType::kBinary));
 //   while (bucket >= 0) {
 //     binary_string.at(bucket) = (binary_string.at(bucket) == '1') ? '0' : '1';
 //     bucket--;
 //   }
-//   return NodeId(binary_string, NodeId::EncodingType::kBinary);
+//   return Address(binary_string, NodeId::EncodingType::kBinary);
 // }
 //
 // void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
@@ -425,10 +425,10 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   s += MessageTypeString(message);
 //   std::string direct((message.direct() ? "direct" : "group"));
 //   s += std::string("\n direct : " + direct);
-//   if (message.has_source_id())
-//     s += std::string("\n source_id : " + HexSubstr(message.source_id()));
-//   if (message.has_destination_id())
-//     s += std::string("\n destination_id : " + HexSubstr(message.destination_id()));
+//   if (message.has_SourceAddress())
+//     s += std::string("\n SourceAddress : " + HexSubstr(message.source_address()));
+//   if (message.has_DestinationAddress())
+//     s += std::string("\n DestinationAddress : " + HexSubstr(message.destination_id()));
 //   if (message.has_relay_id())
 //     s += std::string("\n relay_id : " + HexSubstr(message.relay_id()));
 //   if (message.has_relay_connection_id())
@@ -441,72 +441,72 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //   return s;
 // }
 //
-// std::vector<NodeId> DeserializeNodeIdList(const std::string& node_list_str) {
-//   std::vector<NodeId> node_list;
-//   protobuf::NodeIdList node_list_msg;
+// std::vector<Address> DeserializeNodeIdList(const std::string& node_list_str) {
+//   std::vector<Address> node_list;
+//   protobuf::AddressList node_list_msg;
 //   node_list_msg.ParseFromString(node_list_str);
-//   for (int i = 0; i < node_list_msg.node_id_list_size(); ++i)
-//     node_list.push_back(NodeId(node_list_msg.node_id_list(i).node_id()));
+//   for (int i = 0; i < node_list_msg.Address_list_size(); ++i)
+//     node_list.push_back(Address(node_list_msg.Address_list(i).node_id()));
 //   return node_list;
 // }
 //
-// std::string SerializeNodeIdList(const std::vector<NodeId>& node_list) {
-//   protobuf::NodeIdList node_list_msg;
-//   for (const auto& node_id : node_list) {
-//     auto entry = node_list_msg.add_node_id_list();
-//     entry->set_node_id(node_id.string());
+// std::string SerializeAddressList(const std::vector<Address>& node_list) {
+//   protobuf::AddressList node_list_msg;
+//   for (const auto& Address : node_list) {
+//     auto entry = node_list_msg.add_Address_list();
+//     entry->set_Address(node_id.string());
 //   }
 //   return node_list_msg.SerializeAsString();
 // }
 //
 // SingleToSingleMessage CreateSingleToSingleMessage(const protobuf::Message& proto_message) {
 //   return SingleToSingleMessage(proto_message.data(0),
-//                                SingleSource(NodeId(proto_message.source_id())),
-//                                SingleId(NodeId(proto_message.destination_id())),
+//                                SingleSource(Address(proto_message.SourceAddress())),
+//                                SingleId(Address(proto_message.DestinationAddress())),
 //                                static_cast<Cacheable>(proto_message.cacheable()));
 // }
 //
 // SingleToGroupMessage CreateSingleToGroupMessage(const protobuf::Message& proto_message) {
 //   return SingleToGroupMessage(proto_message.data(0),
-//                               SingleSource(NodeId(proto_message.source_id())),
-//                               GroupId(NodeId(proto_message.group_destination())),
+//                               SingleSource(Address(proto_message.SourceAddress())),
+//                               GroupId(Address(proto_message.group_destination())),
 //                               static_cast<Cacheable>(proto_message.cacheable()));
 // }
 //
 // GroupToSingleMessage CreateGroupToSingleMessage(const protobuf::Message& proto_message) {
 //   return GroupToSingleMessage(proto_message.data(0),
-//                               GroupSource(GroupId(NodeId(proto_message.group_source())),
-//                                           SingleId(NodeId(proto_message.source_id()))),
-//                               SingleId(NodeId(proto_message.destination_id())),
+//                               GroupSource(GroupId(Address(proto_message.group_source())),
+//                                           SingleId(Address(proto_message.SourceAddress()))),
+//                               SingleId(Address(proto_message.DestinationAddress())),
 //                               static_cast<Cacheable>(proto_message.cacheable()));
 // }
 //
 // GroupToGroupMessage CreateGroupToGroupMessage(const protobuf::Message& proto_message) {
 //   return GroupToGroupMessage(proto_message.data(0),
-//                              GroupSource(GroupId(NodeId(proto_message.group_source())),
-//                                          SingleId(NodeId(proto_message.source_id()))),
-//                              GroupId(NodeId(proto_message.group_destination())),
+//                              GroupSource(GroupId(Address(proto_message.group_source())),
+//                                          SingleId(Address(proto_message.SourceAddress()))),
+//                              GroupId(Address(proto_message.group_destination())),
 //                              static_cast<Cacheable>(proto_message.cacheable()));
 // }
 //
 // SingleToGroupRelayMessage CreateSingleToGroupRelayMessage(const protobuf::Message& proto_message)
 // {
-//   SingleSource single_src(NodeId(proto_message.relay_id()));
-//   NodeId connection_id(proto_message.relay_connection_id());
-//   SingleSource single_src_relay_node(NodeId(proto_message.source_id()));
+//   SingleSource single_src(Address(proto_message.relay_id()));
+//   Address connection_id(proto_message.relay_connection_id());
+//   SingleSource single_src_relay_node(Address(proto_message.SourceAddress()));
 //   SingleRelaySource single_relay_src(single_src,  // original sender
 //                                      connection_id, single_src_relay_node);
 //
 //   return SingleToGroupRelayMessage(proto_message.data(0),
 //                                    single_relay_src,  // relay node
-//                                    GroupId(NodeId(proto_message.group_destination())),
+//                                    GroupId(Address(proto_message.group_destination())),
 //                                    static_cast<Cacheable>(proto_message.cacheable()));
 //
 //   //  return SingleToGroupRelayMessage(proto_message.data(0),
-//   //      SingleSourceRelay(SingleSource(NodeId(proto_message.relay_id())), // original sender
-//   //                        NodeId(proto_message.relay_connection_id()),
-//   //                        SingleSource(NodeId(proto_message.source_id()))),  // relay node
-//   //          GroupId(NodeId(proto_message.group_destination())),
+//   //      SingleSourceRelay(SingleSource(Address(proto_message.relay_id())), // original sender
+//   //                        Address(proto_message.relay_connection_id()),
+//   //                        SingleSource(Address(proto_message.SourceAddress()))),  // relay node
+//   //          GroupId(Address(proto_message.group_destination())),
 //   //              static_cast<Cacheable>(proto_message.cacheable()));
 // }
 

@@ -22,7 +22,6 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
@@ -32,60 +31,60 @@
 namespace maidsafe {
 namespace routing {
 
-bool ConnectionManager::suggest_node_to_add(const NodeId& node_to_add) {
-  return routing_table_.check_node(node_to_add);
+bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) {
+  return routing_table_.CheckNode(node_to_add);
 }
 
-std::vector<node_info> ConnectionManager::get_target(const NodeId& target_node) {
-  auto targets(routing_table_.target_nodes(target_node));
+std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) {
+  auto targets(routing_table_.TargetNodes(target_node));
   // remove any nodes we are not connected to
   targets.erase(std::remove_if(std::begin(targets), std::end(targets),
-                               [](const node_info& node) { return !node.connected; }),
+                               [](const NodeInfo& node) { return !node.connected; }),
                 std::end(targets));
   return targets;
 }
 
-void ConnectionManager::lost_network_connection(const NodeId& node) {
-  routing_table_.drop_node(node);
-  group_changed();
+void ConnectionManager::LostNetworkConnection(const Address& node) {
+  routing_table_.DropNode(node);
+  GroupChanged();
 }
 
-void ConnectionManager::drop_node(const NodeId& their_id) {
-  routing_table_.drop_node(their_id);
-  group_changed();
+void ConnectionManager::DropNode(const Address& their_id) {
+  routing_table_.DropNode(their_id);
+  GroupChanged();
 }
 
-void ConnectionManager::add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair) {
+void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
   rudp::contact rudp_contact;
-  rudp_contact.id = rudp::node_id(node_to_add.id);
+  rudp_contact.id = rudp::NodeId(node_to_add.id);
   rudp_contact.endpoints = their_endpoint_pair;
   rudp_contact.public_key = node_to_add.public_key;
 
 
   rudp_.add(std::move(rudp_contact), [node_to_add, this](maidsafe_error error) {
     if (error.code() == make_error_code(CommonErrors::success)) {
-      auto added = routing_table_.add_node(node_to_add);
+      auto added = routing_table_.AddNode(node_to_add);
       if (!added.first) {
-        rudp_.remove(rudp::node_id(node_to_add.id), nullptr);  // become invalid for us
-        group_changed();
+        rudp_.remove(rudp::Address(node_to_add.id), nullptr);  // become invalid for us
+        GroupChanged();
       } else if (added.second) {
-        rudp_.remove(rudp::node_id(added.second->id), nullptr);  // a sacrificlal node was found
-        group_changed();
+        rudp_.remove(rudp::Address(added.second->id), nullptr);  // a sacrificlal node was found
+        GroupChanged();
       }
     }
   });
 }
 //################### private #############################
 
-void ConnectionManager::group_changed() {
-  auto new_nodeinfo_group(routing_table_.our_close_group());
-  std::vector<NodeId> new_group;
+void ConnectionManager::GroupChanged() {
+  auto new_nodeinfo_group(routing_table_.OurCloseGroup());
+  std::vector<Address> new_group;
   for (auto const& nodes : new_nodeinfo_group)
     new_group.push_back(nodes.id);
 
   std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
-    group_changed_functor_([new_group, this]() -> close_group_difference {
+    group_changed_functor_([new_group, this]() -> CloseGroupDifference {
       return std::make_pair(new_group, current_close_group_);
     }());
     current_close_group_ = new_group;

@@ -26,7 +26,6 @@
 
 #include "boost/optional.hpp"
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/types.h"
@@ -42,30 +41,30 @@ class RoutingTable {
   static const size_t bucket_size;
   static const size_t parallelism;
   static const size_t RoutingTable_size;
-  explicit RoutingTable(NodeId our_id);
+  explicit RoutingTable(Address our_id);
   RoutingTable(const RoutingTable&) = delete;
   RoutingTable(RoutingTable&&) = delete;
   RoutingTable& operator=(const RoutingTable&) = delete;
   RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
   ~RoutingTable() = default;
-  std::pair<bool, boost::optional<NodeInfo>> add_node(NodeInfo their_info);
-  bool check_node(const NodeId& their_id) const;
-  void drop_node(const NodeId& node_to_drop);
+  std::pair<bool, boost::optional<NodeInfo>> AddNode(NodeInfo their_info);
+  bool CheckNode(const Address& their_id) const;
+  void DropNode(const Address& node_to_drop);
   // our close group or at least as much of it as we currently know
-  std::vector<NodeInfo> our_close_group() const;
+  std::vector<NodeInfo> OurCloseGroup() const;
   // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<NodeInfo> target_nodes(const NodeId& their_id) const;
-  NodeId our_id() const { return our_id_; }
-  size_t size() const;
+  std::vector<NodeInfo> TargetNodes(const Address& their_id) const;
+  Address OurId() const { return our_id_; }
+  size_t Size() const;
 
  private:
-  int32_t bucket_index(const NodeId& node_id) const;
+  int32_t BucketIndex(const Address& address) const;
   void sort();
-  std::vector<NodeInfo>::const_iterator find_candidate_for_removal() const;
+  std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
 
   unsigned int network_status(size_t size) const;
 
-  const NodeId our_id_;
+  const Address our_id_;
   mutable std::mutex mutex_;
   std::vector<NodeInfo> nodes_;
 };

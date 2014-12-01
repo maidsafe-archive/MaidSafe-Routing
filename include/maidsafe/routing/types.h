@@ -34,17 +34,17 @@ namespace routing {
 static const size_t GroupSize = 32;
 static const size_t QuorumSize = 29;
 static const size_t DefaultRoutingTableSize = 64;
-
-using DestinationId = TaggedValue<NodeId, struct DestinationTag>;
-using SourceId = TaggedValue<NodeId, struct SourceTag>;
+using Address = NodeId;
+using DestinationId = TaggedValue<Address, struct DestinationTag>;
+using SourceId = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = boost::asio::ip::udp::endpoint;
 using Connection = boost::asio::ip::udp::endpoint;
 using byte = unsigned char;
 using MurmurHash = uint32_t;
-using Checksums = std::array<murmur_hash, group_size - 1>;
-using SerialisedMessage = std::vector<unsigned char>;
-using CloseGroupDifference = std::pair<std::vector<NodeId>, std::vector<NodeId>>;
+using Checksums = std::array<MurmurHash, GroupSize - 1>;
+using SerialisedMessage = std::vector<byte>;
+using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 }  // namespace routing
 

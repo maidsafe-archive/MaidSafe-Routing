@@ -60,8 +60,8 @@ struct MessageHeader {
     archive(destination, source, message_id);
   }
 
-  destination_id destination{};
-  source_id source{};
+  DestinationAddress destination{};
+  SourceAddress source{};
   message_id message_id{};
 };
 
