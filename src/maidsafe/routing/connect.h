@@ -14,8 +14,7 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 
 #ifndef MAIDSAFE_ROUTING_CONNECT_H_
 #define MAIDSAFE_ROUTING_CONNECT_H_

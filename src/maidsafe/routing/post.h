@@ -29,6 +29,7 @@
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct Post {
@@ -58,7 +59,7 @@ struct Post {
     archive(header, signature, data, part);
   }
 
-  message_header header;
+  MessageHeader header;
   Address data_name;
   Signature signature;
   std::vector<byte> data;
@@ -66,6 +67,7 @@ struct Post {
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 

@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "maidsafe/common/Address.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -33,18 +32,18 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, FUNC_add_check_multiple_nodes) {
+TEST(RoutingTableTest, FUNC_AddCheckMultipleNodes) {
   const auto size(50);
-  auto routing_tables(routing_table_network(size));
+  auto routing_tables(RoutingTableNetwork(size));
   asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
-      node_info nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->our_id();
+      NodeInfo nodeinfo_to_add;
+      nodeinfo_to_add.id = node_to_add->OurId();
       nodeinfo_to_add.public_key = key.public_key;
-      if (node->check_node(nodeinfo_to_add.id)) {
-        auto removed_node = node->add_node(nodeinfo_to_add);
+      if (node->CheckNode(nodeinfo_to_add.id)) {
+        auto removed_node = node->AddNode(nodeinfo_to_add);
         EXPECT_TRUE(removed_node.first);
       }
     }

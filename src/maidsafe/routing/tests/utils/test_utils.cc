@@ -19,7 +19,7 @@
 #include "maidsafe/routing/tests/utils/test_utils.h"
 
 #include <vector>
-#include "maidsafe/common/Address.h"
+
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/make_unique.h"
 
@@ -44,7 +44,7 @@ namespace test {
 //
 // node_info MakeNode() {
 //   node_info node;
-//   node.id = Address(RandomString(NodeId::kSize));
+//   node.id = Address(RandomString(Address::kSize));
 //   asymm::Keys keys(asymm::GenerateKeyPair());
 //   node.public_key = keys.public_key;
 //   node.connection_id = node.id;
@@ -71,7 +71,7 @@ namespace test {
 //   std::string new_node_string;
 //   // generate a random ID and make sure it has not been generated previously
 //   while (new_node_string == "" || new_node_string == holder_id) {
-//     new_node = Address(RandomString(NodeId::kSize));
+//     new_node = Address(RandomString(Address::kSize));
 //     std::string new_id = new_node.ToStringEncoded(Address::EncodingType::kBinary);
 //     std::bitset<64 * 8> binary_bitset(new_id);
 //     for (unsigned int i(0); i < pos; ++i)
@@ -80,7 +80,7 @@ namespace test {
 //     if (pos == 0)
 //       break;
 //   }
-//   new_node = Address(new_node_string, NodeId::EncodingType::kBinary);
+//   new_node = Address(new_node_string, Address::EncodingType::kBinary);
 //   return new_node;
 // }
 //
@@ -90,30 +90,32 @@ namespace test {
 //   Address new_node;
 //   std::string new_node_string;
 //   // generate a random ID and make sure it has not been generated previously
-//   new_node = Address(RandomString(NodeId::kSize));
+//   new_node = Address(RandomString(Address::kSize));
 //   std::string new_id = new_node.ToStringEncoded(Address::EncodingType::kBinary);
 //   std::bitset<64> binary_bitset(id);
 //   for (unsigned int i(0); i < 64; ++i)
 //     holder_id_binary_bitset[i] = binary_bitset[i];
 //   new_node_string = holder_id_binary_bitset.to_string();
-//   new_node = Address(new_node_string, NodeId::EncodingType::kBinary);
+//   new_node = Address(new_node_string, Address::EncodingType::kBinary);
 //   return new_node;
 // }
 //
 // Address GenerateUniqueRandomNodeId(const std::vector<Address>& esisting_ids) {
-//   Address new_node(RandomString(NodeId::kSize));
+//   Address new_node(RandomString(Address::kSize));
 //   while (std::find_if(esisting_ids.begin(), esisting_ids.end(), [&new_node](const Address&
 //   element) {
 //            return element == new_node;
 //          }) != esisting_ids.end()) {
-//     new_node = Address(RandomString(NodeId::kSize));
+//     new_node = Address(RandomString(Address::kSize));
 //   }
 //   return new_node;
 // }
 //
-// Address GenerateUniqueRandomId(unsigned int pos) { return GenerateUniqueRandomId(NodeId(), pos); }
+// Address GenerateUniqueRandomId(unsigned int pos) { return GenerateUniqueRandomId(Address(), pos);
+// }
 //
-// Address GenerateUniqueNonRandomId(uint64_t pos) { return GenerateUniqueNonRandomId(NodeId(), pos);
+// Address GenerateUniqueNonRandomId(uint64_t pos) { return GenerateUniqueNonRandomId(Address(),
+// pos);
 // }
 //
 // int NetworkStatus(int status) { return (status > 0) ? (status * 100 / kRoutingTableSize) :
@@ -167,13 +169,13 @@ namespace test {
 // }
 //
 
-std::vector<std::unique_ptr<routing_table>> routing_table_network(size_t size) {
+std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {
   asymm::Keys keys(asymm::GenerateKeyPair());
-  std::vector<std::unique_ptr<routing_table>> routing_tables;
+  std::vector<std::unique_ptr<RoutingTable>> routing_tables;
   routing_tables.reserve(size);
   for (size_t i = 0; i < size; ++i) {
     routing_tables.emplace_back(
-        maidsafe::make_unique<routing_table>(Address(RandomString(NodeId::kSize))));
+        maidsafe::make_unique<RoutingTable>(Address(RandomString(Address::kSize))));
   }
   return routing_tables;
 }

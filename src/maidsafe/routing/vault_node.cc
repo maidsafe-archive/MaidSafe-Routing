@@ -18,7 +18,6 @@
 
 #include "maidsafe/routing/vault_node.h"
 
-#include "maidsafe/common/Address.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -29,9 +28,10 @@ namespace maidsafe {
 
 namespace routing {
 
-vault_node::vault_node(AsioService& io_service, rudp::ManagedConnections rudp,
-                       const passport::Pmid& pmid)
-    : asio_service_(2),
+VaultNode::VaultNode(AsioService& asio_service, rudp::ManagedConnections& managed_connections,
+                     const passport::Pmid& pmid)
+    : asio_service_(asio_service),
+      rudp_(managed_connections),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;

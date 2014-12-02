@@ -26,9 +26,7 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_check_node) {
-  GTEST_FAIL();
-}
+TEST(RoutingTableTest, BEH_CheckNode) { GTEST_FAIL(); }
 
 }  // namespace test
 

@@ -26,12 +26,12 @@ namespace maidsafe {
 
 namespace routing {
 
-routing_table::routing_table(NodeId our_id)
+RoutingTable::RoutingTable(Address our_id)
     : our_id_(std::move(our_id)), comparison_(our_id_), mutex_(), nodes_() {
   assert(our_id_.IsValid());
 }
 
-std::pair<bool, boost::optional<NodeInfo>> RoutingTable::add_node(NodeInfo their_info) {
+std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
       !asymm::ValidateKey(their_info.public_key)) {
     return {false, boost::optional<NodeInfo>()};
@@ -40,23 +40,22 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::add_node(NodeInfo their
   std::lock_guard<std::mutex> lock(mutex_);
 
   // check not duplicate
-  if (have_node(their_info))
+  if (HaveNode(their_info))
     return {false, boost::optional<NodeInfo>()};
 
   // routing table small, just grab this node
-  if (nodes_.size() < optimal_size()) {
-    push_back_then_sort(std::move(their_info));
+  if (nodes_.size() < OptimalSize()) {
+    PushBackThenSort(std::move(their_info));
     return {true, boost::optional<NodeInfo>()};
   }
 
   // new close group member
-  auto result =
-      std::make_pair<bool, boost::optional<node_info>>(true, boost::optional<node_info>());
-  if (NodeId::CloserToTarget(their_info.id, nodes_.at(group_size).id, our_id_)) {
+  auto result = std::make_pair<bool, boost::optional<NodeInfo>>(true, boost::optional<NodeInfo>());
+  if (Address::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
-    push_back_then_sort(std::move(their_info));
-    auto removal_candidate(find_candidate_for_removal());
+    PushBackThenSort(std::move(their_info));
+    auto removal_candidate(FindCandidateForRemoval());
     if (removal_candidate != std::end(nodes_)) {
       result.second = *removal_candidate;
       nodes_.erase(removal_candidate);
@@ -65,47 +64,46 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::add_node(NodeInfo their
   }
 
   // is there a node we can remove
-  auto removal_candidate(find_candidate_for_removal());
-  if (new_node_is_better_than_existing(their_info.id, removal_candidate)) {
+  auto removal_candidate(FindCandidateForRemoval());
+  if (NewNodeIsBetterThanExisting(their_info.id, removal_candidate)) {
     result.second = *removal_candidate;
     nodes_.erase(removal_candidate);
-    push_back_then_sort(std::move(their_info));
+    PushBackThenSort(std::move(their_info));
   } else {
     result.first = false;
   }
   return result;
 }
 
-bool RoutingTable::check_node(const Address& their_id) const {
+bool RoutingTable::CheckNode(const Address& their_id) const {
   if (!their_id.IsValid() || their_id == our_id_)
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < optimal_size())
+  if (nodes_.size() < OptimalSize())
     return true;
 
   // check for duplicates
-  static node_info their_info;
+  static NodeInfo their_info;
   their_info.id = their_id;
-  if (have_node(their_info))
+  if (HaveNode(their_info))
     return false;
 
   // close node
-  if (NodeId::CloserToTarget(their_id, nodes_.at(group_size).id, our_id_))
+  if (Address::CloserToTarget(their_id, nodes_.at(kGroupSize).id, our_id_))
     return true;
 
-  return new_node_is_better_than_existing(their_id, find_candidate_for_removal());
+  return NewNodeIsBetterThanExisting(their_id, FindCandidateForRemoval());
 }
 
-void RoutingTable::drop_node(const Address& node_to_drop) {
+void RoutingTable::DropNode(const Address& node_to_drop) {
   std::lock_guard<std::mutex> lock(mutex_);
-  nodes_.erase(
-      remove_if(std::begin(nodes_), std::end(nodes_),
-                [&node_to_drop](const NodeInfo& node) { return node.id == node_to_drop; }),
-      std::end(nodes_));
+  nodes_.erase(remove_if(std::begin(nodes_), std::end(nodes_),
+                         [&node_to_drop](const NodeInfo& node) { return node.id == node_to_drop; }),
+               std::end(nodes_));
 }
 
-std::vector<NodeInfo> RoutingTable::target_nodes(const Address& their_id) const {
+std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& their_id) const {
   Address test_node(our_id_);
   std::vector<NodeInfo> closer_to_target;
   size_t count(0), index(0);
@@ -121,8 +119,8 @@ std::vector<NodeInfo> RoutingTable::target_nodes(const Address& their_id) const 
     }
   }
 
-  if (index < group_size) {
-    return our_close_group();
+  if (index < kGroupSize) {
+    return OurCloseGroup();
   }
 
   std::sort(std::begin(closer_to_target), std::end(closer_to_target),
@@ -130,69 +128,69 @@ std::vector<NodeInfo> RoutingTable::target_nodes(const Address& their_id) const 
     return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
   closer_to_target.erase(std::begin(closer_to_target) +
-                             std::min(parallelism(), closer_to_target.size()),
+                             std::min(Parallelism(), closer_to_target.size()),
                          std::end(closer_to_target));
   return closer_to_target;
 }
 
-std::vector<NodeInfo> RoutingTable::our_close_group() const {
+std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {
   std::vector<NodeInfo> result;
-  result.reserve(group_size);
+  result.reserve(kGroupSize);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto size = std::min(group_size, nodes_.size());
+    auto size = std::min(kGroupSize, nodes_.size());
     std::copy(std::begin(nodes_), std::begin(nodes_) + size, std::back_inserter(result));
   }
   return result;
 }
 
-size_t RoutingTable::size() const {
+size_t RoutingTable::Size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();
 }
 
 // bucket 511 is us, 0 is furthest bucket (should fill first)
-int32_t RoutingTable::bucket_index(const Address& Address) const {
-  assert(Address != our_id_);
-  return our_id_.CommonLeadingBits(Address);
+int32_t RoutingTable::BucketIndex(const Address& address) const {
+  assert(address != our_id_);
+  return our_id_.CommonLeadingBits(address);
 }
 
-bool routing_table::have_node(const node_info& their_info) const {
+bool RoutingTable::HaveNode(const NodeInfo& their_info) const {
   assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison_));
   return std::binary_search(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
 }
 
-bool routing_table::new_node_is_better_than_existing(
-    const NodeId& their_id, std::vector<node_info>::const_iterator removal_candidate) const {
+bool RoutingTable::NewNodeIsBetterThanExisting(
+    const Address& their_id, std::vector<NodeInfo>::const_iterator removal_candidate) const {
   return removal_candidate != std::end(nodes_) &&
-         bucket_index(their_id) > bucket_index(removal_candidate->id);
+         BucketIndex(their_id) > BucketIndex(removal_candidate->id);
 }
 
-void routing_table::push_back_then_sort(node_info&& their_info) {
+void RoutingTable::PushBackThenSort(NodeInfo&& their_info) {
   nodes_.push_back(std::move(their_info));
   std::sort(std::begin(nodes_), std::end(nodes_), comparison_);
 }
 
-std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal() const {
-  assert(nodes_.size() >= optimal_size());
+std::vector<NodeInfo>::const_iterator RoutingTable::FindCandidateForRemoval() const {
+  assert(nodes_.size() >= OptimalSize());
   size_t number_in_bucket(0);
   int bucket(0);
-  auto furthest_group_member = nodes_.rbegin() + nodes_.size() - group_size;
+  auto furthest_group_member = nodes_.rbegin() + nodes_.size() - kGroupSize;
   auto found = std::find_if(nodes_.rbegin(), furthest_group_member,
                             [&number_in_bucket, &bucket, this](const NodeInfo& node) {
-    if (bucket_index(node.id) != bucket) {
-      bucket = bucket_index(node.id);
+    if (BucketIndex(node.id) != bucket) {
+      bucket = BucketIndex(node.id);
       number_in_bucket = 0;
     }
     ++number_in_bucket;
-    return number_in_bucket > bucket_size();
+    return number_in_bucket > BucketSize();
   });
 
   return found == furthest_group_member ? std::end(nodes_) : found.base();
 }
 
-unsigned int routing_table::network_status(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / optimal_size());
+unsigned int RoutingTable::NetworkStatus(size_t size) const {
+  return static_cast<unsigned int>(size * 100 / OptimalSize());
 }
 
 }  // namespace routing

@@ -30,25 +30,25 @@ namespace routing {
 
 namespace test {
 
-class routing_table_unit_test : public testing::Test {
+class RoutingTableUnitTest : public testing::Test {
  public:
-  struct bucket {
-    bucket() = default;
-    bucket(const NodeId& furthest_from_tables_own_id, unsigned index_in);
+  struct Bucket {
+    Bucket() = default;
+    Bucket(const Address& furthest_from_tables_own_id, unsigned index_in);
     unsigned index;
-    NodeId far_contact, mid_contact, close_contact;
+    Address far_contact, mid_contact, close_contact;
   };
 
  protected:
-  using buckets = std::array<bucket, 100>;
+  using Buckets = std::array<Bucket, 100>;
 
-  routing_table_unit_test();
+  RoutingTableUnitTest();
 
-  routing_table table_;
-  const buckets buckets_;
+  RoutingTable table_;
+  const Buckets buckets_;
 
  private:
-  buckets initialise_buckets();
+  Buckets InitialiseBuckets();
 };
 
 }  // namespace test

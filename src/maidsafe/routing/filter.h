@@ -14,40 +14,45 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 
 #ifndef MAIDSAFE_ROUTING_FILTER_H_
 #define MAIDSAFE_ROUTING_FILTER_H_
 
-#include "maidsafe/common/clock.h"
 #include <chrono>
+#include <mutex>
+#include <utility>
+#include <vector>
+
 #include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 class Filter {
  public:
-  static const std::chrono::seconds time_to_live(30);
+  static const std::chrono::seconds kTimeToLive;
   Filter() = default;
-  Filter(Filter const&) = default;
+  Filter(Filter const&) = delete;
   Filter(Filter&&) = delete;
   ~Filter() = default;
-  Filter& operator=(filter const&) = default;
-  Filter& operator=(filter&& rhs) = delete;
+  Filter& operator=(const Filter&) = delete;
+  Filter& operator=(Filter&&) = delete;
   void Block(MessageHeader header);
-  bool Check(const MessageHeader&);
+  bool Check(const MessageHeader&) const;
 
  private:
   void Purge();
 
-  std::vector<std::pair<header, std::chrono::time_point<std::chrono::system_clock>>> messages_;
+  std::vector<std::pair<MessageHeader, std::chrono::time_point<std::chrono::system_clock>>>
+      messages_;
   mutable std::mutex mutex_;
 };
 
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_FILTER_H_

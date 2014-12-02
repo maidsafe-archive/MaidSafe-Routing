@@ -14,30 +14,33 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 
 #ifndef MAIDSAFE_ROUTING_CACHE_H_
 #define MAIDSAFE_ROUTING_CACHE_H_
 
-#include "maidsafe/common/clock.h"
 #include <chrono>
+#include <mutex>
+#include <utility>
+#include <vector>
+
 #include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 class Cache {
  public:
-  static const std::chrono::minutes time_to_live(60);
+  static const std::chrono::minutes kTimeToLive;
   Cache() = default;
-  Cache(Cache const&) = default;
+  Cache(Cache const&) = delete;
   Cache(Cache&&) = delete;
   ~Cache() = default;
-  Cache& operator=(Cache const&) = default;
-  Cache& operator=(Cache&& rhs) = delete;
+  Cache& operator=(const Cache&) = delete;
+  Cache& operator=(Cache&&) = delete;
   void Block(MessageHeader header);
-  bool Check(const MessageHeader&);
+  bool Check(const MessageHeader&) const;
 
  private:
   void Purge();
@@ -47,8 +50,8 @@ class Cache {
   mutable std::mutex mutex_;
 };
 
-
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_CACHE_H_

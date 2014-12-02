@@ -51,30 +51,30 @@ struct ScopedBootstrapFile {
   const boost::filesystem::path kFilePath;
 };
 
-struct node_infoAndPrivateKey {
-  node_infoAndPrivateKey() : node_info(), private_key() {}
-  node_infoAndPrivateKey(const node_infoAndPrivateKey& info)
+struct NodeInfoAndPrivateKey {
+  NodeInfoAndPrivateKey() : node_info(), private_key() {}
+  NodeInfoAndPrivateKey(const NodeInfoAndPrivateKey& info)
       : node_info(info.node_info), private_key(info.private_key) {}
-  node_info node_info;
+  NodeInfo node_info;
   asymm::PrivateKey private_key;
 };
 
 template <typename FobType>
-node_infoAndPrivateKey Makenode_infoAndKeysWithFob(FobType fob) {
-  node_info node;
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
+  NodeInfo node;
   node.id = Address(fob.name()->string());
   node.public_key = fob.public_key();
-  node_infoAndPrivateKey node_info_and_private_key;
+  NodeInfoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
   node_info_and_private_key.private_key = fob.private_key();
   return node_info_and_private_key;
 }
 
-node_infoAndPrivateKey Makenode_infoAndKeys();
-node_infoAndPrivateKey Makenode_infoAndKeysWithPmid(passport::Pmid pmid);
-node_infoAndPrivateKey Makenode_infoAndKeysWithMaid(passport::Maid maid);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
-node_info MakeNode();
+NodeInfo MakeNode();
 
 Address GenerateUniqueRandomId(const Address& holder, unsigned int pos);
 Address GenerateUniqueRandomId(unsigned int pos);
@@ -82,17 +82,17 @@ Address GenerateUniqueRandomNodeId(const std::vector<Address>& esisting_ids);
 
 int NetworkStatus(bool client, int status);
 
-void SortFromTarget(const Address& target, std::vector<node_info>& nodes);
+void SortFromTarget(const Address& target, std::vector<NodeInfo>& nodes);
 
-void PartialSortFromTarget(const Address& target, std::vector<node_info>& nodes, size_t num_to_sort);
+void PartialSortFromTarget(const Address& target, std::vector<NodeInfo>& nodes, size_t num_to_sort);
 
 void SortIdsFromTarget(const Address& target, std::vector<Address>& nodes);
 
-void Sortnode_infosFromTarget(const Address& target, std::vector<node_info>& nodes);
+void SortNodeInfosFromTarget(const Address& target, std::vector<NodeInfo>& nodes);
 
-bool CompareListOfnode_infos(const std::vector<node_info>& lhs, const std::vector<node_info>& rhs);
+bool CompareListOfNodeInfos(const std::vector<NodeInfo>& lhs, const std::vector<NodeInfo>& rhs);
 
-std::vector<std::unique_ptr<routing_table>> routing_table_network(size_t size);
+std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size);
 
 }  // namespace test
 

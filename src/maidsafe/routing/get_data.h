@@ -47,7 +47,7 @@ struct GetData {
     archive(header, data_name);
   }
 
-  message_header header;
+  MessageHeader header;
   Address data_name;
 };
 

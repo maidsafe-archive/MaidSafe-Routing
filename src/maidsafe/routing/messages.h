@@ -20,31 +20,37 @@
 #define MAIDSAFE_ROUTING_MESSAGES_H_
 
 #include <cstdint>
-#include <vector>
 
-#include "maidsafe/common/utils.h"
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation.h"
-
-#include "maidsafe/routing/header.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/compile_time_mapper.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-enum class message_type_tag : uint16_t {
-  ping,
-  ping_response,
-  find_group,
-  find_group_response,
-  connect,
-  forward_connect,
-  vault_message,
-  cacheable_get,
-  cacheable_get_response
+enum class MessageTypeTag : uint16_t {
+  kPing,
+  kPingResponse,
+  kFindGroup,
+  kFindGroupResponse,
+  kConnect,
+  kForwardConnect,
+  kVaultMessage,
+  kCacheableGet,
+  kCacheableGetResponse
 };
 
+struct Ping;
+struct PingResponse;
+struct FindGroup;
+struct FindGroupResponse;
+struct Connect;
+struct ForwardConnect;
+struct VaultMessage;
+struct CacheableGet;
+struct CacheableGetResponse;
+
+
+/*
 struct ping {
   static const message_type_tag message_type = message_type_tag::ping;
 
@@ -101,7 +107,8 @@ struct connect {
   connect(const connect&) = delete;
   connect(connect&& other) MAIDSAFE_NOEXCEPT : our_endpoints(std::move(other.our_endpoints)),
                                                header(std::move(other.header)) {}
-  connect(DestinationAddress destination_in, SourceAddress source_in, rudp::endpoint_pair our_endpoint_in)
+  connect(DestinationAddress destination_in, SourceAddress source_in,
+          rudp::endpoint_pair our_endpoint_in)
       : our_endpoints(std::move(our_endpoint_in)),
         header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   ~connect() = default;
@@ -146,12 +153,14 @@ struct forward_connect {
     return *this;
   };
 
-  forward_connect(SourceAddress source_in, connect connect, asymm::PublicKey requesters_public_key_in)
+  forward_connect(SourceAddress source_in, connect connect,
+                  asymm::PublicKey requesters_public_key_in)
       : requesters_endpoint(std::move(connect.our_endpoint)),
         requesters_nat_type(std::move(connect.our_nat_type)),
         requesters_public_key(std::move(requesters_public_key_in)),
-        header(single_DestinationAddress(connect.their_id), std::move(source_in),    // FIXME calculate
-               connect.header.message_id, murmur_hash2(std::vector<byte>{})) {}  // hash proerly
+        header(single_DestinationAddress(connect.their_id),
+               std::move(source_in),                                            // FIXME calculate
+               connect.header.message_id, MurmurHash2(std::vector<byte>{})) {}  // hash proerly
 
   rudp::endpoint_pair requesters_endpoint;
   rudp::NatType requesters_nat_type;
@@ -159,16 +168,16 @@ struct forward_connect {
   header header;
 };
 // messages from a client are forwarded as is as well as being passed up. Upper layers
-// can act on this part as a whole chunk/message by multiplying size by group_size. If message from
+// can act on this part as a whole chunk/message by multiplying size by kGroupSize. If message from
 // a group (vault) then they are
 // synchronised (accumulated / re-constituted) and passed up.
 struct vault_message {
   vault_message() = default;
-  vault_message(vault_message const&) = default;
+  vault_message(const vault_message&) = default;
   vault_message(vault_message&&) = default MAIDSAFE_NOEXCEPT : header(std::move(rhs.header)),
-  checksums(std::move(rhs.checksums)), close_group(std::move(rhs.close_group)) {}
+  Checksums(std::move(rhs.checksums)), close_group(std::move(rhs.close_group)) {}
   ~vault_message() = default;
-  vault_message& operator=(vault_message const&) = default;
+  vault_message& operator=(const vault_message&) = default;
   vault_message& operator=(vault_message&& rhs) MAIDSAFE_NOEXCEPT {
     header = std::move(rhs.header), checksums = std::move(rhs.checksums),
     close_group = std::move(rhs.close_group)
@@ -187,9 +196,9 @@ struct vault_message {
   bool operator<=(const vault_message& other) { return !operator>(*this, other); }
   bool operator>=(const vault_message& other) { return !operator<(*this, other); }
 
-  header header{};
-  std::vector<checksum> checksums{};
-  std::vector<node_info> close_group{};
+  MessageHeader header{};
+  Checksums checksums{};
+  std::vector<NodeInfo> close_group{};
 };
 
 struct cacheable_get {
@@ -199,24 +208,26 @@ struct cacheable_get {
 struct cacheable_get_response {
   static const message_type_tag message_type = message_type_tag::cacheable_get_response;
 };
+*/
 
-using message_map =
-    GetMap<Serialisable<message_type_tag::ping, ping>,
-           Serialisable<message_type_tag::ping_response, ping_response>,
-           Serialisable<message_type_tag::connect, connect>,
-           Serialisable<message_type_tag::forward_connect, forward_connect>,
-           Serialisable<message_type_tag::find_group, find_group>,
-           Serialisable<message_type_tag::find_group_response, find_group_response>,
-           Serialisable<message_type_tag::vault_message, vault_message>,
-           Serialisable<message_type_tag::cacheable_get, cacheable_get>,
-           Serialisable<message_type_tag::cacheable_get_response, cacheable_get_response>>::Map;
 
-template <message_type_tag Tag>
-using custom_type = typename Find<message_map, Tag>::ResultCustomType;
+using MessageMap =
+    GetMap<Serialisable<MessageTypeTag::kPing, Ping>,
+           Serialisable<MessageTypeTag::kPingResponse, PingResponse>,
+           Serialisable<MessageTypeTag::kFindGroup, FindGroup>,
+           Serialisable<MessageTypeTag::kFindGroupResponse, FindGroupResponse>,
+           Serialisable<MessageTypeTag::kConnect, Connect>,
+           Serialisable<MessageTypeTag::kForwardConnect, ForwardConnect>,
+           Serialisable<MessageTypeTag::kVaultMessage, VaultMessage>,
+           Serialisable<MessageTypeTag::kCacheableGet, CacheableGet>,
+           Serialisable<MessageTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
 
-template <message_type_tag eTypeTag>
-custom_type<eTypeTag> Parse(std::stringstream& ref_binary_stream) {
-  custom_type<eTypeTag> obj_deserialised;
+template <MessageTypeTag Tag>
+using custom_type = typename Find<MessageMap, Tag>::ResultCustomType;
+
+template <MessageTypeTag Tag>
+custom_type<Tag> Parse(std::stringstream& ref_binary_stream) {
+  custom_type<Tag> obj_deserialised;
 
   {
     cereal::BinaryInputArchive input_bin_archive{ref_binary_stream};

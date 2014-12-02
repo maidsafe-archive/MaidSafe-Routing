@@ -110,7 +110,7 @@ CloseNodesChange::CloseNodesChange(Address this_Address, const std::vector<Addre
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const Address& target) const {
   // Handle cases of lower number of group close_nodes nodes
-  size_t group_size_adjust(Parameters::group_size + 1U);
+  size_t group_size_adjust(Parameters::kGroupSize + 1U);
   size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
   size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
 
@@ -130,31 +130,31 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const Address& target) const {
   // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
                     std::end(old_holders));
-  if (old_holders.size() > Parameters::group_size) {
-    old_holders.resize(Parameters::group_size);
-    assert(old_holders.size() == Parameters::group_size);
+  if (old_holders.size() > Parameters::kGroupSize) {
+    old_holders.resize(Parameters::kGroupSize);
+    assert(old_holders.size() == Parameters::kGroupSize);
   }
 
   new_holders.erase(std::remove(std::begin(new_holders), std::end(new_holders), target),
                     std::end(new_holders));
-  if (new_holders.size() > Parameters::group_size) {
-    new_holders.resize(Parameters::group_size);
-    assert(new_holders.size() == Parameters::group_size);
+  if (new_holders.size() > Parameters::kGroupSize) {
+    new_holders.resize(Parameters::kGroupSize);
+    assert(new_holders.size() == Parameters::kGroupSize);
   }
 
   CheckHoldersResult holders_result;
   holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
-  if (!new_holders.empty() && ((new_holders.size() < Parameters::group_size) ||
+  if (!new_holders.empty() && ((new_holders.size() < Parameters::kGroupSize) ||
                                Address::CloserToTarget(Address_, new_holders.back(), target))) {
     holders_result.proximity_status = GroupRangeStatus::kInRange;
-    if (new_holders.size() == Parameters::group_size)
+    if (new_holders.size() == Parameters::kGroupSize)
       new_holders.pop_back();
     new_holders.push_back(Address_);
   }
 
   if (!old_holders.empty() && Address::CloserToTarget(Address_, old_holders.back(), target)) {
     old_holders.pop_back();
-    if (old_holders.size() == Parameters::group_size)
+    if (old_holders.size() == Parameters::kGroupSize)
       old_holders.pop_back();
     old_holders.push_back(Address_);
   }
@@ -189,7 +189,7 @@ Address CloseNodesChange::ChoosePmidNode(const std::set<Address>& online_pmids,
 
   // In case storing to PublicPmid, the data shall not be stored on the Vault itself
   // However, the vault will appear in DM's routing table and affect result
-  std::vector<Address> temp(Parameters::group_size + 1);
+  std::vector<Address> temp(Parameters::kGroupSize + 1);
   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_), std::begin(temp),
                          std::end(temp), [&target](const Address& lhs, const Address& rhs) {
     return Address::CloserToTarget(lhs, rhs, target);
@@ -245,7 +245,7 @@ std::string CloseNodesChange::ReportConnection() const {
                                new_node_.ToStringEncoded(Address::EncodingType::kHex)));
 
     size_t closest_size_adjust(std::min(new_close_nodes_.size(),
-                                        static_cast<size_t>(Parameters::group_size + 1U)));
+                                        static_cast<size_t>(Parameters::kGroupSize + 1U)));
 
     if (closest_size_adjust != 0) {
       std::vector<Address> closest_nodes(closest_size_adjust);
@@ -256,7 +256,7 @@ std::string CloseNodesChange::ReportConnection() const {
                              });
       if (Address_ == closest_nodes.front())
         closest_nodes.erase(std::begin(closest_nodes));
-      else if (closest_nodes.size() > Parameters::group_size)
+      else if (closest_nodes.size() > Parameters::kGroupSize)
         closest_nodes.pop_back();
 
       if (closest_nodes.size() != 0) {

@@ -19,7 +19,6 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/Address.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -34,24 +33,24 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_add_close_nodes) {
-  Address Address(RandomString(NodeId::kSize));
+TEST(RoutingTableTest, BEH_AddCloseNodes) {
+  Address address(RandomString(Address::kSize));
   const auto keys = asymm::GenerateKeyPair();
-  routing_table routing_table(Address);
-  node_info node;
+  RoutingTable routing_table(address);
+  NodeInfo node;
   // check the node is useful when false is set
-  for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = Address(RandomString(NodeId::kSize));
-    EXPECT_TRUE(routing_table.check_node(node.id));
+  for (unsigned int i = 0; i < kGroupSize; ++i) {
+    node.id = Address(RandomString(Address::kSize));
+    EXPECT_TRUE(routing_table.CheckNode(node.id));
   }
-  EXPECT_EQ(0, routing_table.size());
+  EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now
-  for (unsigned int i = 0; i < group_size; ++i) {
-    node.id = Address(RandomString(NodeId::kSize));
+  for (unsigned int i = 0; i < kGroupSize; ++i) {
+    node.id = Address(RandomString(Address::kSize));
     node.public_key = keys.public_key;
-    EXPECT_TRUE(routing_table.add_node(node).first);
+    EXPECT_TRUE(routing_table.AddNode(node).first);
   }
-  EXPECT_EQ(group_size, routing_table.size());
+  EXPECT_EQ(kGroupSize, routing_table.Size());
 }
 
 }  // namespace test

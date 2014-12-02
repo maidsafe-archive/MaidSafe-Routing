@@ -29,6 +29,7 @@
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct PutData {
@@ -61,6 +62,7 @@ struct PutData {
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 

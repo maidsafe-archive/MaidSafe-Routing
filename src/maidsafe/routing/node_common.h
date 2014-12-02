@@ -20,7 +20,7 @@
 
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/routing/connnection_manager.h"
+#include "maidsafe/routing/connection_manager.h"
 
 struct node_common {
   node_common() = default;

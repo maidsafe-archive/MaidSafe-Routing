@@ -14,8 +14,7 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 
 #ifndef MAIDSAFE_ROUTING_PING_REPONSE_H_
 #define MAIDSAFE_ROUTING_PING_REPONSE_H_
@@ -27,6 +26,7 @@
 #include "maidsafe/routing/ping.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct Ping_response {
@@ -55,6 +55,7 @@ struct Ping_response {
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 

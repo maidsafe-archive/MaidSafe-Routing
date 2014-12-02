@@ -14,9 +14,8 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe
-    Software.
- */
+    use of the MaidSafe Software.                                                                 */
+
 /*
 This class is the API for the messages and routing object. It creates a routing table
 and allows that to be managed by itself. This object will provide id's to connect
@@ -51,6 +50,7 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/rudp/managed_connections.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct ConnectionManager {
@@ -63,25 +63,26 @@ struct ConnectionManager {
         group_changed_functor_(group_changed_functor) {
     assert(group_changed_functor_ && "functor required to be set");
   }
-  ConnectionManager(ConnectionManager const&) = delete;
+  ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
   ~ConnectionManager() = default;
-  ConnectionManager& operator=(ConnectionManager const&) = delete;
+  ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-  bool SuggestNodeToAdd(const Address& node_to_add);
-  std::vector<NodeInfo> GetTarget(const Address& target_node);
+  bool SuggestNodeToAdd(const Address& node_to_add) const;
+  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
   void LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   void DropNode(const Address& their_id);
-  void AddNode(NodeInfo node_to_add, rudp::endpoint_pair their_endpoint_pair);
-  std::vector<NodeInfo> OurCloseGroup() { return routing_table_.OurCloseGroup(); }
+  void AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair);
+  std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
 
  private:
   void GroupChanged();
+
   std::mutex mutex_;
   RoutingTable routing_table_;
-  rudp::managed_connections& rudp_;
+  rudp::ManagedConnections& rudp_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
 };

@@ -26,9 +26,7 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_our_close_group) {
-  GTEST_FAIL();
-}
+TEST(RoutingTableTest, BEH_OurCloseGroup) { GTEST_FAIL(); }
 
 }  // namespace test
 

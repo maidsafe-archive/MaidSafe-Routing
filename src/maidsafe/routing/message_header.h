@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 
+#include <tuple>
+
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
@@ -35,14 +37,14 @@ struct MessageHeader {
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
         message_id(std::move(other.message_id)) {}
-  MessageHeader(DestinationId destination_in, SourceId source_in, MessageId message_id_in,
-                murmur_hash checksum_in, checksums other_checksums_in)
-      : destination(std::move(destination_in)),
-        source(std::move(source_in)),
-        message_id(std::move(message_id_in)),
-        checksum(std::move(checksum_in)),
-        other_checksums((std::move(other_checksums_in))) {}
-  MessageHeader(DestinationId destination_in, SourceId source_in, MessageId message_id_in)
+  //MessageHeader(DestinationAddress destination_in, SourceAddress source_in,
+  //              MessageId message_id_in, MurmurHash checksum_in, Checksums other_checksums_in)
+  //    : destination(std::move(destination_in)),
+  //      source(std::move(source_in)),
+  //      message_id(std::move(message_id_in)),
+  //      checksum(std::move(checksum_in)),
+  //      other_checksums((std::move(other_checksums_in))) {}
+  MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)) {}
@@ -62,8 +64,13 @@ struct MessageHeader {
 
   DestinationAddress destination{};
   SourceAddress source{};
-  message_id message_id{};
+  MessageId message_id{};
 };
+
+inline bool operator==(const MessageHeader& lhs, const MessageHeader& rhs) {
+  return std::tie(lhs.message_id, lhs.destination, lhs.source) ==
+         std::tie(rhs.message_id, rhs.destination, rhs.source);
+}
 
 }  // namespace routing
 

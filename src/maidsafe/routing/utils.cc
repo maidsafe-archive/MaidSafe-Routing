@@ -29,7 +29,7 @@ namespace routing {
 // NEW
 // ##################################################################################################
 
-murmur_hash murmur_hash2(const std::vector<byte>& input) {
+MurmurHash MurmurHash2(const std::vector<byte>& input) {
   static_assert(sizeof(int) == 4, "This implementation requires size of int to be 4 bytes.");
   assert(input.size() < std::numeric_limits<uint32_t>::max());
 
@@ -192,7 +192,7 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 // //   assert((std::find(holders.begin(), holders.end(), target_id) == holders.end()) &&
 // //          "Ensure to remove target id entry from holders, if present");
 // //   assert(std::is_sorted(holders.begin(), holders.end(),
-// //                         [target_id](const Address & lhs, const NodeId & rhs) {
+// //                         [target_id](const Address & lhs, const Address & rhs) {
 // //            return Address::CloserToTarget(lhs, rhs, target_id);
 // //          }) &&
 // //          "Ensure to sort holders in order of distance to targer_id");
@@ -321,7 +321,7 @@ murmur_hash murmur_hash2(const std::vector<byte>& input) {
 //     binary_string.at(bucket) = (binary_string.at(bucket) == '1') ? '0' : '1';
 //     bucket--;
 //   }
-//   return Address(binary_string, NodeId::EncodingType::kBinary);
+//   return Address(binary_string, Address::EncodingType::kBinary);
 // }
 //
 // void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,

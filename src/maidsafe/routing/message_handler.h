@@ -24,7 +24,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/common/asio_service.h"
 
-#include "maidsafe/routing/header.h"
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"

@@ -19,8 +19,7 @@
 #include "maidsafe/routing/message_handler.h"
 
 #include "maidsafe/common/serialisation.h"
-#include "maidsafe/common/Address.h"
-#include "maidsafe/routing/message.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/connection_manager.h"
 
@@ -42,7 +41,7 @@ void message_handler::on_message_received(const serialised_message& serialised_m
 
 void message_handler::HandleMessage(const ping& ping_msg) {
   // ping is a single destination message
-  if (ping_msg.header.destination.data() == connection_mgr_.our_id()) {
+  if (ping_msg.header.destination.data() == connection_mgr_.OurId()) {
     auto targets(connection_mgr_.get_target(ping_msg.header.source.data()));
     for (const auto& target : targets)
       rudp_.Send(target.id, Serialise<ping>(ping_response(ping_msg)));
@@ -61,7 +60,7 @@ void message_handler::HandleMessage(const ping_response& ping_response_msg) {
 
 
 void message_handler::HandleMessage(const connect& connect_msg) {
-  if (connect_msg.header.destination.data() == connection_mgr_.our_id()) {
+  if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
     if (connection_mgr_.suggest_node(connect_msg.header.source)) {
       rudp_.GetNextAvailableEndpoint(
           connect_msg.header.source,

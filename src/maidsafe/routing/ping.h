@@ -27,6 +27,7 @@
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct Ping {
@@ -48,10 +49,11 @@ struct Ping {
     archive(header);
   }
 
-  message_header header;
+  MessageHeader header;
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 

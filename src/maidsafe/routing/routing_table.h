@@ -39,18 +39,18 @@ struct NodeInfo;
 
 class RoutingTable {
  public:
-  static size_t bucket_size() { return 1; }
-  static size_t parallelism() { return 4; }
-  static size_t optimal_size() { return 64; }
-  explicit routing_table(NodeId our_id);
-  routing_table(const routing_table&) = delete;
-  routing_table(routing_table&&) = delete;
-  routing_table& operator=(const routing_table&) = delete;
-  routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
-  ~routing_table() = default;
-  std::pair<bool, boost::optional<node_info>> add_node(node_info their_info);
-  bool check_node(const NodeId& their_id) const;
-  void drop_node(const NodeId& node_to_drop);
+  static size_t BucketSize() { return 1; }
+  static size_t Parallelism() { return 4; }
+  static size_t OptimalSize() { return 64; }
+  explicit RoutingTable(Address our_id);
+  RoutingTable(const RoutingTable&) = delete;
+  RoutingTable(RoutingTable&&) = delete;
+  RoutingTable& operator=(const RoutingTable&) = delete;
+  RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
+  ~RoutingTable() = default;
+  std::pair<bool, boost::optional<NodeInfo>> AddNode(NodeInfo their_info);
+  bool CheckNode(const Address& their_id) const;
+  void DropNode(const Address& node_to_drop);
   // our close group or at least as much of it as we currently know
   std::vector<NodeInfo> OurCloseGroup() const;
   // If more than 1 node returned then we are in close group so send to all
@@ -59,25 +59,26 @@ class RoutingTable {
   size_t Size() const;
 
  private:
-  class comparison {
+  class Comparison {
    public:
-    explicit comparison(NodeId our_id) : our_id_(std::move(our_id)) {}
-    bool operator()(const node_info& lhs, const node_info& rhs) const {
-      return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
+    explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
+    bool operator()(const NodeInfo& lhs, const NodeInfo& rhs) const {
+      return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
     }
+
    private:
-    const NodeId our_id_;
+    const Address our_id_;
   };
-  int32_t bucket_index(const NodeId& node_id) const;
-  bool have_node(const node_info& their_info) const;
-  bool new_node_is_better_than_existing(
-      const NodeId& their_id, std::vector<node_info>::const_iterator removal_candidate) const;
-  void push_back_then_sort(node_info&& their_info);
+  int32_t BucketIndex(const Address& node_id) const;
+  bool HaveNode(const NodeInfo& their_info) const;
+  bool NewNodeIsBetterThanExisting(const Address& their_id,
+                                   std::vector<NodeInfo>::const_iterator removal_candidate) const;
+  void PushBackThenSort(NodeInfo&& their_info);
   std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
-  unsigned int network_status(size_t size) const;
+  unsigned int NetworkStatus(size_t size) const;
 
   const Address our_id_;
-  const comparison comparison_;
+  const Comparison comparison_;
   mutable std::mutex mutex_;
   std::vector<NodeInfo> nodes_;
 };

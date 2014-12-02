@@ -14,46 +14,44 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/filter.h"
+#include "maidsafe/routing/cache.h"
 
-#include <vector>
-#include <utility>
-#include <chrono>
 #include <algorithm>
 
-#include "maidsafe/routing/message_header.h"
-
-
 namespace maidsafe {
+
 namespace routing {
 
-void Filter::Block(MessageHeader header) {
-  if (!check(header)) {
+const std::chrono::minutes Cache::kTimeToLive(60);
+
+void Cache::Block(MessageHeader header) {
+  if (!Check(header)) {
     std::lock_guard<std::mutex> lock(mutex_);
-    messages_.push_back({header, std::chrono::system_clock::now()});
+    messages_.push_back(std::make_pair(std::move(header), std::chrono::system_clock::now()));
   }
   Purge();
 }
 
-bool Filter::Check(const message_header& header) {
+bool Cache::Check(const MessageHeader& header) const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return std::find_any(
-      std::begin(messages_), std::end(mesages_),
-      [](const std::pair <header, std::chrono::time_point<std::chrono::system_clock> &
-                                       item) { return header == item.first; });
+  return std::any_of(
+      std::begin(messages_), std::end(messages_),
+      [&](const std::pair<MessageHeader, std::chrono::time_point<std::chrono::system_clock>>&
+              item) { return header == item.first; });
 }
 
-void Filter::Purge() {
-  messages_.erase(std::remove_if(std::begin(messages_), std::end(messages_),
-                                 [this](const std::pair < header,
-                                        std::chrono::time_point<std::chrono::system_clock> & item) {
-                    return item.second + time_to_live > std::chrono::system_clock::now();
-                  }),
-                  std::end(messages_));
+void Cache::Purge() {
+  messages_.erase(
+      std::remove_if(std::begin(messages_), std::end(messages_),
+                     [this](const std::pair<
+                         MessageHeader, std::chrono::time_point<std::chrono::system_clock>>& item) {
+        return item.second + kTimeToLive > std::chrono::system_clock::now();
+      }),
+      std::end(messages_));
 }
 
 }  // namespace routing
+
 }  // namespace maidsafe

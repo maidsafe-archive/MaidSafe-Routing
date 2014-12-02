@@ -35,7 +35,7 @@ struct NodeInfo {
                                                  public_key(std::move(other.public_key)),
                                                  rank(std::move(other.rank)),
                                                  connected(std::move(other.connected)) {}
-  NodeInfo& operator=(NodeInfo const&) = default;
+  NodeInfo& operator=(const NodeInfo&) = default;
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     public_key = std::move(other.public_key);

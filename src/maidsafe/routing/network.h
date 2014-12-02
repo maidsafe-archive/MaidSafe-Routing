@@ -25,7 +25,6 @@
 
 #include "boost/asio/ip/udp.hpp"
 
-#include "maidsafe/common/Address.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
