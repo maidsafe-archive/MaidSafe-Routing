@@ -45,7 +45,6 @@ destiations. In that case request a close_group message for this node.
 #include <map>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
@@ -54,37 +53,37 @@ destiations. In that case request a close_group message for this node.
 namespace maidsafe {
 namespace routing {
 
-struct connection_manager {
+struct ConnectionManager {
  public:
-  connection_manager(rudp::managed_connections& rudp, NodeId our_id,
-                     std::function<void(close_group_difference)> group_changed_functor)
+  ConnectionManager(rudp::ManagedConnections& rudp, Address our_id,
+                    std::function<void(CloseGroupDifference)> group_changed_functor)
       : routing_table_(our_id),
         rudp_(rudp),
         current_close_group_(),
         group_changed_functor_(group_changed_functor) {
     assert(group_changed_functor_ && "functor required to be set");
   }
-  connection_manager(connection_manager const&) = delete;
-  connection_manager(connection_manager&&) = delete;
-  ~connection_manager() = default;
-  connection_manager& operator=(connection_manager const&) = delete;
-  connection_manager& operator=(connection_manager&&) = delete;
+  ConnectionManager(ConnectionManager const&) = delete;
+  ConnectionManager(ConnectionManager&&) = delete;
+  ~ConnectionManager() = default;
+  ConnectionManager& operator=(ConnectionManager const&) = delete;
+  ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-  bool suggest_node_to_add(const NodeId& node_to_add);
-  std::vector<node_info> get_target(const NodeId& target_node);
-  void lost_network_connection(const NodeId& node);
+  bool SuggestNodeToAdd(const Address& node_to_add);
+  std::vector<NodeInfo> GetTarget(const Address& target_node);
+  void LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  void drop_node(const NodeId& their_id);
-  void add_node(node_info node_to_add, rudp::endpoint_pair their_endpoint_pair);
-  std::vector<node_info> our_close_group() { return routing_table_.our_close_group(); }
+  void DropNode(const Address& their_id);
+  void AddNode(NodeInfo node_to_add, rudp::endpoint_pair their_endpoint_pair);
+  std::vector<NodeInfo> OurCloseGroup() { return routing_table_.OurCloseGroup(); }
 
  private:
-  void group_changed();
+  void GroupChanged();
   std::mutex mutex_;
-  routing_table routing_table_;
+  RoutingTable routing_table_;
   rudp::managed_connections& rudp_;
-  std::vector<NodeId> current_close_group_;
-  std::function<void(close_group_difference)> group_changed_functor_;
+  std::vector<Address> current_close_group_;
+  std::function<void(CloseGroupDifference)> group_changed_functor_;
 };
 
 }  // namespace routing

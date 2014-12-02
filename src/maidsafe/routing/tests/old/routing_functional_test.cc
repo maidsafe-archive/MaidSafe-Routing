@@ -26,7 +26,7 @@
 #include "maidsafe/routing/tests/routing_network.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
-// TODO(Alison) - IsNodeIdInGroupRange - test kInProximalRange and kOutwithRange more thoroughly
+// TODO(Alison) - IsAddressInGroupRange - test kInProximalRange and kOutwithRange more thoroughly
 
 namespace maidsafe {
 
@@ -61,8 +61,8 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
   {
     //  SendGroup
     unsigned int random_node(static_cast<unsigned int>(env_->RandomVaultIndex()));
-    NodeId target_id(env_->nodes_[random_node]->node_id());
-    std::vector<NodeId> group_Ids(env_->GetGroupForId(target_id));
+    Address target_id(env_->nodes_[random_node]->Address());
+    std::vector<Address> group_Ids(env_->GetGroupForId(target_id));
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
     for (const auto& group_id : group_Ids)
       EXPECT_EQ(1, env_->nodes_.at(env_->NodeIndex(group_id))->MessagesSize());
@@ -82,7 +82,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->ClearMessages();
 
     // SendGroup RandomId
-    target_id = NodeId(NodeId::IdType::kRandomId);
+    target_id = Address(RandomString(Address::kSize));
     group_Ids = env_->GetGroupForId(target_id);
     EXPECT_TRUE(env_->SendGroup(target_id, 1));
     for (const auto& group_id : group_Ids)
@@ -94,7 +94,7 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheck) {
     env_->AddNode(env_->nodes_[env_->RandomClientIndex()]->GetMaid());
 
     // Send to client with same Id
-    EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->node_id(),
+    EXPECT_TRUE(env_->SendDirect(env_->nodes_[kNetworkSize], env_->nodes_[kNetworkSize]->Address(),
                                  kExpectClient));
     env_->ClearMessages();
   }
@@ -105,48 +105,48 @@ TEST_F(RoutingNetworkTest, FUNC_SanityCheckSend) {
   EXPECT_TRUE(env_->SendDirect(2));
 
   // Signature 2
-  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode()->Address()));
 
-  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode()->node_id(), kExpectClient));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode()->Address(), kExpectClient));
 
-  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::IdType::kRandomId), kExpectDoesNotExist));
+  EXPECT_FALSE(env_->SendDirect(Address(RandomString(Address::kSize)), kExpectDoesNotExist));
 
   // Signature 3
-  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(), env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomVaultNode(), env_->RandomVaultNode()->Address()));
 
   unsigned int random_vault(env_->RandomVaultIndex());
   unsigned int random_client(env_->RandomClientIndex());
-  EXPECT_TRUE(env_->SendDirect(env_->nodes_[random_vault], env_->nodes_[random_client]->node_id(),
-                               kExpectClient));
+  EXPECT_FALSE(env_->SendDirect(env_->nodes_[random_vault], env_->nodes_[random_client]->Address(),
+                                kExpectClient));
 
-  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->node_id()));
+  EXPECT_TRUE(env_->SendDirect(env_->RandomClientNode(), env_->RandomVaultNode()->Address()));
 
   unsigned int another_random_client(env_->RandomClientIndex());
   if (random_client == another_random_client)
     EXPECT_TRUE(env_->SendDirect(env_->nodes_[random_client],
-                                 env_->nodes_[another_random_client]->node_id(), kExpectClient));
+                                 env_->nodes_[another_random_client]->Address(), kExpectClient));
   else
     EXPECT_FALSE(env_->SendDirect(env_->nodes_[random_client],
-                                  env_->nodes_[another_random_client]->node_id(), kExpectClient));
+                                  env_->nodes_[another_random_client]->Address(), kExpectClient));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SanityCheckSendGroup) {
-  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(Address(RandomString(Address::kSize)), 1 + RandomUint32() % 5,
                               env_->RandomVaultIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(Address(RandomString(Address::kSize)), 1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->node_id(), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->Address(), 1 + RandomUint32() % 5,
                               env_->RandomVaultIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->node_id(), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(env_->RandomVaultNode()->Address(), 1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->node_id(), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->Address(), 1 + RandomUint32() % 5,
                               env_->RandomVaultIndex()));
 
-  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->node_id(), 1 + RandomUint32() % 5,
+  EXPECT_TRUE(env_->SendGroup(env_->RandomClientNode()->Address(), 1 + RandomUint32() % 5,
                               env_->RandomClientIndex()));
 }
 
@@ -157,8 +157,8 @@ TEST_F(RoutingNetworkTest, FUNC_Send) {
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToNonExistingNode) {
-  EXPECT_FALSE(env_->SendDirect(NodeId(NodeId::IdType::kRandomId), kExpectDoesNotExist));
-  EXPECT_TRUE(env_->SendDirect(env_->nodes_[env_->RandomVaultIndex()]->node_id()));
+  EXPECT_FALSE(env_->SendDirect(Address(RandomString(Address::kSize)), kExpectDoesNotExist));
+  EXPECT_TRUE(env_->SendDirect(env_->nodes_[env_->RandomVaultIndex()]->Address()));
 }
 
 TEST_F(RoutingNetworkTest, FUNC_ClientSend) { EXPECT_TRUE(env_->SendDirect(1)); }
@@ -179,7 +179,7 @@ TEST_F(RoutingNetworkTest, FUNC_ClientSendMulti) { EXPECT_TRUE(env_->SendDirect(
 TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
   unsigned int message_count(10), receivers_message_count(0);
   size_t last_index(kServerSize - 1);
-  NodeId dest_id(env_->nodes_[last_index]->node_id());
+  Address dest_id(env_->nodes_[last_index]->Address());
 
   env_->ClearMessages();
   boost::progress_timer t;
@@ -190,7 +190,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroup) {
 
   EXPECT_EQ(0, env_->nodes_[last_index]->MessagesSize())
       << "Not expected message at Node : "
-      << HexSubstr(env_->nodes_[last_index]->node_id().string());
+      << HexSubstr(env_->nodes_[last_index]->Address().string());
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
 }
 
@@ -201,7 +201,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
   auto timeout(Parameters::default_response_timeout);
   Parameters::default_response_timeout *= message_count;
   for (unsigned int dest_index(0); dest_index < kServerSize; ++dest_index) {
-    NodeId dest_id(env_->nodes_.at(dest_index)->node_id());
+    Address dest_id(env_->nodes_.at(dest_index)->Address());
     futures.emplace_back(
         std::async(std::launch::async, [this, dest_id, &message_count, dest_index]() {
           return std::move(std::unique_ptr<testing::AssertionResult>(
@@ -243,7 +243,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   size_t client_index(env_->RandomClientIndex());
 
   size_t last_index(env_->nodes_.size());
-  NodeId dest_id(env_->nodes_[client_index]->node_id());
+  Address dest_id(env_->nodes_[client_index]->Address());
 
   auto timeout(Parameters::default_response_timeout);
   Parameters::default_response_timeout *= Parameters::group_size * message_count;
@@ -256,7 +256,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
 
   EXPECT_EQ(0, env_->nodes_[client_index]->MessagesSize())
       << "Not expected message at Node : "
-      << HexSubstr(env_->nodes_[client_index]->node_id().string());
+      << HexSubstr(env_->nodes_[client_index]->Address().string());
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
   Parameters::default_response_timeout = timeout;
 }
@@ -265,7 +265,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   unsigned int message_count(1), receivers_message_count(0);
  
   size_t last_index(env_->nodes_.size() - 1);
-  NodeId dest_id(env_->nodes_[last_index]->node_id());
+  Address dest_id(env_->nodes_[last_index]->Address());
 
   env_->ClearMessages();
   EXPECT_TRUE(env_->SendGroup(dest_id, message_count));
@@ -274,7 +274,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
 
   EXPECT_EQ(0, env_->nodes_[last_index]->MessagesSize())
       << "Not expected message at Node : "
-      << HexSubstr(env_->nodes_[last_index]->node_id().string());
+      << HexSubstr(env_->nodes_[last_index]->Address().string());
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
 }
 
@@ -292,7 +292,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
   for (unsigned int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(
-          new testing::AssertionResult(env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1))));
+          new testing::AssertionResult(env_->SendGroup(Address(RandomString(Address::kSize)), 1))));
     }));
     Sleep(std::chrono::milliseconds(100));
   }
@@ -337,7 +337,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   for (unsigned int index = 0; index < message_count; ++index) {
     futures.emplace_back(std::async(std::launch::async, [this]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(new testing::AssertionResult(
-          env_->SendGroup(NodeId(NodeId::IdType::kRandomId), 1,
+          env_->SendGroup(Address(RandomString(Address::kSize)), 1,
                           static_cast<unsigned int>(env_->nodes_.size() - 1)))));
     }));
     Sleep(std::chrono::milliseconds(10));
@@ -384,7 +384,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
 
   for (unsigned int index(0); index < message_count; ++index) {
     int group_id_index = index % initial_network_size;  // all other nodes
-    NodeId group_id(env_->nodes_[group_id_index]->node_id());
+    Address group_id(env_->nodes_[group_id_index]->Address());
     futures.emplace_back(std::async(std::launch::async, [this, group_id]() {
       return std::move(std::unique_ptr<testing::AssertionResult>(new testing::AssertionResult(
           env_->SendGroup(group_id, 1, static_cast<unsigned int>(env_->nodes_.size() - 1)))));
@@ -432,8 +432,8 @@ TEST_F(RoutingNetworkTest, FUNC_SendToClientWithSameId) {
   size_t size(0);
 
   env_->ClearMessages();
-  NodeId node_id(maid.name());
-  EXPECT_TRUE(env_->SendDirect(env_->nodes_[new_index], node_id, kExpectClient));
+  Address Address(maid.name());
+  EXPECT_TRUE(env_->SendDirect(env_->nodes_[new_index], Address, kExpectClient));
   for (const auto& node : env_->nodes_) {
     size += node->MessagesSize();
   }
@@ -447,7 +447,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
   for (unsigned int i(0); i < env_->ClientIndex(); ++i) {
     for (unsigned int j(0); j < env_->ClientIndex(); ++j) {
       if (i != j) {
-        EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->node_id()));
+        EXPECT_TRUE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->Address()));
       }
     }
   }
@@ -455,13 +455,13 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedVault) {
   // Vault or Client checks client id - expect false
   for (unsigned int i(0); i < env_->nodes_.size(); ++i) {
     for (size_t j(env_->ClientIndex()); j < env_->nodes_.size(); ++j) {
-      EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->node_id()));
+      EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedVault(env_->nodes_.at(j)->Address()));
     }
   }
 
   // Client checks close vault id - expect true
   for (size_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
-    NodeId client_id(env_->nodes_.at(i)->node_id());
+    Address client_id(env_->nodes_.at(i)->Address());
     std::vector<NodeInfo> closest_nodes(
         env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
     for (const auto& vault : closest_nodes) {
@@ -476,7 +476,7 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
 
   // Vault checks close client id - expect true
   for (size_t i(env_->ClientIndex()); i < env_->nodes_.size(); ++i) {
-    NodeId client_id(env_->nodes_.at(i)->node_id());
+    Address client_id(env_->nodes_.at(i)->Address());
     std::vector<NodeInfo> closest_nodes(
         env_->GetClosestVaults(client_id, Parameters::max_routing_table_size_for_client));
     for (const auto& node_info : closest_nodes) {
@@ -490,20 +490,20 @@ TEST_F(RoutingNetworkTest, FUNC_IsConnectedClient) {
   for (unsigned int i(0); i < env_->ClientIndex(); ++i) {
     for (unsigned int j(0); j < env_->ClientIndex(); ++j) {
       if (i != j) {
-        EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedClient(env_->nodes_.at(j)->node_id()));
+        EXPECT_FALSE(env_->nodes_.at(i)->IsConnectedClient(env_->nodes_.at(j)->Address()));
       }
     }
   }
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonexistentIsConnectedVaultOrClient) {
-  NodeId non_existing_id;
+  Address non_existing_id;
   bool exists(true);
   while (exists) {
-    non_existing_id = NodeId(NodeId::IdType::kRandomId);
+    non_existing_id = Address(RandomString(Address::kSize));
     exists = false;
     for (const auto& node : env_->nodes_) {
-      if (node->node_id() == non_existing_id)
+      if (node->Address() == non_existing_id)
         exists = true;
     }
   }

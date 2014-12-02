@@ -14,32 +14,41 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.                                                                 */
+    use of the MaidSafe Software.
+ */
 
-#include "maidsafe/routing/vault_node.h"
+#ifndef MAIDSAFE_ROUTING_CACHE_H_
+#define MAIDSAFE_ROUTING_CACHE_H_
 
-#include "maidsafe/common/Address.h"
-#include "maidsafe/common/asio_service.h"
-#include "maidsafe/passport/types.h"
-#include "maidsafe/rudp/managed_connections.h"
-
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/clock.h"
+#include <chrono>
+#include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
-
 namespace routing {
 
-vault_node::vault_node(AsioService& io_service, rudp::ManagedConnections rudp,
-                       const passport::Pmid& pmid)
-    : asio_service_(2),
-      our_id_(pmid.name().value.string()),
-      keys_([&pmid]() -> asymm::Keys {
-        asymm::Keys keys;
-        keys.private_key = pmid.private_key();
-        keys.public_key = pmid.public_key();
-        return keys;
-      }()) {}
+class Cache {
+ public:
+  static const std::chrono::minutes time_to_live(60);
+  Cache() = default;
+  Cache(Cache const&) = default;
+  Cache(Cache&&) = delete;
+  ~Cache() = default;
+  Cache& operator=(Cache const&) = default;
+  Cache& operator=(Cache&& rhs) = delete;
+  void Block(MessageHeader header);
+  bool Check(const MessageHeader&);
+
+ private:
+  void Purge();
+
+  std::vector<std::pair<MessageHeader, std::chrono::time_point<std::chrono::system_clock>>>
+      messages_;
+  mutable std::mutex mutex_;
+};
+
 
 }  // namespace routing
-
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_CACHE_H_

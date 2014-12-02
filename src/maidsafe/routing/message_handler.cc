@@ -19,7 +19,7 @@
 #include "maidsafe/routing/message_handler.h"
 
 #include "maidsafe/common/serialisation.h"
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/routing/message.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/connection_manager.h"

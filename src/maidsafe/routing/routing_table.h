@@ -26,7 +26,6 @@
 
 #include "boost/optional.hpp"
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/node_info.h"
@@ -36,7 +35,9 @@ namespace maidsafe {
 
 namespace routing {
 
-class routing_table {
+struct NodeInfo;
+
+class RoutingTable {
  public:
   static size_t bucket_size() { return 1; }
   static size_t parallelism() { return 4; }
@@ -51,11 +52,11 @@ class routing_table {
   bool check_node(const NodeId& their_id) const;
   void drop_node(const NodeId& node_to_drop);
   // our close group or at least as much of it as we currently know
-  std::vector<node_info> our_close_group() const;
+  std::vector<NodeInfo> OurCloseGroup() const;
   // If more than 1 node returned then we are in close group so send to all
-  std::vector<node_info> target_nodes(const NodeId& their_id) const;
-  NodeId our_id() const { return our_id_; }
-  size_t size() const;
+  std::vector<NodeInfo> TargetNodes(const Address& their_id) const;
+  Address OurId() const { return our_id_; }
+  size_t Size() const;
 
  private:
   class comparison {
@@ -72,13 +73,13 @@ class routing_table {
   bool new_node_is_better_than_existing(
       const NodeId& their_id, std::vector<node_info>::const_iterator removal_candidate) const;
   void push_back_then_sort(node_info&& their_info);
-  std::vector<node_info>::const_iterator find_candidate_for_removal() const;
+  std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
   unsigned int network_status(size_t size) const;
 
-  const NodeId our_id_;
+  const Address our_id_;
   const comparison comparison_;
   mutable std::mutex mutex_;
-  std::vector<node_info> nodes_;
+  std::vector<NodeInfo> nodes_;
 };
 
 }  // namespace routing

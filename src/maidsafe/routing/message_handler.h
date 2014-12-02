@@ -35,7 +35,7 @@ namespace routing {
 
 message_handler {
  public:
-  message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections, connection_manager& connection_mgr);
+  message_handler(AsioService& asio_service, rudp::ManagedConnections& managed_connections, ConnectionManager& connection_mgr);
   message_handler() = delete;
   ~message_handler() = default;
   message_handler(const message_handler&) = delete;
@@ -57,7 +57,7 @@ message_handler {
 
   AsioService& asio_service_;
   rudp::ManagedConnections& managed_connections_;
-  connection_manager& connection_mgr_;
+  ConnectionManager& connection_mgr_;
 };
 
 }  // namespace routing

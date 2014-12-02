@@ -49,14 +49,14 @@ Commands::Commands(DemoNodePtr demo_node,
   // and the latter half part will be used as client, which shall not respond msg
   // i.e. shall not be put into all_ids_
   for (size_t i(0); i < (all_keys_.size() / 2); ++i)
-    all_ids_.push_back(NodeId(all_keys_[i].pmid.name().value));
+    all_ids_.push_back(Address(all_keys_[i].pmid.name().value));
 
   demo_node->functors_.request_public_key = [this](
-      const NodeId & node_id,
-      GivePublicKeyFunctor give_public_key) { this->Validate(node_id, give_public_key); };  // NOLINT
+      const Address & Address,
+      GivePublicKeyFunctor give_public_key) { this->Validate(Address, give_public_key); };  // NOLINT
   demo_node->functors_.message_and_caching.message_received = [this](
       const std::string& wrapped_message, const ReplyFunctor& reply_functor) {
-    std::string reply_msg(wrapped_message + "+++" + demo_node_->node_id().string());
+    std::string reply_msg(wrapped_message + "+++" + demo_node_->Address().string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
       reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
     reply_functor(reply_msg);
@@ -64,14 +64,14 @@ Commands::Commands(DemoNodePtr demo_node,
   mark_results_arrived_ = std::bind(&Commands::MarkResultArrived, this);
 }
 
-void Commands::Validate(const NodeId& node_id, GivePublicKeyFunctor give_public_key) {
-  if (node_id == NodeId())
+void Commands::Validate(const Address& Address, GivePublicKeyFunctor give_public_key) {
+  if (Address == Address())
     return;
 
   auto iter(all_keys_.begin());
   bool find(false);
   while ((iter != all_keys_.end()) && !find) {
-    if (iter->pmid.name()->string() == node_id.string())
+    if (iter->pmid.name()->string() == Address.string())
       find = true;
     else
       ++iter;
@@ -140,10 +140,10 @@ void Commands::ZeroStateJoin() {
 
   NodeInfo peer_node_info;
   if (identity_index_ == 0) {
-    peer_node_info.id = NodeId(all_keys_[1].pmid.name().value);
+    peer_node_info.id = Address(all_keys_[1].pmid.name().value);
     peer_node_info.public_key = all_keys_[1].pmid.public_key();
   } else {
-    peer_node_info.id = NodeId(all_keys_[0].pmid.name().value);
+    peer_node_info.id = Address(all_keys_[0].pmid.name().value);
     peer_node_info.public_key = all_keys_[0].pmid.public_key();
   }
   peer_node_info.connection_id = peer_node_info.id;
@@ -183,8 +183,8 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
     Parameters::default_response_timeout *=
         (messages_count * ((destination_type != DestinationType::kGroup) ? 1 : 4));
   for (int index = 0; index < messages_count || infinite; ++index) {
-    std::vector<NodeId> closest_nodes;
-    NodeId dest_id;
+    std::vector<Address> closest_nodes;
+    Address dest_id;
     expect_respondent = MakeMessage(id_index, destination_type, closest_nodes, dest_id);
     if (expect_respondent == 0)
       return;
@@ -209,7 +209,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
 }
 
 unsigned int Commands::MakeMessage(int id_index, const DestinationType& destination_type,
-                               std::vector<NodeId>& closest_nodes, NodeId& dest_id) {
+                               std::vector<Address>& closest_nodes, Address& dest_id) {
   int identity_index;
   if (id_index >= 0)
     identity_index = id_index;
@@ -222,22 +222,22 @@ unsigned int Commands::MakeMessage(int id_index, const DestinationType& destinat
   }
   if (identity_index >= 0) {
     if (destination_type == DestinationType::kGroup)
-      dest_id = NodeId(NodeId::IdType::kRandomId);
+      dest_id = Address(RandomString(Address::kSize));
     else
-      dest_id = NodeId(all_keys_[identity_index].pmid.name().value);
+      dest_id = Address(all_keys_[identity_index].pmid.name().value);
   }
-  std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->node_id().string())
+  std::cout << "Sending a msg from : " << maidsafe::HexSubstr(demo_node_->Address().string())
             << " to " << (destination_type != DestinationType::kGroup ? ": " : "group : ")
             << maidsafe::HexSubstr(dest_id.string())
             << " , expect receive response from :" << std::endl;
   unsigned int expected_respodents(destination_type != DestinationType::kGroup ? 1 : 4);
-  std::vector<NodeId> closests;
+  std::vector<Address> closests;
   if (destination_type == DestinationType::kGroup)
-    NodeId farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
+    Address farthest_closests(CalculateClosests(dest_id, closests, expected_respodents));
   else
     closests.push_back(dest_id);
-  for (const auto& node_id : closests)
-    std::cout << "\t" << maidsafe::HexSubstr(node_id.string()) << std::endl;
+  for (const auto& Address : closests)
+    std::cout << "\t" << maidsafe::HexSubstr(Address.string()) << std::endl;
   closest_nodes = closests;
   return expected_respodents;
 }
@@ -250,7 +250,7 @@ void Commands::CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time) {
 void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
                             std::mutex& mutex, std::condition_variable& cond_var,
                             int messages_count, unsigned int expect_respondent,
-                            std::vector<NodeId> closest_nodes, NodeId dest_id, std::string data) {
+                            std::vector<Address> closest_nodes, NodeId dest_id, std::string data) {
   bool group_performance(false);
   if ((expect_respondent > 1) && (closest_nodes.empty()))
     group_performance = true;
@@ -463,16 +463,16 @@ void Commands::MarkResultArrived() {
   wait_cond_var_.notify_one();
 }
 
-NodeId Commands::CalculateClosests(const NodeId& target_id, std::vector<NodeId>& closests,
+Address Commands::CalculateClosests(const Address& target_id, std::vector<Address>& closests,
                                    unsigned int num_of_closests) {
   if (all_ids_.size() <= num_of_closests) {
     closests = all_ids_;
     return closests[closests.size() - 1];
   }
-  std::sort(all_ids_.begin(), all_ids_.end(), [&](const NodeId & lhs, const NodeId & rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target_id);
+  std::sort(all_ids_.begin(), all_ids_.end(), [&](const Address & lhs, const NodeId & rhs) {
+    return Address::CloserToTarget(lhs, rhs, target_id);
   });
-  closests = std::vector<NodeId>(
+  closests = std::vector<Address>(
       all_ids_.begin() + boost::lexical_cast<bool>(all_ids_[0] == target_id),
       all_ids_.begin() + num_of_closests + boost::lexical_cast<bool>(all_ids_[0] == target_id));
   return closests[closests.size() - 1];
@@ -490,7 +490,7 @@ void Commands::RunPerformanceTest(bool is_send_group) {
   int iteration(1);
   uint32_t message_id(0);
   unsigned int expect_respondent(is_send_group ? routing::Parameters::group_size : 1);
-  std::vector<NodeId> closest_nodes;
+  std::vector<Address> closest_nodes;
   while (data_size_ < ((1024 * 1024) + 1024)) {
     std::string data, data_to_send;
     data_to_send = data = RandomAlphaNumericString(data_size_);

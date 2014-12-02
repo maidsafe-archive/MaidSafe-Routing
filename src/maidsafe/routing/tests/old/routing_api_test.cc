@@ -37,7 +37,7 @@
 #pragma warning(pop)
 #endif
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -83,7 +83,7 @@ TEST(APITest, BEH_API_ZeroState) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
   key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
@@ -97,9 +97,9 @@ TEST(APITest, BEH_API_ZeroState) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -141,7 +141,7 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, boost::optional<asymm::PublicKey>> key_map;
+  std::map<Address, boost::optional<asymm::PublicKey>> key_map;
   key_map.insert(std::make_pair(node1.node_info.id,
                                 boost::optional<asymm::PublicKey>(pmid1.public_key())));
   key_map.insert(std::make_pair(node2.node_info.id,
@@ -158,10 +158,10 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
    
-    auto itr(key_map.find(node_id));
-    if (node_id == node3.node_info.id) {
+    auto itr(key_map.find(Address));
+    if (Address == node3.node_info.id) {
       give_key(boost::optional<asymm::PublicKey>());
       return;
     }
@@ -169,9 +169,9 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
       give_key((*itr).second);
   };
 
-  functors2.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
+  functors2.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
    
-    auto itr(key_map.find(node_id));
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -215,7 +215,7 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
   NodeInfoAndPrivateKey node4(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
   key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
@@ -228,9 +228,9 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -279,7 +279,7 @@ TEST(APITest, BEH_API_SendToSelf) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
   key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
@@ -290,9 +290,9 @@ TEST(APITest, BEH_API_SendToSelf) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -358,7 +358,7 @@ TEST(APITest, BEH_API_ClientNode) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
@@ -369,9 +369,9 @@ TEST(APITest, BEH_API_ClientNode) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -432,7 +432,7 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
@@ -444,9 +444,9 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   functors3 = functors2 = functors1;
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -510,7 +510,7 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMaid(maid));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
 
@@ -522,9 +522,9 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   functors1.message_and_caching.message_received = no_ops_message_received_functor;
   functors4 = functors3 = functors2 = functors1;
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -617,11 +617,11 @@ TEST(APITest, BEH_API_NodeNetwork) {
   int min_join_status(8);  // TODO(Prakash): To decide
   Functors functors;
   functors.message_and_caching.message_received = no_ops_message_received_functor;
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   functors.network_status = [](int) {};  // NOLINT (Fraser)
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -683,12 +683,12 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   Functors functors;
 
   std::vector<NodeInfoAndPrivateKey> nodes;
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   std::vector<std::shared_ptr<Routing>> routing_node;
   int i(0);
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -776,7 +776,7 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
   key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
@@ -795,9 +795,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 
   functors3 = functors2 = functors1;
 
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -856,7 +856,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithPmid(pmid3));
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   key_map.insert(std::make_pair(node1.node_info.id, pmid1.public_key()));
   key_map.insert(std::make_pair(node2.node_info.id, pmid2.public_key()));
   key_map.insert(std::make_pair(node3.node_info.id, pmid3.public_key()));
@@ -871,9 +871,9 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   Routing routing3(pmid3);
 
   functors1.network_status = [](int) {};  // NOLINT (Fraser)
-  functors1.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -962,10 +962,10 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   {  // Test Group To Group
     GroupToGroupMessage group_to_group_message;
     GroupSource group_source;
-    group_source.sender_id = SingleId(routing3.kNodeId());
-    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30));
+    group_source.sender_id = SingleId(routing3.kAddress());
+    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kAddress(), 30));
     group_to_group_message.contents = "Dummy content for test puepose";
-    group_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kNodeId(), 30));
+    group_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kAddress(), 30));
     group_to_group_message.sender = group_source;
     routing3.Send(group_to_group_message);
     auto group_to_group_future(group_to_group_promise.get_future());
@@ -975,8 +975,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
   {  // Test Single To Single
     SingleToSingleMessage single_to_single_message;
-    single_to_single_message.receiver = SingleId(routing1.kNodeId());
-    single_to_single_message.sender = SingleSource(SingleId(routing3.kNodeId()));
+    single_to_single_message.receiver = SingleId(routing1.kAddress());
+    single_to_single_message.sender = SingleSource(SingleId(routing3.kAddress()));
     single_to_single_message.contents = "Dummy content for test puepose";
     routing3.Send(single_to_single_message);
     auto single_to_single_future(single_to_single_promise.get_future());
@@ -987,10 +987,10 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   {  // Test Group To Single
     GroupToSingleMessage group_to_single_message;
     GroupSource group_source;
-    group_source.sender_id = SingleId(routing3.kNodeId());
-    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kNodeId(), 30));
+    group_source.sender_id = SingleId(routing3.kAddress());
+    group_source.group_id = GroupId(GenerateUniqueRandomId(routing3.kAddress(), 30));
     group_to_single_message.sender = group_source;
-    group_to_single_message.receiver = SingleId(routing1.kNodeId());
+    group_to_single_message.receiver = SingleId(routing1.kAddress());
     group_to_single_message.contents = "Dummy content for test puepose";
     routing3.Send(group_to_single_message);
     auto group_to_single_future(group_to_single_promise.get_future());
@@ -1001,8 +1001,8 @@ TEST(APITest, BEH_API_TypedMessageSend) {
   {  //  Test Single To Group
     responses = 0;
     SingleToGroupMessage single_to_group_message;
-    single_to_group_message.sender = SingleSource(SingleId(routing3.kNodeId()));
-    single_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kNodeId(), 30));
+    single_to_group_message.sender = SingleSource(SingleId(routing3.kAddress()));
+    single_to_group_message.receiver = GroupId(GenerateUniqueRandomId(routing1.kAddress(), 30));
     routing3.Send(single_to_group_message);
     auto single_to_group_future(single_to_group_promise.get_future());
     ASSERT_EQ(single_to_group_future.wait_for(boost::chrono::seconds(10)),
@@ -1025,16 +1025,16 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   Functors functors;
 
   std::vector<NodeInfoAndPrivateKey> nodes;
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   std::mutex mutex;
   std::vector<std::pair<int, SingleToGroupRelayMessage>> received_relay_messages;
   std::vector<std::shared_ptr<Routing>> routing_nodes;
   std::condition_variable cv;
   std::vector<RelayMessageFunctorType<SingleToGroupRelayMessage>> single_to_group_relay_functors;
   int i(0);
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << DebugId(node_id);
-    auto itr(key_map.find(node_id));
+  functors.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << DebugId(Address);
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -1076,14 +1076,14 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   // response to single to group relay messages
   for (int j = 0; j != kNetworkSize; ++j) {
-    auto node_id = routing_nodes.at(j)->kNodeId();
-    LOG(kError) << "Preparing functor for node --" << j << " , " << DebugId(node_id);
+    auto Address = routing_nodes.at(j)->kAddress();
+    LOG(kError) << "Preparing functor for node --" << j << " , " << DebugId(Address);
     RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
     relay_message_functor_struct.message_received =
-        [node_id, j, &cv, &mutex, &received_relay_messages](
+        [Address, j, &cv, &mutex, &received_relay_messages](
             const SingleToGroupRelayMessage& message) {
       LOG(kVerbose) << "single to group relay message received at node index : " << j
-                    << " , node id : " << DebugId(node_id);
+                    << " , node id : " << DebugId(Address);
       {
         std::lock_guard<std::mutex> lock(mutex);
         received_relay_messages.push_back(std::pair<int, SingleToGroupRelayMessage>(j, message));
@@ -1184,15 +1184,15 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
     cv.wait(lock, [&test_node_joined] { return test_node_joined; });
   }
 
-  auto send_message = [&test_node](const NodeId& target_id) {
+  auto send_message = [&test_node](const Address& target_id) {
     SingleToGroupMessage single_to_group_message;
-    single_to_group_message.sender = SingleSource(SingleId(test_node.kNodeId()));
+    single_to_group_message.sender = SingleSource(SingleId(test_node.kAddress()));
     single_to_group_message.receiver = GroupId(target_id);
     test_node.Send(single_to_group_message);
   };
 
   //  Test Single To Group own id
-  send_message(test_node.kNodeId());
+  send_message(test_node.kAddress());
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [&received_relay_messages] {
@@ -1203,7 +1203,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   //  Test Single To Group random id
   for (auto message_count(0); message_count < kMessageCount; ++message_count)
-    send_message(test_node.kNodeId());
+    send_message(test_node.kAddress());
   {
     std::unique_lock<std::mutex> lock(mutex);
     cv.wait(lock, [kMessageCount, &received_relay_messages] {
@@ -1216,7 +1216,7 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
   for (const auto& recipiant : received_relay_messages) {
     auto& node = routing_nodes.at(recipiant.first);
     SingleIdRelay single_id_relay(detail::GetRelayIdToReply(recipiant.second.sender));
-    GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kNodeId()));
+    GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kAddress()));
     GroupToSingleRelayMessage response_message("response", group_source, single_id_relay);
     LOG(kWarning) << "Sending response from index " << recipiant.first;
     node->Send(response_message);

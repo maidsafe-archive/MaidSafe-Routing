@@ -46,7 +46,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
         close_nodes_change_check_(false),
         dropping_node_(false),
         adding_node_(false),
-        node_on_operation_(NodeId::IdType::kRandomId),
+        node_on_operation_(Address::IdType::kRandomId),
         affected_nodes_(),
         checking_mutex_() {}
 
@@ -55,7 +55,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
   virtual void TearDown() override { Sleep(std::chrono::microseconds(100)); }
 
   void CheckCloseNodesChange(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
-                             const NodeId affected_node) {
+                             const Address affected_node) {
     if (!close_nodes_change_check_)
       return;
     LOG(kInfo) << "Node " << HexSubstr(affected_node.string())
@@ -68,16 +68,16 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
   }
 
  protected:
-  void PopulateGlobals(const std::vector<NodeId>& existing_vault_node_ids,
-                       const std::vector<NodeId>& bootstrap_node_ids,
-                       const NodeId& node_to_operate) {
+  void PopulateGlobals(const std::vector<Address>& existing_vault_Addresss,
+                       const std::vector<Address>& bootstrap_Addresss,
+                       const Address& node_to_operate) {
     old_close_nodes_.clear();
     new_close_nodes_.clear();
     expect_affected_.clear();
     affected_nodes_.clear();
-    std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
+    std::copy(existing_vault_Addresss.begin(), existing_vault_node_ids.end(),
               std::back_inserter(old_close_nodes_));
-    std::copy(existing_vault_node_ids.begin(), existing_vault_node_ids.end(),
+    std::copy(existing_vault_Addresss.begin(), existing_vault_node_ids.end(),
               std::back_inserter(new_close_nodes_));
     if (dropping_node_) {
       new_close_nodes_.erase(
@@ -89,7 +89,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     // only radius of Parameters::closest_nodes_size is guaranteed
     std::copy(new_close_nodes_.begin(), new_close_nodes_.begin() + Parameters::closest_nodes_size,
               std::back_inserter(expect_affected_));
-    for (auto& node : bootstrap_node_ids) {
+    for (auto& node : bootstrap_Addresss) {
       auto find(std::find(expect_affected_.begin(), expect_affected_.end(), node));
       if (find != expect_affected_.end())
         expect_affected_.erase(find);
@@ -124,15 +124,15 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     return true;
   }
 
-  std::vector<NodeId> old_close_nodes_, new_close_nodes_, expect_affected_;
+  std::vector<Address> old_close_nodes_, new_close_nodes_, expect_affected_;
   std::atomic<bool> close_nodes_change_check_, dropping_node_, adding_node_;
-  NodeId node_on_operation_;
-  std::set<NodeId> affected_nodes_;
+  Address node_on_operation_;
+  std::set<Address> affected_nodes_;
   std::mutex checking_mutex_;
 
  private:
   void DoDroppingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
-                       const NodeId& affected_node) {
+                       const Address& affected_node) {
     auto lost_node(close_nodes_change->lost_node());
 
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
@@ -140,7 +140,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     //     bool not_found(true);
     if (!lost_node.IsZero()) {
      
-      //       if (node_id == node_on_operation_)
+      //       if (Address == node_on_operation_)
       //         not_found = false;
     }
     if (lost_node == node_on_operation_) {
@@ -155,14 +155,14 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
   }
 
   void DoAddingCheck(std::shared_ptr<routing::CloseNodesChange> close_nodes_change,
-                     const NodeId& affected_node) {
+                     const Address& affected_node) {
     auto new_node(close_nodes_change->new_node());
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
                   << " containing following new nodes :";
     //     bool not_found(true);
     if (!new_node.IsZero()) {
      
-      //       if (node_id == node_on_operation_)
+      //       if (Address == node_on_operation_)
       //         not_found = false;
     }
     if (new_node == node_on_operation_) {
@@ -184,26 +184,26 @@ TEST_F(RoutingChurnTest, FUNC_BasicNetworkChurn) {
   const size_t clients_in_network(2 + random % 3);
   this->SetUpNetwork(vault_network_size, clients_in_network);
   // Existing vault node ids
-  std::vector<NodeId> existing_client_node_ids, existing_vault_node_ids;
+  std::vector<Address> existing_client_Addresss, existing_vault_node_ids;
   for (size_t i(1); i < this->nodes_.size(); ++i) {
     if (this->nodes_[i]->IsClient())
-      existing_client_node_ids.push_back(this->nodes_[i]->node_id());
+      existing_client_Addresss.push_back(this->nodes_[i]->node_id());
     else
-      existing_vault_node_ids.push_back(this->nodes_[i]->node_id());
+      existing_vault_Addresss.push_back(this->nodes_[i]->node_id());
   }
 
   for (int n(1); n < 51; ++n) {
     if (n % 2 == 0) {
       auto pmid(passport::CreatePmidAndSigner().first);
       this->AddNode(pmid);
-      existing_vault_node_ids.push_back(NodeId(pmid.name()));
+      existing_vault_Addresss.push_back(Address(pmid.name()));
       Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
     }
 
     if (n % 3 == 0) {
-      std::random_shuffle(existing_vault_node_ids.begin(), existing_vault_node_ids.end());
-      this->RemoveNode(existing_vault_node_ids.back());
-      existing_vault_node_ids.pop_back();
+      std::random_shuffle(existing_vault_Addresss.begin(), existing_vault_node_ids.end());
+      this->RemoveNode(existing_vault_Addresss.back());
+      existing_vault_Addresss.pop_back();
       Sleep(std::chrono::milliseconds(500 + RandomUint32() % 200));
     }
   }
@@ -216,9 +216,9 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
   this->SetUpNetwork(vault_network_size, clients_in_network);
  
 
-  std::vector<NodeId> existing_node_ids;
+  std::vector<Address> existing_Addresss;
   for (const auto& node : this->nodes_)
-    existing_node_ids.push_back(node->node_id());
+    existing_Addresss.push_back(node->node_id());
  
 
   std::vector<passport::Pmid> new_nodes;
@@ -239,14 +239,14 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       GenericNetwork::NodePtr vault_node(this->RandomVaultNode());
       // Choose random client nodes for direct message
       // TODO(Alison) - use result?
-      sender_client->SendDirect(receiver_client->node_id(), message, false, [](std::string) {});
+      sender_client->SendDirect(receiver_client->Address(), message, false, [](std::string) {});
       // Choose random client for group message to random env
       // TODO(Alison) - use result?
-      sender_client->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,
+      sender_client->SendGroup(Address(RandomString(Address::kSize)), message, false,
                                [](std::string) {});
       // Choose random vault for group message to random env
       // TODO(Alison) - use result?
-      vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false, [](std::string) {});
+      vault_node->SendGroup(Address(RandomString(Address::kSize)), message, false, [](std::string) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
      
@@ -273,7 +273,7 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       if (new_nodes.empty())
         return;
       //                                  if (RandomUint32() % 5 == 0)
-      //                                    this->AddNode(true, new_node_ids.back());
+      //                                    this->AddNode(true, new_Addresss.back());
       //                                  else
       this->AddNode(new_nodes.back());
       new_nodes.pop_back();

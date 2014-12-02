@@ -25,7 +25,7 @@
 
 #include "boost/asio/ip/udp.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/api_config.h"
@@ -60,32 +60,32 @@ class Network {
   int ZeroStateBootstrap(const rudp::MessageReceivedFunctor& message_received_functor,
                          const rudp::ConnectionLostFunctor& connection_lost_functor,
                          boost::asio::ip::udp::endpoint local_endpoint);
-  virtual int GetAvailableEndpoint(const NodeId& peer_id,
+  virtual int GetAvailableEndpoint(const Address& peer_id,
                                    const rudp::EndpointPair& peer_endpoint_pair,
                                    rudp::EndpointPair& this_endpoint_pair,
                                    rudp::NatType& this_nat_type);
-  virtual int Add(const NodeId& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
+  virtual int Add(const Address& peer_id, const rudp::EndpointPair& peer_endpoint_pair,
                   const std::string& validation_data);
-  virtual int MarkConnectionAsValid(const NodeId& peer_id);
-  void Remove(const NodeId& peer_id);
+  virtual int MarkConnectionAsValid(const Address& peer_id);
+  void Remove(const Address& peer_id);
   // For sending relay requests, message with empty source ID may be provided, along with
   // direct endpoint.
-  void SendToDirect(const protobuf::Message& message, const NodeId& peer_connection_id,
+  void SendToDirect(const protobuf::Message& message, const Address& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
   void SendAck(const protobuf::Message& message);
   void AdjustAckHistory(protobuf::Message& message);
-  virtual void SendToDirect(protobuf::Message& message, const NodeId& peer_node_id,
-                            const NodeId& peer_connection_id);
-  void SendToDirectAdjustedRoute(protobuf::Message& message, const NodeId& peer_node_id,
-                                 const NodeId& peer_connection_id);
+  virtual void SendToDirect(protobuf::Message& message, const Address& peer_Address,
+                            const Address& peer_connection_id);
+  void SendToDirectAdjustedRoute(protobuf::Message& message, const Address& peer_Address,
+                                 const Address& peer_connection_id);
   // Handles relay response messages.  Also leave destination ID empty if needs to send as a relay
   // response message
   virtual void SendToClosestNode(const protobuf::Message& message);
-  void SendToClosestNode(protobuf::Message& message, const std::vector<NodeId>& exclude);
+  void SendToClosestNode(protobuf::Message& message, const std::vector<Address>& exclude);
   void AddToBootstrapFile(const boost::asio::ip::udp::endpoint& endpoint);
   void clear_bootstrap_connection_info();
-  NodeId bootstrap_connection_id() const;
-  NodeId this_node_relay_connection_id() const;
+  Address bootstrap_connection_id() const;
+  Address this_node_relay_connection_id() const;
   rudp::NatType nat_type() const;
 
   friend class test::GenericNode;
@@ -101,18 +101,18 @@ class Network {
                   const rudp::ConnectionLostFunctor& connection_lost_functor,
                   const BootstrapContacts& bootstrap_contacts,
                   boost::asio::ip::udp::endpoint local_endpoint = boost::asio::ip::udp::endpoint());
-  void RudpSend(const NodeId& peer_id, const protobuf::Message& message,
+  void RudpSend(const Address& peer_id, const protobuf::Message& message,
                 const rudp::MessageSentFunctor& message_sent_functor);
-  void SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
-              const NodeId& peer_connection_id, bool no_ack_timer = false);
+  void SendTo(const protobuf::Message& message, const Address& peer_Address,
+              const Address& peer_connection_id, bool no_ack_timer = false);
   void RecursiveSendOn(protobuf::Message message, NodeInfo last_node_attempted = NodeInfo(),
                        int attempt_count = 0);
 
   bool running_;
   std::mutex running_mutex_;
   unsigned int bootstrap_attempt_;
-  NodeId bootstrap_connection_id_;
-  NodeId this_node_relay_connection_id_;
+  Address bootstrap_connection_id_;
+  Address this_node_relay_connection_id_;
   RoutingTable& routing_table_;
   ClientRoutingTable& client_routing_table_;
   Acknowledgement& acknowledgement_;

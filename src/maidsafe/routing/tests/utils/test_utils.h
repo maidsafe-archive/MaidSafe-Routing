@@ -62,7 +62,7 @@ struct node_infoAndPrivateKey {
 template <typename FobType>
 node_infoAndPrivateKey Makenode_infoAndKeysWithFob(FobType fob) {
   node_info node;
-  node.id = NodeId(fob.name()->string());
+  node.id = Address(fob.name()->string());
   node.public_key = fob.public_key();
   node_infoAndPrivateKey node_info_and_private_key;
   node_info_and_private_key.node_info = node;
@@ -76,19 +76,19 @@ node_infoAndPrivateKey Makenode_infoAndKeysWithMaid(passport::Maid maid);
 
 node_info MakeNode();
 
-NodeId GenerateUniqueRandomId(const NodeId& holder, unsigned int pos);
-NodeId GenerateUniqueRandomId(unsigned int pos);
-NodeId GenerateUniqueRandomNodeId(const std::vector<NodeId>& esisting_ids);
+Address GenerateUniqueRandomId(const Address& holder, unsigned int pos);
+Address GenerateUniqueRandomId(unsigned int pos);
+Address GenerateUniqueRandomNodeId(const std::vector<Address>& esisting_ids);
 
 int NetworkStatus(bool client, int status);
 
-void SortFromTarget(const NodeId& target, std::vector<node_info>& nodes);
+void SortFromTarget(const Address& target, std::vector<node_info>& nodes);
 
-void PartialSortFromTarget(const NodeId& target, std::vector<node_info>& nodes, size_t num_to_sort);
+void PartialSortFromTarget(const Address& target, std::vector<node_info>& nodes, size_t num_to_sort);
 
-void SortIdsFromTarget(const NodeId& target, std::vector<NodeId>& nodes);
+void SortIdsFromTarget(const Address& target, std::vector<Address>& nodes);
 
-void Sortnode_infosFromTarget(const NodeId& target, std::vector<node_info>& nodes);
+void Sortnode_infosFromTarget(const Address& target, std::vector<node_info>& nodes);
 
 bool CompareListOfnode_infos(const std::vector<node_info>& lhs, const std::vector<node_info>& rhs);
 

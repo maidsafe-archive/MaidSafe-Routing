@@ -24,7 +24,7 @@
 #include "helpers/qt_pop_headers.h"
 
 #include "maidsafe/common/tools/network_viewer.h"
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
@@ -45,7 +45,7 @@ std::vector<network_viewer::ViewableNode> APIHelper::GetCloseNodes(int state_id,
                                                                    const std::string& id) const {
   qDebug() << QString("APIHelper::GetCloseNodes for State: %1 Node: %2")
                   .arg(QString::number(state_id))
-                  .arg(GetShortNodeId(id));
+                  .arg(GetShortAddress(id));
   return network_viewer::GetCloseNodes(state_id, id);
 }
 
@@ -55,8 +55,8 @@ void APIHelper::NetworkUpdated(int state_id) {
   emit RequestGraphRefresh(state_id);
 }
 
-QString APIHelper::GetShortNodeId(std::string node_id) const {
-  QString q_node(QString::fromStdString(node_id));
+QString APIHelper::GetShortAddress(std::string Address) const {
+  QString q_node(QString::fromStdString(Address));
   if (q_node.length() < 13)
     return q_node;
   return q_node.left(6) + "..." + q_node.right(6);

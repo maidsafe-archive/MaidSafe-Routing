@@ -433,7 +433,7 @@
   };
   /*      atoms.js */
   var Node = function(a) {
-    this._id = _nextNodeId++;
+    this._id = _nextAddress++;
     this.data = a || {};
     this._mass = (a.mass !== undefined) ? a.mass : 1;
     this._fixed = (a.fixed === true) ? true : false;
@@ -443,7 +443,7 @@
     delete this.data.mass;
     delete this.data.fixed
   };
-  var _nextNodeId = 1;
+  var _nextAddress = 1;
   var Edge = function(b, c, a) {
     this._id = _nextEdgeId--;
     this.source = b;

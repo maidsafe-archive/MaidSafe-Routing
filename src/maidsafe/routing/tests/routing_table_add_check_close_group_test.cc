@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "maidsafe/common/log.h"
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -39,12 +39,12 @@ namespace test {
 TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
   const auto network_size(500);
   auto routing_tables(routing_table_network(network_size));
-  std::vector<NodeId> node_ids;
-  node_ids.reserve(network_size);
+  std::vector<Address> Addresss;
+  Addresss.reserve(network_size);
   asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
-    node_ids.push_back(node->our_id());
+    Addresss.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
@@ -54,10 +54,10 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
   }
   for (const auto& node : routing_tables) {
     auto id = node->our_id();
-    // + 1 as node_ids includes our ID
-    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + group_size + 1,
-                      std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, id);
+    // + 1 as Addresss includes our ID
+    std::partial_sort(std::begin(Addresss), std::begin(node_ids) + group_size + 1,
+                      std::end(Addresss), [id](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, id);
     });
     auto groups = node->our_close_group();
     EXPECT_EQ(groups.size(), group_size);
@@ -66,8 +66,8 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
     groups.erase(last, std::end(groups));
     EXPECT_EQ(groups.size(), group_size);
     for (size_t i = 0; i < group_size; ++i) {
-      // + 1 as node_ids includes our ID
-      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
+      // + 1 as Addresss includes our ID
+      EXPECT_EQ(groups.at(i).id, Addresss.at(i + 1)) << " node mismatch at " << i;
     }
   }
 }

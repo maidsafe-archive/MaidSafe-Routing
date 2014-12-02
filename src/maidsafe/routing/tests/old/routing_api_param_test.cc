@@ -37,7 +37,7 @@
 #pragma warning(pop)
 #endif
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -120,12 +120,12 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
   Functors functors;
 
   std::vector<NodeInfoAndPrivateKey> nodes;
-  std::map<NodeId, asymm::PublicKey> key_map;
+  std::map<Address, asymm::PublicKey> key_map;
   std::vector<std::shared_ptr<Routing>> routing_node;
   int i(0);
-  functors.request_public_key = [&](const NodeId& node_id, GivePublicKeyFunctor give_key) {
-    LOG(kWarning) << "node_validation called for " << node_id;
-    auto itr(key_map.find(node_id));
+  functors.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
+    LOG(kWarning) << "node_validation called for " << Address;
+    auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
   };
@@ -199,7 +199,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
     send_futures.emplace_back(send_promise.get_future());
   bool result(false);
   for (unsigned int i(0); i < kServerCount; ++i) {
-    NodeId dest_id(routing_node[i]->kNodeId());
+    Address dest_id(routing_node[i]->kNodeId());
     unsigned int count(0);
     while (count < kMessageCount) {
       unsigned int message_index(i * kServerCount + count);

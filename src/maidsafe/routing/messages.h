@@ -51,7 +51,7 @@ struct ping {
   ping() = default;
   ping(const ping&) = delete;
   ping(ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  ping(destination_id destination_in, source_id source_in)
+  ping(DestinationAddress destination_in, SourceAddress source_in)
       : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   explicit ping(header header_in) : header(std::move(header_in)) {}
   ~ping() = default;
@@ -76,8 +76,8 @@ struct ping_response {
   ping_response(const ping_response&) = delete;
   ping_response(ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
   explicit ping_response(ping ping)
-      : header(destination_id(std::move(ping.header.source.data)),
-               source_id(std::move(ping.header.destination.data)),
+      : header(DestinationAddress(std::move(ping.header.source.data)),
+               SourceAddress(std::move(ping.header.destination.data)),
                message_id(std::move(ping.header.message_id))) {}
   ~ping_response() = default;
   ping_response& operator=(const ping_response&) = delete;
@@ -101,7 +101,7 @@ struct connect {
   connect(const connect&) = delete;
   connect(connect&& other) MAIDSAFE_NOEXCEPT : our_endpoints(std::move(other.our_endpoints)),
                                                header(std::move(other.header)) {}
-  connect(destination_id destination_in, source_id source_in, rudp::endpoint_pair our_endpoint_in)
+  connect(DestinationAddress destination_in, SourceAddress source_in, rudp::endpoint_pair our_endpoint_in)
       : our_endpoints(std::move(our_endpoint_in)),
         header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
   ~connect() = default;
@@ -146,11 +146,11 @@ struct forward_connect {
     return *this;
   };
 
-  forward_connect(source_id source_in, connect connect, asymm::PublicKey requesters_public_key_in)
+  forward_connect(SourceAddress source_in, connect connect, asymm::PublicKey requesters_public_key_in)
       : requesters_endpoint(std::move(connect.our_endpoint)),
         requesters_nat_type(std::move(connect.our_nat_type)),
         requesters_public_key(std::move(requesters_public_key_in)),
-        header(single_destination_id(connect.their_id), std::move(source_in),    // FIXME calculate
+        header(single_DestinationAddress(connect.their_id), std::move(source_in),    // FIXME calculate
                connect.header.message_id, murmur_hash2(std::vector<byte>{})) {}  // hash proerly
 
   rudp::endpoint_pair requesters_endpoint;

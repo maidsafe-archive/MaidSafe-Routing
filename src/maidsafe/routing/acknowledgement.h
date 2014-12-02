@@ -71,7 +71,7 @@ struct AckTimer {
 
 class Acknowledgement {
  public:
-  Acknowledgement(const NodeId& local_node_id, AsioService& io_service);
+  Acknowledgement(const Address& local_Address, AsioService& io_service);
   Acknowledgement& operator=(const Acknowledgement&) = delete;
   Acknowledgement& operator=(const Acknowledgement&&) = delete;
   Acknowledgement(const Acknowledgement&) = delete;
@@ -82,16 +82,16 @@ class Acknowledgement {
   void Add(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(AckId ack_id);
   void HandleMessage(AckId ack_id);
-  bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
-  bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& local_node_id);
-  void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
+  bool NeedsAck(const protobuf::Message& message, const Address& Address);
+  bool IsSendingAckRequired(const protobuf::Message& message, const Address& local_Address);
+  void SetAsFailedPeer(AckId ack_id, const Address& Address);
   void AdjustAckHistory(protobuf::Message& message);
   void RemoveAll();
 
   friend class test::GenericNode;
 
  private:
-  const NodeId kNodeId_;
+  const Address kNodeId_;
   AckId ack_id_;
   std::mutex mutex_;
   bool stop_handling_;

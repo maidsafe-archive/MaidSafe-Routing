@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_ROUTING_H_
 #define MAIDSAFE_ROUTING_ROUTING_H_
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -30,35 +30,35 @@ namespace maidsafe {
 
 namespace routing {
 
-class vault_node : private rudp::managed_connections::listener {
+class VaultNode : private rudp::ManagedConnections::Listener {
  public:
-  vault_node(AsioService& io_service, rudp::managed_connections managed_connections,
+  VaultNode(AsioService& io_service, rudp::ManagedConnections managed_connections,
              const passport::Pmid& pmid);
 
-  vault_node(const vault_node&) = delete;
-  vault_node(vault_node&&) = delete;
-  vault_node& operator=(const vault_node&) = delete;
-  vault_node& operator=(vault_node&&) = delete;
+  VaultNode(const VaultNode&) = delete;
+  VaultNode(VaultNode&&) = delete;
+  VaultNode& operator=(const VaultNode&) = delete;
+  VaultNode& operator=(VaultNode&&) = delete;
 
-  ~vault_node();
+  ~VaultNode();
 
   // Used for bootstrapping (joining) and can be used as zero state network if both ends are started
-  // simultaneously or to connect to a specific vault_node.
-  void bootstrap(const endpoint& our_endpoint, const endpoint& their_endpoint,
+  // simultaneously or to connect to a specific VaultNode.
+  void Bootstrap(const our_endpoint& our_endpoint, const their_endpoint& their_endpoint,
                  const asymm::PublicKey& their_public_key);
-  // Use hard coded vault_nodes or cache file
-  void bootstrap();
+  // Use hard coded VaultNodes or cache file
+  void Bootstrap();
 
 
-  const NodeId our_id() const;
+  const Address OurId() const;
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
-  int network_status() const;
+  int NetworkStatus() const;
 
  private:
   AsioService& asio_service_;
   rudp::managed_connections rudp_;
-  const NodeId our_id_;
+  const Address our_id_;
   const asymm::Keys keys_;
 };
 

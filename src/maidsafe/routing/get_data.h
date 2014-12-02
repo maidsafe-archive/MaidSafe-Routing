@@ -16,38 +16,40 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TYPES_H_
-#define MAIDSAFE_ROUTING_TYPES_H_
+#ifndef MAIDSAFE_ROUTING_GET_DATA_H_
+#define MAIDSAFE_ROUTING_GET_DATA_H_
 
-#include <array>
-#include <cstdint>
 #include <vector>
-#include "boost/asio/ip/udp.hpp"
 
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/tagged_value.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/serialisation.h"
 
-namespace maidsafe {
+#include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/types.h"
 
-namespace routing {
+struct GetData {
+  GetData() = default;
+  GetData(const GetData&) = delete;
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name))  {}
+  GetData(DestinationAddress destination_in, SourceAddress source_in, Address data_name)
+      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
+        data_name(std::move(data_name)) {}
+  ~GetData() = default;
+  GetData& operator=(const GetData&) = delete;
+  GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
+    header = std::move(other.header);
+    return *this;
+  };
 
-static const size_t GroupSize = 32;
-static const size_t QuorumSize = 29;
-static const size_t DefaultRoutingTableSize = 64;
-using Address = NodeId;
-using DestinationId = TaggedValue<Address, struct DestinationTag>;
-using SourceId = TaggedValue<Address, struct SourceTag>;
-using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
-using Endpoint = boost::asio::ip::udp::endpoint;
-using Connection = boost::asio::ip::udp::endpoint;
-using byte = unsigned char;
-using MurmurHash = uint32_t;
-using Checksums = std::array<MurmurHash, GroupSize - 1>;
-using SerialisedMessage = std::vector<byte>;
-using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
+  template <typename Archive>
+  void Serialise(Archive& archive) const {
+    archive(header, data_name);
+  }
 
-}  // namespace routing
+  message_header header;
+  Address data_name;
+};
 
-}  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TYPES_H_
+#endif  // MAIDSAFE_ROUTING_GET_DATA_H_

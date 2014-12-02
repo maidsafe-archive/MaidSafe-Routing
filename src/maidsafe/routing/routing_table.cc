@@ -31,22 +31,22 @@ routing_table::routing_table(NodeId our_id)
   assert(our_id_.IsValid());
 }
 
-std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info their_info) {
+std::pair<bool, boost::optional<NodeInfo>> RoutingTable::add_node(NodeInfo their_info) {
   if (!their_info.id.IsValid() || their_info.id == our_id_ ||
       !asymm::ValidateKey(their_info.public_key)) {
-    return {false, boost::optional<node_info>()};
+    return {false, boost::optional<NodeInfo>()};
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
   // check not duplicate
   if (have_node(their_info))
-    return {false, boost::optional<node_info>()};
+    return {false, boost::optional<NodeInfo>()};
 
   // routing table small, just grab this node
   if (nodes_.size() < optimal_size()) {
     push_back_then_sort(std::move(their_info));
-    return {true, boost::optional<node_info>()};
+    return {true, boost::optional<NodeInfo>()};
   }
 
   // new close group member
@@ -76,7 +76,7 @@ std::pair<bool, boost::optional<node_info>> routing_table::add_node(node_info th
   return result;
 }
 
-bool routing_table::check_node(const NodeId& their_id) const {
+bool RoutingTable::check_node(const Address& their_id) const {
   if (!their_id.IsValid() || their_id == our_id_)
     return false;
 
@@ -97,22 +97,22 @@ bool routing_table::check_node(const NodeId& their_id) const {
   return new_node_is_better_than_existing(their_id, find_candidate_for_removal());
 }
 
-void routing_table::drop_node(const NodeId& node_to_drop) {
+void RoutingTable::drop_node(const Address& node_to_drop) {
   std::lock_guard<std::mutex> lock(mutex_);
   nodes_.erase(
       remove_if(std::begin(nodes_), std::end(nodes_),
-                [&node_to_drop](const node_info& node) { return node.id == node_to_drop; }),
+                [&node_to_drop](const NodeInfo& node) { return node.id == node_to_drop; }),
       std::end(nodes_));
 }
 
-std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const {
-  NodeId test_node(our_id_);
-  std::vector<node_info> closer_to_target;
+std::vector<NodeInfo> RoutingTable::target_nodes(const Address& their_id) const {
+  Address test_node(our_id_);
+  std::vector<NodeInfo> closer_to_target;
   size_t count(0), index(0);
   {
     std::lock_guard<std::mutex> lock(mutex_);
     for (const auto& node : nodes_) {
-      if (NodeId::CloserToTarget(node.id, test_node, their_id)) {
+      if (Address::CloserToTarget(node.id, test_node, their_id)) {
         closer_to_target.push_back(node);
         test_node = node.id;
         index = count;
@@ -126,8 +126,8 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
   }
 
   std::sort(std::begin(closer_to_target), std::end(closer_to_target),
-            [this, &their_id](const node_info& lhs, const node_info& rhs) {
-    return NodeId::CloserToTarget(lhs.id, rhs.id, our_id_);
+            [this, &their_id](const NodeInfo& lhs, const NodeInfo& rhs) {
+    return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
   });
   closer_to_target.erase(std::begin(closer_to_target) +
                              std::min(parallelism(), closer_to_target.size()),
@@ -135,8 +135,8 @@ std::vector<node_info> routing_table::target_nodes(const NodeId& their_id) const
   return closer_to_target;
 }
 
-std::vector<node_info> routing_table::our_close_group() const {
-  std::vector<node_info> result;
+std::vector<NodeInfo> RoutingTable::our_close_group() const {
+  std::vector<NodeInfo> result;
   result.reserve(group_size);
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -146,15 +146,15 @@ std::vector<node_info> routing_table::our_close_group() const {
   return result;
 }
 
-size_t routing_table::size() const {
+size_t RoutingTable::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();
 }
 
 // bucket 511 is us, 0 is furthest bucket (should fill first)
-int32_t routing_table::bucket_index(const NodeId& node_id) const {
-  assert(node_id != our_id_);
-  return our_id_.CommonLeadingBits(node_id);
+int32_t RoutingTable::bucket_index(const Address& Address) const {
+  assert(Address != our_id_);
+  return our_id_.CommonLeadingBits(Address);
 }
 
 bool routing_table::have_node(const node_info& their_info) const {
@@ -179,7 +179,7 @@ std::vector<node_info>::const_iterator routing_table::find_candidate_for_removal
   int bucket(0);
   auto furthest_group_member = nodes_.rbegin() + nodes_.size() - group_size;
   auto found = std::find_if(nodes_.rbegin(), furthest_group_member,
-                            [&number_in_bucket, &bucket, this](const node_info& node) {
+                            [&number_in_bucket, &bucket, this](const NodeInfo& node) {
     if (bucket_index(node.id) != bucket) {
       bucket = bucket_index(node.id);
       number_in_bucket = 0;

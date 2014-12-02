@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -39,11 +39,11 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
   const auto network_size(500);
   auto routing_tables(routing_table_network(network_size));
   asymm::Keys key(asymm::GenerateKeyPair());
-  std::vector<NodeId> node_ids;
-  node_ids.reserve(network_size);
+  std::vector<Address> Addresss;
+  Addresss.reserve(network_size);
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
-    node_ids.push_back(node->our_id());
+    Addresss.push_back(node->our_id());
     for (const auto& node_to_add : routing_tables) {
       node_info nodeinfo_to_add;
       nodeinfo_to_add.id = node_to_add->our_id();
@@ -53,17 +53,17 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
   }
 
   for (const auto& node : routing_tables) {
-    std::sort(std::begin(node_ids), std::end(node_ids),
-              [&node](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, node->our_id());
+    std::sort(std::begin(Addresss), std::end(node_ids),
+              [&node](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, node->our_id());
     });
     // if target is in close group return the whole close group
     for (size_t i = 1; i < group_size + 1; ++i) {
-      auto target_close_group = node->target_nodes(node_ids.at(i));
+      auto target_close_group = node->target_nodes(Addresss.at(i));
       // check the close group is correct
       for (size_t j = 0; j < group_size; ++j) {
-        EXPECT_EQ(target_close_group.at(j).id, node_ids.at(j + 1)) << " node mismatch at " << j;
-        EXPECT_EQ(group_size, (node->target_nodes(node_ids.at(j + 1))).size())
+        EXPECT_EQ(target_close_group.at(j).id, Addresss.at(j + 1)) << " node mismatch at " << j;
+        EXPECT_EQ(group_size, (node->target_nodes(Addresss.at(j + 1))).size())
             << "mismatch at index " << j;
       }
     }
@@ -76,7 +76,7 @@ TEST(routing_table_test, FUNC_add_many_nodes_check_target) {
     // so magic number but for the best reasons we can think of.
     auto xor_closeness_buffer(10);
     for (size_t i = group_size + xor_closeness_buffer; i < network_size - 1; ++i) {
-      EXPECT_EQ(1, (node->target_nodes(node_ids.at(i))).size()) << "mismatch at index " << i;
+      EXPECT_EQ(1, (node->target_nodes(Addresss.at(i))).size()) << "mismatch at index " << i;
     }
   }
 }

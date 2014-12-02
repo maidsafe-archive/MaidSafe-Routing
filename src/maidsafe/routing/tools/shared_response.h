@@ -39,7 +39,7 @@ namespace routing {
 namespace test {
 class SharedResponse {
  public:
-  SharedResponse(std::vector<NodeId> closest_nodes, unsigned int expect_responses)
+  SharedResponse(std::vector<Address> closest_nodes, unsigned int expect_responses)
       : closest_nodes_(std::move(closest_nodes)),
         responded_nodes_(),
         expected_responses_(expect_responses),
@@ -54,8 +54,8 @@ class SharedResponse {
   void PrintRoutingTable(std::string response);
   void PrintGroupPerformance(int data_size);
 
-  std::vector<NodeId> closest_nodes_;
-  std::set<NodeId> responded_nodes_;
+  std::vector<Address> closest_nodes_;
+  std::set<Address> responded_nodes_;
   uint32_t expected_responses_;
   boost::posix_time::ptime msg_send_time_;
   boost::posix_time::milliseconds average_response_time_;
