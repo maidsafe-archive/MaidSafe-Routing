@@ -95,8 +95,6 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
     message.set_source_id(this_node_id.string());
   } else {
     message.set_relay_id(this_node_id.string());
-    // This node is not in any peer's routing table yet
-    LOG(kVerbose) << "Connect RPC has relay connection id " << DebugId(relay_connection_id);
     message.set_relay_connection_id(relay_connection_id.string());
   }
 
@@ -131,8 +129,6 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
     message.set_source_id(this_node_id.string());
   } else {
     message.set_relay_id(this_node_id.string());
-    // This node is not in any peer's routing table yet
-    LOG(kVerbose) << "FindNodes RPC has relay connection id " << DebugId(relay_connection_id);
     message.set_relay_connection_id(relay_connection_id.string());
   }
   message.set_hops_to_live(Parameters::hops_to_live);

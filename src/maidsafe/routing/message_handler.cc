@@ -113,9 +113,8 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
                   << "] rcvd : " << MessageTypeString(message) << " from "
                   << HexSubstr(message.source_id()) << "   (id: " << message.id()
                   << ")  --NodeLevel--";
-    ReplyFunctor response_functor = [=](const std::string & reply_message) {
+    ReplyFunctor response_functor = [=](const std::string& reply_message) {
       if (reply_message.empty()) {
-        LOG(kInfo) << "Empty response for message id :" << message.id();
         return;
       }
       LOG(kSuccess) << " [" << routing_table_.kNodeId() << "] repl : "
@@ -129,7 +128,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       message_out.set_type(message.type());
       message_out.set_direct(true);
       message_out.clear_data();
-      message_out.set_client_node(message.client_node());
+      message_out.set_client_node(routing_table_.client_mode());
       message_out.set_routing_message(message.routing_message());
       message_out.add_data(reply_message);
       if (IsCacheableGet(message))
@@ -140,7 +139,7 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       if (message.has_id())
         message_out.set_id(message.id());
       else
-        LOG(kInfo) << "Message to be sent back had no ID.";
+        LOG(kWarning) << "Message to be sent back had no ID.";
 
       if (message.has_relay_id())
         message_out.set_relay_id(message.relay_id());
@@ -156,15 +155,12 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       if (routing_table_.kNodeId().string() != message_out.destination_id()) {
         network_.SendToClosestNode(message_out);
       } else {
-        LOG(kInfo) << "Sending response to self." << " id: " << message.id();
         HandleMessage(message_out);
       }
     };
     if (message_received_functor_) {
-      LOG(kVerbose) << "calling message_received_functor_ " << " id: " << message.id();
       message_received_functor_(message.data(0), response_functor);
     } else {
-      LOG(kVerbose) << "calling InvokeTypedMessageReceivedFunctor " << " id: " << message.id();
       try {
         InvokeTypedMessageReceivedFunctor(message);  // typed message received
       } catch (...) {
@@ -172,10 +168,6 @@ void MessageHandler::HandleNodeLevelMessageForThisNode(protobuf::Message& messag
       }
     }
   } else if (IsResponse(message)) {                // response
-    LOG(kInfo) << "[" << DebugId(routing_table_.kNodeId())
-               << "] rcvd : " << MessageTypeString(message) << " from "
-               << HexSubstr(message.source_id()) << "   (id: " << message.id()
-               << ")  --NodeLevel--";
     try {
       if (!message.has_id() || message.data_size() != 1)
         BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
@@ -199,8 +191,6 @@ void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
   if (RelayDirectMessageIfNeeded(message))
     return;
 
-  LOG(kVerbose) << "Message for this node."
-                << " id: " << message.id();
   if (IsRoutingMessage(message))
     HandleRoutingMessage(message);
   else
@@ -208,9 +198,6 @@ void MessageHandler::HandleMessageForThisNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageAsClosestNode(protobuf::Message& message) {
-  LOG(kVerbose) << "This node is in closest proximity to this message destination ID [ "
-                << HexSubstr(message.destination_id()) << " ]."
-                << " id: " << message.id();
   if (IsDirect(message)) {
     return HandleDirectMessageAsClosestNode(message);
   } else {
@@ -275,13 +262,8 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
   std::string group_id(message.destination_id());
   for (const auto& i : close_nodes)
     group_members += std::string("[" + DebugId(i.id) + "]");
-  LOG(kInfo) << "Group nodes for group_id " << HexSubstr(group_id) << " : " << group_members;
 
   for (const auto& i : close_nodes) {
-    LOG(kInfo) << "[" << routing_table_.kNodeId() << "] - "
-               << "Replicating message to : " << HexSubstr(i.id.string())
-               << " [ group_id : " << HexSubstr(group_id) << "]"
-               << " id: " << message.id();
     message.clear_ack_node_ids();
     message.set_ack_id(0);
     message.set_destination_id(i.id.string());
@@ -305,10 +287,8 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
     message.set_destination_id(routing_table_.kNodeId().string());
 
     if (IsRoutingMessage(message)) {
-      LOG(kVerbose) << "HandleGroupMessageAsClosestNode if, msg id: " << message.id();
       HandleRoutingMessage(message);
     } else {
-      LOG(kVerbose) << "HandleGroupMessageAsCloseNode else, msg id: " << message.id();
       HandleNodeLevelMessageForThisNode(message);
     }
   } else {
@@ -317,21 +297,14 @@ void MessageHandler::HandleGroupMessageAsCloseNode(protobuf::Message& message) {
 }
 
 void MessageHandler::HandleMessageAsFarNode(protobuf::Message& message) {
-  LOG(kVerbose) << "[" << routing_table_.kNodeId()
-                << "] is not in closest proximity to this message destination ID [ "
-                << HexSubstr(message.destination_id()) << " ]; sending on."
-                << " id: " << message.id();
   network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleMessage(protobuf::Message& message) {
-  LOG(kVerbose) << "[" << routing_table_.kNodeId() << "]"
-                << " MessageHandler::HandleMessage handle message with id: " << message.id();
   if (!message.source_id().empty() && !IsAck(message) &&
       (message.destination_id() != message.source_id()) &&
       (message.destination_id() == routing_table_.kNodeId().string()) &&
       !network_utils_.firewall_.Add(NodeId(message.source_id()), message.id())) {
-    LOG(kVerbose) << "Filtered " << NodeId(message.source_id()) << ", " << message.id();
     return;
   }
 
@@ -355,25 +328,21 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   if (IsValidCacheableGet(message) && HandleCacheLookup(message))
     return;  // forwarding message is done by cache manager or vault
   if (IsValidCacheablePut(message)) {
-    LOG(kVerbose) << "StoreCacheCopy: " << message.id();
     StoreCacheCopy(message);  // Upper layer should take this on seperate thread
   }
 
   // If group message request to self id
   if (IsGroupMessageRequestToSelfId(message)) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleGroupMessageToSelfId";
     return HandleGroupMessageToSelfId(message);
   }
 
   // If this node is a client
   if (routing_table_.client_mode()) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleClientMessage";
     return HandleClientMessage(message);
   }
 
   // Relay mode message
   if (message.source_id().empty()) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleRelayRequest";
     return HandleRelayRequest(message);
   }
 
@@ -386,28 +355,22 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
 
   // Direct message
   if (message.destination_id() == routing_table_.kNodeId().string()) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageForThisNode";
     return HandleMessageForThisNode(message);
   }
 
   if (IsRelayResponseForThisNode(message)) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleRoutingMessage";
     return HandleRoutingMessage(message);
   }
 
   if (client_routing_table_.Contains(NodeId(message.destination_id())) && IsDirect(message)) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id()
-               << " HandleMessageForNonRoutingNodes";
     return HandleMessageForNonRoutingNodes(message);
   }
 
   // This node is in closest proximity to this message
   if (routing_table_.IsThisNodeInRange(NodeId(message.destination_id()),
                                        Parameters::closest_nodes_size)) {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageAsClosestNode";
     return HandleMessageAsClosestNode(message);
   } else {
-    LOG(kInfo) << "MessageHandler::HandleMessage " << message.id() << " HandleMessageAsFarNode";
     return HandleMessageAsFarNode(message);
   }
 }
@@ -426,16 +389,12 @@ void MessageHandler::HandleMessageForNonRoutingNodes(protobuf::Message& message)
     network_.SendAck(message);
     return;
   }
-  LOG(kInfo) << "This node has message destination in its ClientRoutingTable. Dest id : "
-             << HexSubstr(message.destination_id()) << " message id: " << message.id();
   return network_.SendToClosestNode(message);
 }
 
 void MessageHandler::HandleRelayRequest(protobuf::Message& message) {
   assert(!message.has_source_id());
   if ((message.destination_id() == routing_table_.kNodeId().string()) && IsRequest(message)) {
-    LOG(kVerbose) << "Relay request with this node's ID as destination ID"
-                  << " id: " << message.id();
     // If group message request to this node's id sent by relay requester node
     if ((message.destination_id() == routing_table_.kNodeId().string()) && message.request() &&
         !message.direct()) {
@@ -494,7 +453,6 @@ void MessageHandler::HandleGroupRelayRequestMessageAsCloseNode(protobuf::Message
 bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
   if (IsRoutingMessage(message) && message.has_relay_id() &&
       (message.relay_id() == routing_table_.kNodeId().string())) {
-    LOG(kVerbose) << "Relay response through alternative route";
     return true;
   } else {
     return false;
@@ -504,7 +462,6 @@ bool MessageHandler::IsRelayResponseForThisNode(protobuf::Message& message) {
 bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   assert(message.destination_id() == routing_table_.kNodeId().string());
   if (!message.has_relay_id()) {
-    //    LOG(kVerbose) << "Message don't have relay ID.";
     return false;
   }
 
@@ -512,8 +469,6 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
           (message.destination_id() != message.relay_id())) {
     message.clear_destination_id();
     message.clear_actual_destination_is_relay_id();  // so that it is picked currectly at recepient
-    LOG(kVerbose) << "Relaying request to " << HexSubstr(message.relay_id())
-                  << " id: " << message.id();
     network_.SendToClosestNode(message);
     return true;
   }
@@ -521,14 +476,11 @@ bool MessageHandler::RelayDirectMessageIfNeeded(protobuf::Message& message) {
   // Only direct responses need to be relayed
   if (IsResponse(message) && (message.destination_id() != message.relay_id())) {
     message.clear_destination_id();  // to allow network util to identify it as relay message
-    LOG(kVerbose) << "Relaying response to " << HexSubstr(message.relay_id())
-                  << " id: " << message.id();
     network_.SendToClosestNode(message);
     return true;
   }
 
   // not a relay message response, its for this node
-  //    LOG(kVerbose) << "Not a relay message response, it's for this node";
   return false;
 }
 
@@ -540,13 +492,8 @@ void MessageHandler::HandleClientMessage(protobuf::Message& message) {
     return;
   }
   if (IsRoutingMessage(message)) {
-    LOG(kVerbose) << "Client Routing Response for " << DebugId(routing_table_.kNodeId())
-                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
     HandleRoutingMessage(message);
   } else if ((message.destination_id() == routing_table_.kNodeId().string())) {
-    LOG(kVerbose) << "Client NodeLevel Response for " << DebugId(routing_table_.kNodeId())
-                  << " from " << HexSubstr(message.source_id()) << " id: " << message.id();
-    message.set_client_node(true);
     HandleNodeLevelMessageForThisNode(message);
   } else {
     LOG(kWarning) << DebugId(routing_table_.kNodeId()) << " silently drop message "
