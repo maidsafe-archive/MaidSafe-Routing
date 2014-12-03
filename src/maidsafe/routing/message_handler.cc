@@ -15,51 +15,64 @@
 
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
-#include <vector>
+
 #include "maidsafe/routing/message_handler.h"
 
-#include "maidsafe/common/serialisation.h"
-#include "maidsafe/routing/messages.h"
-#include "maidsafe/routing/types.h"
+#include <vector>
+
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
+
+//#include "maidsafe/routing/cacheable_get.h"
+//#include "maidsafe/routing/cacheable_get_response.h"
+#include "maidsafe/routing/connect.h"
 #include "maidsafe/routing/connection_manager.h"
+//#include "maidsafe/routing/find_group.h"
+//#include "maidsafe/routing/find_group_response.h"
+//#include "maidsafe/routing/forward_connect.h"
+#include "maidsafe/routing/ping.h"
+#include "maidsafe/routing/ping_response.h"
+#include "maidsafe/routing/types.h"
+//#include "maidsafe/routing/vault_message.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-message_handler::message_handler(AsioService& asio_service,
-                                 rudp::ManagedConnections& managed_connections,
-                                 connection_manager& connection_mgr)
-    : asio_service_(asio_service), managed_connections_(managed_connections) {}
+MessageHandler::MessageHandler(AsioService& asio_service,
+                               rudp::ManagedConnections& managed_connections,
+                               ConnectionManager& connection_manager)
+    : asio_service_(asio_service),
+      rudp_(managed_connections),
+      connection_manager_(connection_manager) {}
 
-void message_handler::on_message_received(const serialised_message& serialised_message) {
+void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
   // FIXME (dirvine) Check firewall 19/11/2014
   HandleMessage(message);
   // FIXME (dirvine) add to firewall 19/11/2014
 }
 
-void message_handler::HandleMessage(const ping& ping_msg) {
+void MessageHandler::HandleMessage(const Ping& ping_msg) {
   // ping is a single destination message
   if (ping_msg.header.destination.data() == connection_mgr_.OurId()) {
     auto targets(connection_mgr_.get_target(ping_msg.header.source.data()));
     for (const auto& target : targets)
-      rudp_.Send(target.id, Serialise<ping>(ping_response(ping_msg)));
+      rudp_.Send(target.id, Serialise(ping_response(ping_msg)));
   } else {  // scatter
     auto targets(connection_mgr_.get_target(ping_msg.header.destination.data()));
     for (const auto& target : targets)
       rudp_.Send(target.id, Serialise(ping_response(ping_msg)));
-    else rudp_.Send(target.id, Serialise<ping>(ping_msg));
+    else rudp_.Send(target.id, Serialise(ping_msg));
   }
 }
 
-void message_handler::HandleMessage(const ping_response& ping_response_msg) {
+void MessageHandler::HandleMessage(const ping_response& ping_response_msg) {
   // TODO(dirvine): 2014-11-19 FIXME set a future or some async return type in node or
   // client
 }
 
 
-void message_handler::HandleMessage(const connect& connect_msg) {
+void MessageHandler::HandleMessage(const connect& connect_msg) {
   if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
     if (connection_mgr_.suggest_node(connect_msg.header.source)) {
       rudp_.GetNextAvailableEndpoint(

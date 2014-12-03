@@ -23,7 +23,7 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"

@@ -53,7 +53,7 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ConnectionManager {
+class ConnectionManager {
  public:
   ConnectionManager(rudp::ManagedConnections& rudp, Address our_id,
                     std::function<void(CloseGroupDifference)> group_changed_functor)

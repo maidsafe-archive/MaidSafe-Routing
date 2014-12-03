@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_ConnectResponse_H_
 #define MAIDSAFE_ROUTING_ConnectResponse_H_
 
-#include "maidsafe/common/serialisation.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/Address.h"
 
 

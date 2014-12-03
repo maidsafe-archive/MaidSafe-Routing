@@ -21,7 +21,7 @@
 
 #include <cstdint>
 
-#include "maidsafe/common/compile_time_mapper.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 namespace maidsafe {
 
@@ -48,7 +48,6 @@ struct ForwardConnect;
 struct VaultMessage;
 struct CacheableGet;
 struct CacheableGetResponse;
-
 
 /*
 struct ping {
@@ -210,7 +209,6 @@ struct cacheable_get_response {
 };
 */
 
-
 using MessageMap =
     GetMap<Serialisable<MessageTypeTag::kPing, Ping>,
            Serialisable<MessageTypeTag::kPingResponse, PingResponse>,
@@ -223,19 +221,18 @@ using MessageMap =
            Serialisable<MessageTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
 
 template <MessageTypeTag Tag>
-using custom_type = typename Find<MessageMap, Tag>::ResultCustomType;
+using Message = typename Find<MessageMap, Tag>::ResultCustomType;
 
 template <MessageTypeTag Tag>
-custom_type<Tag> Parse(std::stringstream& ref_binary_stream) {
-  custom_type<Tag> obj_deserialised;
-
+Message<Tag> Parse(std::stringstream& ref_binary_stream) {
+  Message<Tag> parsed_message;
   {
     cereal::BinaryInputArchive input_bin_archive{ref_binary_stream};
-    input_bin_archive(obj_deserialized);
+    input_bin_archive(parsed_message);
   }
-
-  return obj_deserialized;
+  return parsed_message;
 }
+
 }  // namespace routing
 
 }  // namespace maidsafe

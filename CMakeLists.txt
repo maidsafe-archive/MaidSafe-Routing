@@ -50,17 +50,14 @@ set(RoutingLibHeaders
 #    ${RoutingSourcesDir}/acknowledgement.h
 #    ${RoutingSourcesDir}/bootstrap_file_operations.h
 #    ${RoutingSourcesDir}/bootstrap_utils.h
-    ${RoutingSourcesDir}/cache.h
     ${RoutingSourcesDir}/connect.h
     ${RoutingSourcesDir}/connection_manager.h
     ${RoutingSourcesDir}/connect_response.h
-    ${RoutingSourcesDir}/filter.h
     ${RoutingSourcesDir}/get_data.h
     ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
 #    ${RoutingSourcesDir}/network.h
-    ${RoutingSourcesDir}/node_common.h
     ${RoutingSourcesDir}/ping.h
     ${RoutingSourcesDir}/ping_response.h
     ${RoutingSourcesDir}/post.h
@@ -73,13 +70,10 @@ set(RoutingLibSources
 #    ${RoutingSourcesDir}/acknowledgement.cc
 #    ${RoutingSourcesDir}/bootstrap_file_operations.cc
 #    ${RoutingSourcesDir}/bootstrap_utils.cc
-    ${RoutingSourcesDir}/cache.cc
 #    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
-    ${RoutingSourcesDir}/filter.cc
     ${RoutingSourcesDir}/message_handler.cc
 #    ${RoutingSourcesDir}/network.cc
-    ${RoutingSourcesDir}/node_common.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     ${RoutingSourcesDir}/vault_node.cc

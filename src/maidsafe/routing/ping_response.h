@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_PING_REPONSE_H_
 #define MAIDSAFE_ROUTING_PING_REPONSE_H_
 
-#include "maidsafe/common/serialisation.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
