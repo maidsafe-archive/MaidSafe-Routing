@@ -233,7 +233,7 @@ bool ValidateMessage(const protobuf::Message& message) {
 }
 
 NodeId NodeInNthBucket(const NodeId& node_id, int bucket) {
-  assert(bucket < NodeId::kSize * 8);
+  assert(bucket < static_cast<int>(NodeId::kSize) * 8);
   auto binary_string(node_id.ToStringEncoded(NodeId::EncodingType::kBinary));
   while (bucket >= 0) {
     binary_string.at(bucket) = (binary_string.at(bucket) == '1') ? '0' : '1';
