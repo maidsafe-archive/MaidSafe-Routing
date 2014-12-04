@@ -46,7 +46,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
         close_nodes_change_check_(false),
         dropping_node_(false),
         adding_node_(false),
-        node_on_operation_(NodeId::IdType::kRandomId),
+        node_on_operation_(RandomString(NodeId::kSize)),
         affected_nodes_(),
         checking_mutex_() {}
 
@@ -138,7 +138,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
                   << " containing following lost nodes :";
     //     bool not_found(true);
-    if (!lost_node.IsZero()) {
+    if (lost_node.IsValid()) {
       LOG(kVerbose) << "    lost node : " << lost_node;
       //       if (node_id == node_on_operation_)
       //         not_found = false;
@@ -160,7 +160,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
                   << " containing following new nodes :";
     //     bool not_found(true);
-    if (!new_node.IsZero()) {
+    if (new_node.IsValid()) {
       LOG(kVerbose) << "    new node : " << new_node;
       //       if (node_id == node_on_operation_)
       //         not_found = false;
@@ -242,11 +242,12 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       sender_client->SendDirect(receiver_client->node_id(), message, false, [](std::string) {});
       // Choose random client for group message to random env
       // TODO(Alison) - use result?
-      sender_client->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false,
+      sender_client->SendGroup(NodeId(RandomString(NodeId::kSize)), message, false,
                                [](std::string) {});
       // Choose random vault for group message to random env
       // TODO(Alison) - use result?
-      vault_node->SendGroup(NodeId(NodeId::IdType::kRandomId), message, false, [](std::string) {});
+      vault_node->SendGroup(NodeId(RandomString(NodeId::kSize)), message, false,
+                            [](std::string) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
       LOG(kInfo) << "Ran messaging iteration";

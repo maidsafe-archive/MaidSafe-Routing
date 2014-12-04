@@ -222,7 +222,7 @@ unsigned int Commands::MakeMessage(int id_index, const DestinationType& destinat
   }
   if (identity_index >= 0) {
     if (destination_type == DestinationType::kGroup)
-      dest_id = NodeId(NodeId::IdType::kRandomId);
+      dest_id = NodeId(RandomString(NodeId::kSize));
     else
       dest_id = NodeId(all_keys_[identity_index].pmid.name().value);
   }

@@ -206,12 +206,12 @@ bool ValidateMessage(const protobuf::Message& message) {
     return false;
   }
 
-  if (message.has_relay_id() && NodeId(message.relay_id()).IsZero()) {
+  if (message.has_relay_id() && !NodeId(message.relay_id()).IsValid()) {
     LOG(kWarning) << "Invalid relay id field.";
     return false;
   }
 
-  if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).IsZero()) {
+  if (message.has_relay_connection_id() && !NodeId(message.relay_connection_id()).IsValid()) {
     LOG(kWarning) << "Invalid relay connection id field.";
     return false;
   }

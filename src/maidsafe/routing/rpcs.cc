@@ -35,7 +35,7 @@ namespace rpcs {
 
 // This is maybe not required and might be removed
 protobuf::Message Ping(const NodeId& node_id, const std::string& identity) {
-  assert(!node_id.IsZero() && "Invalid node_id");
+  assert(node_id.IsValid() && "Invalid node_id");
   assert(!identity.empty() && "Invalid identity");
   protobuf::Message message;
   protobuf::PingRequest ping_request;
@@ -61,9 +61,9 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
                           const NodeId& this_node_id, const NodeId& this_connection_id,
                           bool client_node, rudp::NatType nat_type, bool relay_message,
                           NodeId relay_connection_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(this_node_id.IsValid() && "Invalid my node_id");
+  assert(this_connection_id.IsValid() && "Invalid this_connection_id");
   assert((!our_endpoint.external.address().is_unspecified() ||
           !our_endpoint.local.address().is_unspecified()) &&
          "Unspecified endpoint");
@@ -105,8 +105,8 @@ protobuf::Message Connect(const NodeId& node_id, const rudp::EndpointPair& our_e
 protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
                             int num_nodes_requested, bool relay_message,
                             NodeId relay_connection_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(this_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::FindNodesRequest find_nodes;
   find_nodes.set_num_nodes_requested(num_nodes_requested);
@@ -140,9 +140,9 @@ protobuf::Message FindNodes(const NodeId& node_id, const NodeId& this_node_id,
 protobuf::Message ConnectSuccess(const NodeId& node_id, const NodeId& this_node_id,
                                  const NodeId& this_connection_id, bool requestor,
                                  bool client_node) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(this_node_id.IsValid() && "Invalid my node_id");
+  assert(this_connection_id.IsValid() && "Invalid this_connection_id");
   protobuf::Message message;
   protobuf::ConnectSuccess protobuf_connect_success;
   protobuf_connect_success.set_node_id(this_node_id.string());
@@ -169,9 +169,9 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
                                                 bool requestor,
                                                 const std::vector<NodeInfo>& close_nodes,
                                                 bool client_node) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
-  assert(!this_connection_id.IsZero() && "Invalid this_connection_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(this_node_id.IsValid() && "Invalid my node_id");
+  assert(this_connection_id.IsValid() && "Invalid this_connection_id");
   protobuf::Message message;
   protobuf::ConnectSuccessAcknowledgement protobuf_connect_success_ack;
   protobuf_connect_success_ack.set_node_id(this_node_id.string());
@@ -198,8 +198,8 @@ protobuf::Message ConnectSuccessAcknowledgement(const NodeId& node_id, const Nod
 
 protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId& this_node_id,
                                              const NodeId& client_node_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!this_node_id.IsZero() && "Invalid my node_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(this_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::InformClientOfhNewCloseNode inform_client_of_new_close_node;
   inform_client_of_new_close_node.set_node_id(node_id.string());
@@ -222,8 +222,8 @@ protobuf::Message InformClientOfNewCloseNode(const NodeId& node_id, const NodeId
 
 
 protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(my_node_id.IsValid() && "Invalid my node_id");
   protobuf::Message message;
   protobuf::GetGroup get_group;
   get_group.set_node_id(node_id.string());
@@ -245,8 +245,8 @@ protobuf::Message GetGroup(const NodeId& node_id, const NodeId& my_node_id) {
 }
 
 protobuf::Message Ack(const NodeId& node_id, const NodeId& my_node_id, int32_t ack_id) {
-  assert(!node_id.IsZero() && "Invalid node_id");
-  assert(!my_node_id.IsZero() && "Invalid my node_id");
+  assert(node_id.IsValid() && "Invalid node_id");
+  assert(my_node_id.IsValid() && "Invalid my node_id");
   assert((ack_id != 0) && "Invalid ack id");
   protobuf::Message message;
   message.set_ack_id(ack_id);

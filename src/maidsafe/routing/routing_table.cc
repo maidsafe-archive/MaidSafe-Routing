@@ -41,7 +41,7 @@ namespace routing {
 RoutingTable::RoutingTable(bool client_mode, const NodeId& node_id, const asymm::Keys& keys)
     : kClientMode_(client_mode),
       kNodeId_(node_id),
-      kConnectionId_(kClientMode_ ? NodeId(NodeId::IdType::kRandomId) : kNodeId_),
+      kConnectionId_(kClientMode_ ? NodeId(RandomString(NodeId::kSize)) : kNodeId_),
       kKeys_(keys),
       kMaxSize_(kClientMode_ ? Parameters::max_routing_table_size_for_client
                              : Parameters::max_routing_table_size),
@@ -86,7 +86,7 @@ bool RoutingTable::AddNode(const NodeInfo& peer) {
 bool RoutingTable::CheckNode(const NodeInfo& peer) { return AddOrCheckNode(peer, false); }
 
 bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
-  if (peer.id.IsZero() || peer.id == kNodeId_) {
+  if (!peer.id.IsValid() || peer.id == kNodeId_) {
     LOG(kError) << "Attempt to add an invalid node " << peer.id;
     return false;
   }
@@ -182,7 +182,7 @@ NodeInfo RoutingTable::DropNode(const NodeId& node_to_drop, bool routing_only) {
     }
   }
 
-  if (!dropped_node.id.IsZero()) {
+  if (dropped_node.id.IsValid()) {
     if (routing_table_change_functor_) {
       routing_table_change_functor_(
           RoutingTableChange(NodeInfo(), RoutingTableChange::Remove(dropped_node, routing_only),
@@ -238,7 +238,7 @@ bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exac
   if (nodes_.empty())
     return false;
 
-  if (target_id.IsZero()) {
+  if (!target_id.IsValid()) {
     LOG(kError) << "Invalid target_id passed.";
     return false;
   }

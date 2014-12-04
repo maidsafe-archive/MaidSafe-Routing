@@ -49,10 +49,10 @@ namespace test {
 class ResponseHandlerTest : public testing::Test {
  public:
   ResponseHandlerTest()
-      : node_id_(NodeId::IdType::kRandomId),
+      : node_id_(RandomString(NodeId::kSize)),
         asio_service_(2),
         network_utils_(node_id_, asio_service_),
-        routing_table_(false, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair()),
+        routing_table_(false, NodeId(RandomString(NodeId::kSize)), asymm::GenerateKeyPair()),
         client_routing_table_(routing_table_.kNodeId()),
         network_(routing_table_, client_routing_table_, network_utils_.acknowledgement_),
         public_key_holder_(asio_service_, network_),

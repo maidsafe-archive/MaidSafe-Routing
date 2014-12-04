@@ -250,7 +250,7 @@ void Service::FindNodes(protobuf::Message& message) {
     message.Clear();
     return;
   }
-  if (0 == find_nodes.num_nodes_requested() || NodeId(message.destination_id()).IsZero()) {
+  if (0 == find_nodes.num_nodes_requested() || !NodeId(message.destination_id()).IsValid()) {
     LOG(kWarning) << "Invalid find node request.";
     message.Clear();
     return;
@@ -304,7 +304,7 @@ void Service::ConnectSuccess(protobuf::Message& message) {
   peer.id = NodeId(connect_success.node_id());
   peer.connection_id = NodeId(connect_success.connection_id());
 
-  if (peer.id.IsZero() || peer.connection_id.IsZero()) {
+  if (!peer.id.IsValid() || !peer.connection_id.IsValid()) {
     LOG(kWarning) << "Invalid node_id / connection_id provided";
     return;
   }
