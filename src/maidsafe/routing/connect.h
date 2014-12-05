@@ -19,27 +19,36 @@
 #ifndef MAIDSAFE_ROUTING_CONNECT_H_
 #define MAIDSAFE_ROUTING_CONNECT_H_
 
-#include "maidsafe/common/serialisation/serialisation.h"
-#include "maidsafe/common/Address.h"
-
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 
+namespace maidsafe {
+
+namespace routing {
+
 struct Connect {
+  static const SerialisableTypeTag kSerialisableTypeTag =
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kConnect);
+
   Connect() = default;
-  Connect(const connect&) = delete;
-  Connect(connect&& other) MAIDSAFE_NOEXCEPT
+  Connect(const Connect&) = delete;
+  Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
-  Connect(DestinationAddress destination_in, SourceAddress source_in,
-          rudp::EndpointPair requester_endpoints, Address receiver_id, NodeId receiver_id)
-      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
+  Connect(DestinationAddress destination, SourceAddress source,
+          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
-        requester_id(std::move(requester_id)),
-        receiver_id(std::move(receiver_id)) {}
+        requester_id(std::move(requester_id_in)),
+        receiver_id(std::move(receiver_id_in)) {}
   ~Connect() = default;
   Connect& operator=(const Connect&) = delete;
   Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
@@ -51,14 +60,17 @@ struct Connect {
   };
 
   template <typename Archive>
-  void Serialise(Archive& archive) const {
+  void serialize(Archive& archive) const {
     archive(header, requester_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;
   rudp::EndpointPair requester_endpoints;
-  Address requester_id;
-  Address receiver_id;
+  Address requester_id, receiver_id;
 };
+
+}  // namespace routing
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_CONNECT_H_

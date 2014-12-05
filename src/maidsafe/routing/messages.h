@@ -27,16 +27,16 @@ namespace maidsafe {
 
 namespace routing {
 
-enum class MessageTypeTag : uint16_t {
+enum class MessageTypeTag : SerialisableTypeTag {
   kPing,
   kPingResponse,
   kFindGroup,
   kFindGroupResponse,
   kConnect,
-  kForwardConnect,
-  kVaultMessage,
-  kCacheableGet,
-  kCacheableGetResponse
+  kConnectResponse,
+  kGetData,
+  kPutData,
+  kPost
 };
 
 struct Ping;
@@ -44,10 +44,11 @@ struct PingResponse;
 struct FindGroup;
 struct FindGroupResponse;
 struct Connect;
-struct ForwardConnect;
+struct ConnectResponse;
 struct VaultMessage;
-struct CacheableGet;
-struct CacheableGetResponse;
+struct GetData;
+struct PutData;
+struct Post;
 
 /*
 struct ping {
@@ -209,29 +210,11 @@ struct cacheable_get_response {
 };
 */
 
-using MessageMap =
-    GetMap<Serialisable<MessageTypeTag::kPing, Ping>,
-           Serialisable<MessageTypeTag::kPingResponse, PingResponse>,
-           Serialisable<MessageTypeTag::kFindGroup, FindGroup>,
-           Serialisable<MessageTypeTag::kFindGroupResponse, FindGroupResponse>,
-           Serialisable<MessageTypeTag::kConnect, Connect>,
-           Serialisable<MessageTypeTag::kForwardConnect, ForwardConnect>,
-           Serialisable<MessageTypeTag::kVaultMessage, VaultMessage>,
-           Serialisable<MessageTypeTag::kCacheableGet, CacheableGet>,
-           Serialisable<MessageTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
+using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Connect,
+                          ConnectResponse, GetData, PutData, Post>::Map;
 
-template <MessageTypeTag Tag>
+template <SerialisableTypeTag Tag>
 using Message = typename Find<MessageMap, Tag>::ResultCustomType;
-
-template <MessageTypeTag Tag>
-Message<Tag> Parse(std::stringstream& ref_binary_stream) {
-  Message<Tag> parsed_message;
-  {
-    cereal::BinaryInputArchive input_bin_archive{ref_binary_stream};
-    input_bin_archive(parsed_message);
-  }
-  return parsed_message;
-}
 
 }  // namespace routing
 

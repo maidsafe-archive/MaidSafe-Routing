@@ -20,6 +20,7 @@
 
 #include <vector>
 
+#include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 //#include "maidsafe/routing/cacheable_get.h"
@@ -46,6 +47,8 @@ MessageHandler::MessageHandler(AsioService& asio_service,
       connection_manager_(connection_manager) {}
 
 void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
+  InputVectorStream binary_stream{std::move(serialised_message)};
+
   auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
   // FIXME (dirvine) Check firewall 19/11/2014
   HandleMessage(message);
@@ -91,8 +94,6 @@ void MessageHandler::HandleMessage(const connect& connect_msg) {
       rudp_.Send(target.id, Serialise(connect(connect_msg)));
   }
 }
-
-
 
 }  // namespace routing
 

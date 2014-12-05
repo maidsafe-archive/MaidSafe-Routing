@@ -22,12 +22,31 @@
 
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/connect.h"
+#include "maidsafe/routing/connect_response.h"
+#include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/ping.h"
+#include "maidsafe/routing/ping_response.h"
+#include "maidsafe/routing/post.h"
+#include "maidsafe/routing/put_data.h"
+
 namespace maidsafe {
 
 namespace routing {
 
 // NEW
 // ##################################################################################################
+
+// Define all messages' static const members here
+#if !defined(_MSC_VER) || _MSC_VER != 1800
+const SerialisableTypeTag Ping::kSerialisableTypeTag;
+const SerialisableTypeTag PingResponse::kSerialisableTypeTag;
+const SerialisableTypeTag Connect::kSerialisableTypeTag;
+const SerialisableTypeTag ConnectResponse::kSerialisableTypeTag;
+const SerialisableTypeTag GetData::kSerialisableTypeTag;
+const SerialisableTypeTag PutData::kSerialisableTypeTag;
+const SerialisableTypeTag Post::kSerialisableTypeTag;
+#endif
 
 MurmurHash MurmurHash2(const std::vector<byte>& input) {
   static_assert(sizeof(int) == 4, "This implementation requires size of int to be 4 bytes.");

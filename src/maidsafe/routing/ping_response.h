@@ -19,44 +19,46 @@
 #ifndef MAIDSAFE_ROUTING_PING_REPONSE_H_
 #define MAIDSAFE_ROUTING_PING_REPONSE_H_
 
-#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/ping.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Ping_response {
-  static const message_type_tag message_type = message_type_tag::Ping_response;
+struct PingResponse {
+  static const SerialisableTypeTag kSerialisableTypeTag =
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPingResponse);
 
-  Ping_response() = default;
-  Ping_response(const Ping_response&) = delete;
-  Ping_response(Ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  explicit Ping_response(Ping Ping)
+  PingResponse() = default;
+  PingResponse(const PingResponse&) = delete;
+  PingResponse(PingResponse&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+  explicit PingResponse(Ping Ping)
       : header(DestinationAddress(std::move(Ping.header.source.data)),
                SourceAddress(std::move(Ping.header.destination.data)),
-               message_id(std::move(Ping.header.message_id))) {}
-  ~Ping_response() = default;
-  Ping_response& operator=(const Ping_response&) = delete;
-  Ping_response& operator=(Ping_response&& other) MAIDSAFE_NOEXCEPT {
+               MessageId(std::move(Ping.header.message_id))) {}
+  ~PingResponse() = default;
+  PingResponse& operator=(const PingResponse&) = delete;
+  PingResponse& operator=(PingResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     return *this;
   };
 
   template <typename Archive>
-  void Serialise(Archive& archive) const {
+  void serialize(Archive& archive) const {
     archive(header);
   }
 
-  header header;
+  MessageHeader header;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
 
 #endif  // MAIDSAFE_ROUTING_PING_REPONSE_H_

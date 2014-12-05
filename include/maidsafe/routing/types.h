@@ -40,7 +40,6 @@ using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = boost::asio::ip::udp::endpoint;
 using Connection = boost::asio::ip::udp::endpoint;
-using byte = unsigned char;
 using MurmurHash = uint32_t;
 using Checksums = std::array<MurmurHash, kGroupSize - 1>;
 using SerialisedMessage = std::vector<byte>;

@@ -19,13 +19,17 @@
 #ifndef MAIDSAFE_ROUTING_POST_H_
 #define MAIDSAFE_ROUTING_POST_H_
 
+#include <cstdint>
 #include <vector>
 
-#include "maidsafe/common/utils.h"
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -33,35 +37,42 @@ namespace maidsafe {
 namespace routing {
 
 struct Post {
+  static const SerialisableTypeTag kSerialisableTypeTag =
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPost);
+
   Post() = default;
   Post(const Post&) = delete;
   Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                         data_name(std::move(other.data_name))
+                                         data_name(std::move(other.data_name)),
                                          signature(std::move(other.signature)),
                                          data(std::move(other.data)),
                                          part(std::move(other.part)) {}
-  Post(DestinationAddress destination_in, SourceAddress source_in, Address data_name, Signature signature,
-       std::vector<byte> data, uint8_t part)
-      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
-        data_name(std::move(other.data_name)),
-        signature(std::move(signature)),
-        data(std::move(data)),
-        part(std::move(part)) {}
+  Post(DestinationAddress destination, SourceAddress source, Address data_name_in,
+       asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
+        data_name(std::move(data_name_in)),
+        signature(std::move(signature_in)),
+        data(std::move(data_in)),
+        part(std::move(part_in)) {}
   ~Post() = default;
   Post& operator=(const Post&) = delete;
   Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
+    data_name = std::move(other.data_name);
+    signature = std::move(other.signature);
+    data = std::move(other.data);
+    part = std::move(other.part);
     return *this;
   };
 
   template <typename Archive>
-  void Serialise(Archive& archive) const {
-    archive(header, signature, data, part);
+  void serialize(Archive& archive) const {
+    archive(header, data_name, signature, data, part);
   }
 
   MessageHeader header;
   Address data_name;
-  Signature signature;
+  asymm::Signature signature;
   std::vector<byte> data;
   uint8_t part;
 };
@@ -69,6 +80,5 @@ struct Post {
 }  // namespace routing
 
 }  // namespace maidsafe
-
 
 #endif  // MAIDSAFE_ROUTING_POST_H_

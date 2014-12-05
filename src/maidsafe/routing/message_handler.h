@@ -43,15 +43,15 @@ class MessageHandler {
   void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
 
  private:
-  void HandleMessage(const Ping& ping);
-  void HandleMessage(const PingResponse& ping_response);
-  void HandleMessage(const FindGroup& find_group);
-  void HandleMessage(const FindGroupResponse& find_group_reponse);
-  void HandleMessage(const Connect& connect);
-  void HandleMessage(const ForwardConnect& forward_connect);
-  void HandleMessage(const VaultMessage& vault_message);
-  void HandleMessage(const CacheableGet& cacheable_get);
-  void HandleMessage(const CacheableGetResponse& cacheable_get_response);
+  void HandleMessage(Ping&& ping);
+  void HandleMessage(PingResponse&& ping_response);
+  void HandleMessage(FindGroup&& find_group);
+  void HandleMessage(FindGroupResponse&& find_group_reponse);
+  void HandleMessage(Connect&& connect);
+  void HandleMessage(ConnectResponse&& connect_response);
+  void HandleMessage(GetData&& get_data);
+  void HandleMessage(PutData&& put_data);
+  void HandleMessage(Post&& post);
 
   AsioService& asio_service_;
   rudp::ManagedConnections& rudp_;

@@ -19,31 +19,39 @@
 #ifndef MAIDSAFE_ROUTING_GET_DATA_H_
 #define MAIDSAFE_ROUTING_GET_DATA_H_
 
-#include <vector>
-
-#include "maidsafe/common/utils.h"
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 
+namespace maidsafe {
+
+namespace routing {
+
 struct GetData {
+  static const SerialisableTypeTag kSerialisableTypeTag =
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kGetData);
+
   GetData() = default;
   GetData(const GetData&) = delete;
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)), data_name(std::move(other.data_name))  {}
-  GetData(DestinationAddress destination_in, SourceAddress source_in, Address data_name)
-      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())),
-        data_name(std::move(data_name)) {}
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                               data_name(std::move(other.data_name)) {}
+  GetData(DestinationAddress destination, SourceAddress source, Address data_name_in)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
+        data_name(std::move(data_name_in)) {}
   ~GetData() = default;
   GetData& operator=(const GetData&) = delete;
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
+    data_name = std::move(other.data_name);
     return *this;
   };
 
   template <typename Archive>
-  void Serialise(Archive& archive) const {
+  void serialize(Archive& archive) const {
     archive(header, data_name);
   }
 
@@ -51,5 +59,9 @@ struct GetData {
   Address data_name;
 };
 
+
+}  // namespace routing
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_GET_DATA_H_

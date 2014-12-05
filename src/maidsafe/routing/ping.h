@@ -19,11 +19,12 @@
 #ifndef MAIDSAFE_ROUTING_PING_H_
 #define MAIDSAFE_ROUTING_PING_H_
 
-#include "maidsafe/common/utils.h"
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -31,12 +32,15 @@ namespace maidsafe {
 namespace routing {
 
 struct Ping {
+  static const SerialisableTypeTag kSerialisableTypeTag =
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPing);
+
   Ping() = default;
   Ping(const Ping&) = delete;
   Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  Ping(DestinationAddress destination_in, SourceAddress source_in)
-      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
-  explicit Ping(header header_in) : header(std::move(header_in)) {}
+  Ping(DestinationAddress destination, SourceAddress source)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) {}
+  explicit Ping(MessageHeader header_in) : header(std::move(header_in)) {}
   ~Ping() = default;
   Ping& operator=(const Ping&) = delete;
   Ping& operator=(Ping&& other) MAIDSAFE_NOEXCEPT {
@@ -45,7 +49,7 @@ struct Ping {
   };
 
   template <typename Archive>
-  void Serialise(Archive& archive) const {
+  void serialize(Archive& archive) const {
     archive(header);
   }
 
@@ -56,7 +60,4 @@ struct Ping {
 
 }  // namespace maidsafe
 
-
-
 #endif  // MAIDSAFE_ROUTING_PING_H_
- 

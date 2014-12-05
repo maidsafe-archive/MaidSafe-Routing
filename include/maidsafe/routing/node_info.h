@@ -20,9 +20,11 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
-#include "maidsafe/routing/types.h"
+
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/rsa.h"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
