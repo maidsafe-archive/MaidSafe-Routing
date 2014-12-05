@@ -46,7 +46,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
         close_nodes_change_check_(false),
         dropping_node_(false),
         adding_node_(false),
-        node_on_operation_(Address::IdType::kRandomId),
+        node_on_operation_(RandomString(NodeId::kSize)),
         affected_nodes_(),
         checking_mutex_() {}
 
@@ -138,7 +138,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
                   << " containing following lost nodes :";
     //     bool not_found(true);
-    if (!lost_node.IsZero()) {
+    if (lost_node.IsValid()) {
      
       //       if (Address == node_on_operation_)
       //         not_found = false;
@@ -160,7 +160,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
     LOG(kVerbose) << "close_nodes_change of affected node " << HexSubstr(affected_node.string())
                   << " containing following new nodes :";
     //     bool not_found(true);
-    if (!new_node.IsZero()) {
+    if (new_node.IsValid()) {
      
       //       if (Address == node_on_operation_)
       //         not_found = false;

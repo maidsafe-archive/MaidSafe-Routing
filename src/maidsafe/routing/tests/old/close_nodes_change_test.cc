@@ -381,8 +381,8 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
   RoutingTableChangeFunctor routing_table_change_functor(
       [&](const RoutingTableChange& routing_table_change) {
         EXPECT_TRUE(routing_table_change.close_nodes_change != nullptr);
-        EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-        EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
+        EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsValid());
+        EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsValid());
       });
   RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
   routing_table.InitialiseFunctors(routing_table_change_functor);
@@ -415,13 +415,13 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
           if (!special_case)
             EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
           if (routing_table_change.insertion) {
-            EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-            EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsZero());
+            EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsValid());
+            EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsValid());
           } else {
             if (routing_table.size() != Parameters::closest_nodes_size)
-              EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsZero());
+              EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsValid());
             if (!special_case) {
-              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsValid());
               EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
             }
             new_ids.erase(removed);
@@ -432,22 +432,22 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
           if (routing_table_change.insertion) {
             if (Address::CloserToTarget(new_node.id, *iter, Address)) {
               EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
-              EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
-              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsValid());
+              EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsValid());
               std::advance(iter, 1);
               EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), *iter);
             }
           } else {
             if (!Address::CloserToTarget(*iter, removed, Address)) {
               EXPECT_NE(routing_table_change.close_nodes_change, nullptr);
-              EXPECT_FALSE(routing_table_change.close_nodes_change->new_node().IsZero());
+              EXPECT_TRUE(routing_table_change.close_nodes_change->new_node().IsValid());
               std::advance(iter, 1);
               EXPECT_EQ(routing_table_change.close_nodes_change->new_node(), *iter);
-              EXPECT_FALSE(routing_table_change.close_nodes_change->lost_node().IsZero());
+              EXPECT_TRUE(routing_table_change.close_nodes_change->lost_node().IsValid());
               EXPECT_EQ(routing_table_change.close_nodes_change->lost_node(), removed);
             }
           }
-          if (!routing_table_change.removed.node.id.IsZero())
+          if (routing_table_change.removed.node.id.IsValid())
             new_ids.erase(routing_table_change.removed.node.id);
         }
         EXPECT_LE(new_ids.size(), Parameters::max_routing_table_size);

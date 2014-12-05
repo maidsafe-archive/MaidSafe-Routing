@@ -210,7 +210,7 @@ RoutingTablePtr RoutingTableNetwork::CreateRoutingTable(const passport::Pmid& pm
 
 void RoutingTableNetwork::OnRoutingTableChange(const Address& Address,
                                                const RoutingTableChange& routing_table_change) {
-  if (!routing_table_change.removed.node.id.IsZero()) {
+  if (routing_table_change.removed.node.id.IsValid()) {
    
     network_map_.at(routing_table_change.removed.node.id)->routing_table->DropNode(Address, true);
     std::lock_guard<std::mutex> lock(mutex_);
