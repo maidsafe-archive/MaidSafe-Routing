@@ -174,8 +174,8 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
 GenericNode::~GenericNode() {}
 
 void GenericNode::InitialiseFunctors() {
-  functors_.message_and_caching.message_received = [this](const std::string& message,
-                                                          ReplyFunctor reply_functor) {
+  functors_.message_and_caching.message_received =
+      [this](const std::string& message, ReplyFunctor reply_functor) {
     std::lock_guard<std::mutex> guard(mutex_);
     messages_.push_back(message);
     reply_functor(Address().string() + ">::< response to >:<" + message);
@@ -236,13 +236,13 @@ void GenericNode::SetCloseNodesChangeFunctor(CloseNodesChangeFunctor close_nodes
   functors_.close_nodes_change = close_nodes_change_functor;
 }
 
-void GenericNode::SendDirect(const Address& DestinationAddress, const std::string& data, bool cacheable,
-                             ResponseFunctor response_functor) {
+void GenericNode::SendDirect(const Address& DestinationAddress, const std::string& data,
+                             bool cacheable, ResponseFunctor response_functor) {
   routing_->SendDirect(DestinationAddress, data, cacheable, response_functor);
 }
 
-void GenericNode::SendGroup(const Address& DestinationAddress, const std::string& data, bool cacheable,
-                            ResponseFunctor response_functor) {
+void GenericNode::SendGroup(const Address& DestinationAddress, const std::string& data,
+                            bool cacheable, ResponseFunctor response_functor) {
   routing_->SendGroup(DestinationAddress, data, cacheable, response_functor);
 }
 
@@ -315,9 +315,7 @@ unsigned int GenericNode::expected() { return expected_; }
 
 void GenericNode::set_expected(int expected) { expected_ = expected; }
 
-void GenericNode::PrintRoutingTable() {
-  routing_->pimpl_->routing_table_->Print();
-}
+void GenericNode::PrintRoutingTable() { routing_->pimpl_->routing_table_->Print(); }
 
 std::vector<Address> GenericNode::ReturnRoutingTable() {
   std::vector<Address> routing_nodes;
@@ -351,13 +349,9 @@ asymm::PublicKey GenericNode::public_key() {
   return node_info_plus_->node_info.public_key;
 }
 
-int GenericNode::Health() {
-  return health_;
-}
+int GenericNode::Health() { return health_; }
 
-void GenericNode::SetHealth(int health) {
-  health_ = health;
-}
+void GenericNode::SetHealth(int health) { health_ = health; }
 
 void GenericNode::PostTaskToAsioService(std::function<void()> functor) {
   std::lock_guard<std::mutex> lock(routing_->pimpl_->running_mutex_);
@@ -393,9 +387,8 @@ void GenericNetwork::SetUp() {
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   bootstrap_file_.reset();
-  bootstrap_file_ =
-      maidsafe::make_unique<ScopedBootstrapFile>(BootstrapContacts{ node1->endpoint(),
-                                                                    node2->endpoint() });
+  bootstrap_file_ = maidsafe::make_unique<ScopedBootstrapFile>(
+      BootstrapContacts{node1->endpoint(), node2->endpoint()});
 
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->Address(), node1->public_key()));
@@ -403,10 +396,10 @@ void GenericNetwork::SetUp() {
   // fobs_.push_back(node2->fob());
   SetNodeValidationFunctor(node1);
   SetNodeValidationFunctor(node2);
-  auto f1 = std::async(std::launch::async, [ =, &node2 ]()->int {
+  auto f1 = std::async(std::launch::async, [=, &node2]() -> int {
     return node1->ZeroStateJoin(node2->endpoint(), node2->node_info());
   });
-  auto f2 = std::async(std::launch::async, [ =, &node1 ]()->int {
+  auto f2 = std::async(std::launch::async, [=, &node1]() -> int {
     return node2->ZeroStateJoin(node1->endpoint(), node1->node_info());
   });
   EXPECT_EQ(kSuccess, f2.get());
@@ -590,10 +583,10 @@ bool GenericNetwork::WaitForNodesToJoin() {
 bool GenericNetwork::WaitForNodesToJoin(size_t num_total_nodes) {
   // TODO(Alison) - tailor max. duration to match number of nodes joining?
   bool all_joined = true;
-  size_t expected_health(num_total_nodes < Parameters::max_client_routing_table_size
-                             ? (num_total_nodes * 100) /
-                                   static_cast<size_t>(Parameters::max_client_routing_table_size)
-                             : 100);
+  size_t expected_health(num_total_nodes < Parameters::max_client_routing_table_size ?
+                             (num_total_nodes * 100) /
+                                 static_cast<size_t>(Parameters::max_client_routing_table_size) :
+                             100);
   unsigned int max(10), i(0);
   while (i < max) {
     all_joined = true;
@@ -633,15 +626,15 @@ void GenericNetwork::Validate(const Address& Address, GivePublicKeyFunctor give_
 void GenericNetwork::SetNodeValidationFunctor(NodePtr node) {
   Address own_Address(node->node_id());
   if (node->HasSymmetricNat()) {
-    node->functors_.request_public_key = [this, own_Address](const Address& node_id,
-                                                             GivePublicKeyFunctor give_public_key) {
+    node->functors_.request_public_key =
+        [this, own_Address](const Address& node_id, GivePublicKeyFunctor give_public_key) {
       assert(Address != own_node_id && "(1) Should not get public key request from own node id!");
       if (!NodeHasSymmetricNat(Address))
         this->Validate(Address, give_public_key);
     };
   } else {
-    node->functors_.request_public_key = [this, own_Address](const Address& node_id,
-                                                             GivePublicKeyFunctor give_public_key) {
+    node->functors_.request_public_key =
+        [this, own_Address](const Address& node_id, GivePublicKeyFunctor give_public_key) {
       assert(Address != own_node_id && "(2) Should not get public key request from own node id!");
       this->Validate(Address, give_public_key);
     };
@@ -653,11 +646,12 @@ std::vector<Address> GenericNetwork::GroupIds(const Address& Address) const {
   for (const auto& node : this->nodes_)
     all_ids.push_back(node->Address());
   std::partial_sort(all_ids.begin(), all_ids.begin() + Parameters::group_size + 1, all_ids.end(),
-                    [&](const Address& lhs,
-                        const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, Address); });
+                    [&](const Address& lhs, const Address& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, Address);
+  });
   return std::vector<Address>(all_ids.begin() + static_cast<unsigned int>(all_ids[0] == Address),
-                             all_ids.begin() + Parameters::group_size +
-                                 static_cast<unsigned int>(all_ids[0] == Address));
+                              all_ids.begin() + Parameters::group_size +
+                                  static_cast<unsigned int>(all_ids[0] == Address));
 }
 
 void GenericNetwork::PrintRoutingTables() const {
@@ -673,15 +667,14 @@ bool GenericNetwork::ValidateRoutingTables() const {
       Addresss.push_back(node->node_id());
   }
   for (const auto& node : nodes_) {
-    std::sort(Addresss.begin(), node_ids.end(), [=](const Address & lhs, const NodeId & rhs)->bool {
+    std::sort(Addresss.begin(), node_ids.end(), [=](const Address& lhs, const NodeId& rhs) -> bool {
       return Address::CloserToTarget(lhs, rhs, node->Address());
     });
     auto routing_table(node->RoutingTable());
     //      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
     std::sort(routing_table.begin(), routing_table.end(),
-              [&, this ](const NodeInfo & lhs, const NodeInfo & rhs)->bool {
-      return Address::CloserToTarget(lhs.id, rhs.id, node->Address());
-    });
+              [&, this](const NodeInfo& lhs, const NodeInfo& rhs)
+                  -> bool { return Address::CloserToTarget(lhs.id, rhs.id, node->Address()); });
     unsigned int size(
         std::min(static_cast<unsigned int>(routing_table.size()), Parameters::closest_nodes_size));
     for (auto iter(routing_table.begin()); iter < routing_table.begin() + size - 1; ++iter) {
@@ -763,8 +756,9 @@ std::vector<Address> GenericNetwork::GetGroupForId(const Address& Address) const
       group_ids.push_back(node->Address());
   }
   std::partial_sort(group_ids.begin(), group_ids.begin() + Parameters::group_size, group_ids.end(),
-                    [&](const Address& lhs,
-                        const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, Address); });
+                    [&](const Address& lhs, const Address& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, Address);
+  });
   return std::vector<Address>(group_ids.begin(), group_ids.begin() + Parameters::group_size);
 }
 
@@ -934,19 +928,19 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
               std::string /*reply*/) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
-//            EXPECT_TRUE(reply.empty());
-//            if (!reply.empty()) {
-//              *failed = true;
-//              if (*reply_count == *expected_count)
-//                cond_var->notify_one();
-//              return;
-//            }
+            //            EXPECT_TRUE(reply.empty());
+            //            if (!reply.empty()) {
+            //              *failed = true;
+            //              if (*reply_count == *expected_count)
+            //                cond_var->notify_one();
+            //              return;
+            //            }
             if (*reply_count == *expected_count)
               cond_var->notify_one();
           };
         } else if (dest->IsClient() && src->IsClient() && (dest->Address() != src->node_id())) {
-          response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-              std::string reply) {
+          response_functor =
+              [response_mutex, cond_var, reply_count, expected_count, failed](std::string reply) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
             EXPECT_TRUE(reply.empty());
@@ -961,8 +955,9 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
           };
         } else {
           std::shared_ptr<Address> expected_replier(std::make_shared<Address>(dest->Address()));
-          response_functor = [response_mutex, cond_var, reply_count, expected_count, failed,
-                              expected_replier](std::string reply) {
+          response_functor =
+              [response_mutex, cond_var, reply_count, expected_count, failed, expected_replier](
+                  std::string reply) {
             std::lock_guard<std::mutex> lock(*response_mutex);
             ++(*reply_count);
             //            EXPECT_FALSE(reply.empty());
@@ -982,8 +977,7 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
                 return;
               }
               // TODO(Alison) - check data
-            }
-            catch (const std::exception& ex) {
+            } catch (const std::exception& ex) {
               ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
               *failed = true;
               if (*reply_count == *expected_count)
@@ -1001,8 +995,8 @@ testing::AssertionResult GenericNetwork::SendDirect(size_t repeats, size_t messa
 
   std::unique_lock<std::mutex> lock(*response_mutex);
   if (!cond_var->wait_for(
-           lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1)),
-           [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
+          lock, std::chrono::seconds(15 * (nodes_.size()) * (nodes_.size() - 1)),
+          [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
     ADD_FAILURE() << "Didn't get reply within allowed time!";
     Parameters::default_response_timeout = timeout;
     return testing::AssertionFailure();
@@ -1071,8 +1065,7 @@ testing::AssertionResult GenericNetwork::SendGroup(const Address& target_id, siz
           ADD_FAILURE() << "Got unexpected reply from " << replier << "\tfor target: " << target_id;
           *failed = true;
         }
-      }
-      catch (const std::exception& /*ex*/) {
+      } catch (const std::exception& /*ex*/) {
         ADD_FAILURE() << "Reply contained invalid node ID.";
         *failed = true;
       }
@@ -1085,8 +1078,8 @@ testing::AssertionResult GenericNetwork::SendGroup(const Address& target_id, siz
 
   std::unique_lock<std::mutex> lock(*response_mutex);
   if (!cond_var->wait_for(
-           lock, Parameters::default_response_timeout,
-           [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
+          lock, Parameters::default_response_timeout,
+          [reply_count, expected_count]() { return *reply_count == *expected_count; })) {
     ADD_FAILURE() << "Didn't get replies within allowed time!";
     return testing::AssertionFailure();
   }
@@ -1139,8 +1132,7 @@ testing::AssertionResult GenericNetwork::SendDirect(const Address& destination_A
             return;
           }
           // TODO(Alison) - check data
-        }
-        catch (const std::exception& ex) {
+        } catch (const std::exception& ex) {
           ADD_FAILURE() << "Got message with invalid replier ID. Exception: " << ex.what();
           *failed = true;
           if (*reply_count == *expected_count)
@@ -1161,23 +1153,23 @@ testing::AssertionResult GenericNetwork::SendDirect(const Address& destination_A
       if ((dest != nullptr) &&
           (dest->IsClient() &&
            (!src->IsClient() || (src->IsClient() && (dest->Address() == src->node_id()))))) {
-        response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-            std::string /*reply*/) {
+        response_functor =
+            [response_mutex, cond_var, reply_count, expected_count, failed](std::string /*reply*/) {
           std::lock_guard<std::mutex> lock(*response_mutex);
           ++(*reply_count);
-//          EXPECT_FALSE(reply.empty());
-//          if (reply.empty()) {
-//            *failed = true;
-//            if (*reply_count == *expected_count)
-//              cond_var->notify_one();
-//            return;
-//         }
+          //          EXPECT_FALSE(reply.empty());
+          //          if (reply.empty()) {
+          //            *failed = true;
+          //            if (*reply_count == *expected_count)
+          //              cond_var->notify_one();
+          //            return;
+          //         }
           if (*reply_count == *expected_count)
             cond_var->notify_one();
         };
       } else if (dest != nullptr) {
-        response_functor = [response_mutex, cond_var, reply_count, expected_count, failed](
-            std::string reply) {
+        response_functor =
+            [response_mutex, cond_var, reply_count, expected_count, failed](std::string reply) {
           std::lock_guard<std::mutex> lock(*response_mutex);
           ++(*reply_count);
           EXPECT_TRUE(reply.empty());
@@ -1198,8 +1190,8 @@ testing::AssertionResult GenericNetwork::SendDirect(const Address& destination_A
 
   std::unique_lock<std::mutex> lock(*response_mutex);
   if (!cond_var->wait_for(lock, std::chrono::seconds(25), [reply_count, expected_count]() {
-         return *reply_count == *expected_count;
-       })) {
+        return *reply_count == *expected_count;
+      })) {
     LOG(kError) << "Didn't get reply within allowed time!";
     return testing::AssertionFailure();
   }
@@ -1233,16 +1225,15 @@ testing::AssertionResult GenericNetwork::SendDirect(std::shared_ptr<GenericNode>
         EXPECT_EQ(replier_id, destination_Address);
         if (replier_id != destination_Address)
           *failed = true;
-      }
-      catch (const std::exception* /*ex*/) {
+      } catch (const std::exception* /*ex*/) {
         ADD_FAILURE() << "Reply contained invalid node ID!";
         *failed = true;
       }
       cond_var->notify_one();
     };
   } else {
-    response_functor = [response_mutex, cond_var, failed, source_node, destination_Address](
-        std::string reply) {
+    response_functor =
+        [response_mutex, cond_var, failed, source_node, destination_Address](std::string reply) {
       std::lock_guard<std::mutex> lock(*response_mutex);
       if (source_node->IsClient() && (source_node->Address() != destination_node_id)) {
         EXPECT_TRUE(reply.empty());
@@ -1351,8 +1342,8 @@ void GenericNetwork::AddNodeDetails(NodePtr node) {
     if (node->has_symmetric_nat_)
       maximum_wait = 30;
     auto result = cond_var->wait_for(lock, std::chrono::seconds(maximum_wait));
-    EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor << " node failed to join: "
-                                                  << node->Address();
+    EXPECT_EQ(result, std::cv_status::no_timeout) << descriptor
+                                                  << " node failed to join: " << node->Address();
     Sleep(std::chrono::milliseconds(1000));
   }
   PrintRoutingTables();

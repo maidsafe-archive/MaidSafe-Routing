@@ -32,8 +32,12 @@ namespace maidsafe {
 namespace routing {
 
 Acknowledgement::Acknowledgement(const Address& local_Address, AsioService& io_service)
-    : kAddress_(local_Address), ack_id_(RandomInt32()), mutex_(), stop_handling_(false),
-      io_service_(io_service), queue_() {}
+    : kAddress_(local_Address),
+      ack_id_(RandomInt32()),
+      mutex_(),
+      stop_handling_(false),
+      io_service_(io_service),
+      queue_() {}
 
 Acknowledgement::~Acknowledgement() {
   stop_handling_ = true;
@@ -66,33 +70,28 @@ void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int
   AckId ack_id(message.ack_id());
 
   const auto it(std::find_if(std::begin(queue_), std::end(queue_),
-                             [ack_id](const AckTimer& timer) {
-                               return ack_id == timer.ack_id;
-                             }));
+                             [ack_id](const AckTimer& timer) { return ack_id == timer.ack_id; }));
   if (it == std::end(queue_)) {
-    TimerPointer timer(new asio::deadline_timer(io_service_.service(),
-                                                boost::posix_time::seconds(timeout)));
+    TimerPointer timer(
+        new asio::deadline_timer(io_service_.service(), boost::posix_time::seconds(timeout)));
     timer->async_wait(handler);
     queue_.emplace_back(AckTimer(ack_id, message, timer, 0));
   } else {
     it->quantity++;
     it->timer->expires_from_now(boost::posix_time::seconds(timeout));
     if (it->quantity == Parameters::max_send_retry) {
-      it->timer->async_wait([=](const boost::system::error_code&) {
-                              Remove(ack_id);
-                            });
-     } else {
-       it->timer->async_wait(handler);
-     }
+      it->timer->async_wait([=](const boost::system::error_code&) { Remove(ack_id); });
+    } else {
+      it->timer->async_wait(handler);
+    }
   }
 }
 
 void Acknowledgement::Remove(AckId ack_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto const it(std::find_if(std::begin(queue_), std::end(queue_),
-                             [ack_id] (const AckTimer& timer)->bool {
-                               return ack_id == timer.ack_id;
-                             }));
+  auto const it(
+      std::find_if(std::begin(queue_), std::end(queue_),
+                   [ack_id](const AckTimer& timer) -> bool { return ack_id == timer.ack_id; }));
   if (it != std::end(queue_)) {
     it->timer->cancel();
     queue_.erase(it);
@@ -113,12 +112,10 @@ bool Acknowledgement::IsSendingAckRequired(const protobuf::Message& message,
 }
 
 bool Acknowledgement::NeedsAck(const protobuf::Message& message, const Address& Address) {
- 
-
   if (message.ack_id() == 0)
     return false;
 
-// Ack messages do not need an ack
+  // Ack messages do not need an ack
   if (IsAck(message))
     return false;
 
@@ -128,8 +125,8 @@ bool Acknowledgement::NeedsAck(const protobuf::Message& message, const Address& 
   if (IsConnectSuccessAcknowledgement(message))
     return false;
 
-//  communication between two nodes, in which one side is a relay at neither end
-//  involves setting a timer.
+  //  communication between two nodes, in which one side is a relay at neither end
+  //  involves setting a timer.
   if (IsResponse(message) && (message.DestinationAddress() == message.relay_id()))
     return false;
 
@@ -143,8 +140,7 @@ void Acknowledgement::AdjustAckHistory(protobuf::Message& message) {
     return;
   assert((message.ack_Addresss_size() <= 2) && "size of ack list must be smaller than 3");
   if ((message.ack_Addresss_size() == 0) ||
-      ((message.ack_Addresss_size() == 1) &&
-       (Address(message.ack_Addresss(0)) != kNodeId_)))  {
+      ((message.ack_Addresss_size() == 1) && (Address(message.ack_Addresss(0)) != kNodeId_))) {
     message.add_ack_Addresss(kAddress_.string());
   } else if (message.ack_Addresss_size() == 2) {
     std::string last_node(message.ack_Addresss(1));

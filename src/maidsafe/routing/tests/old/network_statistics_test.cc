@@ -99,8 +99,9 @@ TEST(NetworkStatisticsTest, FUNC_IsIdInGroupRange) {
 
   Address info_id(RandomString(Address::kSize));
   std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1, nodes_id.end(),
-                    [&](const Address& lhs,
-                        const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, info_id); });
+                    [&](const Address& lhs, const Address& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, info_id);
+  });
   unsigned int index(0);
   while (index < Parameters::max_routing_table_size) {
     if ((nodes_id.at(index) ^ info_id) <= (network_statistics.distance_))

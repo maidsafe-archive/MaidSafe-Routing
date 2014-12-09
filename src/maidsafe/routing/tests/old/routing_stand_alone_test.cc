@@ -48,11 +48,12 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     for (size_t index(0); index < ClientIndex(); ++index) {
       pmid_ids.push_back(nodes_[index]->Address());
     }
-    std::sort(std::begin(pmid_ids), std::end(pmid_ids), [&](const Address& lhs, const Address& rhs) {
+    std::sort(std::begin(pmid_ids), std::end(pmid_ids),
+              [&](const Address& lhs, const Address& rhs) {
       return Address::CloserToTarget(lhs, rhs, maid_id);
     });
     return !Address::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
-                                   pmid_id, maid_id);
+                                    pmid_id, maid_id);
   }
 };
 
@@ -60,7 +61,7 @@ TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < ClientIndex(); ++index) {
     EXPECT_TRUE(SendDirect(nodes_[index], nodes_[ClientIndex()]->Address(),
-                                 ExpectedNodeType::kExpectClient))
+                           ExpectedNodeType::kExpectClient))
         << nodes_[index]->Address();
   }
 }
@@ -83,13 +84,9 @@ TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) { SetUpNetwork(kServerSize); }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupSingleClientHybridNetwork) {
-  SetUpNetwork(kServerSize, 1);
-}
+TEST_F(RoutingStandAloneTest, FUNC_SetupSingleClientHybridNetwork) { SetUpNetwork(kServerSize, 1); }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) {
-  SetUpNetwork(kServerSize, kClientSize);
-}
+TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) { SetUpNetwork(kServerSize, kClientSize); }
 
 TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkWithVaultsBehindSymmetricNat) {
   SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, 0);
@@ -149,8 +146,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
       receivers_message_count += static_cast<unsigned int>(nodes_.at(index)->MessagesSize());
 
     EXPECT_EQ(0, nodes_[last_index]->MessagesSize())
-        << "Not expected message at Node : "
-        << HexSubstr(nodes_[last_index]->Address().string());
+        << "Not expected message at Node : " << HexSubstr(nodes_[last_index]->Address().string());
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
     receivers_message_count = 0;
     ClearMessages();
@@ -174,7 +170,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
       }
     }
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-   
+
     receivers_message_count = 0;
     ClearMessages();
   }

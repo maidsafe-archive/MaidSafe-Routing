@@ -29,6 +29,15 @@ namespace maidsafe {
 namespace routing {
 
 class ConnectionManager;
+struct Ping;
+struct PingResponse;
+struct FindGroup;
+struct FindGroupResponse;
+struct Connect;
+struct ConnectResponse;
+struct GetData;
+struct PutData;
+struct Post;
 
 class MessageHandler {
  public:
@@ -45,8 +54,8 @@ class MessageHandler {
  private:
   void HandleMessage(Ping&& ping);
   void HandleMessage(PingResponse&& ping_response);
-  void HandleMessage(FindGroup&& find_group);
-  void HandleMessage(FindGroupResponse&& find_group_reponse);
+  // void HandleMessage(FindGroup&& find_group);
+  // void HandleMessage(FindGroupResponse&& find_group_reponse);
   void HandleMessage(Connect&& connect);
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetData&& get_data);

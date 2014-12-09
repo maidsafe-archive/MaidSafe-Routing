@@ -51,13 +51,11 @@ std::pair<Address, NodeId> ParseString(std::string input) {
       archive(cereal::make_nvp("vaultRemoved", node_str));
       old_Address = Address(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
-     
     }
     try {
       archive(cereal::make_nvp("vaultAdded", node_str));
       new_Address = Address(node_str, NodeId::EncodingType::kHex);
     } catch (const std::exception& e) {
-     
     }
   }
   return std::make_pair(old_Address, new_node_id);
@@ -134,18 +132,21 @@ class CloseNodesChangeTest : public testing::Test {
         else
           fcn_distance = kAddress_ ^ NodeInNthBucket(kNodeId_, Parameters::closest_nodes_size);
         crypto::BigInt radius(
-            crypto::BigInt((fcn_distance.ToStringEncoded(Address::EncodingType::kHex) + 'h').c_str())
+            crypto::BigInt((fcn_distance.ToStringEncoded(Address::EncodingType::kHex) +
+       'h').c_str())
        *
             Parameters::proximity_factor);
 
         // sort by target
         std::sort(old_close_nodes.begin(), old_close_nodes.end(),
                   [target](const Address& lhs,
-                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
+                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target);
+       });
 
         std::sort(new_close_nodes.begin(), new_close_nodes.end(),
                   [target](const Address& lhs,
-                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
+                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target);
+       });
 
         // Remove taget == node ids and adjust holder size
 
@@ -226,7 +227,6 @@ class CloseNodesChangeTest : public testing::Test {
       stream << "\nold_close_nodes :";
       std::for_each(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                     [&](const Address& old_holder) { stream << "\t" << DebugId(old_holder); });
-     
     }
     ASSERT_EQ(result.new_holder, test_result.new_holder);
     ASSERT_EQ(result.proximity_status, test_result.proximity_status);
@@ -235,27 +235,27 @@ class CloseNodesChangeTest : public testing::Test {
     //     if ((result.proximity_status != test_result.proximity_status) ||
     //         (result.new_holders != test_result.new_holders) ||
     //         (result.old_holders != test_result.old_holders)) {
-    // //        
-    //      
-    // //      
-    //      
+    // //
+    //
+    // //
+    //
     //       for (auto& holder : result.new_holders)
-    //        
-    //      
+    //
+    //
     //       for (auto& holder : test_result.new_holders)
-    //        
-    //      
+    //
+    //
     //       for (auto& holder : result.old_holders)
-    //        
-    //      
+    //
+    //
     //       for (auto& holder : test_result.old_holders)
-    //        
-    //      
+    //
+    //
     //       for (auto& holder : new_close_nodes_)
-    //        
-    //      
+    //
+    //
     //       for (auto& holder : old_close_nodes_)
-    //        
+    //
     //       ASSERT_EQ(0, 1);
     //     }
   }
@@ -269,13 +269,11 @@ TEST_F(CloseNodesChangeTest, BEH_CheckHolders) {
   {
     CloseNodesChange close_nodes_change(kAddress_, old_close_nodes_, new_close_nodes_);
     for (auto i(0); i != 1000; ++i) {
-     
       DoCheckHoldersTest(close_nodes_change);
     }
   }
   {
     for (auto i(0); i != 1000; ++i) {
-     
       Address target_node(RandomString(Address::kSize));
       if (i % 2 == 0)
         new_close_nodes_.push_back(target_node);
@@ -394,8 +392,10 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   Address Address(RandomString(Address::kSize));
-  std::set<Address, std::function<bool(const Address& lhs, const NodeId& rhs)>> new_ids([Address](
-      const Address& lhs, const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, Address); });
+  std::set<Address, std::function<bool(const Address& lhs, const NodeId& rhs)>> new_ids(
+      [Address](const Address& lhs, const Address& rhs) {
+        return NodeId::CloserToTarget(lhs, rhs, Address);
+      });
   NodeInfo new_node;
   Address removed;
   RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());

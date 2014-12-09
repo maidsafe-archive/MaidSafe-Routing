@@ -61,8 +61,8 @@ class MessageHandlerTest : public testing::Test {
         network_network_(),
         public_key_holder_(asio_service_, *network_),
         close_info_() {
-    message_and_caching_functor_.message_received = [this](const std::string& message,
-                                                           ReplyFunctor reply_functor) {
+    message_and_caching_functor_.message_received =
+        [this](const std::string& message, ReplyFunctor reply_functor) {
       MessageReceived(message);
       reply_functor("reply");
     };
@@ -72,8 +72,8 @@ class MessageHandlerTest : public testing::Test {
     ntable_.reset(new ClientRoutingTable(table_->kAddress()));
     network_.reset(new MockNetwork(*table_, *ntable_, network_network_->acknowledgement_));
     service_.reset(new MockService(*table_, *ntable_, *network_, public_key_holder_));
-    response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *network_,
-                                                    public_key_holder_));
+    response_handler_.reset(
+        new MockResponseHandler(*table_, *ntable_, *network_, public_key_holder_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
     close_info_.id = GenerateUniqueRandomId(table_->kAddress(), 20);
     table_->AddNode(close_info_);
@@ -165,11 +165,13 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message_handler.HandleMessage(message);
   }
   {  // Handle direct relay request to other not in routing table
-    Address DestinationAddress(GenerateUniqueRandomId(close_info_.id, static_cast<unsigned int>(4)));
-    EXPECT_CALL(*network_,
-                SendToClosestNode(testing::AllOf(
-                    testing::Property(&protobuf::Message::DestinationAddress, destination_id.string()),
-                    testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()))))
+    Address DestinationAddress(
+        GenerateUniqueRandomId(close_info_.id, static_cast<unsigned int>(4)));
+    EXPECT_CALL(
+        *network_,
+        SendToClosestNode(testing::AllOf(
+            testing::Property(&protobuf::Message::DestinationAddress, destination_id.string()),
+            testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()))))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*network_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
@@ -193,10 +195,11 @@ TEST_F(MessageHandlerTest, BEH_HandleRelay) {
     message_handler.HandleMessage(message);
   }
   {  // Handle direct relay request to other in routing table
-    EXPECT_CALL(*network_,
-                SendToClosestNode(testing::AllOf(
-                    testing::Property(&protobuf::Message::DestinationAddress, close_info_.id.string()),
-                    testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()))))
+    EXPECT_CALL(
+        *network_,
+        SendToClosestNode(testing::AllOf(
+            testing::Property(&protobuf::Message::DestinationAddress, close_info_.id.string()),
+            testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()))))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*network_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
@@ -275,28 +278,31 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
                        [&](const NodeInfo& info) { return info.id == close_info_.id; }),
         closest_nodes.end());
     EXPECT_CALL(*network_, SendToClosestNode(testing::_)).Times(0);
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(0).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(0).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(1).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(1).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(2).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(2).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
     //    EXPECT_CALL(*table_, IsAddressInGroupRange(testing::_, testing::_)).Times(1);
@@ -323,10 +329,11 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     message.set_ack_id(RandomInt32());
     Address SourceAddress(RandomString(Address::kSize));
     Address DestinationAddress(GenerateUniqueRandomId(close_info_.id, 4));
-    EXPECT_CALL(*network_,
-                SendToClosestNode(testing::AllOf(
-                    testing::Property(&protobuf::Message::DestinationAddress, destination_id.string()),
-                    testing::Property(&protobuf::Message::SourceAddress, source_address.string()))))
+    EXPECT_CALL(
+        *network_,
+        SendToClosestNode(testing::AllOf(
+            testing::Property(&protobuf::Message::DestinationAddress, destination_id.string()),
+            testing::Property(&protobuf::Message::SourceAddress, source_address.string()))))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*table_, IsAddressInGroupRange(testing::_, testing::_)).Times(0);
@@ -355,33 +362,36 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     Address DestinationAddress(GenerateUniqueRandomId(table_->kNodeId(), 4));
     auto closest_nodes(table_->GetClosestNodes(table_->kAddress(), 4));
     EXPECT_CALL(*network_, SendToClosestNode(testing::_)).Times(0);
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(0).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(0).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(1).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(1).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(2).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(2).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*service_, FindNodes(testing::_))
         .WillOnce(testing::WithArgs<0>(
-             testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
+            testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
         .RetiresOnSaturation();
     //    EXPECT_CALL(*table_, IsAddressInGroupRange(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
@@ -407,35 +417,39 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     message.set_ack_id(RandomInt32());
     Address SourceAddress(RandomString(Address::kSize));
     auto closest_nodes(table_->GetClosestNodes(table_->kAddress(), 4));
-    EXPECT_CALL(*network_,
-                SendToClosestNode(testing::AllOf(
-                    testing::Property(&protobuf::Message::request, false),
-                    testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()),
-                    testing::Property(&protobuf::Message::DestinationAddress, SourceAddress.string()))))
+    EXPECT_CALL(
+        *network_,
+        SendToClosestNode(testing::AllOf(
+            testing::Property(&protobuf::Message::request, false),
+            testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()),
+            testing::Property(&protobuf::Message::DestinationAddress, SourceAddress.string()))))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(0).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(0).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(1).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(1).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(2).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(2).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
     //    EXPECT_CALL(*table_, IsAddressInGroupRange(testing::_, testing::_)).Times(1);
@@ -454,8 +468,9 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
-                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]() -> bool {
+      return messages_received_ != 0;
+    }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -469,33 +484,36 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     message.set_ack_id(RandomInt32());
     auto closest_nodes(table_->GetClosestNodes(table_->kAddress(), 4));
     EXPECT_CALL(*network_, SendToClosestNode(testing::_)).Times(0);
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(0).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(0).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(1).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(1).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(2).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(2).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*service_, FindNodes(testing::_))
         .WillOnce(testing::WithArgs<0>(
-             testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
+            testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
         .RetiresOnSaturation();
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -523,36 +541,39 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     Address DestinationAddress(GenerateUniqueRandomId(table_->kNodeId(), 4));
     auto closest_nodes(table_->GetClosestNodes(table_->kAddress(), 4));
     for (auto closest_node : closest_nodes)
-     
-    EXPECT_CALL(*network_,
-                SendToClosestNode(testing::AllOf(
-                    testing::Property(&protobuf::Message::request, false),
-                    testing::Property(&protobuf::Message::SourceAddress, table_->kAddress().string()),
-                    testing::Property(&protobuf::Message::DestinationAddress, ""))))
+
+      EXPECT_CALL(*network_, SendToClosestNode(testing::AllOf(
+                                 testing::Property(&protobuf::Message::request, false),
+                                 testing::Property(&protobuf::Message::SourceAddress,
+                                                   table_->kAddress().string()),
+                                 testing::Property(&protobuf::Message::DestinationAddress, ""))))
+          .Times(1)
+          .RetiresOnSaturation();
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(0).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(0).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(1).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(1).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
-        .Times(1)
-        .RetiresOnSaturation();
-    EXPECT_CALL(*network_,
-                SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
-                                                              closest_nodes.at(2).id.string()),
-                                            testing::Property(&protobuf::Message::direct, true),
-                                            testing::Property(&protobuf::Message::request, true)),
-                             testing::_, testing::_))
+    EXPECT_CALL(
+        *network_,
+        SendToDirect(testing::AllOf(testing::Property(&protobuf::Message::DestinationAddress,
+                                                      closest_nodes.at(2).id.string()),
+                                    testing::Property(&protobuf::Message::direct, true),
+                                    testing::Property(&protobuf::Message::request, true)),
+                     testing::_, testing::_))
         .Times(1)
         .RetiresOnSaturation();
     EXPECT_CALL(*table_, IsAddressInGroupRange(testing::_, result))
@@ -573,8 +594,9 @@ TEST_F(MessageHandlerTest, DISABLED_BEH_HandleGroupMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
-                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]() -> bool {
+      return messages_received_ != 0;
+    }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -610,8 +632,9 @@ TEST_F(MessageHandlerTest, BEH_HandleNodeLevelMessage) {
     message_handler.set_message_and_caching_functor(message_and_caching_functor_);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1),
-                                   [this]()->bool { return messages_received_ != 0; }));  // NOLINT
+    EXPECT_TRUE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]() -> bool {
+      return messages_received_ != 0;
+    }));  // NOLINT
     EXPECT_EQ(messages_received_, 1);
     messages_received_ = 0;
   }
@@ -664,8 +687,9 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message.set_request(true);
     message_handler.HandleMessage(message);
     std::unique_lock<std::mutex> lock(mutex_);
-    EXPECT_FALSE(cond_var_.wait_for(lock, std::chrono::seconds(1),
-                                    [this]()->bool { return messages_received_ != 0; }));  // NOLINT
+    EXPECT_FALSE(cond_var_.wait_for(lock, std::chrono::seconds(1), [this]() -> bool {
+      return messages_received_ != 0;
+    }));  // NOLINT
     EXPECT_EQ(messages_received_, 0);
     messages_received_ = 0;
   }
@@ -674,7 +698,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     EXPECT_CALL(*network_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_))
         .WillOnce(testing::WithArgs<0>(
-             testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
+            testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
         .RetiresOnSaturation();
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
@@ -701,7 +725,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     EXPECT_CALL(*service_, Ping(testing::_)).Times(0);
     EXPECT_CALL(*service_, Connect(testing::_))
         .WillOnce(testing::WithArgs<0>(
-             testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
+            testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
         .RetiresOnSaturation();
     EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, Ping(testing::_)).Times(0);
@@ -725,7 +749,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);
     EXPECT_CALL(*service_, Ping(testing::_))
         .WillOnce(testing::WithArgs<0>(
-             testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
+            testing::Invoke(boost::bind(&MessageHandlerTest::ClearMessage, this, _1))))
         .RetiresOnSaturation();
     EXPECT_CALL(*service_, Connect(testing::_)).Times(0);
     EXPECT_CALL(*response_handler_, FindNodes(testing::_)).Times(0);

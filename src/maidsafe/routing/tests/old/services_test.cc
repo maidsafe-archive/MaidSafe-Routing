@@ -126,7 +126,8 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   rudp::EndpointPair endpoint_pair;
 //   endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
 //   endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-//   protobuf::Message message = rpcs::ProxyConnect(Address(keys.identity), NodeId(my_keys.identity),
+//   protobuf::Message message = rpcs::ProxyConnect(Address(keys.identity),
+//   NodeId(my_keys.identity),
 //                                                  endpoint_pair);
 //   EXPECT_TRUE(message.DestinationAddress() == keys.identity);
 //   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data(0)));  // us

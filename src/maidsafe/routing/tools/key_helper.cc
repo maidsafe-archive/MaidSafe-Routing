@@ -70,8 +70,7 @@ bool CreateKeys(size_t keys_count, KeysVector& all_keys) {
   for (size_t i(0); i < keys_count; ++i) {
     try {
       all_keys.emplace_back(maidsafe::passport::detail::AnmaidToPmid());
-    }
-    catch (const std::exception& /*ex*/) {
+    } catch (const std::exception& /*ex*/) {
       LOG(kError) << "CreatePmids - Could not create ID #" << i;
       return false;
     }
@@ -103,8 +102,9 @@ int main(int argc, char* argv[]) {
     config_file_options.add_options()("pmids_count,n",
                                       po::value<size_t>(&pmids_count)->default_value(pmids_count),
                                       "Number of pmids to create")(
-        "pmids_path", po::value<std::string>()->default_value(fs::path(
-                          fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
+        "pmids_path",
+        po::value<std::string>()->default_value(
+            fs::path(fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
         "Path to pmids file");
 
     po::options_description cmdline_options;
@@ -144,8 +144,7 @@ int main(int argc, char* argv[]) {
       try {
         all_keys = maidsafe::passport::detail::ReadKeyChainList(pmids_path);
         std::cout << "Loaded " << all_keys.size() << " pmids from " << pmids_path << std::endl;
-      }
-      catch (const std::exception& /*ex*/) {
+      } catch (const std::exception& /*ex*/) {
         all_keys.clear();
         std::cout << "Could not load fobs from " << pmids_path << std::endl;
       }
@@ -160,8 +159,7 @@ int main(int argc, char* argv[]) {
       else
         std::cout << "Could not delete " << pmids_path << std::endl;
     }
-  }
-  catch (const std::exception& exception) {
+  } catch (const std::exception& exception) {
     std::cout << "Error: " << exception.what() << std::endl;
     result = -2;
   }

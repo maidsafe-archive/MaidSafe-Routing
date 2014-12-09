@@ -69,7 +69,7 @@ void GraphPage::javaScriptAlert(QWebFrame* /*frame*/, const QString& msg) {
 
 void GraphPage::RefreshGraph(int state_id) {
   RenderNode(state_id, current_parent_id_, true, is_data_node_);
-  foreach(std::string Address, expanded_children_) { RenderNode(state_id, node_id, false, false); }
+  foreach (std::string Address, expanded_children_) { RenderNode(state_id, node_id, false, false); }
 }
 
 void GraphPage::RenderNode(int state_id, std::string Address, bool is_parent, bool is_data_node) {
@@ -86,7 +86,7 @@ void GraphPage::RenderNode(int state_id, std::string Address, bool is_parent, bo
         QString("%1 {isExpanded:1, routingDistance:").arg(QString::fromStdString(Address)));
   } else if (expanded_children_.contains(Address) &&
              !current_graph_data_.contains(
-                  QString("%1 {isExpanded:").arg(QString::fromStdString(Address)))) {
+                 QString("%1 {isExpanded:").arg(QString::fromStdString(Address)))) {
     graph_contents =
         current_graph_data_ + QString("%1 {isExpanded:1}\\n").arg(QString::fromStdString(Address));
   } else {

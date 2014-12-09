@@ -51,11 +51,11 @@ class AcknowledgementTest : public testing::Test {
         call_functor_(),
         message_() {
     call_functor_ = [=](const boost::system::error_code& error) {
-                      if (error.value() == boost::system::errc::success) {
-                        message_.set_id(message_.id() + 1);
-                        acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
-                      }
-                    };
+      if (error.value() == boost::system::errc::success) {
+        message_.set_id(message_.id() + 1);
+        acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
+      }
+    };
 
     message_.set_type(-200);
     message_.set_DestinationAddress("destination_id");
@@ -99,5 +99,3 @@ TEST_F(AcknowledgementTest, BEH_CallRemove) {
 }  // namespace routing
 
 }  // namespace maidsafe
-
-

@@ -37,7 +37,7 @@ struct MessageHeader {
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
         message_id(std::move(other.message_id)) {}
-  //MessageHeader(DestinationAddress destination_in, SourceAddress source_in,
+  // MessageHeader(DestinationAddress destination_in, SourceAddress source_in,
   //              MessageId message_id_in, MurmurHash checksum_in, Checksums other_checksums_in)
   //    : destination(std::move(destination_in)),
   //      source(std::move(source_in)),

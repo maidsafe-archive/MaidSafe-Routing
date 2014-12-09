@@ -69,8 +69,8 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 const int kClientCount(4);
 const int kServerCount(10);
 const int kNetworkSize = kClientCount + kServerCount;
-MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
-                                                            ReplyFunctor) {};  // NOLINT
+MessageReceivedFunctor no_ops_message_received_functor =
+    [](const std::string&, ReplyFunctor) {};  // NOLINT
 
 }  // anonymous namespace
 
@@ -98,7 +98,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
 #endif
 
 #if (__GNUC__ < 4 || \
-    (__GNUC__ == 4 && (__GNUC_MINOR__ < 8 || (__GNUC_MINOR__ ==  8  && __GNUC_PATCHLEVEL__ < 3))))
+     (__GNUC__ == 4 && (__GNUC_MINOR__ < 8 || (__GNUC_MINOR__ == 8 && __GNUC_PATCHLEVEL__ < 3))))
   if (kDataSize_ > 128 * 1024)
     return GTEST_SUCCEED();
 #endif
@@ -140,10 +140,10 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
 
   functors.network_status = [](int) {};  // NOLINT
 
-  functors.message_and_caching.message_received = [&](const std::string& message,
-                                                      ReplyFunctor reply_functor) {
+  functors.message_and_caching.message_received =
+      [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-   
+
   };
 
   auto a1 = boost::async(boost::launch::async, [&] {
@@ -176,7 +176,6 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
         if (promised.at(i)) {
           join_promises.at(i).set_value(true);
           promised.at(i) = false;
-         
         }
       }
     });
@@ -203,8 +202,9 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
     unsigned int count(0);
     while (count < kMessageCount) {
       unsigned int message_index(i * kServerCount + count);
-      ResponseFunctor response_functor = [&send_mutex, &send_promises, &send_counts, &data,
-                                          message_index, &result](std::string string) {
+      ResponseFunctor response_functor =
+          [&send_mutex, &send_promises, &send_counts, &data, message_index, &result](
+              std::string string) {
         std::unique_lock<std::mutex> lock(send_mutex);
         EXPECT_EQ("response to " + data, string) << "for message_index " << message_index;
         if (send_counts.at(message_index) >= Parameters::group_size)
@@ -226,7 +226,7 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
 
   while (!send_futures.empty()) {
     send_futures.erase(std::remove_if(send_futures.begin(), send_futures.end(),
-                                      [&data](boost::future<bool> & future_bool)->bool {
+                                      [&data](boost::future<bool>& future_bool) -> bool {
                          if (future_bool.wait_for(boost::chrono::seconds::zero()) ==
                              boost::future_status::ready) {
                            EXPECT_TRUE(future_bool.get());
@@ -246,15 +246,12 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
   Parameters::default_response_timeout = timeout;
 }
 
-INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi, testing::Values(128 * 1024,
-                                                               256 * 1024,
-                                                               512 * 1024,
-                                                               1024 * 1024,
-                                                               Parameters::max_data_size));
+INSTANTIATE_TEST_CASE_P(SendGroup, RoutingApi,
+                        testing::Values(128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024,
+                                        Parameters::max_data_size));
 
 }  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-

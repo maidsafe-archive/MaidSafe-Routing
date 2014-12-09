@@ -77,8 +77,8 @@ void MainViewController::SelectionChanged() {
 }
 
 void MainViewController::FilterChanged(const QString& new_filter) {
-  foreach(QListWidgetItem * item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
-  item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
+  foreach (QListWidgetItem* item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
+    item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
 }
 
 void MainViewController::NewGraphViewRequested(const QString& new_parent_id) {

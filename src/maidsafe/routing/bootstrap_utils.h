@@ -43,13 +43,15 @@ template <bool is_client>
 boost::filesystem::path GetCurrentBootstrapFilePath() {
   auto path_getter([] {
     return boost::filesystem::exists(GetOverrideBootstrapFilePath<is_client>()) ?
-        GetOverrideBootstrapFilePath<is_client>() : GetDefaultBootstrapFilePath<is_client>(); });
+               GetOverrideBootstrapFilePath<is_client>() :
+               GetDefaultBootstrapFilePath<is_client>();
+  });
 #ifdef _MSC_VER
   static std::once_flag initialised_flag;
   static boost::filesystem::path kCurrentBootstrapFilePath;
   std::call_once(initialised_flag, [&] { kCurrentBootstrapFilePath = path_getter(); });
 #else
-  static const boost::filesystem::path kCurrentBootstrapFilePath{ path_getter() };
+  static const boost::filesystem::path kCurrentBootstrapFilePath{path_getter()};
 #endif
   return kCurrentBootstrapFilePath;
 }

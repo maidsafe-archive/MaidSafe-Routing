@@ -95,21 +95,21 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   }
 
   for (size_t index(0); index < ClientIndex(); ++index) {
-    HaveCacheDataFunctor node_get_cache([index, this](const std::string& string,
-                                                      ReplyFunctor reply) {
-     
-      auto node_cache_iter(network_cache.find(index));
-      if (node_cache_iter == std::end(network_cache)) {
-        reply(std::string());
-      } else {
-        auto inner_iter(node_cache_iter->second.find(string));
-        if (inner_iter == std::end(node_cache_iter->second)) {
-          reply(std::string());
-        } else {
-          reply(inner_iter->second);
-        }
-      }
-    });
+    HaveCacheDataFunctor node_get_cache(
+        [index, this](const std::string& string, ReplyFunctor reply) {
+
+          auto node_cache_iter(network_cache.find(index));
+          if (node_cache_iter == std::end(network_cache)) {
+            reply(std::string());
+          } else {
+            auto inner_iter(node_cache_iter->second.find(string));
+            if (inner_iter == std::end(node_cache_iter->second)) {
+              reply(std::string());
+            } else {
+              reply(inner_iter->second);
+            }
+          }
+        });
     SetGetFromCacheFunctor(nodes_[index], node_get_cache);
   }
 
@@ -121,9 +121,9 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   single_to_single_message.cacheable = Cacheable::kPut;
 
   auto message(CreateNodeLevelSingleToSingleResponseMessageProto(single_to_single_message));
-//  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
-//  message.set_request(false);
- 
+  //  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
+  //  message.set_request(false);
+
   nodes_[0]->SendMessage(single_to_single_message.receiver, message);
   Sleep(std::chrono::seconds(2));
 

@@ -57,7 +57,8 @@ CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
   return *this;
 }
 
-CloseNodesChange::CloseNodesChange(Address this_Address, const std::vector<Address>& old_close_nodes,
+CloseNodesChange::CloseNodesChange(Address this_Address,
+                                   const std::vector<Address>& old_close_nodes,
                                    const std::vector<Address>& new_close_nodes)
     : Address_(std::move(this_node_id)),
       old_close_nodes_([this](std::vector<Address> old_close_nodes_in) -> std::vector<Address> {
@@ -105,8 +106,7 @@ CloseNodesChange::CloseNodesChange(Address this_Address, const std::vector<Addre
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(Address::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
-      }()) {
-}
+      }()) {}
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const Address& target) const {
   // Handle cases of lower number of group close_nodes nodes
@@ -176,20 +176,20 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const Address& target) const {
 }
 
 Address CloseNodesChange::ChoosePmidNode(const std::set<Address>& online_pmids,
-                                        const Address& target) const {
+                                         const Address& target) const {
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 
- 
-  for (const auto& Address : new_close_nodes_)
-   
- 
-  for (const auto& pmid : online_pmids)
-   
 
-  // In case storing to PublicPmid, the data shall not be stored on the Vault itself
-  // However, the vault will appear in DM's routing table and affect result
-  std::vector<Address> temp(Parameters::kGroupSize + 1);
+  for (const auto& Address : new_close_nodes_)
+
+
+    for (const auto& pmid : online_pmids)
+
+
+      // In case storing to PublicPmid, the data shall not be stored on the Vault itself
+      // However, the vault will appear in DM's routing table and affect result
+      std::vector<Address> temp(Parameters::kGroupSize + 1);
   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_), std::begin(temp),
                          std::end(temp), [&target](const Address& lhs, const Address& rhs) {
     return Address::CloserToTarget(lhs, rhs, target);
@@ -230,7 +230,6 @@ void CloseNodesChange::Print() const {
 
   stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
   stream << "\n\t\tentry in new_node\t------\t" << new_node_;
- 
 }
 
 std::string CloseNodesChange::ReportConnection() const {
@@ -241,19 +240,19 @@ std::string CloseNodesChange::ReportConnection() const {
       archive(cereal::make_nvp("vaultRemoved",
                                lost_node_.ToStringEncoded(Address::EncodingType::kHex)));
     if (new_node_.IsValid())
-      archive(cereal::make_nvp("vaultAdded",
-                               new_node_.ToStringEncoded(Address::EncodingType::kHex)));
+      archive(
+          cereal::make_nvp("vaultAdded", new_node_.ToStringEncoded(Address::EncodingType::kHex)));
 
-    size_t closest_size_adjust(std::min(new_close_nodes_.size(),
-                                        static_cast<size_t>(Parameters::kGroupSize + 1U)));
+    size_t closest_size_adjust(
+        std::min(new_close_nodes_.size(), static_cast<size_t>(Parameters::kGroupSize + 1U)));
 
     if (closest_size_adjust != 0) {
       std::vector<Address> closest_nodes(closest_size_adjust);
       std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
                              std::begin(closest_nodes), std::end(closest_nodes),
                              [&](const Address& lhs, const Address& rhs) {
-                               return Address::CloserToTarget(lhs, rhs, this->Address_);
-                             });
+        return Address::CloserToTarget(lhs, rhs, this->Address_);
+      });
       if (Address_ == closest_nodes.front())
         closest_nodes.erase(std::begin(closest_nodes));
       else if (closest_nodes.size() > Parameters::kGroupSize)

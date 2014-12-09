@@ -96,10 +96,9 @@ class ResponseHandlerTest : public testing::Test {
     contact->set_nat_type(NatTypeProtobuf(rudp::NatType::kUnknown));
   }
 
-  protobuf::FindNodesResponse ComposeFindNodesResponse(const std::string& ori_find_nodes_request,
-                                                       size_t num_of_requested,
-                                                       std::vector<Address> nodes =
-                                                           std::vector<Address>()) {
+  protobuf::FindNodesResponse ComposeFindNodesResponse(
+      const std::string& ori_find_nodes_request, size_t num_of_requested,
+      std::vector<Address> nodes = std::vector<Address>()) {
     if (nodes.empty())
       for (size_t i(0); i < num_of_requested; ++i)
         nodes.push_back(Address(RandomString(64)));
@@ -164,8 +163,8 @@ class ResponseHandlerTest : public testing::Test {
     return message;
   }
 
-  protobuf::Message ComposeFindNodesResponseMsg(size_t num_of_requested,
-                                                std::vector<Address> nodes = std::vector<Address>()) {
+  protobuf::Message ComposeFindNodesResponseMsg(
+      size_t num_of_requested, std::vector<Address> nodes = std::vector<Address>()) {
     protobuf::FindNodesRequest find_nodes;
     find_nodes.set_num_nodes_requested(static_cast<int32_t>(num_of_requested));
     find_nodes.set_timestamp(GetTimeStamp());
@@ -173,10 +172,10 @@ class ResponseHandlerTest : public testing::Test {
                                                nodes).SerializeAsString());
   }
 
-  protobuf::Message ComposeConnectResponseMsg(protobuf::ConnectResponseType response_type,
-                                              const Address& respondent_contact_Address =
-                                                  Address(RandomString(64)),
-                                              bool respondent_contact_peer_endpoint = true) {
+  protobuf::Message ComposeConnectResponseMsg(
+      protobuf::ConnectResponseType response_type,
+      const Address& respondent_contact_Address = Address(RandomString(64)),
+      bool respondent_contact_peer_endpoint = true) {
     protobuf::ConnectRequest connect;
     SetProtobufContact(connect.mutable_contact(), routing_table_.kAddress(),
                        respondent_contact_peer_endpoint);
@@ -233,7 +232,7 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_FindNodes) {
   message = ComposeFindNodesResponseMsg(2, nodes);
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .WillOnce(testing::WithArgs<2, 3>(testing::Invoke(
-           boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
+          boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(1);
   response_handler_->FindNodes(message);
 
@@ -242,7 +241,7 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_FindNodes) {
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(4)
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-           boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
+          boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(4);
   response_handler_->FindNodes(message);
 
@@ -257,8 +256,8 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_FindNodes) {
     Address Address(RandomString(64));
     while (
         Address::CloserToTarget(routing_table_.GetNthClosestNode(routing_table_.kNodeId(),
-                                                                Parameters::closest_nodes_size).id,
-                               Address, routing_table_.kAddress()))
+                                                                 Parameters::closest_nodes_size).id,
+                                Address, routing_table_.kAddress()))
       Address = Address(RandomString(64));
     nodes.push_back(Address);
   }
@@ -276,7 +275,7 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_FindNodes) {
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_of_found_nodes))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-           boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
+          boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_of_found_nodes));
   response_handler_->FindNodes(message);
 }
@@ -302,8 +301,8 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_Connect) {
   response_handler_->Connect(message);
 
   // In case of node already added
-  message =
-      ComposeConnectResponseMsg(protobuf::ConnectResponseType::kAccepted, routing_table_.kAddress());
+  message = ComposeConnectResponseMsg(protobuf::ConnectResponseType::kAccepted,
+                                      routing_table_.kAddress());
   response_handler_->Connect(message);
 
   // Invalid contact Address details
@@ -344,19 +343,19 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   response_handler_->ConnectSuccessAcknowledgement(message);
 
   // Invalid Address
-  message =
-      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(), connection_id).SerializeAsString());
+  message = ComposeMsg(
+      ComposeConnectSuccessAcknowledgement(Address(), connection_id).SerializeAsString());
   response_handler_->ConnectSuccessAcknowledgement(message);
 
   // Invalid peer connection_id
-  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(Address, Address()).SerializeAsString());
+  message =
+      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address, Address()).SerializeAsString());
   response_handler_->ConnectSuccessAcknowledgement(message);
 
   // shared_from_this function inside requires the response_handler holder to be shared_ptr
   // if holding as a normal object, shared_from_this will throw an exception
-  std::shared_ptr<ResponseHandler> response_handler(
-      std::make_shared<ResponseHandler>(routing_table_, client_routing_table_, network_,
-                                        public_key_holder_));
+  std::shared_ptr<ResponseHandler> response_handler(std::make_shared<ResponseHandler>(
+      routing_table_, client_routing_table_, network_, public_key_holder_));
 
   // request_public_key_functor_ doesn't setup
   message =
@@ -383,13 +382,14 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   size_t num_close_ids(4);
   for (size_t i(0); i < num_close_ids; ++i)
     close_ids.push_back(RandomString(64));
-  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
-                                                            false, close_ids).SerializeAsString());
+  message =
+      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
+                                                      false, close_ids).SerializeAsString());
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_)).WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-           boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
+          boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, kSuccess))));
   EXPECT_CALL(network_, SendToClosestNode(testing::_)).Times(static_cast<int>(num_close_ids));
   response_handler->ConnectSuccessAcknowledgement(message);
 
@@ -399,14 +399,15 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   num_close_ids = 1;
   for (size_t i(0); i < num_close_ids; ++i)
     close_ids.push_back(RandomString(64));
-  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
-                                                            false, close_ids).SerializeAsString());
+  message =
+      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
+                                                      false, close_ids).SerializeAsString());
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_)).WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(
-           testing::Invoke(boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
-                                       rudp::kUnvalidatedConnectionAlreadyExists))));
+          testing::Invoke(boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2,
+                                      rudp::kUnvalidatedConnectionAlreadyExists))));
   response_handler->ConnectSuccessAcknowledgement(message);
 
   // Rudp succeed to validate connection, HandleSuccessAcknowledgementAsRequestor
@@ -415,13 +416,14 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   num_close_ids = 1;
   for (size_t i(0); i < num_close_ids; ++i)
     close_ids.push_back(RandomString(64));
-  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
-                                                            false, close_ids).SerializeAsString());
+  message =
+      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
+                                                      false, close_ids).SerializeAsString());
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_)).WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(boost::bind(
-           &ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, rudp::kInvalidAddress))));
+          &ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, rudp::kInvalidAddress))));
   response_handler->ConnectSuccessAcknowledgement(message);
 
   // Not in any peer's routing table, need a path back through relay IP.
@@ -430,13 +432,14 @@ TEST_F(ResponseHandlerTest, DISABLED_BEH_ConnectSuccessAcknowledgement) {
   num_close_ids = 1;
   for (size_t i(0); i < num_close_ids; ++i)
     close_ids.push_back(RandomString(64));
-  message = ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
-                                                            false, close_ids).SerializeAsString());
+  message =
+      ComposeMsg(ComposeConnectSuccessAcknowledgement(Address(RandomString(64)), connection_id,
+                                                      false, close_ids).SerializeAsString());
   EXPECT_CALL(network_, MarkConnectionAsValid(testing::_)).WillOnce(testing::Return(kSuccess));
   EXPECT_CALL(network_, GetAvailableEndpoint(testing::_, testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_close_ids))
       .WillRepeatedly(testing::WithArgs<2, 3>(testing::Invoke(
-           boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, rudp::kSuccess))));
+          boost::bind(&ResponseHandlerTest::GetAvailableEndpoint, this, _1, _2, rudp::kSuccess))));
   EXPECT_CALL(network_, SendToDirect(testing::_, testing::_, testing::_))
       .Times(static_cast<int>(num_close_ids));
   response_handler->ConnectSuccessAcknowledgement(message);

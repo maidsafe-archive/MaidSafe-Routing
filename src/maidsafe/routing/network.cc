@@ -184,7 +184,8 @@ void Network::SendToDirectAdjustedRoute(protobuf::Message& message, const Addres
 void Network::SendToClosestNode(const protobuf::Message& message) {
   // Normal messages
   if (message.has_DestinationAddress() && !message.destination_id().empty()) {
-    auto client_routing_nodes(client_routing_table_.GetNodesInfo(Address(message.DestinationAddress())));
+    auto client_routing_nodes(
+        client_routing_table_.GetNodesInfo(Address(message.DestinationAddress())));
     // have the destination ID in non-routing table
     if (!client_routing_nodes.empty() && message.direct()) {
       if (IsClientToClientMessageWithDifferentAddresss(message, true)) {
@@ -200,8 +201,9 @@ void Network::SendToClosestNode(const protobuf::Message& message) {
       RecursiveSendOn(message);
     } else {
       LOG(kError) << " No endpoint to send to; aborting send.  Attempt to send a type "
-                  << MessageTypeString(message) << " message to " << HexSubstr(message.SourceAddress())
-                  << " from " << DebugId(routing_table_.kAddress()) << " id: " << message.id();
+                  << MessageTypeString(message) << " message to "
+                  << HexSubstr(message.SourceAddress()) << " from "
+                  << DebugId(routing_table_.kAddress()) << " id: " << message.id();
     }
     return;
   }
@@ -209,7 +211,8 @@ void Network::SendToClosestNode(const protobuf::Message& message) {
   // Relay message responses only
   if (message.has_relay_id() /*&& (IsResponse(message))*/) {
     protobuf::Message relay_message(message);
-    relay_message.set_DestinationAddress(message.relay_id());  // so that peer identifies it as direct
+    relay_message.set_DestinationAddress(
+        message.relay_id());  // so that peer identifies it as direct
     SendTo(relay_message, Address(relay_message.relay_id()),
            Address(relay_message.relay_connection_id()));
   } else {
@@ -295,7 +298,8 @@ void Network::RecursiveSendOn(protobuf::Message message, NodeInfo last_node_atte
     peer = routing_table_.GetClosestNode(Address(message.DestinationAddress()), ignore_exact_match,
                                          route_history);
     if (peer.id == Address() && routing_table_.size() != 0) {
-      peer = routing_table_.GetClosestNode(Address(message.DestinationAddress()), ignore_exact_match);
+      peer =
+          routing_table_.GetClosestNode(Address(message.DestinationAddress()), ignore_exact_match);
     }
     if (peer.id == Address()) {
       LOG(kError) << "This node's routing table is empty now.  Need to re-bootstrap.";

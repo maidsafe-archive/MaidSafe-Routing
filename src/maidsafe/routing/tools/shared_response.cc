@@ -51,7 +51,8 @@ void SharedResponse::PrintRoutingTable(std::string response) {
   if (std::string::npos != response.find("request_routing_table")) {
     std::string response_node_list_msg(
         response.substr(response.find("---") + 3, response.size() - (response.find("---") + 3)));
-    std::vector<Address> node_list(maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
+    std::vector<Address> node_list(
+        maidsafe::routing::DeserializeNodeIdList(response_node_list_msg));
     std::cout << "RECEIVED ROUTING TABLE::::" << std::endl;
     for (const auto& Address : node_list)
       std::cout << "\t" << maidsafe::HexSubstr(Address.string()) << std::endl;
@@ -62,8 +63,8 @@ bool SharedResponse::CollectResponse(std::string response, bool print_performanc
   std::lock_guard<std::mutex> lock(mutex_);
   boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
   std::string response_id(response.substr(response.find("+++") + 3, 64));
-//   std::cout << "Response with size of " << response.size()
-//             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
+  //   std::cout << "Response with size of " << response.size()
+  //             << " bytes received in " << now - msg_send_time_ << " seconds" << std::endl;
   std::cout << "a message from " << Address(response_id);
   auto duration((now - msg_send_time_).total_milliseconds());
   if (duration < Parameters::default_response_timeout.count()) {
@@ -75,8 +76,8 @@ bool SharedResponse::CollectResponse(std::string response, bool print_performanc
     average_response_time_ += (now - msg_send_time_);
     if (print_performance) {
       double rate(static_cast<double>(response.size() * 2) / duration);
-      std::cout << "Direct message sent to " << DebugId(Address(response_id))
-                << " completed in " << duration << " milliseconds, has throughput rate " << rate
+      std::cout << "Direct message sent to " << DebugId(Address(response_id)) << " completed in "
+                << duration << " milliseconds, has throughput rate " << rate
                 << " kBytes/s when data_size is " << response.size() << " Bytes" << std::endl;
     }
   } else {
@@ -95,7 +96,7 @@ void SharedResponse::PrintGroupPerformance(int data_size) {
   auto duration(average_response_time_.total_milliseconds() / responded_nodes_.size());
   double rate((static_cast<double>(data_size * 2) / duration));
   std::cout << " completed in " << duration << " milliseconds, has throughput rate " << rate
-            << " kBytes/s when data_size is " << data_size << " Bytes"<< std::endl;
+            << " kBytes/s when data_size is " << data_size << " Bytes" << std::endl;
 }
 
 }  //  namespace test

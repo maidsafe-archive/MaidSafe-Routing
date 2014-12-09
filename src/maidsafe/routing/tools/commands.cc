@@ -40,10 +40,18 @@ namespace test {
 Commands::Commands(DemoNodePtr demo_node,
                    std::vector<maidsafe::passport::detail::AnmaidToPmid> all_keys,
                    int identity_index)
-    : demo_node_(demo_node), all_keys_(std::move(all_keys)), all_ids_(),
-      identity_index_(identity_index), bootstrap_peer_ep_(), data_size_(1024 * 1024),
-      data_rate_(1024 * 1024), result_arrived_(false), finish_(false), wait_mutex_(),
-      wait_cond_var_(), mark_results_arrived_() {
+    : demo_node_(demo_node),
+      all_keys_(std::move(all_keys)),
+      all_ids_(),
+      identity_index_(identity_index),
+      bootstrap_peer_ep_(),
+      data_size_(1024 * 1024),
+      data_rate_(1024 * 1024),
+      result_arrived_(false),
+      finish_(false),
+      wait_mutex_(),
+      wait_cond_var_(),
+      mark_results_arrived_() {
   // CalculateClosests will only use all_ids_ to calculate expected respondents
   // here it is assumed that the first half of fobs will be used as vault
   // and the latter half part will be used as client, which shall not respond msg
@@ -51,11 +59,12 @@ Commands::Commands(DemoNodePtr demo_node,
   for (size_t i(0); i < (all_keys_.size() / 2); ++i)
     all_ids_.push_back(Address(all_keys_[i].pmid.name().value));
 
-  demo_node->functors_.request_public_key = [this](
-      const Address & Address,
-      GivePublicKeyFunctor give_public_key) { this->Validate(Address, give_public_key); };  // NOLINT
-  demo_node->functors_.message_and_caching.message_received = [this](
-      const std::string& wrapped_message, const ReplyFunctor& reply_functor) {
+  demo_node->functors_.request_public_key =
+      [this](const Address& Address, GivePublicKeyFunctor give_public_key) {
+    this->Validate(Address, give_public_key);
+  };  // NOLINT
+  demo_node->functors_.message_and_caching.message_received =
+      [this](const std::string& wrapped_message, const ReplyFunctor& reply_functor) {
     std::string reply_msg(wrapped_message + "+++" + demo_node_->Address().string());
     if (std::string::npos != wrapped_message.find("request_routing_table"))
       reply_msg = reply_msg + "---" + demo_node_->SerializeRoutingTable();
@@ -116,16 +125,16 @@ void Commands::GetPeer(const std::string& peer) {
     bootstrap_peer_ep_.port(static_cast<uint16_t>(atoi(peer.substr(delim + 1).c_str())));
     bootstrap_peer_ep_.address(boost::asio::ip::address::from_string(peer.substr(0, delim)));
     std::cout << "Going to bootstrap from endpoint " << bootstrap_peer_ep_ << std::endl;
-  }
-  catch (...) {
+  } catch (...) {
     std::cout << "Could not parse IPv4 peer endpoint from " << peer << std::endl;
   }
   auto bootstrap_file_path(detail::GetOverrideBootstrapFilePath<false>());
   boost::filesystem::remove(bootstrap_file_path);
   try {
-    WriteBootstrapContacts(BootstrapContacts {demo_node_->endpoint(), bootstrap_peer_ep_},
+    WriteBootstrapContacts(BootstrapContacts{demo_node_->endpoint(), bootstrap_peer_ep_},
                            bootstrap_file_path);
-  } catch (const std::exception& /*error*/) {}  // File updated by peer zerostate node
+  } catch (const std::exception& /*error*/) {
+  }  // File updated by peer zerostate node
 }
 
 void Commands::ZeroStateJoin() {
@@ -209,7 +218,7 @@ void Commands::SendMessages(int id_index, const DestinationType& destination_typ
 }
 
 unsigned int Commands::MakeMessage(int id_index, const DestinationType& destination_type,
-                               std::vector<Address>& closest_nodes, Address& dest_id) {
+                                   std::vector<Address>& closest_nodes, Address& dest_id) {
   int identity_index;
   if (id_index >= 0)
     identity_index = id_index;
@@ -256,9 +265,9 @@ void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& op
     group_performance = true;
   auto data_size(data.size());
   auto shared_response_ptr = std::make_shared<SharedResponse>(closest_nodes, expect_respondent);
-  auto callable = [shared_response_ptr, &successful_count, &operation_count, &mutex,
-                   messages_count, expect_respondent, &cond_var, group_performance,
-                   data_size, this](std::string response) {
+  auto callable =
+      [shared_response_ptr, &successful_count, &operation_count, &mutex, messages_count,
+       expect_respondent, &cond_var, group_performance, data_size, this](std::string response) {
     if (!response.empty()) {
       std::string string(response.substr(0, 20));
       std::cout << "Received message: " << string << "\n";
@@ -370,8 +379,7 @@ void Commands::ProcessCommand(const std::string& cmdline) {
       else
         args.push_back(*it);
     }
-  }
-  catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     LOG(kError) << "Error processing command: " << e.what();
   }
 
@@ -464,12 +472,12 @@ void Commands::MarkResultArrived() {
 }
 
 Address Commands::CalculateClosests(const Address& target_id, std::vector<Address>& closests,
-                                   unsigned int num_of_closests) {
+                                    unsigned int num_of_closests) {
   if (all_ids_.size() <= num_of_closests) {
     closests = all_ids_;
     return closests[closests.size() - 1];
   }
-  std::sort(all_ids_.begin(), all_ids_.end(), [&](const Address & lhs, const NodeId & rhs) {
+  std::sort(all_ids_.begin(), all_ids_.end(), [&](const Address& lhs, const NodeId& rhs) {
     return Address::CloserToTarget(lhs, rhs, target_id);
   });
   closests = std::vector<Address>(
@@ -502,8 +510,8 @@ void Commands::RunPerformanceTest(bool is_send_group) {
       std::condition_variable cond_var;
       unsigned int operation_count(0);
       data = ">:<" + std::to_string(++message_id) + "<:>" + data;
-      SendAMessage(successful_count, operation_count, mutex, cond_var, 1,
-                   expect_respondent, closest_nodes, routing_node, data);
+      SendAMessage(successful_count, operation_count, mutex, cond_var, 1, expect_respondent,
+                   closest_nodes, routing_node, data);
       data = data_to_send;  // remove the message_id part
       {
         std::unique_lock<std::mutex> lock(mutex);

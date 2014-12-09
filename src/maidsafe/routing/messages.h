@@ -19,8 +19,6 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_H_
 #define MAIDSAFE_ROUTING_MESSAGES_H_
 
-#include <cstdint>
-
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 namespace maidsafe {
@@ -38,17 +36,6 @@ enum class MessageTypeTag : SerialisableTypeTag {
   kPutData,
   kPost
 };
-
-struct Ping;
-struct PingResponse;
-struct FindGroup;
-struct FindGroupResponse;
-struct Connect;
-struct ConnectResponse;
-struct VaultMessage;
-struct GetData;
-struct PutData;
-struct Post;
 
 /*
 struct ping {
@@ -209,12 +196,6 @@ struct cacheable_get_response {
   static const message_type_tag message_type = message_type_tag::cacheable_get_response;
 };
 */
-
-using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Connect,
-                          ConnectResponse, GetData, PutData, Post>::Map;
-
-template <SerialisableTypeTag Tag>
-using Message = typename Find<MessageMap, Tag>::ResultCustomType;
 
 }  // namespace routing
 

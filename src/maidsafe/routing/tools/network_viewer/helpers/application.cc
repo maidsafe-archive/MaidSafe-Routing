@@ -32,15 +32,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv), han
 bool Application::notify(QObject* receiver, QEvent* event) {
   try {
     return QApplication::notify(receiver, event);
-  }
-  catch (std::exception& ex) {
+  } catch (std::exception& ex) {
     if (auto handler = handler_object_.lock()) {
       QApplication::instance()->postEvent(handler.get(), new ExceptionEvent(ex.what()));
     } else {
       QApplication::quit();
     }
-  }
-  catch (...) {
+  } catch (...) {
     if (auto handler = handler_object_.lock()) {
       QApplication::instance()->postEvent(handler.get(),
                                           new ExceptionEvent(tr("Unknown Exception")));

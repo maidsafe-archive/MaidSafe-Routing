@@ -23,21 +23,31 @@
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
-//#include "maidsafe/routing/cacheable_get.h"
-//#include "maidsafe/routing/cacheable_get_response.h"
 #include "maidsafe/routing/connect.h"
+#include "maidsafe/routing/connect_response.h"
 #include "maidsafe/routing/connection_manager.h"
 //#include "maidsafe/routing/find_group.h"
 //#include "maidsafe/routing/find_group_response.h"
-//#include "maidsafe/routing/forward_connect.h"
+#include "maidsafe/routing/get_data.h"
 #include "maidsafe/routing/ping.h"
 #include "maidsafe/routing/ping_response.h"
+#include "maidsafe/routing/post.h"
+#include "maidsafe/routing/put_data.h"
 #include "maidsafe/routing/types.h"
-//#include "maidsafe/routing/vault_message.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+using MessageMap = GetMap<Ping, PingResponse, /*FindGroup, FindGroupResponse,*/ Connect,
+                          ConnectResponse, GetData, PutData, Post>::Map;
+
+template <SerialisableTypeTag Tag>
+using Message = typename Find<MessageMap, Tag>::ResultCustomType;
+
+}  // unnamed namespace
 
 MessageHandler::MessageHandler(AsioService& asio_service,
                                rudp::ManagedConnections& managed_connections,
@@ -49,51 +59,63 @@ MessageHandler::MessageHandler(AsioService& asio_service,
 void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   InputVectorStream binary_stream{std::move(serialised_message)};
 
-  auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
-  // FIXME (dirvine) Check firewall 19/11/2014
-  HandleMessage(message);
-  // FIXME (dirvine) add to firewall 19/11/2014
+  // auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
+  //// FIXME (dirvine) Check firewall 19/11/2014
+  // HandleMessage(message);
+  //// FIXME (dirvine) add to firewall 19/11/2014
 }
 
-void MessageHandler::HandleMessage(const Ping& ping_msg) {
+void MessageHandler::HandleMessage(Ping&& /*ping*/) {
   // ping is a single destination message
-  if (ping_msg.header.destination.data() == connection_mgr_.OurId()) {
-    auto targets(connection_mgr_.get_target(ping_msg.header.source.data()));
-    for (const auto& target : targets)
-      rudp_.Send(target.id, Serialise(ping_response(ping_msg)));
-  } else {  // scatter
-    auto targets(connection_mgr_.get_target(ping_msg.header.destination.data()));
-    for (const auto& target : targets)
-      rudp_.Send(target.id, Serialise(ping_response(ping_msg)));
-    else rudp_.Send(target.id, Serialise(ping_msg));
-  }
+  // if (ping_msg.header.destination.data() == connection_mgr_.OurId()) {
+  //  auto targets(connection_mgr_.get_target(ping_msg.header.source.data()));
+  //  for (const auto& target : targets)
+  //    rudp_.Send(target.id, Serialise(PingResponse(ping_msg)));
+  //}
+  // else {  // scatter
+  //  auto targets(connection_mgr_.get_target(ping_msg.header.destination.data()));
+  //  for (const auto& target : targets)
+  //    rudp_.Send(target.id, Serialise(PingResponse(ping_msg)));
+  //  else rudp_.Send(target.id, Serialise(ping_msg));
+  //}
 }
 
-void MessageHandler::HandleMessage(const ping_response& ping_response_msg) {
+void MessageHandler::HandleMessage(PingResponse&& /*ping_response*/) {
   // TODO(dirvine): 2014-11-19 FIXME set a future or some async return type in node or
   // client
 }
 
+// void MessageHandler::HandleMessage(FindGroup&& find_group) {}
 
-void MessageHandler::HandleMessage(const connect& connect_msg) {
-  if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
-    if (connection_mgr_.suggest_node(connect_msg.header.source)) {
-      rudp_.GetNextAvailableEndpoint(
-          connect_msg.header.source,
-          [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
-            if (!error)
-              auto targets(connection_mgr_.get_target(connect_msg.header.source));
-            for (const auto& target : targets)
-              // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
-              rudp_.Send(target.id, Serialise(forward_connect( ));
-          });
-    }
-  } else {
-    auto targets(connection_mgr_.get_target(connect_msg.header.destination.data()));
-    for (const auto& target : targets)
-      rudp_.Send(target.id, Serialise(connect(connect_msg)));
-  }
+// void MessageHandler::HandleMessage(FindGroupResponse&& find_group_reponse) {}
+
+void MessageHandler::HandleMessage(Connect&& /*connect*/) {
+  // if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
+  //  if (connection_mgr_.suggest_node(connect_msg.header.source)) {
+  //    rudp_.GetNextAvailableEndpoint(
+  //        connect_msg.header.source,
+  //        [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
+  //          if (!error)
+  //            auto targets(connection_mgr_.get_target(connect_msg.header.source));
+  //          for (const auto& target : targets)
+  //            // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
+  //        rudp_.Send(target.id, Serialise(forward_connect());
+  //        });
+  //  }
+  //} else {
+  //  auto targets(connection_mgr_.get_target(connect_msg.header.destination.data()));
+  //  for (const auto& target : targets)
+  //    rudp_.Send(target.id, Serialise(Connect(connect_msg)));
+  //}
 }
+
+void MessageHandler::HandleMessage(ConnectResponse&& /*connect_response*/) {}
+
+void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
+
+void MessageHandler::HandleMessage(PutData&& /*put_data*/) {}
+
+void MessageHandler::HandleMessage(Post&& /*post*/) {}
 
 }  // namespace routing
 

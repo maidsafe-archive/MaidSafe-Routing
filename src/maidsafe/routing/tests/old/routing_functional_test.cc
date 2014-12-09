@@ -213,7 +213,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool) -> bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -230,14 +230,14 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupSelfId) {
     node->ClearMessages();
   }
   EXPECT_EQ(message_count * (Parameters::group_size) * kServerSize, receivers_message_count);
- 
+
   Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
   size_t message_count(100), receivers_message_count(0);
 #if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
-    message_count = 50;
+  message_count = 50;
 #endif
 
   size_t client_index(env_->RandomClientIndex());
@@ -263,7 +263,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupClientSelfId) {
 
 TEST_F(RoutingNetworkTest, FUNC_SendToGroupInHybridNetwork) {
   unsigned int message_count(1), receivers_message_count(0);
- 
+
   size_t last_index(env_->nodes_.size() - 1);
   Address dest_id(env_->nodes_[last_index]->Address());
 
@@ -300,7 +300,7 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool) -> bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -316,14 +316,14 @@ TEST_F(RoutingNetworkTest, FUNC_SendToGroupRandomId) {
     node->ClearMessages();
   }
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
- 
+
   Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   unsigned int message_count(100), receivers_message_count(0);
 #if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
-    message_count = 50;
+  message_count = 50;
 #endif
 
   env_->ClearMessages();
@@ -346,7 +346,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool) -> bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -364,14 +364,14 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupRandomId) {
   }
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
- 
+
   Parameters::default_response_timeout = timeout;
 }
 
 TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   unsigned int message_count(100), receivers_message_count(0);
 #if defined(MAIDSAFE_WIN32) && !defined(NDEBUG)
-    message_count = 50;
+  message_count = 50;
 #endif
   env_->ClearMessages();
   std::vector<std::future<std::unique_ptr<testing::AssertionResult>>> futures;
@@ -395,7 +395,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
     futures.erase(
         std::remove_if(
             futures.begin(), futures.end(),
-            [](std::future<std::unique_ptr<testing::AssertionResult>> & future_bool)->bool {
+            [](std::future<std::unique_ptr<testing::AssertionResult>>& future_bool) -> bool {
               if (IsReady(future_bool)) {
                 EXPECT_TRUE(*future_bool.get());
                 return true;
@@ -413,7 +413,7 @@ TEST_F(RoutingNetworkTest, FUNC_NonMutatingClientSendToGroupExistingId) {
   }
 
   EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
- 
+
   Parameters::default_response_timeout = timeout;
 }
 

@@ -56,8 +56,9 @@ std::vector<Address> RoutingTableInfo::GetGroup(const Address& target) {
     group_ids.push_back(iter->id);
   group_ids.push_back(routing_table->kAddress());
   std::sort(std::begin(group_ids), std::end(group_ids),
-            [target](const Address& lhs,
-                     const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target); });
+            [target](const Address& lhs, const Address& rhs) {
+    return NodeId::CloserToTarget(lhs, rhs, target);
+  });
   group_ids.resize(Parameters::group_size);
   return group_ids;
 }
@@ -93,7 +94,7 @@ class RoutingTableNetwork : public testing::Test {
   void AddNewNode();
   void ValidateNewGroupMessaging();
   void ValidateNewGroupMessagingDetails(const Address& target, std::set<Address>& expected_group,
-      std::shared_ptr<RoutingTableInfo> routing_table_info);
+                                        std::shared_ptr<RoutingTableInfo> routing_table_info);
   std::vector<std::shared_ptr<RoutingTableInfo>> nodes_info_;
   size_t GetClosenessIndex(const Address& Address, const Address& target_id);
 
@@ -103,7 +104,7 @@ class RoutingTableNetwork : public testing::Test {
   void OnRoutingTableChange(const Address& Address, const RoutingTableChange& routing_table_change);
   void PartialSortFromTarget(const Address& target, const size_t limit, const size_t search_limit);
   void AddNode(std::shared_ptr<RoutingTableInfo> lhs, std::shared_ptr<RoutingTableInfo> rhs);
-  bool ConfirmHoldersKnowGroup(const Address &target, const std::vector<Address>& holders_id,
+  bool ConfirmHoldersKnowGroup(const Address& target, const std::vector<Address>& holders_id,
                                const std::vector<Address>& expected_group);
   size_t RoutingTableSize(RoutingTablePtr routing_table);
   size_t kNumberofClosestNode;
@@ -135,7 +136,7 @@ void RoutingTableNetwork::PartialSortFromTarget(const Address& target, size_t so
       std::begin(nodes_info_) + search_limit,
       [target](std::shared_ptr<RoutingTableInfo> lhs, std::shared_ptr<RoutingTableInfo> rhs) {
         return Address::CloserToTarget(lhs->routing_table->kNodeId(), rhs->routing_table->kNodeId(),
-                                      target);
+                                       target);
       });
 }
 
@@ -201,17 +202,16 @@ RoutingTablePtr RoutingTableNetwork::CreateRoutingTable(const passport::Pmid& pm
   keys.private_key = pmid.private_key();
   keys.public_key = pmid.public_key();
   auto routing_table(std::make_shared<RoutingTable>(false, Address, keys));
-  routing_table->InitialiseFunctors([Address, this](
-      const RoutingTableChange& routing_table_change) {
-    OnRoutingTableChange(Address, routing_table_change);
-  });
+  routing_table->InitialiseFunctors(
+      [Address, this](const RoutingTableChange& routing_table_change) {
+        OnRoutingTableChange(Address, routing_table_change);
+      });
   return routing_table;
 }
 
 void RoutingTableNetwork::OnRoutingTableChange(const Address& Address,
                                                const RoutingTableChange& routing_table_change) {
   if (routing_table_change.removed.node.id.IsValid()) {
-   
     network_map_.at(routing_table_change.removed.node.id)->routing_table->DropNode(Address, true);
     std::lock_guard<std::mutex> lock(mutex_);
     nodes_changed_.insert(Address);
@@ -318,14 +318,14 @@ void RoutingTableNetwork::ValidateRoutingTable() {
         LOG(kError) << *Addresss_iter << " is not in close nodes of "
                     << (*iter)->routing_table->kAddress() << " distance "
                     << std::distance(std::begin(Addresss), node_ids_iter);
-        max_distance =
-            (static_cast<size_t>(std::distance(std::begin(Addresss), node_ids_iter)) > max_distance)
-                ? std::distance(std::begin(Addresss), node_ids_iter)
-                : max_distance;
-        min_distance =
-            (static_cast<size_t>(std::distance(std::begin(Addresss), node_ids_iter)) < min_distance)
-                ? std::distance(std::begin(Addresss), node_ids_iter)
-                : min_distance;
+        max_distance = (static_cast<size_t>(std::distance(std::begin(Addresss), node_ids_iter)) >
+                        max_distance) ?
+                           std::distance(std::begin(Addresss), node_ids_iter) :
+                           max_distance;
+        min_distance = (static_cast<size_t>(std::distance(std::begin(Addresss), node_ids_iter)) <
+                        min_distance) ?
+                           std::distance(std::begin(Addresss), node_ids_iter) :
+                           min_distance;
         total_distance += std::distance(std::begin(Addresss), node_ids_iter);
         distance_count++;
         if (result.find((*iter)->routing_table->kAddress()) != std::end(result))
@@ -366,8 +366,8 @@ void RoutingTableNetwork::ValidateRoutingTable(std::shared_ptr<RoutingTableInfo>
                               std::end(info->routing_table->nodes_),
                               [iter](const NodeInfo& node_info) {
       return node_info.id == (*iter)->routing_table->kAddress();
-    }))
-        << info->routing_table->kAddress() << " missing close " << (*iter)->routing_table->kNodeId();
+    })) << info->routing_table->kAddress() << " missing close "
+        << (*iter)->routing_table->kNodeId();
   }
 }
 
@@ -423,16 +423,15 @@ void RoutingTableNetwork::GetCloseNodeIndexStats() {
 
 void RoutingTableNetwork::RoutingTablesInfo() {
   for (const auto& info : nodes_info_) {
-   
   }
 }
 
 TEST_F(RoutingTableNetwork, FUNC_AnalyseNetwork) {
   size_t kMaxNetworkSize(100), kReportInterval(50);
- 
+
   for (size_t index(0); index < kMaxNetworkSize; ++index) {
     AddNewNode();
-   
+
     if (index > this->kNumberofClosestNode) {
       ValidateRoutingTable(nodes_info_.back());
       if (index % kReportInterval == 0) {
@@ -450,12 +449,10 @@ void RoutingTableNetwork::ValidateNewGroupMessaging() {
   Address target(RandomString(Address::kSize));
   for (size_t index(0); index < 10; ++index) {
     std::set<Address> expected_group;
-    std::partial_sort(std::begin(Addresss_),
-                      std::begin(Addresss_) + Parameters::group_size + 1,
-                      std::end(Addresss_),
-                      [&, this](const Address& lhs, const Address& rhs) {
-                        return Address::CloserToTarget(lhs, rhs, target);
-                      });
+    std::partial_sort(std::begin(Addresss_), std::begin(Addresss_) + Parameters::group_size + 1,
+                      std::end(Addresss_), [&, this](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, target);
+    });
     for (unsigned int index(0); index < Parameters::group_size; ++index)
       expected_group.insert(Addresss_.at(index));
     auto random_node(nodes_info_.at(RandomUint32() % nodes_info_.size()));
@@ -466,19 +463,16 @@ void RoutingTableNetwork::ValidateNewGroupMessaging() {
 void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
     const Address& target, std::set<Address>& expected_group,
     std::shared_ptr<RoutingTableInfo> routing_table_info) {
-
   std::set<Address> potential_members, found_group, tried;
   potential_members.insert(routing_table_info->routing_table->kAddress());
- 
+
 
   do {
     bool self_added(false);
     auto current(network_map_.at(*potential_members.begin()));
-   
-    auto closests_to_self(
-        current->routing_table->GetClosestNodes(
-            current->routing_table->kAddress(), static_cast<unsigned int>(kNumberofClosestNode),
-            true));
+
+    auto closests_to_self(current->routing_table->GetClosestNodes(
+        current->routing_table->kAddress(), static_cast<unsigned int>(kNumberofClosestNode), true));
 
     if (std::find(std::begin(expected_group), std::end(expected_group),
                   current->routing_table->kAddress()) != std::end(expected_group)) {
@@ -487,53 +481,50 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
     }
 
     if (Address::CloserToTarget(target, closests_to_self.at(kNumberofClosestNode - 1).id,
-                               current->routing_table->kAddress())) {
+                                current->routing_table->kAddress())) {
       auto closests_to_target(
           current->routing_table->GetClosestNodes(target, Parameters::group_size, true));
 
       for (const auto& close : closests_to_target)
-       
 
-      auto limit(std::begin(closests_to_target));
+
+        auto limit(std::begin(closests_to_target));
       std::advance(limit, (Parameters::group_size - (self_added ? 1 : 0)));
       for (auto iter(std::begin(closests_to_target)); iter != limit; ++iter) {
-       
         if (std::find(std::begin(tried), std::end(tried), iter->id) == std::end(tried)) {
           potential_members.insert(iter->id);
         }
       }
     } else {
-      auto closests_to_target(
-          current->routing_table->GetClosestNodes(target, 1, true));
-        if (std::find(std::begin(tried), std::end(tried),
-            closests_to_target.begin()->id) == std::end(tried)) {
-          potential_members.insert(closests_to_target.at(0).id);
-        }
+      auto closests_to_target(current->routing_table->GetClosestNodes(target, 1, true));
+      if (std::find(std::begin(tried), std::end(tried), closests_to_target.begin()->id) ==
+          std::end(tried)) {
+        potential_members.insert(closests_to_target.at(0).id);
+      }
     }
 
     for (auto const& member : potential_members)
-     
-    potential_members.erase(current->routing_table->kAddress());
+
+      potential_members.erase(current->routing_table->kAddress());
     tried.insert(current->routing_table->kAddress());
     for (auto const& member : potential_members)
-     
+
   } while (!potential_members.empty());
 
   EXPECT_EQ(found_group.size(), expected_group.size());
-  for (const auto& expected_node :  expected_group)
+  for (const auto& expected_node : expected_group)
     EXPECT_NE(found_group.find(expected_node), std::end(found_group));
 }
 
 TEST_F(RoutingTableNetwork, FUNC_GroupMessaging) {
   size_t kMaxNetworkSize(1000);
- 
+
   for (size_t index(0); index < 300; ++index)
     AddNewNode();
 
   for (size_t index(300); index < kMaxNetworkSize; ++index) {
     AddNewNode();
     ValidateNewGroupMessaging();
-   
   }
 }
 

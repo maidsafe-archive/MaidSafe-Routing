@@ -94,7 +94,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
       if (find != expect_affected_.end())
         expect_affected_.erase(find);
     }
-   
+
     if (adding_node_) {
       new_close_nodes_.push_back(node_to_operate);
     }
@@ -103,24 +103,24 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
 
   bool IsAllExpectedResponded() {
     std::lock_guard<std::mutex> lock(checking_mutex_);
-   
+
     for (const auto& node : expect_affected_)
-     
-   
-    for (const auto& node : affected_nodes_)
-     
-    //     for(auto& node : affected_nodes_)
-    //       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
-    //           expect_affected_.end()) {
-    //         ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall not be affected";
-    //         return;
-    //       }
-    for (const auto& node : expect_affected_)
-      if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
-          affected_nodes_.end()) {
-        ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall be affected but not";
-        return false;
-      }
+
+
+      for (const auto& node : affected_nodes_)
+
+        //     for(auto& node : affected_nodes_)
+        //       if (std::find(expect_affected_.begin(), expect_affected_.end(), node) ==
+        //           expect_affected_.end()) {
+        //         ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall not be affected";
+        //         return;
+        //       }
+        for (const auto& node : expect_affected_)
+          if (std::find(affected_nodes_.begin(), affected_nodes_.end(), node) ==
+              affected_nodes_.end()) {
+            ADD_FAILURE() << "node " << HexSubstr(node.string()) << " shall be affected but not";
+            return false;
+          }
     return true;
   }
 
@@ -139,7 +139,6 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
                   << " containing following lost nodes :";
     //     bool not_found(true);
     if (lost_node.IsValid()) {
-     
       //       if (Address == node_on_operation_)
       //         not_found = false;
     }
@@ -161,7 +160,6 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
                   << " containing following new nodes :";
     //     bool not_found(true);
     if (new_node.IsValid()) {
-     
       //       if (Address == node_on_operation_)
       //         not_found = false;
     }
@@ -214,25 +212,25 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
   const size_t vault_network_size(20 + random % 10);
   const size_t clients_in_network(5 + random % 3);
   this->SetUpNetwork(vault_network_size, clients_in_network);
- 
+
 
   std::vector<Address> existing_Addresss;
   for (const auto& node : this->nodes_)
     existing_Addresss.push_back(node->node_id());
- 
+
 
   std::vector<passport::Pmid> new_nodes;
   const size_t up_count(vault_network_size / 3), down_count(vault_network_size / 5);
   size_t downed(0);
   while (new_nodes.size() < up_count)
     new_nodes.emplace_back(passport::CreatePmidAndSigner().first);
- 
+
 
   // Start thread for messaging between clients and clients to groups
   std::string message(RandomString(4096));
   volatile bool run(true);
   auto messaging_handle = std::async(std::launch::async, [=, &run] {
-   
+
     while (run) {
       GenericNetwork::NodePtr sender_client(this->RandomClientNode());
       GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
@@ -246,14 +244,14 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
                                [](std::string) {});
       // Choose random vault for group message to random env
       // TODO(Alison) - use result?
-      vault_node->SendGroup(Address(RandomString(Address::kSize)), message, false, [](std::string) {});
+      vault_node->SendGroup(Address(RandomString(Address::kSize)), message, false,
+                            [](std::string) {});
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
-     
     }
-   
+
   });
- 
+
 
   // Start thread to bring down nodes
   auto down_handle = std::async(std::launch::async, [=, &run, &down_count, &downed] {

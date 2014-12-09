@@ -123,7 +123,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_hops_to_live(Parameters::hops_to_live);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-   
+
   };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
@@ -142,15 +142,14 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-   
+
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-     
     }
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {
-   
+
   };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
@@ -158,7 +157,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
-  auto a1 = std::async(std::launch::async, [&, this ]()->Address {
+  auto a1 = std::async(std::launch::async, [&, this]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
     Address chosen_bootstrap_peer;
     if (rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
@@ -173,7 +172,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   Address Address2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
-  auto a2 = std::async(std::launch::async, [&, this ]()->Address {
+  auto a2 = std::async(std::launch::async, [&, this]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
     Address chosen_bootstrap_peer;
     if (rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
@@ -201,7 +200,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(Address2, endpoint);
   rudp2.MarkConnectionAsValid(Address1, endpoint);
- 
+
 
   Address Address(RandomString(Address::kSize));
   RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
@@ -277,7 +276,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   Network network(routing_table, client_routing_table, acknowledgement);
 
   rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-   
+
   };
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
@@ -296,20 +295,19 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-   
+
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-     
     }
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {
-   
+
   };
 
   rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Address& Address) {
     routing_table.DropNode(Address, true);
-   
+
   };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
@@ -323,7 +321,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
 
-  auto a1 = std::async(std::launch::async, [ =, &rudp1, &nat_type ]()->Address {
+  auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
     Address chosen_bootstrap_peer;
     if (rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
@@ -333,7 +331,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
     }
     return chosen_bootstrap_peer;
   });
-  auto a2 = std::async(std::launch::async, [ =, &rudp2, &nat_type ]()->Address {
+  auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
     Address chosen_bootstrap_peer;
     if (rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
@@ -361,7 +359,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   Endpoint endpoint;
   rudp1.MarkConnectionAsValid(Address2, endpoint);
   rudp2.MarkConnectionAsValid(Address1, endpoint);
- 
+
 
   ScopedBootstrapFile bootstrap_file({endpoint2});
 
@@ -385,7 +383,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
- 
+
 
   // setup 7 inactive & 1 active node
   std::vector<NodeInfoAndPrivateKey> nodes;

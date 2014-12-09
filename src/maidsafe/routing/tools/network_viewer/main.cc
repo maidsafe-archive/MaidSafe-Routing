@@ -42,14 +42,12 @@ int main(int argc, char* argv[]) {
     application.addLibraryPath(QCoreApplication::applicationDirPath() + "/plugins");
     application.quitOnLastWindowClosed();
     int result = application.exec();
-   
+
     return result;
-  }
-  catch (const std::exception& ex) {
+  } catch (const std::exception& ex) {
     LOG(kError) << "STD Exception Caught: " << ex.what();
     return -1;
-  }
-  catch (...) {
+  } catch (...) {
     LOG(kError) << "Default Exception Caught";
     return -1;
   }

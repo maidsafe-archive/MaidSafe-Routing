@@ -61,7 +61,7 @@ void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_e
   rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
                              node_to_add.public_key);
   (void)rudp_contact;
-  //rudp_.add(std::move(rudp_contact), [node_to_add, this](maidsafe_error error) {
+  // rudp_.add(std::move(rudp_contact), [node_to_add, this](maidsafe_error error) {
   //  if (error.code() == make_error_code(CommonErrors::success)) {
   //    auto added = routing_table_.AddNode(node_to_add);
   //    if (!added.first) {

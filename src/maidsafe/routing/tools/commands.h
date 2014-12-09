@@ -67,9 +67,9 @@ class Commands {
                     bool is_routing_req, int messages_count);
 
   Address CalculateClosests(const Address& target_id, std::vector<Address>& closests,
-                           unsigned int num_of_closests);
+                            unsigned int num_of_closests);
   unsigned int MakeMessage(int id_index, const DestinationType& destination_type,
-                       std::vector<Address>& closest_nodes, Address& dest_id);
+                           std::vector<Address>& closest_nodes, Address& dest_id);
 
   void CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time);
 
