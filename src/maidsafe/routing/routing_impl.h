@@ -241,7 +241,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const T& message) {
 
   AddGroupSourceRelatedFields(message, proto_message, detail::is_group_source<T>());
   AddDestinationTypeRelatedFields(proto_message, detail::is_group_destination<T>());
-  proto_message.set_id(RandomUint32() % 10000);  // Enable for tracing node level messages
+  proto_message.set_id(RandomUint32());  // Enable for tracing node level messages
   return proto_message;
 }
 

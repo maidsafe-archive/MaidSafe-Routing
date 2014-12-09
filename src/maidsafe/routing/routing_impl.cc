@@ -86,7 +86,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelMessage(const GroupToSingleRelay
   proto_message.set_relay_connection_id(message.receiver.connection_id.string());
   proto_message.set_actual_destination_is_relay_id(true);
 
-  proto_message.set_id(RandomUint32() % 10000);  // Enable for tracing node level messages
+  proto_message.set_id(RandomUint32());  // Enable for tracing node level messages
   return proto_message;
 }
 
