@@ -79,15 +79,15 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
   if (!their_id.IsValid() || their_id == our_id_)
     return false;
 
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (nodes_.size() < OptimalSize())
-    return true;
-
   // check for duplicates
   static NodeInfo their_info;
   their_info.id = their_id;
   if (HaveNode(their_info))
     return false;
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (nodes_.size() < OptimalSize())
+    return true;
 
   // close node
   if (Address::CloserToTarget(their_id, nodes_.at(kGroupSize).id, our_id_))
