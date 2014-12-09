@@ -30,7 +30,7 @@ namespace maidsafe {
 namespace routing {
 
 // NEW
-// ##################################################################################################
+// #################################################################################################
 
 // MurmurHash2 is based on the MurMurHash2 implementation written by Austin Appleby, and placed in
 // the public domain by him.
@@ -38,7 +38,7 @@ MurmurHash MurmurHash2(const std::vector<byte>& input);
 
 
 // OLD
-// ##################################################################################################
+// #################################################################################################
 //
 // #include "boost/asio/ip/udp.hpp"
 //

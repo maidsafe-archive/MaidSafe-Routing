@@ -16,11 +16,13 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/common/test.h"
+#ifndef MAIDSAFE_ROUTING_TESTS_UTILS_ROUTING_TABLE_UNIT_TEST_H_
+#define MAIDSAFE_ROUTING_TESTS_UTILS_ROUTING_TABLE_UNIT_TEST_H_
 
 #include <array>
 
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/test.h"
 
 #include "maidsafe/routing/routing_table.h"
 
@@ -56,3 +58,5 @@ class RoutingTableUnitTest : public testing::Test {
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_TESTS_UTILS_ROUTING_TABLE_UNIT_TEST_H_

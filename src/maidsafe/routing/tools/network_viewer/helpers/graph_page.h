@@ -47,7 +47,7 @@ class GraphPage : public QWebPage {
  protected:
   virtual void javaScriptAlert(QWebFrame* frame, const QString& msg);
 
-signals:
+signals:  // NOLINT
   void RequestNewGraphView(const QString& new_parent_id);
 
  private slots:  // NOLINT - Viv

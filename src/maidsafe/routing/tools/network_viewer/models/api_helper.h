@@ -46,7 +46,7 @@ class APIHelper : public QObject {
   void NetworkUpdated(int state_id);
   QString GetShortAddress(std::string Address) const;
 
-signals:
+signals:  // NOLINT
   void RequestGraphRefresh(int state_id);
 
  private:

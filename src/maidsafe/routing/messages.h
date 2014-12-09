@@ -201,4 +201,4 @@ struct cacheable_get_response {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TYPES_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_H_

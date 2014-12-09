@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_H_
-#define MAIDSAFE_ROUTING_ROUTING_H_
+#ifndef MAIDSAFE_ROUTING_VAULT_NODE_H_
+#define MAIDSAFE_ROUTING_VAULT_NODE_H_
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
@@ -64,4 +64,4 @@ class VaultNode : private rudp::ManagedConnections::Listener {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_H_
+#endif  // MAIDSAFE_ROUTING_VAULT_NODE_H_

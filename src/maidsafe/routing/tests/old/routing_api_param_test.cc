@@ -143,7 +143,6 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
   functors.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   auto a1 = boost::async(boost::launch::async, [&] {

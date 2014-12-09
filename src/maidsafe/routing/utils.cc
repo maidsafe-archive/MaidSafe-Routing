@@ -35,7 +35,7 @@ namespace maidsafe {
 namespace routing {
 
 // NEW
-// ##################################################################################################
+// #################################################################################################
 
 // Define all messages' static const members here
 #if !defined(_MSC_VER) || _MSC_VER != 1800
@@ -51,7 +51,6 @@ const SerialisableTypeTag Post::kSerialisableTypeTag;
 #endif
 
 MurmurHash MurmurHash2(const std::vector<byte>& input) {
-  static_assert(sizeof(int) == 4, "This implementation requires size of int to be 4 bytes.");
   assert(input.size() < std::numeric_limits<uint32_t>::max());
 
   // 'm' and 'r' are mixing constants generated offline.
@@ -59,6 +58,7 @@ MurmurHash MurmurHash2(const std::vector<byte>& input) {
 
   const uint32_t m = 0x5bd1e995;
   const int r = 24;
+  static_assert(sizeof(r) == 4, "This implementation requires size of int to be 4 bytes.");
 
   // Initialize the hash to a 'random' value
 
@@ -106,7 +106,7 @@ MurmurHash MurmurHash2(const std::vector<byte>& input) {
 }
 
 // OLD
-// ##################################################################################################
+// #################################################################################################
 //
 // #ifdef WIN32
 // #include <pwd.h>

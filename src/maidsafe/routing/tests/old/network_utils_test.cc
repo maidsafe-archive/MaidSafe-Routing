@@ -122,9 +122,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
 
-  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-
-  };
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {};
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
     ++message_count_at_node2;
@@ -142,15 +140,12 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
     }
   };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {
-
-  };
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {};
 
   auto pmid1(passport::CreatePmidAndSigner().first);
   Address Address1(pmid1.name()->string());
@@ -275,9 +270,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   ClientRoutingTable client_routing_table(routing_table.kAddress());
   Network network(routing_table, client_routing_table, acknowledgement);
 
-  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-
-  };
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {};
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
     ++message_count_at_node2;
@@ -295,20 +288,15 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
     }
   };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {};
 
-  };
-
-  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const Address& Address) {
-    routing_table.DropNode(Address, true);
-
-  };
+  rudp::ConnectionLostFunctor connection_lost_functor3 =
+      [&](const Address& Address) { routing_table.DropNode(Address, true); };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
   Address Address1(pmid1.name()->string());

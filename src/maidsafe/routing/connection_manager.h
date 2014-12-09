@@ -35,19 +35,19 @@ obvious as the destination nodes for a messag ein your close group has multiple
 destiations. In that case request a close_group message for this node.
 */
 
-#ifndef MAIDSAFE_ROUTING_CONNECTION_MANAGER_
-#define MAIDSAFE_ROUTING_CONNECTION_MANAGER_
+#ifndef MAIDSAFE_ROUTING_CONNECTION_MANAGER_H_
+#define MAIDSAFE_ROUTING_CONNECTION_MANAGER_H_
 
-#include <vector>
-#include <mutex>
 #include <functional>
 #include <map>
+#include <mutex>
 #include <vector>
+
+#include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/rudp/managed_connections.h"
 
 namespace maidsafe {
 
@@ -91,4 +91,4 @@ class ConnectionManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_CONNECTION_MANAGER_
+#endif  // MAIDSAFE_ROUTING_CONNECTION_MANAGER_H_

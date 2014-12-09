@@ -399,7 +399,7 @@ void Network::SendAck(const protobuf::Message& message) {
 
   protobuf::Message ack_message(
       rpcs::Ack(Address(message.ack_Addresss(0)), routing_table_.kNodeId(), message.ack_id()));
- 
+
   SendToClosestNode(ack_message);
 }
 

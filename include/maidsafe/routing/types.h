@@ -21,6 +21,7 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"

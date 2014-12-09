@@ -158,7 +158,6 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
   functors3 = functors2 = functors1;
 
   functors1.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
-
     auto itr(key_map.find(Address));
     if (Address == node3.node_info.id) {
       give_key(boost::optional<asymm::PublicKey>());
@@ -169,7 +168,6 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
   };
 
   functors2.request_public_key = [&](const Address& Address, GivePublicKeyFunctor give_key) {
-
     auto itr(key_map.find(Address));
     if (key_map.end() != itr)
       give_key((*itr).second);
@@ -298,7 +296,6 @@ TEST(APITest, BEH_API_SendToSelf) {
   functors1.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
@@ -338,7 +335,6 @@ TEST(APITest, BEH_API_SendToSelf) {
   ResponseFunctor response_functor = [&data, &flag, &response_promise](std::string string) {
     EXPECT_EQ("response to " + data, string);
     std::call_once(flag, [&response_promise]() { response_promise.set_value(); });
-
   };
   routing3.SendDirect(node3.node_info.id, data, false, response_functor);
   ASSERT_EQ(response_future.wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
@@ -375,7 +371,6 @@ TEST(APITest, BEH_API_ClientNode) {
   functors1.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
@@ -449,7 +444,6 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
   functors1.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   functors2.network_status = functors3.network_status = functors1.network_status;
@@ -526,7 +520,6 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
   functors1.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   functors4.network_status = functors2.network_status = functors3.network_status =
@@ -701,7 +694,6 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
   functors.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   Functors client_functors;
@@ -778,7 +770,6 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
   functors1.message_and_caching.message_received =
       [&](const std::string& message, ReplyFunctor reply_functor) {
     reply_functor("response to " + message);
-
   };
 
   functors3 = functors2 = functors1;
@@ -824,7 +815,6 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
     ++count;
     if (count == 2)
       std::call_once(response_flag, [&response_promise]() { response_promise.set_value(); });
-
   };
   routing3.SendDirect(node1.node_info.id, data, false, response_functor);
   routing3.SendDirect(node2.node_info.id, data, false, response_functor);
@@ -868,7 +858,6 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
   functors1.typed_message_and_caching.group_to_group.message_received =
       [&](const GroupToGroupMessage& /*g2g*/) {
-
     std::lock_guard<std::mutex> lock(mutex);
     if (++responses == 3)
       group_to_group_promise.set_value(true);
@@ -879,7 +868,6 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
   functors1.typed_message_and_caching.single_to_group.message_received =
       [&](const SingleToGroupMessage& /*s2g*/) {
-
     std::lock_guard<std::mutex> lock(mutex);
     if (++responses == 3)
       single_to_group_promise.set_value(true);
@@ -889,9 +877,7 @@ TEST(APITest, BEH_API_TypedMessageSend) {
       [&](const SingleToSingleMessage& /*s2s*/) { single_to_single_promise.set_value(true); };
 
   functors1.typed_message_and_caching.single_to_group_relay.message_received =
-      [&](const SingleToGroupRelayMessage& /*s2g_relay*/) {
-
-  };
+      [&](const SingleToGroupRelayMessage& /*s2g_relay*/) {};
 
   functors2.network_status = functors3.network_status = functors1.network_status;
   functors2.request_public_key = functors3.request_public_key = functors1.request_public_key;
@@ -1035,183 +1021,170 @@ TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
 
   functors.network_status = [](int) {};  // NOLINT (Fraser)
 
-  functors.typed_message_and_caching.group_to_group.message_received = [&](
-      const GroupToGroupMessage& /*g2g*/) {
+  functors.typed_message_and_caching.group_to_group.message_received =
+      [&](const GroupToGroupMessage& /*g2g*/) {};
+  functors.typed_message_and_caching.group_to_single.message_received =
+      [&](const GroupToSingleMessage& /*g2s*/) {};
 
-    functors.typed_message_and_caching.group_to_single.message_received =
-        [&](const GroupToSingleMessage& /*g2s*/) {
+  functors.typed_message_and_caching.single_to_group.message_received =
+      [&](const SingleToGroupMessage& /*s2g*/) {};
 
-    };
-
-    functors.typed_message_and_caching.single_to_group.message_received =
-        [&](const SingleToGroupMessage& /*s2g*/) {
-
-    };
-
-    functors.typed_message_and_caching.single_to_single.message_received =
-        [&](const SingleToSingleMessage& /*s2s*/) {
-
-    };
+  functors.typed_message_and_caching.single_to_single.message_received =
+      [&](const SingleToSingleMessage& /*s2s*/) {};
 
 
-    // response to single to group relay messages
-    for (int j = 0; j != kNetworkSize; ++j) {
-      auto Address = routing_nodes.at(j)->kAddress();
-      LOG(kError) << "Preparing functor for node --" << j << " , " << DebugId(Address);
-      RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
-      relay_message_functor_struct.message_received =
-          [Address, j, &cv, &mutex, &received_relay_messages](
-              const SingleToGroupRelayMessage& message) {
-        LOG(kVerbose) << "single to group relay message received at node index : " << j
-                      << " , node id : " << DebugId(Address);
-        {
-          std::lock_guard<std::mutex> lock(mutex);
-          received_relay_messages.push_back(std::pair<int, SingleToGroupRelayMessage>(j, message));
-        }
-        cv.notify_one();
-      };
-      single_to_group_relay_functors.push_back(relay_message_functor_struct);
-    }
-
-
-    Functors functors_1 = functors;
-    functors_1.typed_message_and_caching.single_to_group_relay =
-        single_to_group_relay_functors.at(0);
-    auto a1 = boost::async(boost::launch::async, [&] {
-      return routing_nodes[0]->ZeroStateJoin(functors_1, endpoint1, endpoint2, nodes[1].node_info);
-    });
-    Functors functors_2 = functors;
-    functors_2.typed_message_and_caching.single_to_group_relay =
-        single_to_group_relay_functors.at(1);
-
-    auto a2 = boost::async(boost::launch::async, [&] {
-      return routing_nodes[1]->ZeroStateJoin(functors_2, endpoint2, endpoint1, nodes[0].node_info);
-    });
-
-    EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
-    EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
-
-    // Ignoring 2 zero state nodes
-    promised.push_back(false);
-    promised.push_back(false);
-    status_vector.emplace_back([](int /*x*/) {});
-    status_vector.emplace_back([](int /*x*/) {});
-    boost::promise<bool> promise1, promise2;
-    join_futures.emplace_back(promise1.get_future());
-    join_futures.emplace_back(promise2.get_future());
-
-    //  // Joining remaining server & client nodes
-    for (auto i(2); i != (kNetworkSize); ++i) {
-      join_futures.emplace_back(join_promises.at(i).get_future());
-      promised.push_back(true);
-      status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
-        if (result < kSuccess)
-          return;
-        if (result == NetworkStatus((i >= kServerCount), std::min(i, min_join_status))) {
-          std::lock_guard<std::mutex> lock(mutex);
-          if (promised.at(i)) {
-            join_promises.at(i).set_value(true);
-            promised.at(i) = false;
-          }
-        }
-      });
-    }
-
-    for (i = 2; i != (kNetworkSize); ++i) {
-      functors.network_status = status_vector.at(i);
-      functors.typed_message_and_caching.single_to_group_relay =
-          single_to_group_relay_functors.at(i);
-      routing_nodes[i]->Join(functors);
-      ASSERT_EQ(join_futures.at(i).wait_for(boost::chrono::seconds(10)),
-                boost::future_status::ready);
-    }
-
-    //  -----  Join new vault and send messages ----------
-    auto pmid(passport::CreatePmidAndSigner().first);
-    Routing test_node(pmid);
-    bool test_node_joined(false);
-    Functors test_functors;
-
-    test_functors.network_status = [min_join_status, &test_node_joined, &cv, &mutex](int result) {
-      ASSERT_GE(result, kSuccess);
+  // response to single to group relay messages
+  for (int j = 0; j != kNetworkSize; ++j) {
+    auto Address = routing_nodes.at(j)->kAddress();
+    LOG(kError) << "Preparing functor for node --" << j << " , " << DebugId(Address);
+    RelayMessageFunctorType<SingleToGroupRelayMessage> relay_message_functor_struct;
+    relay_message_functor_struct.message_received =
+        [Address, j, &cv, &mutex, &received_relay_messages](
+            const SingleToGroupRelayMessage& message) {
+      LOG(kVerbose) << "single to group relay message received at node index : " << j
+                    << " , node id : " << DebugId(Address);
       {
         std::lock_guard<std::mutex> lock(mutex);
-        test_node_joined = true;
-      }
-      cv.notify_one();
-
-    };
-
-    test_functors.typed_message_and_caching.group_to_group.message_received =
-        [](const GroupToGroupMessage& /*g2g*/) {};  // NOLINT
-    unsigned int response_count(0);
-    test_functors.typed_message_and_caching.group_to_single.message_received =
-        [&mutex, &response_count, &cv](const GroupToSingleMessage& /*g2s*/) {
-
-      {
-        std::lock_guard<std::mutex> lock(mutex);
-        ++response_count;
+        received_relay_messages.push_back(std::pair<int, SingleToGroupRelayMessage>(j, message));
       }
       cv.notify_one();
     };
-    test_functors.typed_message_and_caching.single_to_group.message_received =
-        [](const SingleToGroupMessage& /*s2g*/) {};  // NOLINT
-    test_functors.typed_message_and_caching.single_to_single.message_received =
-        [](const SingleToSingleMessage& /*s2s*/) {};  // NOLINT
-    test_functors.typed_message_and_caching.single_to_group_relay.message_received =
-        [&](const SingleToGroupRelayMessage& /*s2s*/) {};  // NOLINT
-
-    test_node.Join(test_functors);
-    {
-      std::unique_lock<std::mutex> lock(mutex);
-      cv.wait(lock, [&test_node_joined] { return test_node_joined; });
-    }
-
-    auto send_message = [&test_node](const Address& target_id) {
-      SingleToGroupMessage single_to_group_message;
-      single_to_group_message.sender = SingleSource(SingleId(test_node.kAddress()));
-      single_to_group_message.receiver = GroupId(target_id);
-      test_node.Send(single_to_group_message);
-    };
-
-    //  Test Single To Group own id
-    send_message(test_node.kAddress());
-    {
-      std::unique_lock<std::mutex> lock(mutex);
-      cv.wait(lock, [&received_relay_messages] {
-        return received_relay_messages.size() == Parameters::group_size;
-      });
-      ASSERT_EQ(received_relay_messages.size(), Parameters::group_size);
-    };
-
-    //  Test Single To Group random id
-    for (auto message_count(0); message_count < kMessageCount; ++message_count)
-      send_message(test_node.kAddress());
-    {
-      std::unique_lock<std::mutex> lock(mutex);
-      cv.wait(lock, [kMessageCount, &received_relay_messages] {
-        return (received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
-      });
-      ASSERT_EQ(received_relay_messages.size(), (Parameters::group_size * (kMessageCount + 1U)));
-    };
-
-    // Send response
-    for (const auto& recipiant : received_relay_messages) {
-      auto& node = routing_nodes.at(recipiant.first);
-      SingleIdRelay single_id_relay(detail::GetRelayIdToReply(recipiant.second.sender));
-      GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kAddress()));
-      GroupToSingleRelayMessage response_message("response", group_source, single_id_relay);
-      LOG(kWarning) << "Sending response from index " << recipiant.first;
-      node->Send(response_message);
-    }
-    {
-      std::unique_lock<std::mutex> lock(mutex);
-      cv.wait_for(lock, std::chrono::seconds(20), [&response_count, kMessageCount] {
-        return (response_count == Parameters::group_size * (kMessageCount + 1));
-      });
-    }
-    ASSERT_EQ(response_count, Parameters::group_size * (kMessageCount + 1));
+    single_to_group_relay_functors.push_back(relay_message_functor_struct);
   }
+
+
+  Functors functors_1 = functors;
+  functors_1.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(0);
+  auto a1 = boost::async(boost::launch::async, [&] {
+    return routing_nodes[0]->ZeroStateJoin(functors_1, endpoint1, endpoint2, nodes[1].node_info);
+  });
+  Functors functors_2 = functors;
+  functors_2.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(1);
+
+  auto a2 = boost::async(boost::launch::async, [&] {
+    return routing_nodes[1]->ZeroStateJoin(functors_2, endpoint2, endpoint1, nodes[0].node_info);
+  });
+
+  EXPECT_EQ(kSuccess, a2.get());  // wait for promise !
+  EXPECT_EQ(kSuccess, a1.get());  // wait for promise !
+
+  // Ignoring 2 zero state nodes
+  promised.push_back(false);
+  promised.push_back(false);
+  status_vector.emplace_back([](int /*x*/) {});
+  status_vector.emplace_back([](int /*x*/) {});
+  boost::promise<bool> promise1, promise2;
+  join_futures.emplace_back(promise1.get_future());
+  join_futures.emplace_back(promise2.get_future());
+
+  //  // Joining remaining server & client nodes
+  for (auto i(2); i != (kNetworkSize); ++i) {
+    join_futures.emplace_back(join_promises.at(i).get_future());
+    promised.push_back(true);
+    status_vector.emplace_back([=, &join_promises, &mutex, &promised](int result) {
+      if (result < kSuccess)
+        return;
+      if (result == NetworkStatus((i >= kServerCount), std::min(i, min_join_status))) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (promised.at(i)) {
+          join_promises.at(i).set_value(true);
+          promised.at(i) = false;
+        }
+      }
+    });
+  }
+
+  for (i = 2; i != (kNetworkSize); ++i) {
+    functors.network_status = status_vector.at(i);
+    functors.typed_message_and_caching.single_to_group_relay = single_to_group_relay_functors.at(i);
+    routing_nodes[i]->Join(functors);
+    ASSERT_EQ(join_futures.at(i).wait_for(boost::chrono::seconds(10)), boost::future_status::ready);
+  }
+
+  //  -----  Join new vault and send messages ----------
+  auto pmid(passport::CreatePmidAndSigner().first);
+  Routing test_node(pmid);
+  bool test_node_joined(false);
+  Functors test_functors;
+
+  test_functors.network_status = [min_join_status, &test_node_joined, &cv, &mutex](int result) {
+    ASSERT_GE(result, kSuccess);
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      test_node_joined = true;
+    }
+    cv.notify_one();
+  };
+
+  test_functors.typed_message_and_caching.group_to_group.message_received =
+      [](const GroupToGroupMessage& /*g2g*/) {};  // NOLINT
+  unsigned int response_count(0);
+  test_functors.typed_message_and_caching.group_to_single.message_received =
+      [&mutex, &response_count, &cv](const GroupToSingleMessage& /*g2s*/) {
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      ++response_count;
+    }
+    cv.notify_one();
+  };
+  test_functors.typed_message_and_caching.single_to_group.message_received =
+      [](const SingleToGroupMessage& /*s2g*/) {};  // NOLINT
+  test_functors.typed_message_and_caching.single_to_single.message_received =
+      [](const SingleToSingleMessage& /*s2s*/) {};  // NOLINT
+  test_functors.typed_message_and_caching.single_to_group_relay.message_received =
+      [&](const SingleToGroupRelayMessage& /*s2s*/) {};  // NOLINT
+
+  test_node.Join(test_functors);
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [&test_node_joined] { return test_node_joined; });
+  }
+
+  auto send_message = [&test_node](const Address& target_id) {
+    SingleToGroupMessage single_to_group_message;
+    single_to_group_message.sender = SingleSource(SingleId(test_node.kAddress()));
+    single_to_group_message.receiver = GroupId(target_id);
+    test_node.Send(single_to_group_message);
+  };
+
+  //  Test Single To Group own id
+  send_message(test_node.kAddress());
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [&received_relay_messages] {
+      return received_relay_messages.size() == Parameters::group_size;
+    });
+    ASSERT_EQ(received_relay_messages.size(), Parameters::group_size);
+  };
+
+  //  Test Single To Group random id
+  for (auto message_count(0); message_count < kMessageCount; ++message_count)
+    send_message(test_node.kAddress());
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [kMessageCount, &received_relay_messages] {
+      return (received_relay_messages.size() == (Parameters::group_size * (kMessageCount + 1U)));
+    });
+    ASSERT_EQ(received_relay_messages.size(), (Parameters::group_size * (kMessageCount + 1U)));
+  };
+
+  // Send response
+  for (const auto& recipiant : received_relay_messages) {
+    auto& node = routing_nodes.at(recipiant.first);
+    SingleIdRelay single_id_relay(detail::GetRelayIdToReply(recipiant.second.sender));
+    GroupSource group_source(GroupId(recipiant.second.receiver), SingleId(node->kAddress()));
+    GroupToSingleRelayMessage response_message("response", group_source, single_id_relay);
+    LOG(kWarning) << "Sending response from index " << recipiant.first;
+    node->Send(response_message);
+  }
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait_for(lock, std::chrono::seconds(20), [&response_count, kMessageCount] {
+      return (response_count == Parameters::group_size * (kMessageCount + 1));
+    });
+  }
+  ASSERT_EQ(response_count, Parameters::group_size * (kMessageCount + 1));
+}
 
 }  // namespace test
 

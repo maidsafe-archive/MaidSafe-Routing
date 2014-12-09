@@ -503,12 +503,8 @@ void RoutingTableNetwork::ValidateNewGroupMessagingDetails(
       }
     }
 
-    for (auto const& member : potential_members)
-
-      potential_members.erase(current->routing_table->kAddress());
+    potential_members.erase(current->routing_table->kAddress());
     tried.insert(current->routing_table->kAddress());
-    for (auto const& member : potential_members)
-
   } while (!potential_members.empty());
 
   EXPECT_EQ(found_group.size(), expected_group.size());

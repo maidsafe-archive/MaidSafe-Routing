@@ -97,7 +97,6 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   for (size_t index(0); index < ClientIndex(); ++index) {
     HaveCacheDataFunctor node_get_cache(
         [index, this](const std::string& string, ReplyFunctor reply) {
-
           auto node_cache_iter(network_cache.find(index));
           if (node_cache_iter == std::end(network_cache)) {
             reply(std::string());

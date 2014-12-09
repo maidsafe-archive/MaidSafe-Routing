@@ -50,7 +50,7 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
   }
 
   // new close group member
-  auto result = std::make_pair<bool, boost::optional<NodeInfo>>(true, boost::optional<NodeInfo>());
+  auto result = std::make_pair(true, boost::optional<NodeInfo>());
   if (Address::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes

@@ -230,7 +230,6 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
   std::string message(RandomString(4096));
   volatile bool run(true);
   auto messaging_handle = std::async(std::launch::async, [=, &run] {
-
     while (run) {
       GenericNetwork::NodePtr sender_client(this->RandomClientNode());
       GenericNetwork::NodePtr receiver_client(this->RandomClientNode());
@@ -249,7 +248,6 @@ TEST_F(RoutingChurnTest, DISABLED_FUNC_MessagingNetworkChurn) {
       // Wait before going again
       Sleep(std::chrono::milliseconds(900 + RandomUint32() % 200));
     }
-
   });
 
 
