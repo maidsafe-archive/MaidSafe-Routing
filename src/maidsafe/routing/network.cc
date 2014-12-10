@@ -225,13 +225,13 @@ void Network::SendToClosestNode(const protobuf::Message& message) {
 
 void Network::SendTo(const protobuf::Message& message, const NodeId& peer_node_id,
                           const NodeId& peer_connection_id,  bool no_ack_timer) {
-  const std::string kThisId(routing_table_.kNodeId().string());
+  std::shared_ptr<std::string> kThisId(new std::string(routing_table_.kNodeId().string()));
   rudp::MessageSentFunctor message_sent_functor = [=](int message_sent) {
     if (rudp::kSuccess == message_sent) {
       SendAck(message);
     } else {
       LOG(kError) << "Sending type " << MessageTypeString(message) << " message from "
-                  << HexSubstr(kThisId) << " to " << peer_node_id << " failed with code "
+                  << HexSubstr(*kThisId) << " to " << peer_node_id << " failed with code "
                   << message_sent << " id: " << message.id();
     }
   };
