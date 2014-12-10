@@ -19,7 +19,6 @@
 #include "maidsafe/routing/routing_table.h"
 
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/tests/utils/routing_table_unit_test.h"
 
@@ -30,8 +29,10 @@ namespace routing {
 namespace test {
 
 TEST_F(RoutingTableUnitTest, BEH_CheckNode) {
+#ifdef NDEBUG
   // Try with invalid Address
-  EXPECT_FALSE(table_.CheckNode(NodeId{}));
+  EXPECT_THROW(table_.CheckNode(Address{}), common_error);
+#endif
 
   // Try with our ID
   EXPECT_FALSE(table_.CheckNode(table_.OurId()));

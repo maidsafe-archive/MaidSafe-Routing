@@ -37,7 +37,7 @@ namespace test {
 
 class BasicClientRoutingTableTest : public testing::Test {
  public:
-  BasicClientRoutingTableTest() : node_id_(RandomString(NodeId::kSize)) {}
+  BasicClientRoutingTableTest() : node_id_(RandomString(Address::kSize)) {}
 
  protected:
   Address Address_;

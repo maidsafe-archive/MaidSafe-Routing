@@ -46,7 +46,7 @@ class RoutingChurnTest : public GenericNetwork, public testing::Test {
         close_nodes_change_check_(false),
         dropping_node_(false),
         adding_node_(false),
-        node_on_operation_(RandomString(NodeId::kSize)),
+        node_on_operation_(RandomString(Address::kSize)),
         affected_nodes_(),
         checking_mutex_() {}
 

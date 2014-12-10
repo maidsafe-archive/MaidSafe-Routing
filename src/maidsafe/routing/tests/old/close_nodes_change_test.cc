@@ -41,7 +41,7 @@ namespace maidsafe {
 namespace routing {
 namespace test {
 
-std::pair<Address, NodeId> ParseString(std::string input) {
+std::pair<Address, Address> ParseString(std::string input) {
   Address old_Address, new_node_id;
   {
     std::istringstream istringstream{input};
@@ -49,12 +49,12 @@ std::pair<Address, NodeId> ParseString(std::string input) {
     std::string node_str;
     try {
       archive(cereal::make_nvp("vaultRemoved", node_str));
-      old_Address = Address(node_str, NodeId::EncodingType::kHex);
+      old_Address = Address(node_str, Address::EncodingType::kHex);
     } catch (const std::exception& e) {
     }
     try {
       archive(cereal::make_nvp("vaultAdded", node_str));
-      new_Address = Address(node_str, NodeId::EncodingType::kHex);
+      new_Address = Address(node_str, Address::EncodingType::kHex);
     } catch (const std::exception& e) {
     }
   }
@@ -140,12 +140,12 @@ class CloseNodesChangeTest : public testing::Test {
         // sort by target
         std::sort(old_close_nodes.begin(), old_close_nodes.end(),
                   [target](const Address& lhs,
-                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target);
+                           const Address& rhs) { return Address::CloserToTarget(lhs, rhs, target);
        });
 
         std::sort(new_close_nodes.begin(), new_close_nodes.end(),
                   [target](const Address& lhs,
-                           const Address& rhs) { return NodeId::CloserToTarget(lhs, rhs, target);
+                           const Address& rhs) { return Address::CloserToTarget(lhs, rhs, target);
        });
 
         // Remove taget == node ids and adjust holder size
@@ -392,9 +392,9 @@ TEST_F(CloseNodesChangeTest, BEH_SmallSizeRoutingTable) {
 
 TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   Address Address(RandomString(Address::kSize));
-  std::set<Address, std::function<bool(const Address& lhs, const NodeId& rhs)>> new_ids(
+  std::set<Address, std::function<bool(const Address& lhs, const Address& rhs)>> new_ids(
       [Address](const Address& lhs, const Address& rhs) {
-        return NodeId::CloserToTarget(lhs, rhs, Address);
+        return Address::CloserToTarget(lhs, rhs, Address);
       });
   NodeInfo new_node;
   Address removed;

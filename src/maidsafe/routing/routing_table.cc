@@ -20,11 +20,22 @@
 
 #include <algorithm>
 
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+namespace {
+
+void Validate(const Address& id) {
+  assert(id.IsValid());
+  if (!id.IsValid())
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_node_id));
+}
+
+}  // unnamed namespace
 
 RoutingTable::RoutingTable(Address our_id)
     : our_id_(std::move(our_id)), comparison_(our_id_), mutex_(), nodes_() {
@@ -32,10 +43,9 @@ RoutingTable::RoutingTable(Address our_id)
 }
 
 std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
-  if (!their_info.id.IsValid() || their_info.id == our_id_ ||
-      !asymm::ValidateKey(their_info.public_key)) {
+  Validate(their_info.id);
+  if (their_info.id == our_id_ || !asymm::ValidateKey(their_info.public_key))
     return {false, boost::optional<NodeInfo>()};
-  }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -76,7 +86,8 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
 }
 
 bool RoutingTable::CheckNode(const Address& their_id) const {
-  if (!their_id.IsValid() || their_id == our_id_)
+  Validate(their_id);
+  if (their_id == our_id_)
     return false;
 
   // check for duplicates
@@ -97,6 +108,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
 }
 
 void RoutingTable::DropNode(const Address& node_to_drop) {
+  Validate(node_to_drop);
   std::lock_guard<std::mutex> lock(mutex_);
   nodes_.erase(remove_if(std::begin(nodes_), std::end(nodes_),
                          [&node_to_drop](const NodeInfo& node) { return node.id == node_to_drop; }),
@@ -104,6 +116,7 @@ void RoutingTable::DropNode(const Address& node_to_drop) {
 }
 
 std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& their_id) const {
+  Validate(their_id);
   Address test_node(our_id_);
   std::vector<NodeInfo> closer_to_target;
   size_t count(0), index(0);
@@ -119,9 +132,8 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& their_id) const {
     }
   }
 
-  if (index < kGroupSize) {
+  if (index < kGroupSize)
     return OurCloseGroup();
-  }
 
   std::sort(std::begin(closer_to_target), std::end(closer_to_target),
             [this, &their_id](const NodeInfo& lhs, const NodeInfo& rhs) {

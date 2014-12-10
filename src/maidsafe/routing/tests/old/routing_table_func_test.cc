@@ -57,7 +57,7 @@ std::vector<Address> RoutingTableInfo::GetGroup(const Address& target) {
   group_ids.push_back(routing_table->kAddress());
   std::sort(std::begin(group_ids), std::end(group_ids),
             [target](const Address& lhs, const Address& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, target);
+    return Address::CloserToTarget(lhs, rhs, target);
   });
   group_ids.resize(Parameters::group_size);
   return group_ids;

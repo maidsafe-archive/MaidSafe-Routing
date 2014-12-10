@@ -259,7 +259,7 @@ void Commands::CalculateTimeToSleep(std::chrono::milliseconds& msg_sent_time) {
 void Commands::SendAMessage(std::atomic<int>& successful_count, unsigned int& operation_count,
                             std::mutex& mutex, std::condition_variable& cond_var,
                             int messages_count, unsigned int expect_respondent,
-                            std::vector<Address> closest_nodes, NodeId dest_id, std::string data) {
+                            std::vector<Address> closest_nodes, Address dest_id, std::string data) {
   bool group_performance(false);
   if ((expect_respondent > 1) && (closest_nodes.empty()))
     group_performance = true;
@@ -477,7 +477,7 @@ Address Commands::CalculateClosests(const Address& target_id, std::vector<Addres
     closests = all_ids_;
     return closests[closests.size() - 1];
   }
-  std::sort(all_ids_.begin(), all_ids_.end(), [&](const Address& lhs, const NodeId& rhs) {
+  std::sort(all_ids_.begin(), all_ids_.end(), [&](const Address& lhs, const Address& rhs) {
     return Address::CloserToTarget(lhs, rhs, target_id);
   });
   closests = std::vector<Address>(

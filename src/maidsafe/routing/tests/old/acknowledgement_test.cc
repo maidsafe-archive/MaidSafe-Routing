@@ -45,7 +45,7 @@ namespace test {
 class AcknowledgementTest : public testing::Test {
  public:
   AcknowledgementTest()
-      : local_node_id_(RandomString(NodeId::kSize)),
+      : local_node_id_(RandomString(Address::kSize)),
         asio_service_(2),
         acknowledgement_(local_Address_, asio_service_),
         call_functor_(),

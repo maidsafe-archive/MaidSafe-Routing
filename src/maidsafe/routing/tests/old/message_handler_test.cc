@@ -718,7 +718,7 @@ TEST_F(MessageHandlerTest, BEH_ClientRoutingTable) {
     message_handler.HandleMessage(message);
   }
   {  // Handle routing Connect request to this node
-    Address peer_id(RandomString(Address::kSize)), connection_id(NodeId::IdType::kRandomId);
+    Address peer_id(RandomString(Address::kSize)), connection_id(Address::IdType::kRandomId);
     EXPECT_CALL(*network_, SendToClosestNode(testing::_)).Times(0);
     EXPECT_CALL(*network_, SendToDirect(testing::_, testing::_, testing::_)).Times(0);
     EXPECT_CALL(*service_, FindNodes(testing::_)).Times(0);

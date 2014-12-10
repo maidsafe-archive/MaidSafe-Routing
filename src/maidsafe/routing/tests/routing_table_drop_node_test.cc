@@ -18,7 +18,12 @@
 
 #include "maidsafe/routing/routing_table.h"
 
+#include <random>
+
 #include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
+
+#include "maidsafe/routing/tests/utils/routing_table_unit_test.h"
 
 namespace maidsafe {
 
@@ -26,7 +31,46 @@ namespace routing {
 
 namespace test {
 
-TEST(RoutingTableTest, BEH_DropNode) { GTEST_FAIL(); }
+TEST_F(RoutingTableUnitTest, BEH_DropNode) {
+  // Check on empty table
+  EXPECT_NO_THROW(table_.DropNode(buckets_[0].far_contact));
+  EXPECT_EQ(0, table_.Size());
+
+  // Fill the table
+  NodeInfo info;
+  const asymm::Keys keys{asymm::GenerateKeyPair()};
+  info.public_key = keys.public_key;
+  std::vector<Address> added_ids;
+  for (size_t i = 0; i < RoutingTable::OptimalSize(); ++i) {
+    info.id = buckets_[i].mid_contact;
+    added_ids.push_back(info.id);
+    ASSERT_TRUE(table_.AddNode(info).first);
+  }
+  ASSERT_EQ(RoutingTable::OptimalSize(), table_.Size());
+
+#ifdef NDEBUG
+  // Try with invalid Address
+  EXPECT_THROW(table_.DropNode(Address{}), common_error);
+  EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
+#endif
+
+  // Try with our ID
+  EXPECT_NO_THROW(table_.DropNode(table_.OurId()));
+  EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
+
+  // Try with Address of node not in table
+  EXPECT_NO_THROW(table_.DropNode(buckets_[0].far_contact));
+  EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
+
+  // Remove all nodes one at a time
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(std::begin(added_ids), std::end(added_ids), rng);
+  auto size = table_.Size();
+  for (const auto& id : added_ids) {
+    EXPECT_NO_THROW(table_.DropNode(id));
+    EXPECT_EQ(--size, table_.Size());
+  }
+}
 
 }  // namespace test
 

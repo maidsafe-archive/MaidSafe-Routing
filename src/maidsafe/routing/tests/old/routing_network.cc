@@ -647,7 +647,7 @@ std::vector<Address> GenericNetwork::GroupIds(const Address& Address) const {
     all_ids.push_back(node->Address());
   std::partial_sort(all_ids.begin(), all_ids.begin() + Parameters::group_size + 1, all_ids.end(),
                     [&](const Address& lhs, const Address& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, Address);
+    return Address::CloserToTarget(lhs, rhs, Address);
   });
   return std::vector<Address>(all_ids.begin() + static_cast<unsigned int>(all_ids[0] == Address),
                               all_ids.begin() + Parameters::group_size +
@@ -667,9 +667,9 @@ bool GenericNetwork::ValidateRoutingTables() const {
       Addresss.push_back(node->node_id());
   }
   for (const auto& node : nodes_) {
-    std::sort(Addresss.begin(), node_ids.end(), [=](const Address& lhs, const NodeId& rhs) -> bool {
-      return Address::CloserToTarget(lhs, rhs, node->Address());
-    });
+    std::sort(Addresss.begin(), node_ids.end(),
+              [=](const Address& lhs, const Address& rhs)
+                  -> bool { return Address::CloserToTarget(lhs, rhs, node->Address()); });
     auto routing_table(node->RoutingTable());
     //      EXPECT_FALSE(routing_table.size() < Parameters::closest_nodes_size);
     std::sort(routing_table.begin(), routing_table.end(),
@@ -757,7 +757,7 @@ std::vector<Address> GenericNetwork::GetGroupForId(const Address& Address) const
   }
   std::partial_sort(group_ids.begin(), group_ids.begin() + Parameters::group_size, group_ids.end(),
                     [&](const Address& lhs, const Address& rhs) {
-    return NodeId::CloserToTarget(lhs, rhs, Address);
+    return Address::CloserToTarget(lhs, rhs, Address);
   });
   return std::vector<Address>(group_ids.begin(), group_ids.begin() + Parameters::group_size);
 }

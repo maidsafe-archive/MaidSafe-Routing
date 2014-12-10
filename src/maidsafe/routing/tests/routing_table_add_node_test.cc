@@ -19,7 +19,6 @@
 #include "maidsafe/routing/routing_table.h"
 
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/tests/utils/routing_table_unit_test.h"
 
@@ -31,19 +30,19 @@ namespace test {
 
 TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   const asymm::Keys their_keys{asymm::GenerateKeyPair()};
-
-  // Try with invalid Address (should fail)
   NodeInfo their_info;
   their_info.public_key = their_keys.public_key;
-  auto result_of_add = table_.AddNode(their_info);
-  EXPECT_FALSE(result_of_add.first);
-  EXPECT_FALSE(result_of_add.second.is_initialized());
+
+#ifdef NDEBUG
+  // Try with invalid Address (should throw)
+  EXPECT_THROW(table_.AddNode(their_info), common_error);
   EXPECT_EQ(0, table_.Size());
+#endif
 
   // Try with invalid public key (should fail)
   their_info.id = buckets_[0].far_contact;
   their_info.public_key = asymm::PublicKey();
-  result_of_add = table_.AddNode(their_info);
+  auto result_of_add = table_.AddNode(their_info);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(0, table_.Size());
