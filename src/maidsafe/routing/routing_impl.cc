@@ -543,7 +543,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
   }
 }
 
-void Routing::Impl::OnConnectionLost(const NodeId& lost_connection_id) {
+void Routing::Impl::OnConnectionLost(const NodeId lost_connection_id) {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (running_) {
     std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());

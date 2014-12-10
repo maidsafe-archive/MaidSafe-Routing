@@ -148,9 +148,11 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   void ReBootstrap();
   void FindClosestNode(const boost::system::error_code& error_code, int attempts);
   void ReSendFindNodeRequest(const boost::system::error_code& error_code, bool ignore_size);
+  // void OnMessageReceived(const std::string message);
+  // void DoOnMessageReceived(const std::string message);
   void OnMessageReceived(const std::string& message);
   void DoOnMessageReceived(const std::string& message);
-  void OnConnectionLost(const NodeId& lost_connection_id);
+  void OnConnectionLost(const NodeId lost_connection_id);
   void DoOnConnectionLost(const NodeId& lost_connection_id);
   void OnRoutingTableChange(const RoutingTableChange& routing_table_change);
   void RemoveNode(const NodeInfo& node, bool internal_rudp_only);
