@@ -29,41 +29,38 @@ namespace routing {
 namespace test {
 
 TEST_F(RoutingTableUnitTest, BEH_AddNode) {
-  const asymm::Keys their_keys{asymm::GenerateKeyPair()};
-  NodeInfo their_info;
-  their_info.public_key = their_keys.public_key;
-
 #ifdef NDEBUG
   // Try with invalid Address (should throw)
-  EXPECT_THROW(table_.AddNode(their_info), common_error);
+  EXPECT_THROW(table_.AddNode(info_), common_error);
   EXPECT_EQ(0, table_.Size());
 #endif
 
   // Try with invalid public key (should fail)
-  their_info.id = buckets_[0].far_contact;
-  their_info.public_key = asymm::PublicKey();
-  auto result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[0].far_contact;
+  auto public_key = info_.public_key;
+  info_.public_key = asymm::PublicKey();
+  auto result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(0, table_.Size());
 
   // Try with our ID (should fail)
-  their_info.id = table_.OurId();
-  their_info.public_key = their_keys.public_key;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = table_.OurId();
+  info_.public_key = public_key;
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(0, table_.Size());
 
   // Add first contact
-  their_info.id = buckets_[0].far_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[0].far_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(1U, table_.Size());
 
   // Try with the same contact (should fail)
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(1U, table_.Size());
@@ -72,65 +69,65 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   // that bucket 0 (furthest) and bucket 1 have 3 contacts each and all others have 0 or 1 contacts.
 
   // Bucket 0
-  their_info.id = buckets_[0].mid_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[0].mid_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(2U, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(2U, table_.Size());
 
-  their_info.id = buckets_[0].close_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[0].close_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(3U, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(3U, table_.Size());
 
   // Bucket 1
-  their_info.id = buckets_[1].far_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[1].far_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(4U, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(4U, table_.Size());
 
-  their_info.id = buckets_[1].mid_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[1].mid_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(5U, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(5U, table_.Size());
 
-  their_info.id = buckets_[1].close_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[1].close_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(6U, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(6U, table_.Size());
 
   // Add remaining contacts
   for (size_t i = 2; i < RoutingTable::OptimalSize() - 4; ++i) {
-    their_info.id = buckets_[i].mid_contact;
-    result_of_add = table_.AddNode(their_info);
+    info_.id = buckets_[i].mid_contact;
+    result_of_add = table_.AddNode(info_);
     EXPECT_TRUE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
     EXPECT_EQ(i + 5, table_.Size());
-    result_of_add = table_.AddNode(their_info);
+    result_of_add = table_.AddNode(info_);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
     EXPECT_EQ(i + 5, table_.Size());
@@ -140,13 +137,13 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   // 'buckets_[1].far_contact', and 'buckets_[1].mid_contact' as dropped (in that order)
   std::vector<Address> dropped;
   for (size_t i = RoutingTable::OptimalSize() - 4; i < RoutingTable::OptimalSize(); ++i) {
-    their_info.id = buckets_[i].mid_contact;
-    result_of_add = table_.AddNode(their_info);
+    info_.id = buckets_[i].mid_contact;
+    result_of_add = table_.AddNode(info_);
     EXPECT_TRUE(result_of_add.first);
     ASSERT_TRUE(result_of_add.second.is_initialized());
     dropped.push_back(result_of_add.second.get().id);
     EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
-    result_of_add = table_.AddNode(their_info);
+    result_of_add = table_.AddNode(info_);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
     EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
@@ -158,20 +155,20 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
 
   // Try to add far contacts again (should fail)
   for (const auto& far_contact : dropped) {
-    their_info.id = far_contact;
-    result_of_add = table_.AddNode(their_info);
+    info_.id = far_contact;
+    result_of_add = table_.AddNode(info_);
     EXPECT_FALSE(result_of_add.first);
     EXPECT_FALSE(result_of_add.second.is_initialized());
     EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
   }
 
   // Add final close contact to push size of table_ above OptimalSize()
-  their_info.id = buckets_[RoutingTable::OptimalSize()].mid_contact;
-  result_of_add = table_.AddNode(their_info);
+  info_.id = buckets_[RoutingTable::OptimalSize()].mid_contact;
+  result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(RoutingTable::OptimalSize() + 1, table_.Size());
-  result_of_add = table_.AddNode(their_info);
+  result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(RoutingTable::OptimalSize() + 1, table_.Size());

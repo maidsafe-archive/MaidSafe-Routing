@@ -115,34 +115,46 @@ void RoutingTable::DropNode(const Address& node_to_drop) {
                std::end(nodes_));
 }
 
-std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& their_id) const {
-  Validate(their_id);
-  Address test_node(our_id_);
-  std::vector<NodeInfo> closer_to_target;
-  size_t count(0), index(0);
+std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
+  Validate(target);
+
+  using NodesItr = std::vector<NodeInfo>::const_iterator;
+  std::vector<NodesItr> our_close_group, closest_to_target;
+  size_t iterations(0);
+  std::vector<NodeInfo> result;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    for (const auto& node : nodes_) {
-      if (Address::CloserToTarget(node.id, test_node, their_id)) {
-        closer_to_target.push_back(node);
-        test_node = node.id;
-        index = count;
+    auto parallelism = std::min(Parallelism(), nodes_.size());
+    for (auto itr = std::begin(nodes_); itr != std::end(nodes_); ++itr, ++iterations) {
+      // we don't want to include the actual target in our results
+      if (target == itr->id)
+        continue;
+      // close group is first 'kGroupSize' contacts
+      if (iterations < kGroupSize)
+        our_close_group.push_back(itr);
+      // add 'itr' to collection of all iterators for later partial sorting by closeness to target
+      closest_to_target.push_back(itr);
+    }
+    if (closest_to_target.empty())
+      return result;
+
+    // partially sort 'parallelism' contacts by closeness to target
+    std::partial_sort(std::begin(closest_to_target), std::begin(closest_to_target) + parallelism,
+                      std::end(closest_to_target), Comparison(target));
+
+    // if the closest to target is within our close group, just return the close group
+    if (std::any_of(std::begin(our_close_group), std::end(our_close_group),
+                    [&](NodesItr group_itr) { return group_itr == closest_to_target.front(); })) {
+      for (auto group_itr : our_close_group)
+        result.push_back(*group_itr);
+    } else {  // return the 'parallelism' closest-to-target contacts
+      for (auto closest_itr = std::begin(closest_to_target);
+           closest_itr != std::begin(closest_to_target) + parallelism; ++closest_itr) {
+        result.push_back(*(*closest_itr));
       }
-      ++count;
     }
   }
-
-  if (index < kGroupSize)
-    return OurCloseGroup();
-
-  std::sort(std::begin(closer_to_target), std::end(closer_to_target),
-            [this, &their_id](const NodeInfo& lhs, const NodeInfo& rhs) {
-    return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
-  });
-  closer_to_target.erase(std::begin(closer_to_target) +
-                             std::min(Parallelism(), closer_to_target.size()),
-                         std::end(closer_to_target));
-  return closer_to_target;
+  return result;
 }
 
 std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {

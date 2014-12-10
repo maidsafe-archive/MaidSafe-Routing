@@ -37,33 +37,71 @@ namespace routing {
 
 struct NodeInfo;
 
+// The RoutingTable class is used to maintain a list of contacts to which we are connected.  It is
+// threadsafe and all public functions offer the strong exception guarantee.  Any public function
+// having an Address or NodeInfo arg will throw if NDEBUG is defined and the passed ID is invalid.
+// These functions assert that any such ID is valid, so it should be considered a bug if any such
+// function throws.  Other than bad_allocs, there are no other exceptions thrown from this class.
 class RoutingTable {
  public:
   static size_t BucketSize() { return 1; }
   static size_t Parallelism() { return 4; }
   static size_t OptimalSize() { return 64; }
+
   explicit RoutingTable(Address our_id);
   RoutingTable(const RoutingTable&) = delete;
   RoutingTable(RoutingTable&&) = delete;
   RoutingTable& operator=(const RoutingTable&) = delete;
   RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
   ~RoutingTable() = default;
+
+  // Potentially adds a contact to the routing table.  If the contact is added, the first return arg
+  // is true, otherwise false.  If adding the contact caused another contact to be dropped, the
+  // dropped one is returned in the second field, otherwise the optional field is empty.  The
+  // following steps are used to determine whether to add the new contact or not:
+  //
+  // 1 - if the contact is ourself, or doesn't have a valid public key, or is already in the table,
+  //     it will not be added
+  // 2 - if the routing table is not full (size < OptimalSize()), the contact will be added
+  // 3 - if the contact is within our close group, it will be added
+  // 4 - if we can find a candidate for removal (a contact in a bucket with more than 'BucketSize()'
+  //     contacts, which is also not within our close group), and if the new contact will fit in a
+  //     bucket closer to our own bucket, then we add the new contact.
   std::pair<bool, boost::optional<NodeInfo>> AddNode(NodeInfo their_info);
+
+  // This is used to see whether to bother retrieving a contact's public key from the PKI with a
+  // view to adding the contact to our table.  The checking procedure is the same as for 'AddNode'
+  // above, except for the lack of a public key to check in step 1.
   bool CheckNode(const Address& their_id) const;
+
+  // This unconditionally removes the contact from the table.
   void DropNode(const Address& node_to_drop);
-  // our close group or at least as much of it as we currently know
+
+  // This returns a collection of contacts to which a message should be sent onwards.  It will
+  // return all of our close group (comprising 'kGroupSize' contacts) if the closest one to the
+  // target is within our close group.  If not, it will return the 'Parallelism()' closest contacts
+  // to the target.  In both cases, if the target is an actual contact in our table, it is excluded
+  // from the returned collection.
+  std::vector<NodeInfo> TargetNodes(const Address& target) const;
+
+  // This returns our close group, i.e. the 'kGroupSize' contacts closest to our ID (or the entire
+  // table if we hold less than 'kGroupSize' contacts in total).
   std::vector<NodeInfo> OurCloseGroup() const;
-  // If more than 1 node returned then we are in close group so send to all
-  std::vector<NodeInfo> TargetNodes(const Address& their_id) const;
+
   Address OurId() const { return our_id_; }
+
   size_t Size() const;
 
  private:
   class Comparison {
    public:
+    using NodesItr = std::vector<NodeInfo>::const_iterator;
     explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
     bool operator()(const NodeInfo& lhs, const NodeInfo& rhs) const {
       return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
+    }
+    bool operator()(NodesItr lhs, NodesItr rhs) const {
+      return Address::CloserToTarget(lhs->id, rhs->id, our_id_);
     }
 
    private:

@@ -37,16 +37,8 @@ TEST_F(RoutingTableUnitTest, BEH_DropNode) {
   EXPECT_EQ(0, table_.Size());
 
   // Fill the table
-  NodeInfo info;
-  const asymm::Keys keys{asymm::GenerateKeyPair()};
-  info.public_key = keys.public_key;
-  std::vector<Address> added_ids;
-  for (size_t i = 0; i < RoutingTable::OptimalSize(); ++i) {
-    info.id = buckets_[i].mid_contact;
-    added_ids.push_back(info.id);
-    ASSERT_TRUE(table_.AddNode(info).first);
-  }
-  ASSERT_EQ(RoutingTable::OptimalSize(), table_.Size());
+  PartiallyFillTable();
+  CompleteFillingTable();
 
 #ifdef NDEBUG
   // Try with invalid Address
@@ -64,9 +56,9 @@ TEST_F(RoutingTableUnitTest, BEH_DropNode) {
 
   // Remove all nodes one at a time
   std::mt19937 rng(RandomUint32());
-  std::shuffle(std::begin(added_ids), std::end(added_ids), rng);
+  std::shuffle(std::begin(added_ids_), std::end(added_ids_), rng);
   auto size = table_.Size();
-  for (const auto& id : added_ids) {
+  for (const auto& id : added_ids_) {
     EXPECT_NO_THROW(table_.DropNode(id));
     EXPECT_EQ(--size, table_.Size());
   }

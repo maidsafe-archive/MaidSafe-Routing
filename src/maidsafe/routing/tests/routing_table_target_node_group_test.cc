@@ -34,7 +34,7 @@ namespace routing {
 
 namespace test {
 
-TEST(RoutingTableTest, FUNC_add_many_nodes_check_target) {
+TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
   const auto network_size(500);
   auto routing_tables(RoutingTableNetwork(network_size));
   asymm::Keys key(asymm::GenerateKeyPair());

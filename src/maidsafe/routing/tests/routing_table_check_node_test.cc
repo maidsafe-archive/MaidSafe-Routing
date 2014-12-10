@@ -41,45 +41,42 @@ TEST_F(RoutingTableUnitTest, BEH_CheckNode) {
   EXPECT_TRUE(table_.CheckNode(buckets_[0].far_contact));
 
   // Add the first contact, and check it doesn't allow duplicates
-  NodeInfo info;
-  info.id = buckets_[0].far_contact;
-  const asymm::Keys keys{asymm::GenerateKeyPair()};
-  info.public_key = keys.public_key;
-  ASSERT_TRUE(table_.AddNode(info).first);
+  info_.id = buckets_[0].far_contact;
+  ASSERT_TRUE(table_.AddNode(info_).first);
   EXPECT_FALSE(table_.CheckNode(buckets_[0].far_contact));
 
   // Add further 'OptimalSize()' - 1 contacts (should all succeed with no removals).  Set this up so
   // that bucket 0 (furthest) and bucket 1 have 3 contacts each and all others have 0 or 1 contacts.
-  info.id = buckets_[0].mid_contact;
-  EXPECT_TRUE(table_.CheckNode(info.id));
-  ASSERT_TRUE(table_.AddNode(info).first);
-  EXPECT_FALSE(table_.CheckNode(info.id));
+  info_.id = buckets_[0].mid_contact;
+  EXPECT_TRUE(table_.CheckNode(info_.id));
+  ASSERT_TRUE(table_.AddNode(info_).first);
+  EXPECT_FALSE(table_.CheckNode(info_.id));
 
-  info.id = buckets_[0].close_contact;
-  EXPECT_TRUE(table_.CheckNode(info.id));
-  ASSERT_TRUE(table_.AddNode(info).first);
-  EXPECT_FALSE(table_.CheckNode(info.id));
+  info_.id = buckets_[0].close_contact;
+  EXPECT_TRUE(table_.CheckNode(info_.id));
+  ASSERT_TRUE(table_.AddNode(info_).first);
+  EXPECT_FALSE(table_.CheckNode(info_.id));
 
-  info.id = buckets_[1].far_contact;
-  EXPECT_TRUE(table_.CheckNode(info.id));
-  ASSERT_TRUE(table_.AddNode(info).first);
-  EXPECT_FALSE(table_.CheckNode(info.id));
+  info_.id = buckets_[1].far_contact;
+  EXPECT_TRUE(table_.CheckNode(info_.id));
+  ASSERT_TRUE(table_.AddNode(info_).first);
+  EXPECT_FALSE(table_.CheckNode(info_.id));
 
-  info.id = buckets_[1].mid_contact;
-  EXPECT_TRUE(table_.CheckNode(info.id));
-  ASSERT_TRUE(table_.AddNode(info).first);
-  EXPECT_FALSE(table_.CheckNode(info.id));
+  info_.id = buckets_[1].mid_contact;
+  EXPECT_TRUE(table_.CheckNode(info_.id));
+  ASSERT_TRUE(table_.AddNode(info_).first);
+  EXPECT_FALSE(table_.CheckNode(info_.id));
 
-  info.id = buckets_[1].close_contact;
-  EXPECT_TRUE(table_.CheckNode(info.id));
-  ASSERT_TRUE(table_.AddNode(info).first);
-  EXPECT_FALSE(table_.CheckNode(info.id));
+  info_.id = buckets_[1].close_contact;
+  EXPECT_TRUE(table_.CheckNode(info_.id));
+  ASSERT_TRUE(table_.AddNode(info_).first);
+  EXPECT_FALSE(table_.CheckNode(info_.id));
 
   for (size_t i = 2; i < RoutingTable::OptimalSize() - 4; ++i) {
-    info.id = buckets_[i].mid_contact;
-    EXPECT_TRUE(table_.CheckNode(info.id));
-    ASSERT_TRUE(table_.AddNode(info).first);
-    EXPECT_FALSE(table_.CheckNode(info.id));
+    info_.id = buckets_[i].mid_contact;
+    EXPECT_TRUE(table_.CheckNode(info_.id));
+    ASSERT_TRUE(table_.AddNode(info_).first);
+    EXPECT_FALSE(table_.CheckNode(info_.id));
   }
 
   // Check the table's full
@@ -89,10 +86,10 @@ TEST_F(RoutingTableUnitTest, BEH_CheckNode) {
   // 'buckets_[0].far_contact', 'buckets_[0].mid_contact', 'buckets_[1].far_contact', and
   // 'buckets_[1].mid_contact' to be dropped
   for (size_t i = RoutingTable::OptimalSize() - 4; i < RoutingTable::OptimalSize(); ++i) {
-    info.id = buckets_[i].mid_contact;
-    EXPECT_TRUE(table_.CheckNode(info.id));
-    ASSERT_TRUE(table_.AddNode(info).first);
-    EXPECT_FALSE(table_.CheckNode(info.id));
+    info_.id = buckets_[i].mid_contact;
+    EXPECT_TRUE(table_.CheckNode(info_.id));
+    ASSERT_TRUE(table_.AddNode(info_).first);
+    EXPECT_FALSE(table_.CheckNode(info_.id));
     ASSERT_EQ(RoutingTable::OptimalSize(), table_.Size());
   }
 

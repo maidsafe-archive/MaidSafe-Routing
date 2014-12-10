@@ -63,7 +63,11 @@ RoutingTableUnitTest::Bucket::Bucket(const Address& furthest_from_tables_own_id,
       close_contact(GetContact(furthest_from_tables_own_id, index, ContactType::kClose)) {}
 
 RoutingTableUnitTest::RoutingTableUnitTest()
-    : table_(Address{RandomString(Address::kSize)}), buckets_(InitialiseBuckets()) {
+    : table_(Address{RandomString(Address::kSize)}),
+      buckets_(InitialiseBuckets()),
+      info_(),
+      initial_count_((RandomUint32() % (kGroupSize - 1)) + 1),
+      added_ids_() {
   for (int i = 0; i < 99; ++i) {
     EXPECT_TRUE(
         Address::CloserToTarget(buckets_[i].mid_contact, buckets_[i].far_contact, table_.OurId()))
@@ -79,6 +83,27 @@ RoutingTableUnitTest::RoutingTableUnitTest()
       Address::CloserToTarget(buckets_[99].mid_contact, buckets_[99].far_contact, table_.OurId()));
   EXPECT_TRUE(Address::CloserToTarget(buckets_[99].close_contact, buckets_[99].mid_contact,
                                       table_.OurId()));
+
+  const asymm::Keys keys{asymm::GenerateKeyPair()};
+  info_.public_key = keys.public_key;
+}
+
+void RoutingTableUnitTest::PartiallyFillTable() {
+  for (size_t i = 0; i < initial_count_; ++i) {
+    info_.id = buckets_[i].mid_contact;
+    added_ids_.push_back(info_.id);
+    ASSERT_TRUE(table_.AddNode(info_).first);
+  }
+  ASSERT_EQ(initial_count_, table_.Size());
+}
+
+void RoutingTableUnitTest::CompleteFillingTable() {
+  for (size_t i = initial_count_; i < RoutingTable::OptimalSize(); ++i) {
+    info_.id = buckets_[i].mid_contact;
+    added_ids_.push_back(info_.id);
+    ASSERT_TRUE(table_.AddNode(info_).first);
+  }
+  ASSERT_EQ(RoutingTable::OptimalSize(), table_.Size());
 }
 
 RoutingTableUnitTest::Buckets RoutingTableUnitTest::InitialiseBuckets() {

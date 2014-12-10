@@ -20,11 +20,15 @@
 #define MAIDSAFE_ROUTING_TESTS_UTILS_ROUTING_TABLE_UNIT_TEST_H_
 
 #include <array>
+#include <cstdint>
+#include <vector>
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 
+#include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -46,8 +50,14 @@ class RoutingTableUnitTest : public testing::Test {
 
   RoutingTableUnitTest();
 
+  void PartiallyFillTable();
+  void CompleteFillingTable();
+
   RoutingTable table_;
   const Buckets buckets_;
+  NodeInfo info_;
+  const size_t initial_count_;
+  std::vector<Address> added_ids_;
 
  private:
   Buckets InitialiseBuckets();
