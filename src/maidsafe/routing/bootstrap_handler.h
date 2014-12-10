@@ -16,6 +16,14 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.
  */
+/*
+The purpose of this simple object is to maintain a list of bootstrap nodes. These are nodes that
+are accessible through their published endpoint (external). Rudp confirms these nodes
+and passes us the NodeId:PublicKey:Endpoint. This is maintained as a sqlite3 db for the
+time being to allow multi process access (particularly useful for vaults).
+
+This object in itself will very possibly end up in rudp itself.
+*/
 
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_HANDLER_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_HANDLER_H_
