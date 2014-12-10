@@ -514,7 +514,8 @@ void Routing::Impl::OnMessageReceived(const std::string& message) {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (running_) {
     std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
-    asio_service_.service().post([this_ptr, message]() { this_ptr->DoOnMessageReceived(message); });
+    std::shared_ptr<std::string> message_ptr(new std::string(message.data(), message.size()));
+    asio_service_.service().post([this_ptr, message_ptr]() { this_ptr->DoOnMessageReceived(*message_ptr); });
   }
 }
 
