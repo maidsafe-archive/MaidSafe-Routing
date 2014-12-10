@@ -28,7 +28,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }
 
 Routing::Routing() : pimpl_() {
-  InitialisePimpl(true, NodeId(NodeId::IdType::kRandomId), asymm::GenerateKeyPair());
+  InitialisePimpl(true, NodeId(RandomString(NodeId::kSize)), asymm::GenerateKeyPair());
 }
 
 Routing::~Routing() {

@@ -347,7 +347,7 @@ void MessageHandler::HandleMessage(protobuf::Message& message) {
   }
 
   // Invalid source id, unknown message
-  if (NodeId(message.source_id()).IsZero()) {
+  if (!NodeId(message.source_id()).IsValid()) {
     LOG(kWarning) << "Stray message dropped, need valid source ID for processing."
                   << " id: " << message.id();
     return;

@@ -66,7 +66,7 @@ void NetworkStatistics::UpdateNetworkAverageDistance(const NodeId& distance) {
     auto average(network_distance_data_.total_distance /
                  ++network_distance_data_.contributors_count);
     std::string average_str(NodeId::kSize, '\0');
-    for (auto index(NodeId::kSize - 1); index >= 0; --index)
+    for (auto index(static_cast<int>(NodeId::kSize) - 1); index >= 0; --index)
       average_str[NodeId::kSize - 1 - index] = average.GetByte(index);
     network_distance_data_.average_distance = NodeId(average_str);
   }

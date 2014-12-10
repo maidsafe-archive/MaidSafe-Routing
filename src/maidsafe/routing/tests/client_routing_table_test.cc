@@ -37,7 +37,7 @@ namespace test {
 
 class BasicClientRoutingTableTest : public testing::Test {
  public:
-  BasicClientRoutingTableTest() : node_id_(NodeId::IdType::kRandomId) {}
+  BasicClientRoutingTableTest() : node_id_(RandomString(NodeId::kSize)) {}
 
  protected:
   NodeId node_id_;
@@ -73,7 +73,7 @@ class ClientRoutingTableTest : public BasicClientRoutingTableTest {
     return sought_id;
   }
 
-  void ScrambleNodesOrder() { SortFromTarget(NodeId(NodeId::IdType::kRandomId), nodes_); }
+  void ScrambleNodesOrder() { SortFromTarget(NodeId(RandomString(NodeId::kSize)), nodes_); }
 
   void PopulateClientRoutingTable(ClientRoutingTable& client_routing_table) {
     for (auto& node : nodes_)
@@ -91,8 +91,8 @@ TEST_F(BasicClientRoutingTableTest, BEH_CheckAddOwnNodeInfo) {
   NodeInfo node(MakeNode());
   node.id = client_routing_table.kNodeId();
 
-  EXPECT_FALSE(client_routing_table.CheckNode(node, NodeId(NodeId::IdType::kRandomId)));
-  EXPECT_FALSE(client_routing_table.AddNode(node, NodeId(NodeId::IdType::kRandomId)));
+  EXPECT_FALSE(client_routing_table.CheckNode(node, NodeId(RandomString(NodeId::kSize))));
+  EXPECT_FALSE(client_routing_table.AddNode(node, NodeId(RandomString(NodeId::kSize))));
 }
 
 TEST_F(ClientRoutingTableTest, BEH_CheckAddFarAwayNode) {
@@ -313,7 +313,7 @@ TEST_F(BasicClientRoutingTableTest, BEH_IsThisNodeInRange) {
   std::vector<NodeInfo> nodes;
   NodeInfo node_info;
   for (int i(0); i < 101; ++i) {
-    node_info.id = NodeId(NodeId::IdType::kRandomId);
+    node_info.id = NodeId(RandomString(NodeId::kSize));
     nodes.push_back(node_info);
   }
   SortNodeInfosFromTarget(client_routing_table.kNodeId(), nodes);

@@ -206,12 +206,12 @@ bool ValidateMessage(const protobuf::Message& message) {
     return false;
   }
 
-  if (message.has_relay_id() && NodeId(message.relay_id()).IsZero()) {
+  if (message.has_relay_id() && !NodeId(message.relay_id()).IsValid()) {
     LOG(kWarning) << "Invalid relay id field.";
     return false;
   }
 
-  if (message.has_relay_connection_id() && NodeId(message.relay_connection_id()).IsZero()) {
+  if (message.has_relay_connection_id() && !NodeId(message.relay_connection_id()).IsValid()) {
     LOG(kWarning) << "Invalid relay connection id field.";
     return false;
   }
@@ -233,7 +233,7 @@ bool ValidateMessage(const protobuf::Message& message) {
 }
 
 NodeId NodeInNthBucket(const NodeId& node_id, int bucket) {
-  assert(bucket < NodeId::kSize * 8);
+  assert(bucket < static_cast<int>(NodeId::kSize) * 8);
   auto binary_string(node_id.ToStringEncoded(NodeId::EncodingType::kBinary));
   while (bucket >= 0) {
     binary_string.at(bucket) = (binary_string.at(bucket) == '1') ? '0' : '1';

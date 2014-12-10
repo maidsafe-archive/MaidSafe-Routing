@@ -112,7 +112,7 @@ Routing::Impl::Impl(bool client_mode, const NodeId& node_id, const asymm::Keys& 
       setup_timer_(asio_service_.service()) {
   message_handler_.reset(new MessageHandler(*routing_table_, client_routing_table_, *network_,
                                             timer_, network_utils_, asio_service_));
-  assert((client_mode || !node_id.IsZero()) && "Server Nodes cannot be created without valid keys");
+  assert((client_mode || node_id.IsValid()) && "Server Nodes cannot be created without valid keys");
 }
 
 void Routing::Impl::Stop() {
@@ -195,7 +195,7 @@ void Routing::Impl::Bootstrap() {
     return;
   }
 
-  assert(!network_->bootstrap_connection_id().IsZero() &&
+  assert(network_->bootstrap_connection_id().IsValid() &&
          "Bootstrap connection id must be populated by now.");
   FindClosestNode(boost::system::error_code(), 0);
   NotifyNetworkStatus(return_value);
@@ -209,7 +209,7 @@ int Routing::Impl::DoBootstrap() {
   std::lock_guard<std::mutex> lock(running_mutex_);
   if (!running_)
     return kNetworkShuttingDown;
-  if (!network_->bootstrap_connection_id().IsZero()) {
+  if (network_->bootstrap_connection_id().IsValid()) {
     network_->Remove(network_->bootstrap_connection_id());
     network_->clear_bootstrap_connection_info();
   }
@@ -231,8 +231,8 @@ void Routing::Impl::FindClosestNode(const boost::system::error_code& error_code,
     return;
 
   if (attempts == 0) {
-    assert(!network_->bootstrap_connection_id().IsZero() && "Only after bootstrapping succeeds");
-    assert(!network_->this_node_relay_connection_id().IsZero() &&
+    assert(network_->bootstrap_connection_id().IsValid() && "Only after bootstrapping succeeds");
+    assert(network_->this_node_relay_connection_id().IsValid() &&
            "Relay connection id should be set after bootstrapping succeeds");
   } else {
     if (routing_table_->size() > 0) {
@@ -303,7 +303,7 @@ int Routing::Impl::ZeroStateJoin(const Functors& functors, const Endpoint& local
     return result;
   }
 
-  assert(!peer_info.id.IsZero() && "Zero NodeId passed");
+  assert(peer_info.id.IsValid() && "Zero NodeId passed");
   assert((network_->bootstrap_connection_id() == peer_info.id) &&
          "Should bootstrap only with known peer for zero state network");
   rudp::NatType nat_type(rudp::NatType::kUnknown);
@@ -460,7 +460,7 @@ protobuf::Message Routing::Impl::CreateNodeLevelPartialMessage(
 
 // throws
 void Routing::Impl::CheckSendParameters(const NodeId& destination_id, const std::string& data) {
-  if (destination_id.IsZero()) {
+  if (!destination_id.IsValid()) {
     LOG(kError) << "Invalid destination ID, aborted send";
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_node_id));
   }
@@ -524,7 +524,7 @@ void Routing::Impl::DoOnMessageReceived(const std::string& message) {
     if ((!pb_message.client_node() && pb_message.has_source_id()) ||
         (!pb_message.direct() && !pb_message.request())) {
       NodeId source_id(pb_message.source_id());
-      if (!source_id.IsZero())
+      if (source_id.IsValid())
         random_node_helper_.Add(source_id);
     }
     {
@@ -566,21 +566,21 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
 
   // Checking routing table
   dropped_node = routing_table_->DropNode(lost_connection_id, true);
-  if (!dropped_node.id.IsZero()) {
+  if (dropped_node.id.IsValid()) {
     LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                   << "Lost connection with routing node " << DebugId(dropped_node.id);
     random_node_helper_.Remove(dropped_node.id);
   }
 
   // Checking non-routing table
-  if (dropped_node.id.IsZero()) {
+  if (!dropped_node.id.IsValid()) {
     resend = false;
     dropped_node = client_routing_table_.DropConnection(lost_connection_id);
-    if (!dropped_node.id.IsZero()) {
+    if (dropped_node.id.IsValid()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost connection with non-routing node "
                     << HexSubstr(dropped_node.id.string());
-    } else if (!network_->bootstrap_connection_id().IsZero() &&
+    } else if (network_->bootstrap_connection_id().IsValid() &&
                lost_connection_id == network_->bootstrap_connection_id()) {
       LOG(kWarning) << "[" << DebugId(kNodeId_) << "]"
                     << "Lost temporary connection with bootstrap node. connection id :"
@@ -617,7 +617,7 @@ void Routing::Impl::DoOnConnectionLost(const NodeId& lost_connection_id) {
 }
 
 void Routing::Impl::RemoveNode(const NodeInfo& node, bool internal_rudp_only) {
-  if (node.connection_id.IsZero() || node.id.IsZero())
+  if (!node.connection_id.IsValid() || !node.id.IsValid())
     return;
 
   network_->Remove(node.connection_id);

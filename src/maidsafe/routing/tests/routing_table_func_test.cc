@@ -210,7 +210,7 @@ RoutingTablePtr RoutingTableNetwork::CreateRoutingTable(const passport::Pmid& pm
 
 void RoutingTableNetwork::OnRoutingTableChange(const NodeId& node_id,
                                                const RoutingTableChange& routing_table_change) {
-  if (!routing_table_change.removed.node.id.IsZero()) {
+  if (routing_table_change.removed.node.id.IsValid()) {
     LOG(kVerbose) << node_id << " removes removed " << routing_table_change.removed.node.id;
     network_map_.at(routing_table_change.removed.node.id)->routing_table->DropNode(node_id, true);
     std::lock_guard<std::mutex> lock(mutex_);
@@ -375,7 +375,7 @@ void RoutingTableNetwork::ValidateGroup() {
   std::vector<size_t> close_nodes_results(Parameters::group_size, 0);
   size_t number_of_tests(1000), kNumberofTests(1000);
   while (number_of_tests-- > 0) {
-    NodeId random_node_id(NodeId::IdType::kRandomId);
+    NodeId random_node_id(RandomString(NodeId::kSize));
     PartialSortFromTarget(random_node_id, static_cast<size_t>(Parameters::group_size),
                           RoutingTableInfo::ready_nodes);
     std::vector<NodeId> group_ids;
@@ -447,7 +447,7 @@ TEST_F(RoutingTableNetwork, FUNC_AnalyseNetwork) {
 }
 
 void RoutingTableNetwork::ValidateNewGroupMessaging() {
-  NodeId target(NodeId::IdType::kRandomId);
+  NodeId target(RandomString(NodeId::kSize));
   for (size_t index(0); index < 10; ++index) {
     std::set<NodeId> expected_group;
     std::partial_sort(std::begin(node_ids_),

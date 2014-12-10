@@ -35,7 +35,7 @@ namespace routing {
 namespace test {
 
 TEST(NetworkStatisticsTest, BEH_AverageDistance) {
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   NodeId average(node_id);
   NetworkStatistics network_statistics(node_id);
   network_statistics.network_distance_data_.average_distance = average;
@@ -64,7 +64,7 @@ TEST(NetworkStatisticsTest, BEH_AverageDistance) {
   std::vector<crypto::BigInt> distances_as_bigint;
   uint32_t kCount(RandomUint32() % 1000 + 9000);
   for (uint32_t i(0); i < kCount; ++i) {
-    NodeId node_id(NodeId::IdType::kRandomId);
+    NodeId node_id(RandomString(NodeId::kSize));
     distances_as_node_id.push_back(node_id);
     distances_as_bigint.push_back(
         crypto::BigInt((node_id.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()));
@@ -97,7 +97,7 @@ TEST(NetworkStatisticsTest, FUNC_IsIdInGroupRange) {
     EXPECT_TRUE(routing_table.AddNode(node));
   }
 
-  NodeId info_id(NodeId::IdType::kRandomId);
+  NodeId info_id(RandomString(NodeId::kSize));
   std::partial_sort(nodes_id.begin(), nodes_id.begin() + Parameters::group_size + 1, nodes_id.end(),
                     [&](const NodeId& lhs,
                         const NodeId& rhs) { return NodeId::CloserToTarget(lhs, rhs, info_id); });

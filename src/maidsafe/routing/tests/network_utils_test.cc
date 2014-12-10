@@ -68,7 +68,7 @@ TEST(NetworkTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   AsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
@@ -86,15 +86,15 @@ TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   AsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   Network network(routing_table, client_routing_table, acknowledgement);
-  network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
-                       NodeId(NodeId::IdType::kRandomId));
+  network.SendToDirect(message, NodeId(RandomString(NodeId::kSize)),
+                       NodeId(RandomString(NodeId::kSize)));
 }
 
 TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
@@ -203,7 +203,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   rudp2.MarkConnectionAsValid(node_id1, endpoint);
   LOG(kVerbose) << " ------------------------   Zero state setup done  ----------------------- ";
 
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   AsioService asio_service(2);
@@ -267,8 +267,8 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_request(true);
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
-  sent_message.set_source_id(NodeId(NodeId::IdType::kRandomId).string());
-  NodeId node_id(NodeId::IdType::kRandomId);
+  sent_message.set_source_id(NodeId(RandomString(NodeId::kSize)).string());
+  NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
   AsioService asio_service(2);
