@@ -33,7 +33,7 @@ NodeId RandomNodeHelper::Get() const {
 }
 
 void RandomNodeHelper::Add(const NodeId& node_id) {
-  assert(!node_id.IsZero());
+  assert(node_id.IsValid());
   std::lock_guard<std::mutex> lock(mutex_);
   if (std::find(node_ids_.begin(), node_ids_.end(), node_id) != node_ids_.end())
     return;
@@ -44,7 +44,7 @@ void RandomNodeHelper::Add(const NodeId& node_id) {
 }
 
 void RandomNodeHelper::Remove(const NodeId& node_id) {
-  assert(!node_id.IsZero());
+  assert(node_id.IsValid());
   std::lock_guard<std::mutex> lock(mutex_);
   auto itr(std::find(node_ids_.begin(), node_ids_.end(), node_id));
   if (itr != node_ids_.end())

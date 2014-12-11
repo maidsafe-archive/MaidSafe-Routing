@@ -49,7 +49,7 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 TEST(ServicesTest, BEH_Ping) {
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   AsioService asio_service(1);
@@ -80,7 +80,7 @@ TEST(ServicesTest, BEH_Ping) {
 }
 
 TEST(ServicesTest, BEH_FindNodes) {
-  NodeId node_id(NodeId::IdType::kRandomId);
+  NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());

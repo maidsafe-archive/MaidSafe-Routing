@@ -42,11 +42,11 @@ TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
   Network network(routing_table, client_routing_table, acknowledgment);
   PublicKeyHolder public_key_holder(asio_service, network);
 
-  EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
+  EXPECT_FALSE(public_key_holder.Find(NodeId(RandomString(NodeId::kSize))));
 
   public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
   EXPECT_TRUE(static_cast<bool>(public_key_holder.Find(node_details.node_info.id)));
-  EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
+  EXPECT_FALSE(public_key_holder.Find(NodeId(RandomString(NodeId::kSize))));
 
   Sleep(std::chrono::seconds(Parameters::public_key_holding_time + 1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));

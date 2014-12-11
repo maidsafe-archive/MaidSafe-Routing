@@ -88,7 +88,7 @@ void ResponseHandler::Connect(protobuf::Message& message) {
     return;
   }
 
-  if (NodeId(connect_response.contact().node_id()).IsZero()) {
+  if (!NodeId(connect_response.contact().node_id()).IsValid()) {
     LOG(kError) << "Invalid contact details";
     return;
   }
@@ -160,12 +160,12 @@ void ResponseHandler::FindNodes(const protobuf::Message& message) {
 }
 
 void ResponseHandler::SendConnectRequest(const NodeId peer_node_id) {
-  if (network_.bootstrap_connection_id().IsZero() && (routing_table_.size() == 0)) {
+  if (!network_.bootstrap_connection_id().IsValid() && (routing_table_.size() == 0)) {
     LOG(kWarning) << "Need to re bootstrap !";
     return;
   }
   bool send_to_bootstrap_connection((routing_table_.size() < Parameters::closest_nodes_size) &&
-                                    !network_.bootstrap_connection_id().IsZero());
+                                    network_.bootstrap_connection_id().IsValid());
   NodeInfo peer;
   peer.id = peer_node_id;
 
@@ -228,11 +228,11 @@ void ResponseHandler::ConnectSuccessAcknowledgement(protobuf::Message& message) 
     peer.id = NodeId(connect_success_ack.node_id());
   if (!connect_success_ack.connection_id().empty())
     peer.connection_id = NodeId(connect_success_ack.connection_id());
-  if (peer.id.IsZero()) {
+  if (!peer.id.IsValid()) {
     LOG(kWarning) << "Invalid node id provided";
     return;
   }
-  if (peer.connection_id.IsZero()) {
+  if (!peer.connection_id.IsValid()) {
     LOG(kWarning) << "Invalid peer connection_id provided";
     return;
   }
@@ -304,7 +304,7 @@ void ResponseHandler::HandleSuccessAcknowledgementAsReponder(NodeInfo peer, bool
 void ResponseHandler::HandleSuccessAcknowledgementAsRequestor(
     const std::vector<NodeId>& close_ids) {
   for (const auto& i : close_ids) {
-    if (!i.IsZero()) {
+    if (i.IsValid()) {
       CheckAndSendConnectRequest(i);
     }
   }
