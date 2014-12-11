@@ -43,11 +43,14 @@ destiations. In that case request a close_group message for this node.
 #include <mutex>
 #include <vector>
 
+#include "asio/io_service.hpp"
+
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
+
 
 namespace maidsafe {
 
@@ -55,9 +58,11 @@ namespace routing {
 
 class ConnectionManager {
  public:
-  ConnectionManager(rudp::ManagedConnections& rudp, Address our_id,
+  ConnectionManager(asio::io_service& io_service, rudp::ManagedConnections& rudp, Address our_id,
                     std::function<void(CloseGroupDifference)> group_changed_functor)
-      : routing_table_(our_id),
+      : mutex_(),
+        io_service_(io_service),
+        routing_table_(our_id),
         rudp_(rudp),
         current_close_group_(),
         group_changed_functor_(group_changed_functor) {
@@ -80,7 +85,9 @@ class ConnectionManager {
  private:
   void GroupChanged();
 
+
   std::mutex mutex_;
+  asio::io_service& io_service_;
   RoutingTable routing_table_;
   rudp::ManagedConnections& rudp_;
   std::vector<Address> current_close_group_;

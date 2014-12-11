@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+#include "asio/spawn.hpp"
+
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/contact.h"
 
@@ -60,19 +62,24 @@ void ConnectionManager::DropNode(const Address& their_id) {
 void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
   rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
                              node_to_add.public_key);
-  (void)rudp_contact;
-  // rudp_.add(std::move(rudp_contact), [node_to_add, this](maidsafe_error error) {
-  //  if (error.code() == make_error_code(CommonErrors::success)) {
-  //    auto added = routing_table_.AddNode(node_to_add);
-  //    if (!added.first) {
-  //      rudp_.remove(node_to_add.id, nullptr);  // become invalid for us
-  //      GroupChanged();
-  //    } else if (added.second) {
-  //      rudp_.remove(added.second->id, nullptr);  // a sacrificlal node was found
-  //      GroupChanged();
-  //    }
-  //  }
-  //});
+  auto spawn_me([=](asio::yield_context yield) {
+    asio::error_code error;
+    rudp_.Add(std::move(rudp_contact), yield[error]);
+
+    if (!error) {
+      auto added = routing_table_.AddNode(node_to_add);
+      if (!added.first) {
+        auto nothing([](asio::error_code) {});
+        rudp_.Remove(node_to_add.id, std::move(nothing));  // become invalid for us
+        GroupChanged();
+      } else if (added.second) {
+        rudp_.Remove(added.second->id, nullptr);  // a sacrificlal node was found
+        GroupChanged();
+      }
+    }
+  });
+
+  asio::spawn(io_service_, spawn_me);
 }
 
 void ConnectionManager::GroupChanged() {
