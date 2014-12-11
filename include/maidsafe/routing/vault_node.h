@@ -38,20 +38,31 @@ class VaultNode : private rudp::ManagedConnections::Listener {
   VaultNode(VaultNode&&) = delete;
   VaultNode& operator=(const VaultNode&) = delete;
   VaultNode& operator=(VaultNode&&) = delete;
-
   ~VaultNode();
 
   // Used for bootstrapping (joining) and can be used as zero state network if both ends are started
   // simultaneously or to connect to a specific VaultNode.
-  void Bootstrap(const Endpoint& our_endpoint, const Endpoint& their_endpoint,
-                 const asymm::PublicKey& their_public_key);
-  // Use hard coded VaultNodes or cache file
-  void Bootstrap();
+  template <typename CompletionToken>
+  BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token);
+
+  template <typename CompletionToken>
+  GetReturn<CompletionToken> Get(const Identity& key, CompletionToken&& token);
+
+  template <typename CompletionToken>
+  PutReturn<CompletionToken> Put(SerialisedMessage message, CompletionToken&& token);
+
+  template <typename CompletionToken>
+  PostReturn<CompletionToken> Post(SerialisedMessage message, CompletionToken&& token);
 
   Address OurId() const { return our_id_; }
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
   int NetworkStatus() const;
+  class Listener : private rudp::ManagedConnections::Listener : std::shared_from_this {
+   public:
+    virtual void MessageReceived(NodeId peer_id, ReceivedMessage message);
+    virtual void ConnectionLost(NodeId peer_id);
+  };
 
  private:
   AsioService& asio_service_;
@@ -60,6 +71,24 @@ class VaultNode : private rudp::ManagedConnections::Listener {
   const asymm::Keys keys_;
 };
 
+template <typename CompletionToken>
+BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token) {
+  BootstrapHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  asio_service_.service().post([=] {
+    rudp_.Bootstrap(bootstrap_handler_.GetBootstrapList, listener, our_id, keys, handler,
+                    local_endpoint);
+  });
+  return result.get();
+}
+
+template <typename CompletionToken>
+GetReturn<CompletionToken> Get(const Identity& key, CompletionToken&& token) {
+  GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  asio_service_.service().post([=] { DoGet(key, handler); });
+  return result.get();
+}
 }  // namespace routing
 
 }  // namespace maidsafe
