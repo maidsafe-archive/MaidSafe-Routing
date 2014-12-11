@@ -47,13 +47,12 @@ class GraphPage : public QWebPage {
  protected:
   virtual void javaScriptAlert(QWebFrame* frame, const QString& msg);
 
- signals:
+signals:  // NOLINT
   void RequestNewGraphView(const QString& new_parent_id);
 
-  private
-slots:  // NOLINT - Viv
+ private slots:  // NOLINT - Viv
   void RefreshGraph(int state_id);
-  void RenderNode(int state_id, std::string node_id, bool is_parent, bool is_data_node);
+  void RenderNode(int state_id, std::string Address, bool is_parent, bool is_data_node);
 
  private:
   typedef network_viewer::ViewableNode Node;

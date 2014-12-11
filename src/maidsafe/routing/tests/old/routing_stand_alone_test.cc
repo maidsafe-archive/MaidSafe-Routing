@@ -43,53 +43,50 @@ class RoutingStandAloneTest : public GenericNetwork, public testing::Test {
     GenericNetwork::TearDown();
   }
 
-  bool PmidIsCloseToMaid(const NodeId& pmid_id, const NodeId& maid_id) {
-    std::vector<NodeId> pmid_ids;
+  bool PmidIsCloseToMaid(const Address& pmid_id, const Address& maid_id) {
+    std::vector<Address> pmid_ids;
     for (size_t index(0); index < ClientIndex(); ++index) {
-      pmid_ids.push_back(nodes_[index]->node_id());
+      pmid_ids.push_back(nodes_[index]->Address());
     }
-    std::sort(std::begin(pmid_ids), std::end(pmid_ids), [&](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, maid_id);
+    std::sort(std::begin(pmid_ids), std::end(pmid_ids),
+              [&](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, maid_id);
     });
-    return !NodeId::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
-                                   pmid_id, maid_id);
+    return !Address::CloserToTarget(pmid_ids.at(Parameters::max_routing_table_size_for_client - 1),
+                                    pmid_id, maid_id);
   }
 };
 
 TEST_F(RoutingStandAloneTest, FUNC_VaultSendToClient) {
   SetUpNetwork(kServerSize, 1);
   for (size_t index(0); index < ClientIndex(); ++index) {
-    EXPECT_TRUE(SendDirect(nodes_[index], nodes_[ClientIndex()]->node_id(),
-                                 ExpectedNodeType::kExpectClient))
-        << nodes_[index]->node_id();
+    EXPECT_TRUE(SendDirect(nodes_[index], nodes_[ClientIndex()]->Address(),
+                           ExpectedNodeType::kExpectClient))
+        << nodes_[index]->Address();
   }
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_ClientRoutingTableUpdate) {
   SetUpNetwork(kServerSize);
   AddNode(passport::CreateMaidAndSigner().first);
-  NodeId maid_id(nodes_[kServerSize]->GetMaid().name()), pmid_id;
+  Address maid_id(nodes_[kServerSize]->GetMaid().name()), pmid_id;
   while (nodes_.size() < kServerSize + Parameters::max_routing_table_size_for_client) {
     auto pmid(passport::CreatePmidAndSigner().first);
-    pmid_id = NodeId(pmid.name());
+    pmid_id = Address(pmid.name());
     AddNode(pmid);
     Sleep(std::chrono::milliseconds(500));
     if (PmidIsCloseToMaid(pmid_id, maid_id)) {
       EXPECT_TRUE(nodes_[ClientIndex()]->RoutingTableHasNode(pmid_id))
-          << nodes_[ClientIndex()]->node_id() << " does not have " << DebugId(pmid_id);
+          << nodes_[ClientIndex()]->Address() << " does not have " << DebugId(pmid_id);
     }
   }
 }
 
 TEST_F(RoutingStandAloneTest, FUNC_SetupNetwork) { SetUpNetwork(kServerSize); }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupSingleClientHybridNetwork) {
-  SetUpNetwork(kServerSize, 1);
-}
+TEST_F(RoutingStandAloneTest, FUNC_SetupSingleClientHybridNetwork) { SetUpNetwork(kServerSize, 1); }
 
-TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) {
-  SetUpNetwork(kServerSize, kClientSize);
-}
+TEST_F(RoutingStandAloneTest, FUNC_SetupHybridNetwork) { SetUpNetwork(kServerSize, kClientSize); }
 
 TEST_F(RoutingStandAloneTest, DISABLED_FUNC_SetupNetworkWithVaultsBehindSymmetricNat) {
   SetUpNetwork(kServerSize, kClientSize, kServerSize / 4, 0);
@@ -140,7 +137,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
   unsigned int message_count(10), receivers_message_count(0);
   SetUpNetwork(kServerSize);
   size_t last_index(nodes_.size() - 1);
-  NodeId dest_id(nodes_[last_index]->node_id());
+  Address dest_id(nodes_[last_index]->Address());
 
   unsigned int loop(100);
   while (loop-- > 0) {
@@ -149,8 +146,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroup) {
       receivers_message_count += static_cast<unsigned int>(nodes_.at(index)->MessagesSize());
 
     EXPECT_EQ(0, nodes_[last_index]->MessagesSize())
-        << "Not expected message at Node : "
-        << HexSubstr(nodes_[last_index]->node_id().string());
+        << "Not expected message at Node : " << HexSubstr(nodes_[last_index]->Address().string());
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
     receivers_message_count = 0;
     ClearMessages();
@@ -163,18 +159,18 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
   unsigned int loop(10);
   while (loop-- > 0) {
     for (unsigned int index(0); index < message_count; ++index) {
-      NodeId random_id(NodeId::IdType::kRandomId);
-      std::vector<NodeId> groupd_ids(GroupIds(random_id));
+      Address random_id(RandomString(Address::kSize));
+      std::vector<Address> groupd_ids(GroupIds(random_id));
       EXPECT_TRUE(SendGroup(random_id, 1));
       for (const auto& node : nodes_) {
-        if (std::find(groupd_ids.begin(), groupd_ids.end(), node->node_id()) != groupd_ids.end()) {
+        if (std::find(groupd_ids.begin(), groupd_ids.end(), node->Address()) != groupd_ids.end()) {
           receivers_message_count += static_cast<unsigned int>(node->MessagesSize());
           node->ClearMessages();
         }
       }
     }
     EXPECT_EQ(message_count * (Parameters::group_size), receivers_message_count);
-   
+
     receivers_message_count = 0;
     ClearMessages();
   }
@@ -203,7 +199,7 @@ TEST_F(RoutingStandAloneTest, FUNC_RetryingJoin) {
   Sleep(std::chrono::seconds(1));
   auto node(std::make_shared<GenericNode>(passport::CreatePmidAndSigner().first));
   nodes_.insert(std::begin(nodes_), node);
-  AddPublicKey(node->node_id(), node->public_key());
+  AddPublicKey(node->Address(), node->public_key());
   SetNodeValidationFunctor(node);
   node->Join();
   Sleep(Parameters::re_bootstrap_time_lag);
@@ -269,16 +265,16 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
     ASSERT_TRUE(SendDirect(2, 10));
-    NodeId target;
+    Address target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
-      target = NodeId(NodeId::IdType::kRandomId);
+      target = Address(RandomString(Address::kSize));
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
       for (const auto& node : nodes_) {
-        ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
+        ASSERT_TRUE(SendGroup(node->Address(), 1, i, 10));
       }
     }
   }
@@ -292,16 +288,16 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSy
     std::cout << "Repeat: " << repeat << std::endl;
     std::cout << "SendDirect..." << std::endl;
     ASSERT_TRUE(SendDirect(1, 10));
-    NodeId target;
+    Address target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
-      target = NodeId(NodeId::IdType::kRandomId);
+      target = Address(RandomString(Address::kSize));
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
       for (const auto& node : nodes_) {
-        ASSERT_TRUE(SendGroup(node->node_id(), 1, i, 10));
+        ASSERT_TRUE(SendGroup(node->Address(), 1, i, 10));
       }
     }
   }
@@ -315,7 +311,7 @@ TEST_F(RoutingStandAloneTest, FUNC_SendToClientsWithSameId) {
     AddNode(maid);
 
   for (unsigned int index(0); index < kMessageCount; ++index)
-    EXPECT_TRUE(SendDirect(nodes_[kServerSize], nodes_[kServerSize]->node_id(), kExpectClient));
+    EXPECT_TRUE(SendDirect(nodes_[kServerSize], nodes_[kServerSize]->Address(), kExpectClient));
   unsigned int num_of_tries(0);
   bool done(false);
   do {

@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -21,69 +21,104 @@
 
 #include <cstdint>
 #include <mutex>
+#include <utility>
 #include <vector>
 
+#include "boost/optional.hpp"
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 
-#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/close_nodes_change.h"
-#include "maidsafe/routing/routing_table_change.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct node_info;
+struct NodeInfo;
 
-class routing_table {
+// The RoutingTable class is used to maintain a list of contacts to which we are connected.  It is
+// threadsafe and all public functions offer the strong exception guarantee.  Any public function
+// having an Address or NodeInfo arg will throw if NDEBUG is defined and the passed ID is invalid.
+// These functions assert that any such ID is valid, so it should be considered a bug if any such
+// function throws.  Other than bad_allocs, there are no other exceptions thrown from this class.
+class RoutingTable {
  public:
-  static const size_t kBucketSize_ = 1;
-  routing_table(NodeId our_id, asymm::Keys keys);
-  routing_table(const routing_table&) = delete;
-  routing_table(routing_table&&) = delete;
-  routing_table& operator=(const routing_table&) = delete;
-  routing_table& operator=(routing_table&&) MAIDSAFE_NOEXCEPT = delete;
-  virtual ~routing_table() = default;
-  bool add_node(node_info their_info);
-  bool check_node(const node_info& their_info) const;
-  bool drop_node(const NodeId& node_to_drop);
-  // If more than 1 node returned then we are in close group so send to all !!
-  std::vector<node_info> target_nodes(const NodeId& their_id) const;
-  // our close group or at least as much of it as we currently know
-  std::vector<node_info> our_close_group() const;
+  static size_t BucketSize() { return 1; }
+  static size_t Parallelism() { return 4; }
+  static size_t OptimalSize() { return 64; }
 
-  size_t size() const;
-  NodeId our_id() const { return our_id_; }
-  asymm::PrivateKey our_private_key() const { return kKeys_.private_key; }
-  asymm::PublicKey our_public_key() const { return kKeys_.public_key; }
+  explicit RoutingTable(Address our_id);
+  RoutingTable(const RoutingTable&) = delete;
+  RoutingTable(RoutingTable&&) = delete;
+  RoutingTable& operator=(const RoutingTable&) = delete;
+  RoutingTable& operator=(RoutingTable&&) MAIDSAFE_NOEXCEPT = delete;
+  ~RoutingTable() = default;
+
+  // Potentially adds a contact to the routing table.  If the contact is added, the first return arg
+  // is true, otherwise false.  If adding the contact caused another contact to be dropped, the
+  // dropped one is returned in the second field, otherwise the optional field is empty.  The
+  // following steps are used to determine whether to add the new contact or not:
+  //
+  // 1 - if the contact is ourself, or doesn't have a valid public key, or is already in the table,
+  //     it will not be added
+  // 2 - if the routing table is not full (size < OptimalSize()), the contact will be added
+  // 3 - if the contact is within our close group, it will be added
+  // 4 - if we can find a candidate for removal (a contact in a bucket with more than 'BucketSize()'
+  //     contacts, which is also not within our close group), and if the new contact will fit in a
+  //     bucket closer to our own bucket, then we add the new contact.
+  std::pair<bool, boost::optional<NodeInfo>> AddNode(NodeInfo their_info);
+
+  // This is used to see whether to bother retrieving a contact's public key from the PKI with a
+  // view to adding the contact to our table.  The checking procedure is the same as for 'AddNode'
+  // above, except for the lack of a public key to check in step 1.
+  bool CheckNode(const Address& their_id) const;
+
+  // This unconditionally removes the contact from the table.
+  void DropNode(const Address& node_to_drop);
+
+  // This returns a collection of contacts to which a message should be sent onwards.  It will
+  // return all of our close group (comprising 'kGroupSize' contacts) if the closest one to the
+  // target is within our close group.  If not, it will return the 'Parallelism()' closest contacts
+  // to the target.  In both cases, if the target is an actual contact in our table, it is excluded
+  // from the returned collection.
+  std::vector<NodeInfo> TargetNodes(const Address& target) const;
+
+  // This returns our close group, i.e. the 'kGroupSize' contacts closest to our ID (or the entire
+  // table if we hold less than 'kGroupSize' contacts in total).
+  std::vector<NodeInfo> OurCloseGroup() const;
+
+  Address OurId() const { return our_id_; }
+
+  size_t Size() const;
 
  private:
-  int32_t bucket_index(const NodeId& node_id) const;
+  class Comparison {
+   public:
+    using NodesItr = std::vector<NodeInfo>::const_iterator;
+    explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
+    bool operator()(const NodeInfo& lhs, const NodeInfo& rhs) const {
+      return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
+    }
+    bool operator()(NodesItr lhs, NodesItr rhs) const {
+      return Address::CloserToTarget(lhs->id, rhs->id, our_id_);
+    }
 
-  /** Attempts to find or allocate space for an incomming connect request, returning true
-   * indicates approval
-   * returns true if routing table is not full, otherwise, performs the following process to
-   * possibly evict an existing node:
-   * - sorts the nodes according to their distance from self-node-id
-   * - a candidate for eviction must have an index > Parameters::unidirectional_interest_range
-   * - count the number of nodes in each bucket for nodes with
-   *    index > Parameters::unidirectional_interest_range
-   * - choose the furthest node among the nodes with maximum bucket index
-   * - in case more than one bucket have similar maximum bucket size, the furthest node in higher
-   *    bucket will be evicted
-   * - remove the selected node and return true **/
-  std::vector<node_info>::const_reverse_iterator is_node_viable_for_routing_table() const;
+   private:
+    const Address our_id_;
+  };
+  int32_t BucketIndex(const Address& node_id) const;
+  bool HaveNode(const NodeInfo& their_info) const;
+  bool NewNodeIsBetterThanExisting(const Address& their_id,
+                                   std::vector<NodeInfo>::const_iterator removal_candidate) const;
+  void PushBackThenSort(NodeInfo&& their_info);
+  std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
+  unsigned int NetworkStatus(size_t size) const;
 
-  unsigned int network_status(size_t size) const;
-
-  const NodeId our_id_;
-  const asymm::Keys kKeys_;
+  const Address our_id_;
+  const Comparison comparison_;
   mutable std::mutex mutex_;
-  std::vector<node_info> nodes_;
+  std::vector<NodeInfo> nodes_;
 };
 
 }  // namespace routing

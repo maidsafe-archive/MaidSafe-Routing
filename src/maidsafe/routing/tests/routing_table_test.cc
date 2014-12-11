@@ -19,16 +19,13 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
-
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {
 
@@ -36,24 +33,24 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, BEH_add_close_nodes) {
-  NodeId node_id(RandomString(NodeId::kSize));
+TEST(RoutingTableTest, BEH_AddCloseNodes) {
+  Address address(RandomString(Address::kSize));
   const auto keys = asymm::GenerateKeyPair();
-  routing_table routing_table(node_id, keys);
-  node_info node;
+  RoutingTable routing_table(address);
+  NodeInfo node;
   // check the node is useful when false is set
   for (unsigned int i = 0; i < kGroupSize; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
-    EXPECT_TRUE(routing_table.check_node(node));
+    node.id = Address(RandomString(Address::kSize));
+    EXPECT_TRUE(routing_table.CheckNode(node.id));
   }
-  EXPECT_EQ(0, routing_table.size());
+  EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now
   for (unsigned int i = 0; i < kGroupSize; ++i) {
-    node.id = NodeId(RandomString(NodeId::kSize));
+    node.id = Address(RandomString(Address::kSize));
     node.public_key = keys.public_key;
-    EXPECT_TRUE(routing_table.add_node(node));
+    EXPECT_TRUE(routing_table.AddNode(node).first);
   }
-  EXPECT_EQ(kGroupSize, routing_table.size());
+  EXPECT_EQ(kGroupSize, routing_table.Size());
 }
 
 }  // namespace test

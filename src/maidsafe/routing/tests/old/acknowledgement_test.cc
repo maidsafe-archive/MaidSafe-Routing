@@ -45,29 +45,29 @@ namespace test {
 class AcknowledgementTest : public testing::Test {
  public:
   AcknowledgementTest()
-      : local_node_id_(NodeId::IdType::kRandomId),
+      : local_node_id_(RandomString(Address::kSize)),
         asio_service_(2),
-        acknowledgement_(local_node_id_, asio_service_),
+        acknowledgement_(local_Address_, asio_service_),
         call_functor_(),
         message_() {
     call_functor_ = [=](const boost::system::error_code& error) {
-                      if (error.value() == boost::system::errc::success) {
-                        message_.set_id(message_.id() + 1);
-                        acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
-                      }
-                    };
+      if (error.value() == boost::system::errc::success) {
+        message_.set_id(message_.id() + 1);
+        acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
+      }
+    };
 
     message_.set_type(-200);
-    message_.set_destination_id("destination_id");
+    message_.set_DestinationAddress("destination_id");
     message_.set_direct(false);
     message_.add_data("response data");
-    message_.set_source_id("source_id");
+    message_.set_SourceAddress("source_address");
     message_.set_ack_id(acknowledgement_.GetId());
     message_.set_id(0);
   }
 
  protected:
-  NodeId local_node_id_;
+  Address local_Address_;
   AsioService asio_service_;
   Acknowledgement acknowledgement_;
   Handler call_functor_;
@@ -99,5 +99,3 @@ TEST_F(AcknowledgementTest, BEH_CallRemove) {
 }  // namespace routing
 
 }  // namespace maidsafe
-
-

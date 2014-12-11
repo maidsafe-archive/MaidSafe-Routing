@@ -21,6 +21,7 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "boost/asio/ip/udp.hpp"
@@ -30,35 +31,20 @@
 
 namespace maidsafe {
 
-enum class SerialisableTypeTag : unsigned char {
-  kPing,
-  kPingResponse,
-  kFindGroup,
-  kFindGroupResponse,
-  kConnect,
-  kConnectResponse,
-  kVaultMessage,
-  kCacheableGet,
-  kCacheableGetResponse
-};
-
 namespace routing {
 
 static const size_t kGroupSize = 32;
 static const size_t kQuorumSize = 29;
-static const size_t kRoutingTableSize = 64;
-
-using SingleDestinationId = TaggedValue<NodeId, struct SingleDestinationTag>;
-using GroupDestinationId = TaggedValue<NodeId, struct GroupDestinationTag>;
-using SingleSourceId = TaggedValue<NodeId, struct SingleSourceTag>;
-using GroupSourceId = TaggedValue<NodeId, struct GroupSourceTag>;
+using Address = NodeId;
+using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
+using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
-using OurEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct OurEndpointTag>;
-using TheirEndpoint = TaggedValue<boost::asio::ip::udp::endpoint, struct TheirEndpointTag>;
-using byte = unsigned char;
-using Murmur = uint32_t;
-using CheckSums = std::array<Murmur, kGroupSize - 1>;
-using SerialisedMessage = std::vector<unsigned char>;
+using Endpoint = boost::asio::ip::udp::endpoint;
+using Connection = boost::asio::ip::udp::endpoint;
+using MurmurHash = uint32_t;
+using Checksums = std::array<MurmurHash, kGroupSize - 1>;
+using SerialisedMessage = std::vector<byte>;
+using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 }  // namespace routing
 

@@ -77,8 +77,8 @@ void MainViewController::SelectionChanged() {
 }
 
 void MainViewController::FilterChanged(const QString& new_filter) {
-  foreach(QListWidgetItem * item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
-  item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
+  foreach (QListWidgetItem* item, view_.nodes_->findItems(QString("*"), Qt::MatchWildcard))
+    item->setHidden(!item->data(Qt::UserRole).toString().contains(new_filter));
 }
 
 void MainViewController::NewGraphViewRequested(const QString& new_parent_id) {
@@ -94,23 +94,23 @@ void MainViewController::OpenDataViewer() {
 }
 
 void MainViewController::PopulateNodes() {
-  std::vector<std::string> node_ids(api_helper_->GetNodesInNetwork(last_network_state_id_));
+  std::vector<std::string> Addresss(api_helper_->GetNodesInNetwork(last_network_state_id_));
   //  view_.nodes_->clear();
   std::vector<int> indices_for_removal;
   for (int i = 0; i < view_.nodes_->count(); ++i) {
-    auto found_itr(std::find(std::begin(node_ids), std::end(node_ids),
+    auto found_itr(std::find(std::begin(Addresss), std::end(node_ids),
                              view_.nodes_->item(i)->data(Qt::UserRole).toString().toStdString()));
-    if (found_itr == std::end(node_ids))
+    if (found_itr == std::end(Addresss))
       indices_for_removal.push_back(i);
     else
-      node_ids.erase(found_itr);
+      Addresss.erase(found_itr);
   }
   for (auto index : indices_for_removal)
     delete view_.nodes_->takeItem(index);
 
-  for (std::string& node_id : node_ids) {
-    QListWidgetItem* new_item(new QListWidgetItem(api_helper_->GetShortNodeId(node_id)));
-    new_item->setData(Qt::UserRole, QString::fromStdString(node_id));
+  for (std::string& Address : node_ids) {
+    QListWidgetItem* new_item(new QListWidgetItem(api_helper_->GetShortAddress(Address)));
+    new_item->setData(Qt::UserRole, QString::fromStdString(Address));
     view_.nodes_->addItem(new_item);
   }
   view_.count_->setText(QString::number(view_.nodes_->count()));

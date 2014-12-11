@@ -167,7 +167,7 @@ TEST_F(TimerTest, BEH_GroupResponsePartialResult) {
 TEST_F(TimerTest, BEH_MultipleResponse) {
   const uint32_t kMessageCount((RandomUint32() % 1000) + 500);
 
-  auto add_tasks = [&](int number)->std::map<TaskId, std::string> {
+  auto add_tasks = [&](int number) -> std::map<TaskId, std::string> {
     std::map<TaskId, std::string> messages;
     for (int i(0); i != number; ++i) {
       auto task_id(timer_.NewTaskId());
@@ -199,7 +199,7 @@ TEST_F(TimerTest, BEH_MultipleResponse) {
 TEST_F(TimerTest, BEH_MultipleGroupResponse) {
   const uint32_t kMessageCount((RandomUint32() % 100) + 500);
 
-  auto add_tasks = [&](int number)->std::map<TaskId, std::string> {
+  auto add_tasks = [&](int number) -> std::map<TaskId, std::string> {
     std::map<TaskId, std::string> messages;
     TaskId task_id;
     for (int i(0); i != number; ++i) {
@@ -294,9 +294,8 @@ TEST_F(TimerTest, BEH_VariousResults) {
     for (uint32_t i(0); i != details.second.expected_success_count; ++i) {
       auto task_id(details.second.task_id);
       auto message(details.second.message);
-      asio_service_.service().post([this, task_id, message]() {
-        timer_.AddResponse(task_id, message);
-      });
+      asio_service_.service().post(
+          [this, task_id, message]() { timer_.AddResponse(task_id, message); });
     }
   }
 

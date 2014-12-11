@@ -52,13 +52,13 @@ void GraphPage::javaScriptAlert(QWebFrame* /*frame*/, const QString& msg) {
   if (message_parts.count() < 2)
     return;
   if (message_parts.at(0) == "click") {
-    std::string node_id(message_parts.at(1).toStdString());
-    if (expanded_children_.contains(node_id)) {
-      expanded_children_.removeOne(node_id);
+    std::string Address(message_parts.at(1).toStdString());
+    if (expanded_children_.contains(Address)) {
+      expanded_children_.removeOne(Address);
       RefreshGraph(-1);
     } else {
-      expanded_children_.push_back(node_id);
-      RenderNode(-1, node_id, false, false);
+      expanded_children_.push_back(Address);
+      RenderNode(-1, Address, false, false);
     }
   } else if (message_parts.at(0) == "dblclick") {
     RenderGraph(-1, message_parts.at(1).toStdString(), false);
@@ -69,32 +69,32 @@ void GraphPage::javaScriptAlert(QWebFrame* /*frame*/, const QString& msg) {
 
 void GraphPage::RefreshGraph(int state_id) {
   RenderNode(state_id, current_parent_id_, true, is_data_node_);
-  foreach(std::string node_id, expanded_children_) { RenderNode(state_id, node_id, false, false); }
+  foreach (std::string Address, expanded_children_) { RenderNode(state_id, node_id, false, false); }
 }
 
-void GraphPage::RenderNode(int state_id, std::string node_id, bool is_parent, bool is_data_node) {
+void GraphPage::RenderNode(int state_id, std::string Address, bool is_parent, bool is_data_node) {
   QString graph_contents;
-  std::vector<Node> children(api_helper_->GetCloseNodes(state_id, node_id));
+  std::vector<Node> children(api_helper_->GetCloseNodes(state_id, Address));
   if (is_parent) {
-    graph_contents = QString("%1 {routingNodeType:%2}\\n").arg(QString::fromStdString(node_id)).arg(
+    graph_contents = QString("%1 {routingNodeType:%2}\\n").arg(QString::fromStdString(Address)).arg(
         is_data_node ? "dataNode" : "mainNode");
-  } else if (expanded_children_.contains(node_id) &&
+  } else if (expanded_children_.contains(Address) &&
              current_graph_data_.contains(
-                 QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)))) {
+                 QString("%1 {routingDistance:").arg(QString::fromStdString(Address)))) {
     graph_contents = current_graph_data_.replace(
-        QString("%1 {routingDistance:").arg(QString::fromStdString(node_id)),
-        QString("%1 {isExpanded:1, routingDistance:").arg(QString::fromStdString(node_id)));
-  } else if (expanded_children_.contains(node_id) &&
+        QString("%1 {routingDistance:").arg(QString::fromStdString(Address)),
+        QString("%1 {isExpanded:1, routingDistance:").arg(QString::fromStdString(Address)));
+  } else if (expanded_children_.contains(Address) &&
              !current_graph_data_.contains(
-                  QString("%1 {isExpanded:").arg(QString::fromStdString(node_id)))) {
+                 QString("%1 {isExpanded:").arg(QString::fromStdString(Address)))) {
     graph_contents =
-        current_graph_data_ + QString("%1 {isExpanded:1}\\n").arg(QString::fromStdString(node_id));
+        current_graph_data_ + QString("%1 {isExpanded:1}\\n").arg(QString::fromStdString(Address));
   } else {
     graph_contents = current_graph_data_;
   }
 
   for (size_t i(0); i < children.size(); ++i) {
-    graph_contents.append(CreateEdge(node_id, children.at(i), &graph_contents));
+    graph_contents.append(CreateEdge(Address, children.at(i), &graph_contents));
     if (is_parent) {
       assert(i < static_cast<uintmax_t>(std::numeric_limits<int>::max()));
       graph_contents.append(CreateProximityNode(children.at(i), static_cast<int>(i) + 1));

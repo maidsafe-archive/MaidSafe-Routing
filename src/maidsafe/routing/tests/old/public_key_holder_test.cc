@@ -42,17 +42,17 @@ TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
   Network network(routing_table, client_routing_table, acknowledgment);
   PublicKeyHolder public_key_holder(asio_service, network);
 
-  EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
+  EXPECT_FALSE(public_key_holder.Find(Address(RandomString(Address::kSize))));
 
   public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
-  EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
-  EXPECT_FALSE(public_key_holder.Find(NodeId(NodeId::IdType::kRandomId)));
+  EXPECT_TRUE(static_cast<bool>(public_key_holder.Find(node_details.node_info.id)));
+  EXPECT_FALSE(public_key_holder.Find(Address(RandomString(Address::kSize))));
 
   Sleep(std::chrono::seconds(Parameters::public_key_holding_time + 1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
 
   public_key_holder.Add(node_details.node_info.id, node_details.node_info.public_key);
-  EXPECT_TRUE(public_key_holder.Find(node_details.node_info.id));
+  EXPECT_TRUE(static_cast<bool>(public_key_holder.Find(node_details.node_info.id)));
   public_key_holder.Remove(node_details.node_info.id);
   Sleep(std::chrono::seconds(1));
   EXPECT_FALSE(public_key_holder.Find(node_details.node_info.id));
@@ -77,11 +77,10 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
   // store keys
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]() {
-                     return public_key_holder.Add(nodes_details.at(index).node_info.id,
-                                                  nodes_details.at(index).node_info.public_key);
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() {
+          return public_key_holder.Add(nodes_details.at(index).node_info.id,
+                                       nodes_details.at(index).node_info.public_key);
+        }));
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
@@ -91,12 +90,11 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
   // validate store
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]()->bool {
-                     if (public_key_holder.Find(nodes_details.at(index).node_info.id))
-                       return true;
-                     return false;
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() -> bool {
+          if (public_key_holder.Find(nodes_details.at(index).node_info.id))
+            return true;
+          return false;
+        }));
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
@@ -106,11 +104,10 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
   // remove all enytries
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]()->bool {
-                     public_key_holder.Remove(nodes_details.at(index).node_info.id);
-                     return true;
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() -> bool {
+          public_key_holder.Remove(nodes_details.at(index).node_info.id);
+          return true;
+        }));
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
@@ -122,12 +119,11 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
   // validate remove
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]()->bool {
-                     if (public_key_holder.Find(nodes_details.at(index).node_info.id))
-                       return true;
-                     return false;
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() -> bool {
+          if (public_key_holder.Find(nodes_details.at(index).node_info.id))
+            return true;
+          return false;
+        }));
 
   for (auto& future : futures)
     EXPECT_FALSE(future.get());
@@ -148,17 +144,15 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
   // prepare keys
   for (size_t index(0); index < kIterations; ++index) {
     nodes_details.push_back(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
-   
   }
 
   // store keys
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]() {
-                     return public_key_holder.Add(nodes_details.at(index).node_info.id,
-                                                  nodes_details.at(index).node_info.public_key);
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() {
+          return public_key_holder.Add(nodes_details.at(index).node_info.id,
+                                       nodes_details.at(index).node_info.public_key);
+        }));
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
@@ -168,12 +162,11 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
   // validate store
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]()->bool {
-                     if (public_key_holder.Find(nodes_details.at(index).node_info.id))
-                       return true;
-                     return false;
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() -> bool {
+          if (public_key_holder.Find(nodes_details.at(index).node_info.id))
+            return true;
+          return false;
+        }));
 
   for (auto& future : futures)
     EXPECT_TRUE(future.get());
@@ -188,12 +181,11 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
   // validate removal on timeout
   for (size_t index(0); index < kIterations; ++index)
     futures.emplace_back(
-        std::async(std::launch::async,
-                   [index, &public_key_holder, &nodes_details]()->bool {
-                     if (public_key_holder.Find(nodes_details.at(index).node_info.id))
-                       return true;
-                     return false;
-                   }));
+        std::async(std::launch::async, [index, &public_key_holder, &nodes_details]() -> bool {
+          if (public_key_holder.Find(nodes_details.at(index).node_info.id))
+            return true;
+          return false;
+        }));
 
   for (auto& future : futures)
     EXPECT_FALSE(future.get());

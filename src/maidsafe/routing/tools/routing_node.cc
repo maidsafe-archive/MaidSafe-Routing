@@ -89,8 +89,9 @@ int main(int argc, char** argv) {
         "peer,p", po::value<std::string>()->default_value(""), "Endpoint of bootstrap peer")(
         "identity_index,i", po::value<int>(&identity_index)->default_value(-1),
         "Entry from keys file to use as ID (starts from 0)")(
-        "pmids_path", po::value<std::string>()->default_value(fs::path(
-                          fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
+        "pmids_path",
+        po::value<std::string>()->default_value(
+            fs::path(fs::temp_directory_path(error_code) / "pmids_list.dat").string()),
         "Path to pmid file");
 
     po::variables_map variables_map;
@@ -114,9 +115,8 @@ int main(int argc, char** argv) {
       try {
         all_keys = maidsafe::passport::detail::ReadKeyChainList(pmids_path);
       } catch (const std::exception& e) {
-        std::cout << "Error: Failed to read key chain list at path : "
-                  << pmids_path.string() << ". error : "
-                  << e.what() << std::endl;
+        std::cout << "Error: Failed to read key chain list at path : " << pmids_path.string()
+                  << ". error : " << e.what() << std::endl;
         return 0;
       }
       if (all_keys.empty()) {
@@ -131,13 +131,12 @@ int main(int argc, char** argv) {
       } else {
         local_key = all_keys[identity_index];
         std::cout << "Using identity #" << identity_index << " from keys file"
-                  << " , value is : "
-                  << maidsafe::HexSubstr(local_key.pmid.name().value) << std::endl;
+                  << " , value is : " << maidsafe::HexSubstr(local_key.pmid.name().value)
+                  << std::endl;
       }
     } else {
       std::cout << "ERROR : pmid list file not found at : "
-                << variables_map.at("pmids_path").as<std::string>()
-                << std::endl;
+                << variables_map.at("pmids_path").as<std::string>() << std::endl;
       return 0;
     }
 
@@ -184,8 +183,7 @@ int main(int argc, char** argv) {
     commands.Run();
 
     std::cout << "Node stopped successfully." << std::endl;
-  }
-  catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     return -1;
   }

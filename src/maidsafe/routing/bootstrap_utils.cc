@@ -35,14 +35,12 @@ using boost::asio::ip::address;
 
 BootstrapContacts GetHardCodedBootstrapContacts() {
   BootstrapContacts hard_coded_bootstrap_contacts{
-      udp::endpoint{ address::from_string("213.104.185.97"), kLivePort },
-      udp::endpoint{ address::from_string("104.131.253.66"), kLivePort },
-      udp::endpoint{ address::from_string("95.85.32.100"), kLivePort },
-      udp::endpoint{ address::from_string("128.199.159.50"), kLivePort },
-      udp::endpoint{ address::from_string("178.79.156.73"), kLivePort },
-      udp::endpoint{ address::from_string("106.185.24.221"), kLivePort },
-      udp::endpoint{ address::from_string("23.239.27.245"), kLivePort }
-  };
+      udp::endpoint{address::from_string("104.131.253.66"), kLivePort},
+      udp::endpoint{address::from_string("95.85.32.100"), kLivePort},
+      udp::endpoint{address::from_string("128.199.159.50"), kLivePort},
+      udp::endpoint{address::from_string("178.79.156.73"), kLivePort},
+      udp::endpoint{address::from_string("106.185.24.221"), kLivePort},
+      udp::endpoint{address::from_string("23.239.27.245"), kLivePort}};
   std::mt19937 rng(RandomUint32());
   std::shuffle(hard_coded_bootstrap_contacts.begin(), hard_coded_bootstrap_contacts.end(), rng);
   return hard_coded_bootstrap_contacts;
@@ -51,9 +49,9 @@ BootstrapContacts GetHardCodedBootstrapContacts() {
 }  // unnamed namespace
 
 BootstrapContacts GetBootstrapContacts(bool is_client) {
-  const fs::path kCurrentBootstrapFilePath{
-    is_client ? detail::GetCurrentBootstrapFilePath<true>()
-              : detail::GetCurrentBootstrapFilePath<false>() };
+  const fs::path kCurrentBootstrapFilePath{is_client ?
+                                               detail::GetCurrentBootstrapFilePath<true>() :
+                                               detail::GetCurrentBootstrapFilePath<false>()};
   BootstrapContacts bootstrap_contacts;
   try {
     bootstrap_contacts = ReadBootstrapContacts(kCurrentBootstrapFilePath);
@@ -73,15 +71,15 @@ BootstrapContacts GetBootstrapContacts(bool is_client) {
 
 void InsertOrUpdateBootstrapContact(const BootstrapContact& bootstrap_contact, bool is_client) {
   InsertOrUpdateBootstrapContact(bootstrap_contact,
-                                 is_client ? detail::GetCurrentBootstrapFilePath<true>()
-                                           : detail::GetCurrentBootstrapFilePath<false>());
+                                 is_client ? detail::GetCurrentBootstrapFilePath<true>() :
+                                             detail::GetCurrentBootstrapFilePath<false>());
 }
 
 BootstrapContacts GetZeroStateBootstrapContacts(udp::endpoint local_endpoint) {
-  BootstrapContacts bootstrap_contacts { GetBootstrapContacts(false) };
-  bootstrap_contacts.erase(std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts),
-                                       local_endpoint),
-                           std::end(bootstrap_contacts));
+  BootstrapContacts bootstrap_contacts{GetBootstrapContacts(false)};
+  bootstrap_contacts.erase(
+      std::remove(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), local_endpoint),
+      std::end(bootstrap_contacts));
   return bootstrap_contacts;
 }
 

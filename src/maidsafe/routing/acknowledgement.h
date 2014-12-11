@@ -20,7 +20,7 @@
 #ifndef MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
 #define MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
 
-#include<mutex>
+#include <mutex>
 #include <map>
 #include <string>
 #include <utility>
@@ -45,24 +45,22 @@ namespace routing {
 
 typedef int32_t AckId;
 
-namespace protobuf { class Message;}  // namespace protobuf
+namespace protobuf {
+class Message;
+}  // namespace protobuf
 namespace test {
-  class GenericNode;
+class GenericNode;
 }
 
 typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
 typedef std::function<void(const boost::system::error_code& error)> Handler;
 
-enum class GroupMessageAckStatus {
-  kPending = 0,
-  kSuccess = 1,
-  kFailure = 2
-};
+enum class GroupMessageAckStatus { kPending = 0, kSuccess = 1, kFailure = 2 };
 
 struct AckTimer {
   AckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
            unsigned int quantity_in)
-    : ack_id(ack_id_in), message(message_in), timer(timer_in), quantity(quantity_in) {}
+      : ack_id(ack_id_in), message(message_in), timer(timer_in), quantity(quantity_in) {}
   AckId ack_id;
   protobuf::Message message;
   TimerPointer timer;
@@ -71,7 +69,7 @@ struct AckTimer {
 
 class Acknowledgement {
  public:
-  Acknowledgement(const NodeId& local_node_id, AsioService& io_service);
+  Acknowledgement(const Address& local_Address, AsioService& io_service);
   Acknowledgement& operator=(const Acknowledgement&) = delete;
   Acknowledgement& operator=(const Acknowledgement&&) = delete;
   Acknowledgement(const Acknowledgement&) = delete;
@@ -82,16 +80,16 @@ class Acknowledgement {
   void Add(const protobuf::Message& message, Handler handler, int timeout);
   void Remove(AckId ack_id);
   void HandleMessage(AckId ack_id);
-  bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
-  bool IsSendingAckRequired(const protobuf::Message& message, const NodeId& local_node_id);
-  void SetAsFailedPeer(AckId ack_id, const NodeId& node_id);
+  bool NeedsAck(const protobuf::Message& message, const Address& Address);
+  bool IsSendingAckRequired(const protobuf::Message& message, const Address& local_Address);
+  void SetAsFailedPeer(AckId ack_id, const Address& Address);
   void AdjustAckHistory(protobuf::Message& message);
   void RemoveAll();
 
   friend class test::GenericNode;
 
  private:
-  const NodeId kNodeId_;
+  const Address kNodeId_;
   AckId ack_id_;
   std::mutex mutex_;
   bool stop_handling_;
@@ -105,4 +103,3 @@ class Acknowledgement {
 
 
 #endif  // MAIDSAFE_ROUTING_ACKNOWLEDGEMENT_H_
-

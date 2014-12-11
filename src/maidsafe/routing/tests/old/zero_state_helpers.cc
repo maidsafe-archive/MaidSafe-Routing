@@ -39,14 +39,14 @@ fs::path LocalNetworkBootstrapFile() {
 
 void WriteZeroStateBootstrapFile(const boost::asio::ip::udp::endpoint& contact0,
                                  const boost::asio::ip::udp::endpoint& contact1) {
-  fs::path bootstrap_file{ detail::GetOverrideBootstrapFilePath<false>() };
+  fs::path bootstrap_file{detail::GetOverrideBootstrapFilePath<false>()};
   fs::remove(bootstrap_file);
-  WriteBootstrapContacts(BootstrapContacts{ contact0, contact1 }, bootstrap_file);
+  WriteBootstrapContacts(BootstrapContacts{contact0, contact1}, bootstrap_file);
 }
 
 void WriteLocalNetworkBootstrapFile() {
   fs::remove(LocalNetworkBootstrapFile());
-  WriteBootstrapContacts(BootstrapContacts{ 1, BootstrapContact{ GetLocalIp(), kLivePort } },
+  WriteBootstrapContacts(BootstrapContacts{1, BootstrapContact{GetLocalIp(), kLivePort}},
                          LocalNetworkBootstrapFile());
 }
 

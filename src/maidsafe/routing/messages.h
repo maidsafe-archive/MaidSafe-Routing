@@ -19,139 +19,186 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_H_
 #define MAIDSAFE_ROUTING_MESSAGES_H_
 
-#include <vector>
-
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/serialisation.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/routing/header.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Ping {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+enum class MessageTypeTag : SerialisableTypeTag {
+  kPing,
+  kPingResponse,
+  kFindGroup,
+  kFindGroupResponse,
+  kConnect,
+  kConnectResponse,
+  kGetData,
+  kPutData,
+  kPost
+};
 
-  Ping() = default;
-  Ping(const Ping&) = delete;
-  Ping(Ping&&) MAIDSAFE_NOEXCEPT = default;
-  Ping(SingleDestinationId destination_in, SingleSourceId source_in)
-      : header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit Ping(Header header_in) : header(std::move(header_in)) {}
-  ~Ping() = default;
-  Ping& operator=(const Ping&) = delete;
-  Ping& operator=(Ping&&) MAIDSAFE_NOEXCEPT = default;
+/*
+struct ping {
+  static const message_type_tag message_type = message_type_tag::ping;
+
+  ping() = default;
+  ping(const ping&) = delete;
+  ping(ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+  ping(DestinationAddress destination_in, SourceAddress source_in)
+      : header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
+  explicit ping(header header_in) : header(std::move(header_in)) {}
+  ~ping() = default;
+  ping& operator=(const ping&) = delete;
+  ping& operator=(ping&& other) MAIDSAFE_NOEXCEPT {
+    header = std::move(other.header);
+    return *this;
+  };
 
   template <typename Archive>
-  void save(Archive& archive) const {
+  void Serialise(Archive& archive) const {
     archive(header);
   }
 
-  Header header;
+  header header;
 };
 
-struct PingResponse {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct ping_response {
+  static const message_type_tag message_type = message_type_tag::ping_response;
 
-  PingResponse() = default;
-  PingResponse(const PingResponse&) = delete;
-  PingResponse(PingResponse&&) MAIDSAFE_NOEXCEPT = default;
-  explicit PingResponse(Ping ping)
-      : header(SingleDestinationId(std::move(ping.header.source.data)),
-               SingleSourceId(std::move(ping.header.destination.data)), ping.header.message_id,
-               ping.header.checksum)) {}
-  explicit PingResponse(Header header_in) : header(std::move(header_in)) {}
-  ~PingResponse() = default;
-  PingResponse& operator=(const PingResponse&) = delete;
-  PingResponse& operator=(PingResponse&&) MAIDSAFE_NOEXCEPT = default;
+  ping_response() = default;
+  ping_response(const ping_response&) = delete;
+  ping_response(ping_response&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+  explicit ping_response(ping ping)
+      : header(DestinationAddress(std::move(ping.header.source.data)),
+               SourceAddress(std::move(ping.header.destination.data)),
+               message_id(std::move(ping.header.message_id))) {}
+  ~ping_response() = default;
+  ping_response& operator=(const ping_response&) = delete;
+  ping_response& operator=(ping_response&& other) MAIDSAFE_NOEXCEPT {
+    header = std::move(other.header);
+    return *this;
+  };
 
   template <typename Archive>
-  void save(Archive& archive) const {
+  void Serialise(Archive& archive) const {
     archive(header);
   }
 
-  Header header;
+  header header;
 };
 
-struct Connect {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct connect {
+  static const message_type_tag message_type = message_type_tag::connect;
 
-  Connect() = default;
-  Connect(const Connect&) = delete;
-  Connect(Connect&&) MAIDSAFE_NOEXCEPT = default;
-  Connect(SingleDestinationId destination_in, SingleSourceId source_in, OurEndpoint our_endpoint_in)
-      : our_endpoint(std::move(our_endpoint_in)),
-        header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit Connect(Header header_in) : header(std::move(header_in)) {}
-  ~Connect() = default;
-  Connect& operator=(const Connect&) = delete;
-  Connect& operator=(Connect&&) MAIDSAFE_NOEXCEPT = default;
+  connect() = default;
+  connect(const connect&) = delete;
+  connect(connect&& other) MAIDSAFE_NOEXCEPT : our_endpoints(std::move(other.our_endpoints)),
+                                               header(std::move(other.header)) {}
+  connect(DestinationAddress destination_in, SourceAddress source_in,
+          rudp::endpoint_pair our_endpoint_in)
+      : our_endpoints(std::move(our_endpoint_in)),
+        header(std::move(destination_in), std::move(source_in), message_id(RandomUint32())) {}
+  ~connect() = default;
+  connect& operator=(const connect&) = delete;
+  connect& operator=(connect&& other) MAIDSAFE_NOEXCEPT {
+    our_endpoints = std::move(other.our_endpoints);
+    header = std::move(other.header);
+    return *this;
+  };
 
+  template <typename Archive>
+  void Serialise(Archive& archive) const {
+    archive(header);
+  }
 
-  Connect(SingleDestinationId destinaton_address)
-      : our_endpoint(our_endpoint), our_id(OurId), their_id(destinaton_address) {}
-
-  OurEndpoint our_endpoint;
-  Header header;
+  rudp::endpoint_pair our_endpoints;
+  header header;
 };
 
-struct ConnectResponse {
-  using Header = SmallHeader<SingleDestinationId, SingleSourceId>;
+struct forward_connect {
+  static const message_type_tag message_type = message_type_tag::forward_connect;
 
-  ConnectResponse() = default;
-  ConnectResponse(const ConnectResponse&) = delete;
-  ConnectResponse(ConnectResponse&&) MAIDSAFE_NOEXCEPT = default;
-  ConnectResponse(SingleDestinationId destination_in, SingleSourceId source_in)
-      : header(std::move(destination_in), std::move(source_in), MessageId(RandomUint32()),
-               MurmurHash2(std::vector<byte>{})) {}
-  explicit ConnectResponse(Header header_in) : header(std::move(header_in)) {}
-  ~ConnectResponse() = default;
-  ConnectResponse& operator=(const ConnectResponse&) = delete;
-  ConnectResponse& operator=(ConnectResponse&&) MAIDSAFE_NOEXCEPT = default;
+  forward_connect() = default;
+  forward_connect(const forward_connect&) = delete;
+  forward_connect(forward_connect&& other) MAIDSAFE_NOEXCEPT
+      : requesters_endpoint(std::move(other.requesters_endpoint)),
+        requesters_nat_type(std::move(other.requesters_nat_type)),
+        requesters_public_key(std::move(other.requesters_public_key)),
+        header(std::move(other.header)) {}
+  explicit forward_connect(header header_in)
+      : header(std::move(header_in)),
+        requesters_endpoint(),
+        requesters_nat_type(rudp::NatType::kUnknown),
+        requesters_public_key() {}
+  ~forward_connect() = default;
+  forward_connect& operator=(const forward_connect&) = delete;
+  forward_connect& operator=(forward_connect&& other) MAIDSAFE_NOEXCEPT {
+    requesters_endpoint = std::move(other.requesters_endpoint);
+    requesters_nat_type = std::move(other.requesters_nat_type);
+    requesters_public_key = std::move(other.requesters_public_key);
+    header = std::move(other.header);
+    return *this;
+  };
 
+  forward_connect(SourceAddress source_in, connect connect,
+                  asymm::PublicKey requesters_public_key_in)
+      : requesters_endpoint(std::move(connect.our_endpoint)),
+        requesters_nat_type(std::move(connect.our_nat_type)),
+        requesters_public_key(std::move(requesters_public_key_in)),
+        header(single_DestinationAddress(connect.their_id),
+               std::move(source_in),                                            // FIXME calculate
+               connect.header.message_id, MurmurHash2(std::vector<byte>{})) {}  // hash proerly
 
-  ConnectResponse(Connect connect, OurEndpoint our_endpoint)
-      : our_endpoint(our_endpoint),
-        their_endpoint(TheirEndpoint(connect.our_endpoint)),
-        our_id(SingleSourceId(connect.their_id)),
-        their_id(connect.our_id) {}
+  rudp::endpoint_pair requesters_endpoint;
+  rudp::NatType requesters_nat_type;
+  asymm::PublicKey requesters_public_key;
+  header header;
+};
+// messages from a client are forwarded as is as well as being passed up. Upper layers
+// can act on this part as a whole chunk/message by multiplying size by kGroupSize. If message from
+// a group (vault) then they are
+// synchronised (accumulated / re-constituted) and passed up.
+struct vault_message {
+  vault_message() = default;
+  vault_message(const vault_message&) = default;
+  vault_message(vault_message&&) = default MAIDSAFE_NOEXCEPT : header(std::move(rhs.header)),
+  Checksums(std::move(rhs.checksums)), close_group(std::move(rhs.close_group)) {}
+  ~vault_message() = default;
+  vault_message& operator=(const vault_message&) = default;
+  vault_message& operator=(vault_message&& rhs) MAIDSAFE_NOEXCEPT {
+    header = std::move(rhs.header), checksums = std::move(rhs.checksums),
+    close_group = std::move(rhs.close_group)
+  }
 
-  OurEndpoint our_endpoint;
-  TheirEndpoint their_endpoint;
-  SingleSourceId our_id;
-  SingleDestinationId their_id;
+  bool operator==(const vault_message& other) const {
+    return std::tie(header, checksums, close_group) ==
+           std::tie(other.header, other.checksums, other.close_group);
+  }
+  bool operator!=(const vault_message& other) const { return !operator==(*this, other); }
+  bool operator<(const vault_message& other) const {
+    return std::tie(header, checksums, close_group) <
+           std::tie(other.header, other.checksums, other.close_group);
+  }
+  bool operator>(const vault_message& other) { return operator<(other, *this); }
+  bool operator<=(const vault_message& other) { return !operator>(*this, other); }
+  bool operator>=(const vault_message& other) { return !operator<(*this, other); }
+
+  MessageHeader header{};
+  Checksums checksums{};
+  std::vector<NodeInfo> close_group{};
 };
 
-struct FindGroup {};
+struct cacheable_get {
+  static const message_type_tag message_type = message_type_tag::cacheable_get;
+};
 
-struct FindGroupResponse {};
-
-struct VaultMessage;
-
-struct CacheableGet;
-struct CacheableGetResponse;
-
-using MessageMap =
-    GetMap<Serialisable<SerialisableTypeTag::kPing, Ping>,
-           Serialisable<SerialisableTypeTag::kPingResponse, PingResponse>,
-           Serialisable<SerialisableTypeTag::kConnect, Connect>,
-           Serialisable<SerialisableTypeTag::kConnectResponse, ConnectResponse>,
-           Serialisable<SerialisableTypeTag::kFindGroup, FindGroup>,
-           Serialisable<SerialisableTypeTag::kFindGroupResponse, FindGroupResponse>,
-           Serialisable<SerialisableTypeTag::kVaultMessage, VaultMessage>,
-           Serialisable<SerialisableTypeTag::kCacheableGet, CacheableGet>,
-           Serialisable<SerialisableTypeTag::kCacheableGetResponse, CacheableGetResponse>>::Map;
-
-template <SerialisableTypeTag Tag>
-using CustomType = typename Find<MessageMap, Tag>::ResultCustomType;
+struct cacheable_get_response {
+  static const message_type_tag message_type = message_type_tag::cacheable_get_response;
+};
+*/
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TYPES_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_H_

@@ -94,7 +94,7 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
         // already_used_ports inside GetRandomPort() is a non-constant global variable,
         // which is not thread safe. A local mutex is required here, but shall not put the
         // insertioin of bootstrap_contact under mutex lock
-        std::lock_guard<std::mutex> lock{ mutex };
+        std::lock_guard<std::mutex> lock{mutex};
         bootstrap_contacts.push_back(
             BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
       }

@@ -76,26 +76,26 @@
           // determine the box size and round off the coords if we'll be 
           // drawing a text label (awful alignment jitter otherwise...)
           var label = node.data.label || "";
-          var prefixNodeId = label.substr(0, 6) || "";
-          var suffixNodeId = label.substr(label.length - 6, 6) || "";
+          var prefixAddress = label.substr(0, 6) || "";
+          var suffixAddress = label.substr(label.length - 6, 6) || "";
           var proximityId = node.data.proximityId || "";
           var isExpanded = node.data.isExpanded == "1";
           var isParentNode = node.data.routingNodeType == "mainNode" || node.data.routingNodeType == "dataNode";
 
           var w = 10 + Math.max(
-            Math.max(ctx.measureText("" + prefixNodeId).width, ctx.measureText("" + suffixNodeId).width),
+            Math.max(ctx.measureText("" + prefixAddress).width, ctx.measureText("" + suffixNodeId).width),
             ctx.measureText("Prox: " + proximityId).width);
 
           var hMultiplier = 0;
-          if (prefixNodeId != "")
+          if (prefixAddress != "")
             hMultiplier = hMultiplier + 1;
-          if (suffixNodeId != "")
+          if (suffixAddress != "")
             hMultiplier = hMultiplier + 1;
           if (proximityId != "")
             hMultiplier = hMultiplier + 1;
 
           if (isParentNode) {
-            w = 30 + ctx.measureText(prefixNodeId + "..." + suffixNodeId).width;
+            w = 30 + ctx.measureText(prefixAddress + "..." + suffixNodeId).width;
             hMultiplier = 3;
           }
 
@@ -139,14 +139,14 @@
               ctx.fillStyle = '#333333';
             if (isParentNode) {
               ctx.font = "14px Courier";
-              ctx.fillText(prefixNodeId + "..." + suffixNodeId, pt.x, pt.y + 5);
+              ctx.fillText(prefixAddress + "..." + suffixNodeId, pt.x, pt.y + 5);
             } else if (proximityId != "") {
               ctx.fillText("Prox: " + proximityId, pt.x, pt.y - 12);
-              ctx.fillText(prefixNodeId || "", pt.x, pt.y + 10);
-              ctx.fillText(suffixNodeId || "", pt.x, pt.y + 24);
+              ctx.fillText(prefixAddress || "", pt.x, pt.y + 10);
+              ctx.fillText(suffixAddress || "", pt.x, pt.y + 24);
             } else {
-              ctx.fillText(prefixNodeId || "", pt.x, pt.y - 2);
-              ctx.fillText(suffixNodeId || "", pt.x, pt.y + 12);
+              ctx.fillText(prefixAddress || "", pt.x, pt.y - 2);
+              ctx.fillText(suffixAddress || "", pt.x, pt.y + 12);
             }
           }
         });

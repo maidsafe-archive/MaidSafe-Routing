@@ -19,14 +19,13 @@
 #include <memory>
 #include <vector>
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/tests/main/test_utils.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 
 namespace maidsafe {
@@ -35,37 +34,48 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_tableTest, FUNC_add_many_nodes_check_target) {
-  const auto network_size(200);
-  auto routing_tables(routing_table_network(network_size));
-  std::vector<NodeId> node_ids;
-  node_ids.reserve(network_size);
+TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
+  const auto network_size(500);
+  auto routing_tables(RoutingTableNetwork(network_size));
+  asymm::Keys key(asymm::GenerateKeyPair());
+  std::vector<Address> addresses;
+  addresses.reserve(network_size);
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
-    node_ids.push_back(node->our_id());
+    addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      node_info nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
-      node->add_node(nodeinfo_to_add);
+      NodeInfo nodeinfo_to_add;
+      nodeinfo_to_add.id = node_to_add->OurId();
+      nodeinfo_to_add.public_key = key.public_key;
+      node->AddNode(nodeinfo_to_add);
     }
   }
+
   for (const auto& node : routing_tables) {
-    auto id = node->our_id();
-    std::sort(std::begin(node_ids), std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, id);
+    std::sort(std::begin(addresses), std::end(addresses),
+              [&node](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, node->OurId());
     });
     // if target is in close group return the whole close group
     for (size_t i = 1; i < kGroupSize + 1; ++i) {
-      auto target = node->target_nodes(node_ids.at(i));
-      EXPECT_EQ(target.size(), kGroupSize);
+      auto target_close_group = node->TargetNodes(addresses.at(i));
       // check the close group is correct
-      for (size_t i = 0; i < kGroupSize; ++i)
-        EXPECT_EQ(target.at(i).id, node_ids.at(i + 1)) << "node mismatch at" << i;
+      for (size_t j = 0; j < kGroupSize; ++j) {
+        EXPECT_EQ(target_close_group.at(j).id, addresses.at(j + 1)) << " node mismatch at " << j;
+        EXPECT_EQ(kGroupSize, (node->TargetNodes(addresses.at(j + 1))).size())
+            << "mismatch at index " << j;
+      }
     }
+
     // nodes further than the close group, should return a single target
-    for (size_t i = kGroupSize + 1; i < network_size; ++i) {
-      EXPECT_EQ((node->target_nodes(node_ids.at(i))).size(), 1) << "mismatch at index " << i;
+    // as some nodes can be close the the end of the close group and the
+    // tested node then we need to put in place a buffer. This magic number is
+    // selected to be way past any chance of closeness to an colse group member
+    // but not so far as to not check any of the return values being == 1
+    // so magic number but for the best reasons we can think of.
+    auto xor_closeness_buffer(10);
+    for (size_t i = kGroupSize + xor_closeness_buffer; i < network_size - 1; ++i) {
+      EXPECT_EQ(1, (node->TargetNodes(addresses.at(i))).size()) << "mismatch at index " << i;
     }
   }
 }

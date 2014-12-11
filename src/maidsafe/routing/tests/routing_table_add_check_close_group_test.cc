@@ -16,12 +16,10 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <bitset>
 #include <memory>
 #include <vector>
 
 #include "maidsafe/common/log.h"
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -29,10 +27,7 @@
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/routing/tests/main/test_utils.h"
-#include "maidsafe/routing/network_statistics.h"
-
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {
 
@@ -40,37 +35,38 @@ namespace routing {
 
 namespace test {
 
-TEST(routing_table_test, FUNC_add_many_nodes_check_close_groups) {
+TEST(RoutingTableTest, FUNC_AddManyNodesCheckCloseGroups) {
   const auto network_size(500);
-  auto routing_tables(routing_table_network(network_size));
-  std::vector<NodeId> node_ids;
-  node_ids.reserve(network_size);
+  auto routing_tables(RoutingTableNetwork(network_size));
+  std::vector<Address> addresses;
+  addresses.reserve(network_size);
+  asymm::Keys key(asymm::GenerateKeyPair());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
-    node_ids.push_back(node->our_id());
+    addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      node_info nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->our_id();
-      nodeinfo_to_add.public_key = node_to_add->our_public_key();
-      node->add_node(nodeinfo_to_add);
+      NodeInfo nodeinfo_to_add;
+      nodeinfo_to_add.id = node_to_add->OurId();
+      nodeinfo_to_add.public_key = key.public_key;
+      node->AddNode(nodeinfo_to_add);
     }
   }
   for (const auto& node : routing_tables) {
-    auto id = node->our_id();
-    // + 1 as node_ids includes our ID
-    std::partial_sort(std::begin(node_ids), std::begin(node_ids) + kGroupSize + 1,
-                      std::end(node_ids), [id](const NodeId& lhs, const NodeId& rhs) {
-      return NodeId::CloserToTarget(lhs, rhs, id);
+    auto id = node->OurId();
+    // + 1 as Addresss includes our ID
+    std::partial_sort(std::begin(addresses), std::begin(addresses) + kGroupSize + 1,
+                      std::end(addresses), [id](const Address& lhs, const Address& rhs) {
+      return Address::CloserToTarget(lhs, rhs, id);
     });
-    auto groups = node->our_close_group();
+    auto groups = node->OurCloseGroup();
     EXPECT_EQ(groups.size(), kGroupSize);
     auto last = std::unique(std::begin(groups), std::end(groups));
     ASSERT_EQ(last, std::end(groups));
     groups.erase(last, std::end(groups));
     EXPECT_EQ(groups.size(), kGroupSize);
     for (size_t i = 0; i < kGroupSize; ++i) {
-      // + 1 as node_ids includes our ID
-      EXPECT_EQ(groups.at(i).id, node_ids.at(i + 1)) << " node mismatch at " << i;
+      // + 1 as Addresss includes our ID
+      EXPECT_EQ(groups.at(i).id, addresses.at(i + 1)) << " node mismatch at " << i;
     }
   }
 }

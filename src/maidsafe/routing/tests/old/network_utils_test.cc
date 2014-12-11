@@ -23,7 +23,7 @@
 
 #include "boost/filesystem/exception.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/Address.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
@@ -50,7 +50,7 @@ namespace {
 
 typedef boost::asio::ip::udp::endpoint Endpoint;
 
-void SortFromThisNode(const NodeId& from, std::vector<NodeInfoAndPrivateKey> nodes) {
+void SortFromThisNode(const Address& from, std::vector<NodeInfoAndPrivateKey> nodes) {
   std::sort(nodes.begin(), nodes.end(),
             [from](const NodeInfoAndPrivateKey& i, const NodeInfoAndPrivateKey& j) {
     return (i.node_info.id ^ from) < (j.node_info.id ^ from);
@@ -68,11 +68,11 @@ TEST(NetworkTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  NodeId node_id(NodeId::IdType::kRandomId);
+  Address Address(RandomString(Address::kSize));
   AsioService asio_service(2);
-  Acknowledgement acknowledgement(node_id, asio_service);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Acknowledgement acknowledgement(Address, asio_service);
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   Network network(routing_table, client_routing_table, acknowledgement);
   network.SendToClosestNode(message);
 }
@@ -86,15 +86,15 @@ TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_direct(true);
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
-  NodeId node_id(NodeId::IdType::kRandomId);
+  Address Address(RandomString(Address::kSize));
   AsioService asio_service(2);
-  Acknowledgement acknowledgement(node_id, asio_service);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Acknowledgement acknowledgement(Address, asio_service);
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
   Network network(routing_table, client_routing_table, acknowledgement);
-  network.SendToDirect(message, NodeId(NodeId::IdType::kRandomId),
-                       NodeId(NodeId::IdType::kRandomId));
+  network.SendToDirect(message, Address(RandomString(Address::kSize)),
+                       Address(RandomString(Address::kSize)));
 }
 
 TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
@@ -113,7 +113,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   auto connection_completion_future = connection_completion_promise.get_future();
 
   protobuf::Message sent_message;
-  sent_message.set_destination_id(NodeId(RandomString(64)).string());
+  sent_message.set_DestinationAddress(Address(RandomString(64)).string());
   sent_message.set_routing_message(true);
   sent_message.set_request(true);
   sent_message.add_data(std::string(1024 * 256, 'A'));
@@ -122,9 +122,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
 
-  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-   
-  };
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {};
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
     ++message_count_at_node2;
@@ -142,73 +140,69 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-   
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-     
     }
   };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-   
-  };
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {};
 
   auto pmid1(passport::CreatePmidAndSigner().first);
-  NodeId node_id1(pmid1.name()->string());
+  Address Address1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
-  auto a1 = std::async(std::launch::async, [&, this ]()->NodeId {
+  auto a1 = std::async(std::launch::async, [&, this]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-    NodeId chosen_bootstrap_peer;
+    Address chosen_bootstrap_peer;
     if (rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
-                        node_id1, private_key1, public_key1, chosen_bootstrap_peer, nat_type,
+                        Address1, private_key1, public_key1, chosen_bootstrap_peer, nat_type,
                         endpoint1) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
+      chosen_bootstrap_peer = Address();
     }
     return chosen_bootstrap_peer;
   });
 
   auto pmid2(passport::CreatePmidAndSigner().first);
-  NodeId node_id2(pmid2.name()->string());
+  Address Address2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
-  auto a2 = std::async(std::launch::async, [&, this ]()->NodeId {
+  auto a2 = std::async(std::launch::async, [&, this]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
-    NodeId chosen_bootstrap_peer;
+    Address chosen_bootstrap_peer;
     if (rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
-                        node_id2, private_key2, public_key2, chosen_bootstrap_peer, nat_type,
+                        Address2, private_key2, public_key2, chosen_bootstrap_peer, nat_type,
                         endpoint2) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
+      chosen_bootstrap_peer = Address();
     }
     return chosen_bootstrap_peer;
   });
 
-  EXPECT_EQ(node_id2, a1.get());  // wait for promise !
-  EXPECT_EQ(node_id1, a2.get());  // wait for promise !
+  EXPECT_EQ(Address2, a1.get());  // wait for promise !
+  EXPECT_EQ(Address1, a2.get());  // wait for promise !
   rudp::EndpointPair endpoint_pair_1, endpoint_pair_2, endpoint_pair_3;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
 
   Sleep(std::chrono::milliseconds(250));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
+            rudp1.GetAvailableEndpoint(Address2, endpoint_pair_2, endpoint_pair_1, nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp2.GetAvailableEndpoint(node_id1, endpoint_pair_1, endpoint_pair_2, nat_type));
+            rudp2.GetAvailableEndpoint(Address1, endpoint_pair_1, endpoint_pair_2, nat_type));
 
-  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+  EXPECT_EQ(kSuccess, rudp1.Add(Address2, endpoint_pair_2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(Address1, endpoint_pair_1, "validation_2->1"));
   Endpoint endpoint;
-  rudp1.MarkConnectionAsValid(node_id2, endpoint);
-  rudp2.MarkConnectionAsValid(node_id1, endpoint);
- 
+  rudp1.MarkConnectionAsValid(Address2, endpoint);
+  rudp2.MarkConnectionAsValid(Address1, endpoint);
 
-  NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  NodeId node_id3(routing_table.kNodeId());
+
+  Address Address(RandomString(Address::kSize));
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  Address Address3(routing_table.kNodeId());
   AsioService asio_service(2);
-  Acknowledgement acknowledgement(node_id, asio_service);
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Acknowledgement acknowledgement(Address, asio_service);
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   Network network(routing_table, client_routing_table, acknowledgement);
 
   ScopedBootstrapFile bootstrap_file({endpoint2});
@@ -221,19 +215,19 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(
       rudp::kBootstrapConnectionAlreadyExists,
-      network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_3, this_nat_type));
+      network.GetAvailableEndpoint(Address2, endpoint_pair_2, endpoint_pair_3, this_nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp2.GetAvailableEndpoint(node_id3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
-  EXPECT_EQ(rudp::kSuccess, network.Add(node_id2, endpoint_pair_2, "validation_3->2"));
+            rudp2.GetAvailableEndpoint(Address3, endpoint_pair_3, endpoint_pair_2, this_nat_type));
+  EXPECT_EQ(rudp::kSuccess, network.Add(Address2, endpoint_pair_2, "validation_3->2"));
 
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair_3, "validation_2->3"));
+  EXPECT_EQ(kSuccess, rudp2.Add(Address3, endpoint_pair_3, "validation_2->3"));
   if (connection_completion_future.wait_for(std::chrono::seconds(10)) !=
       std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
   for (auto i(0); i != kMessageCount; ++i) {
-    network.SendToDirect(sent_message, node_id2, node_id2);
+    network.SendToDirect(sent_message, Address2, node_id2);
     Sleep(std::chrono::milliseconds(100));
   }
   if (test_completion_future.wait_for(std::chrono::seconds(60)) != std::future_status::ready) {
@@ -267,18 +261,16 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   sent_message.set_request(true);
   sent_message.set_client_node(false);
   sent_message.set_hops_to_live(Parameters::hops_to_live);
-  sent_message.set_source_id(NodeId(NodeId::IdType::kRandomId).string());
-  NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  NodeId node_id3(routing_table.kNodeId());
+  sent_message.set_SourceAddress(Address(RandomString(Address::kSize)).string());
+  Address Address(RandomString(Address::kSize));
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  Address Address3(routing_table.kNodeId());
   AsioService asio_service(2);
-  Acknowledgement acknowledgement(node_id, asio_service);
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Acknowledgement acknowledgement(Address, asio_service);
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   Network network(routing_table, client_routing_table, acknowledgement);
 
-  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {
-   
-  };
+  rudp::MessageReceivedFunctor message_received_functor1 = [](const std::string& message) {};
 
   rudp::MessageReceivedFunctor message_received_functor2 = [&](const std::string& message) {
     ++message_count_at_node2;
@@ -296,72 +288,66 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   };
 
   rudp::MessageReceivedFunctor message_received_functor3 = [&](const std::string& message) {
-   
     if ("validation" == message.substr(0, 10)) {
       connection_completion_promise.set_value(true);
-     
     }
   };
 
-  rudp::ConnectionLostFunctor connection_lost_functor = [](const NodeId& node_id) {
-   
-  };
+  rudp::ConnectionLostFunctor connection_lost_functor = [](const Address& Address) {};
 
-  rudp::ConnectionLostFunctor connection_lost_functor3 = [&](const NodeId& node_id) {
-    routing_table.DropNode(node_id, true);
-   
-  };
+  rudp::ConnectionLostFunctor connection_lost_functor3 =
+      [&](const Address& Address) { routing_table.DropNode(Address, true); };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
-  NodeId node_id1(pmid1.name()->string());
+  Address Address1(pmid1.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
   rudp::NatType nat_type;
   NodeInfoAndPrivateKey node2 = MakeNodeInfoAndKeys();
   auto pmid2(passport::CreatePmidAndSigner().first);
-  NodeId node_id2(pmid2.name()->string());
+  Address Address2(pmid2.name()->string());
   auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
   auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
 
-  auto a1 = std::async(std::launch::async, [ =, &rudp1, &nat_type ]()->NodeId {
+  auto a1 = std::async(std::launch::async, [=, &rudp1, &nat_type]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
-    NodeId chosen_bootstrap_peer;
+    Address chosen_bootstrap_peer;
     if (rudp1.Bootstrap(bootstrap_endpoint, message_received_functor1, connection_lost_functor,
-                        node_id1, private_key1, public_key1, chosen_bootstrap_peer, nat_type,
+                        Address1, private_key1, public_key1, chosen_bootstrap_peer, nat_type,
                         endpoint1) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
+      chosen_bootstrap_peer = Address();
     }
     return chosen_bootstrap_peer;
   });
-  auto a2 = std::async(std::launch::async, [ =, &rudp2, &nat_type ]()->NodeId {
+  auto a2 = std::async(std::launch::async, [=, &rudp2, &nat_type]() -> Address {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
-    NodeId chosen_bootstrap_peer;
+    Address chosen_bootstrap_peer;
     if (rudp2.Bootstrap(bootstrap_endpoint, message_received_functor2, connection_lost_functor,
-                        node_id2, private_key2, public_key2, chosen_bootstrap_peer, nat_type,
+                        Address2, private_key2, public_key2, chosen_bootstrap_peer, nat_type,
                         endpoint2) != kSuccess) {
-      chosen_bootstrap_peer = NodeId();
+      chosen_bootstrap_peer = Address();
     }
     return chosen_bootstrap_peer;
   });
 
-  EXPECT_EQ(node_id2, a1.get());  // wait for promise !
-  EXPECT_EQ(node_id1, a2.get());  // wait for promise !
+  EXPECT_EQ(Address2, a1.get());  // wait for promise !
+  EXPECT_EQ(Address1, a2.get());  // wait for promise !
   rudp::EndpointPair endpoint_pair_1, endpoint_pair_2;
   endpoint_pair_1.local = endpoint1;
   endpoint_pair_2.local = endpoint2;
 
   Sleep(std::chrono::milliseconds(250));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp1.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair_1, nat_type));
+            rudp1.GetAvailableEndpoint(Address2, endpoint_pair_2, endpoint_pair_1, nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp2.GetAvailableEndpoint(node_id1, endpoint_pair_1, endpoint_pair_2, nat_type));
+            rudp2.GetAvailableEndpoint(Address1, endpoint_pair_1, endpoint_pair_2, nat_type));
 
-  EXPECT_EQ(kSuccess, rudp1.Add(node_id2, endpoint_pair_2, "validation_1->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id1, endpoint_pair_1, "validation_2->1"));
+  EXPECT_EQ(kSuccess, rudp1.Add(Address2, endpoint_pair_2, "validation_1->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(Address1, endpoint_pair_1, "validation_2->1"));
   Endpoint endpoint;
-  rudp1.MarkConnectionAsValid(node_id2, endpoint);
-  rudp2.MarkConnectionAsValid(node_id1, endpoint);
- 
+  rudp1.MarkConnectionAsValid(Address2, endpoint);
+  rudp2.MarkConnectionAsValid(Address1, endpoint);
+
 
   ScopedBootstrapFile bootstrap_file({endpoint2});
 
@@ -374,28 +360,28 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
+            network.GetAvailableEndpoint(Address2, endpoint_pair_2, endpoint_pair3, this_nat_type));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
-            rudp2.GetAvailableEndpoint(node_id3, endpoint_pair3, endpoint_pair2, this_nat_type));
-  EXPECT_EQ(kSuccess, network.Add(node_id2, endpoint_pair2, "validation_3->2"));
-  EXPECT_EQ(kSuccess, rudp2.Add(node_id3, endpoint_pair3, "validation_2->3"));
+            rudp2.GetAvailableEndpoint(Address3, endpoint_pair3, endpoint_pair2, this_nat_type));
+  EXPECT_EQ(kSuccess, network.Add(Address2, endpoint_pair2, "validation_3->2"));
+  EXPECT_EQ(kSuccess, rudp2.Add(Address3, endpoint_pair3, "validation_2->3"));
 
   if (connection_completion_future.wait_for(std::chrono::seconds(10)) !=
       std::future_status::ready) {
     ASSERT_TRUE(false) << "Failed waiting for node-3 to receive validation data";
   }
 
- 
+
 
   // setup 7 inactive & 1 active node
   std::vector<NodeInfoAndPrivateKey> nodes;
   for (auto i(0); i != 8; ++i)
     nodes.push_back(MakeNodeInfoAndKeys());
-  SortFromThisNode(node_id3, nodes);
+  SortFromThisNode(Address3, nodes);
 
   // add the active node at the end of the RT
   nodes.at(7) = node2;  //  second node
-  sent_message.set_destination_id(NodeId(nodes.at(0).node_info.id).string());
+  sent_message.set_DestinationAddress(Address(nodes.at(0).node_info.id).string());
 
   for (auto i(0); i != 8; ++i)
     ASSERT_TRUE(routing_table.AddNode(nodes.at(i).node_info));

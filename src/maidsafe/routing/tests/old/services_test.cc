@@ -49,11 +49,11 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 TEST(ServicesTest, BEH_Ping) {
-  NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Address Address(RandomString(Address::kSize));
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   AsioService asio_service(1);
-  Acknowledgement acknowledgement(node_id, asio_service);
+  Acknowledgement acknowledgement(Address, asio_service);
   Network network(routing_table, client_routing_table, acknowledgement);
   PublicKeyHolder public_key_holder(asio_service, network);
   Service service(routing_table, client_routing_table, network, public_key_holder);
@@ -61,8 +61,8 @@ TEST(ServicesTest, BEH_Ping) {
   rudp::ManagedConnections rudp;
   protobuf::PingRequest ping_request;
   // somebody pings us
-  protobuf::Message message = rpcs::Ping(routing_table.kNodeId(), "me");
-  EXPECT_EQ(message.destination_id(), routing_table.kNodeId().string());
+  protobuf::Message message = rpcs::Ping(routing_table.kAddress(), "me");
+  EXPECT_EQ(message.DestinationAddress(), routing_table.kAddress().string());
   EXPECT_TRUE(ping_request.ParseFromString(message.data(0)));  // us
   EXPECT_TRUE(ping_request.IsInitialized());
   // run message through Service
@@ -70,7 +70,7 @@ TEST(ServicesTest, BEH_Ping) {
   EXPECT_EQ(1, message.type());
   EXPECT_EQ(message.request(), false);
   EXPECT_NE(message.data_size(), 0);
-  EXPECT_EQ(message.source_id(), routing_table.kNodeId().string());
+  EXPECT_EQ(message.SourceAddress(), routing_table.kAddress().string());
   EXPECT_EQ(message.replication(), 1);
   EXPECT_EQ(message.type(), 1);
   EXPECT_EQ(message.request(), false);
@@ -80,26 +80,26 @@ TEST(ServicesTest, BEH_Ping) {
 }
 
 TEST(ServicesTest, BEH_FindNodes) {
-  NodeId node_id(NodeId::IdType::kRandomId);
-  RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
-  NodeId this_node_id(routing_table.kNodeId());
-  ClientRoutingTable client_routing_table(routing_table.kNodeId());
+  Address Address(RandomString(Address::kSize));
+  RoutingTable routing_table(false, Address, asymm::GenerateKeyPair());
+  Address this_Address(routing_table.kNodeId());
+  ClientRoutingTable client_routing_table(routing_table.kAddress());
   AsioService asio_service(1);
-  Acknowledgement acknowledgement(node_id, asio_service);
+  Acknowledgement acknowledgement(Address, asio_service);
   Network network(routing_table, client_routing_table, acknowledgement);
   PublicKeyHolder public_key_holder(asio_service, network);
   Service service(routing_table, client_routing_table, network, public_key_holder);
-  protobuf::Message message = rpcs::FindNodes(this_node_id, this_node_id, 8);
+  protobuf::Message message = rpcs::FindNodes(this_Address, this_node_id, 8);
   service.FindNodes(message);
   protobuf::FindNodesResponse find_nodes_respose;
   EXPECT_TRUE(find_nodes_respose.ParseFromString(message.data(0)));
   //  EXPECT_TRUE(find_nodes_respose.nodes().size() > 0);  // will only have us
-  //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.node_id.string());
+  //  EXPECT_EQ(find_nodes_respose.nodes().Get(1), us.Address.string());
   EXPECT_TRUE(find_nodes_respose.has_timestamp());
   EXPECT_TRUE(find_nodes_respose.timestamp() > GetTimeStamp() - 2000);
   EXPECT_TRUE(find_nodes_respose.timestamp() < GetTimeStamp() + 1000);
-  EXPECT_EQ(message.destination_id(), this_node_id.string());
-  EXPECT_EQ(message.source_id(), this_node_id.string());
+  EXPECT_EQ(message.DestinationAddress(), this_Address.string());
+  EXPECT_EQ(message.SourceAddress(), this_Address.string());
   EXPECT_NE(message.data_size(), 0);
   EXPECT_TRUE(message.direct());
   EXPECT_EQ(message.replication(), 1);
@@ -126,9 +126,10 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   rudp::EndpointPair endpoint_pair;
 //   endpoint_pair.external =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
 //   endpoint_pair.local =  Endpoint(boost::asio::ip::address_v4::loopback(), GetRandomPort());
-//   protobuf::Message message = rpcs::ProxyConnect(NodeId(keys.identity), NodeId(my_keys.identity),
+//   protobuf::Message message = rpcs::ProxyConnect(Address(keys.identity),
+//   Address(my_keys.identity),
 //                                                  endpoint_pair);
-//   EXPECT_TRUE(message.destination_id() == keys.identity);
+//   EXPECT_TRUE(message.DestinationAddress() == keys.identity);
 //   EXPECT_TRUE(proxy_connect_request.ParseFromString(message.data(0)));  // us
 //   EXPECT_TRUE(proxy_connect_request.IsInitialized());
 //   // run message through Service
@@ -138,7 +139,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   EXPECT_EQ(protobuf::kFailure, proxy_connect_respose.result());
 //   EXPECT_NE(message.data_size(), 0);
 //   EXPECT_TRUE(message.direct());
-//   EXPECT_TRUE(message.source_id() == keys.identity);
+//   EXPECT_TRUE(message.SourceAddress() == keys.identity);
 //   EXPECT_EQ(1, message.replication());
 //   EXPECT_EQ(4, message.type());
 //   EXPECT_EQ(message.request(), false);

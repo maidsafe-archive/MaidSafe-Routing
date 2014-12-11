@@ -39,7 +39,7 @@ namespace {
 protobuf::Message CreateNodeLevelSingleToSingleResponseMessageProto(
     const SingleToSingleMessage& message) {
   protobuf::Message proto_message;
-  proto_message.set_destination_id(message.receiver->string());
+  proto_message.set_DestinationAddress(message.receiver->string());
   proto_message.set_routing_message(false);
   proto_message.add_data(message.contents);
   proto_message.set_type(static_cast<int32_t>(MessageType::kNodeLevel));
@@ -95,35 +95,34 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   }
 
   for (size_t index(0); index < ClientIndex(); ++index) {
-    HaveCacheDataFunctor node_get_cache([index, this](const std::string& string,
-                                                      ReplyFunctor reply) {
-     
-      auto node_cache_iter(network_cache.find(index));
-      if (node_cache_iter == std::end(network_cache)) {
-        reply(std::string());
-      } else {
-        auto inner_iter(node_cache_iter->second.find(string));
-        if (inner_iter == std::end(node_cache_iter->second)) {
-          reply(std::string());
-        } else {
-          reply(inner_iter->second);
-        }
-      }
-    });
+    HaveCacheDataFunctor node_get_cache(
+        [index, this](const std::string& string, ReplyFunctor reply) {
+          auto node_cache_iter(network_cache.find(index));
+          if (node_cache_iter == std::end(network_cache)) {
+            reply(std::string());
+          } else {
+            auto inner_iter(node_cache_iter->second.find(string));
+            if (inner_iter == std::end(node_cache_iter->second)) {
+              reply(std::string());
+            } else {
+              reply(inner_iter->second);
+            }
+          }
+        });
     SetGetFromCacheFunctor(nodes_[index], node_get_cache);
   }
 
   std::string content("Dummy content for test purpose");
   SingleToSingleMessage single_to_single_message;
-  single_to_single_message.receiver = SingleId(NodeId(NodeId::IdType::kRandomId));
-  single_to_single_message.sender = SingleSource(SingleId(nodes_[0]->node_id()));
+  single_to_single_message.receiver = SingleId(Address(RandomString(Address::kSize)));
+  single_to_single_message.sender = SingleSource(SingleId(nodes_[0]->Address()));
   single_to_single_message.contents = content;
   single_to_single_message.cacheable = Cacheable::kPut;
 
   auto message(CreateNodeLevelSingleToSingleResponseMessageProto(single_to_single_message));
-//  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
-//  message.set_request(false);
- 
+  //  message.set_cacheable(static_cast<int32_t>(Cacheable::kPut));
+  //  message.set_request(false);
+
   nodes_[0]->SendMessage(single_to_single_message.receiver, message);
   Sleep(std::chrono::seconds(2));
 
@@ -153,11 +152,11 @@ TEST_F(NetworkCache, FUNC_StoreGet) {
   nodes_[no_cache_holder_index]->AddTask(response_functor, 1, message.id());
 
   message.add_data(crypto::Hash<crypto::SHA512>(single_to_single_message.contents).string());
-  message.set_destination_id(nodes_[cache_holder_index]->node_id().string());
-  message.set_source_id(nodes_[no_cache_holder_index]->node_id().string());
+  message.set_DestinationAddress(nodes_[cache_holder_index]->Address().string());
+  message.set_SourceAddress(nodes_[no_cache_holder_index]->Address().string());
   message.set_cacheable(static_cast<int32_t>(Cacheable::kGet));
   message.set_request(true);
-  nodes_[no_cache_holder_index]->SendMessage(nodes_[cache_holder_index]->node_id(), message);
+  nodes_[no_cache_holder_index]->SendMessage(nodes_[cache_holder_index]->Address(), message);
   Sleep(std::chrono::seconds(5));
 }
 
