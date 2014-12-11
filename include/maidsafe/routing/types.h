@@ -24,6 +24,10 @@
 #include <utility>
 #include <vector>
 
+#include "asio/async_result.hpp"
+#include "asio/handler_type.hpp"
+#include "asio/ip/udp.hpp"
+
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/node_id.h"
@@ -45,6 +49,39 @@ using MurmurHash = uint32_t;
 using Checksums = std::array<MurmurHash, kGroupSize - 1>;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
+
+template <typename CompletionToken>
+using BootstrapHandler =
+    typename asio::handler_type<CompletionToken, void(asio::error_code, rudp::Contact)>::type;
+
+template <typename CompletionToken>
+using BootstrapReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+
+template <typename CompletionToken>
+using PostHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
+
+template <typename CompletionToken>
+using PostReturn = typename asio::async_result<PostHandler<CompletionToken>>::type;
+
+template <typename CompletionToken>
+using PutHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
+
+template <typename CompletionToken>
+using PutReturn = typename asio::async_result<PutHandler<CompletionToken>>::type;
+
+template <typename CompletionToken>
+using GetHandler =
+    typename asio::handler_type<CompletionToken, void(asio::error_code, SerialisedMessage)>::type;
+
+template <typename CompletionToken>
+using GetReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+
+template <typename CompletionToken>
+using SendHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
+
+template <typename CompletionToken>
+using SendReturn = typename asio::async_result<SendHandler<CompletionToken>>::type;
+
 
 }  // namespace routing
 
