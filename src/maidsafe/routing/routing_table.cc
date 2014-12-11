@@ -234,9 +234,11 @@ bool RoutingTable::IsThisNodeInRange(const NodeId& target_id, const unsigned int
 bool RoutingTable::IsThisNodeClosestTo(const NodeId& target_id, bool ignore_exact_match) {
   if (target_id == kNodeId())
     return false;
-
-  if (nodes_.empty())
-    return false;
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (nodes_.empty())
+      return false;
+  }
 
   if (!target_id.IsValid()) {
     LOG(kError) << "Invalid target_id passed.";
