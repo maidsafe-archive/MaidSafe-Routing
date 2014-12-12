@@ -59,7 +59,7 @@ class MessageHandlerTest : public testing::Test {
         service_(),
         response_handler_(),
         network_network_(),
-        public_key_holder_(asio_service_, *network_),
+        public_key_holder_(),
         close_info_() {
     message_and_caching_functor_.message_received = [this](const std::string& message,
                                                            ReplyFunctor reply_functor) {
@@ -71,9 +71,10 @@ class MessageHandlerTest : public testing::Test {
     table_.reset(new MockRoutingTable(false, node_id, asymm::GenerateKeyPair()));
     ntable_.reset(new ClientRoutingTable(table_->kNodeId()));
     network_.reset(new MockNetwork(*table_, *ntable_, network_network_->acknowledgement_));
-    service_.reset(new MockService(*table_, *ntable_, *network_, public_key_holder_));
+    public_key_holder_.reset(new PublicKeyHolder(asio_service_, *network_));
+    service_.reset(new MockService(*table_, *ntable_, *network_, *public_key_holder_));
     response_handler_.reset(new MockResponseHandler(*table_, *ntable_, *network_,
-                                                    public_key_holder_));
+                                                    *public_key_holder_));
     close_info_ = MakeNodeInfoAndKeys().node_info;
     close_info_.id = GenerateUniqueRandomId(table_->kNodeId(), 20);
     table_->AddNode(close_info_);
@@ -103,7 +104,7 @@ class MessageHandlerTest : public testing::Test {
   std::shared_ptr<MockService> service_;
   std::shared_ptr<MockResponseHandler> response_handler_;
   std::shared_ptr<NetworkUtils> network_network_;
-  PublicKeyHolder public_key_holder_;
+  std::shared_ptr<PublicKeyHolder> public_key_holder_;
   NodeInfo close_info_;
 };
 
