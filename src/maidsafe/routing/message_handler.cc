@@ -20,15 +20,17 @@
 
 #include <vector>
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/connect.h"
 #include "maidsafe/routing/connect_response.h"
 #include "maidsafe/routing/connection_manager.h"
-//#include "maidsafe/routing/find_group.h"
-//#include "maidsafe/routing/find_group_response.h"
+#include "maidsafe/routing/find_group.h"
+#include "maidsafe/routing/find_group_response.h"
 #include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/ping.h"
 #include "maidsafe/routing/ping_response.h"
 #include "maidsafe/routing/post.h"
@@ -41,23 +43,81 @@ namespace routing {
 
 namespace {
 
-using MessageMap = GetMap<Ping, PingResponse, /*FindGroup, FindGroupResponse,*/ Connect,
+using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Connect,
                           ConnectResponse, GetData, PutData, Post>::Map;
 
-template <SerialisableTypeTag Tag>
-using Message = typename Find<MessageMap, Tag>::ResultCustomType;
+std::pair<MessageHeader, SerialisableTypeTag> ParseHeaderAndTypeEnum(
+    InputVectorStream& binary_input_stream) {
+  auto result = std::make_pair(MessageHeader{}, SerialisableTypeTag{});
+  {
+    BinaryInputArchive binary_input_archive(binary_input_stream);
+    binary_input_archive(result.first, result.second);
+  }
+  return result;
+}
+
+template <typename MessageType>
+MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) {
+  MessageType parsed_message(std::move(header));
+  {
+    BinaryInputArchive binary_input_archive(binary_input_stream);
+    binary_input_archive(parsed_message);
+  }
+  return parsed_message;
+}
 
 }  // unnamed namespace
 
-MessageHandler::MessageHandler(AsioService& asio_service,
+MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
                                ConnectionManager& connection_manager)
-    : asio_service_(asio_service),
+    : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager) {}
 
 void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
-  InputVectorStream binary_stream{std::move(serialised_message)};
+  try {
+    InputVectorStream binary_input_stream{std::move(serialised_message)};
+    auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+    switch (header_and_type_enum.second) {
+      case Ping::kSerialisableTypeTag:
+        HandleMessage(Parse<Ping>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case PingResponse::kSerialisableTypeTag:
+        HandleMessage(
+            Parse<PingResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case FindGroup::kSerialisableTypeTag:
+        HandleMessage(Parse<FindGroup>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case FindGroupResponse::kSerialisableTypeTag:
+        HandleMessage(
+            Parse<FindGroupResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case Connect::kSerialisableTypeTag:
+        HandleMessage(Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case ConnectResponse::kSerialisableTypeTag:
+        HandleMessage(
+            Parse<ConnectResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case GetData::kSerialisableTypeTag:
+        HandleMessage(Parse<GetData>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case PutData::kSerialisableTypeTag:
+        HandleMessage(Parse<PutData>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case Post::kSerialisableTypeTag:
+        HandleMessage(Parse<Post>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      default:
+        LOG(kWarning) << "Received message of unknown type.";
+        break;
+    }
+  } catch (const std::exception& e) {
+    LOG(kWarning) << "Exception while handling incoming message: "
+                  << boost::diagnostic_information(e);
+  }
 
   // auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
   //// FIXME (dirvine) Check firewall 19/11/2014
@@ -85,9 +145,9 @@ void MessageHandler::HandleMessage(PingResponse&& /*ping_response*/) {
   // client
 }
 
-// void MessageHandler::HandleMessage(FindGroup&& find_group) {}
+void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
 
-// void MessageHandler::HandleMessage(FindGroupResponse&& find_group_reponse) {}
+void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
 
 void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   // if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {

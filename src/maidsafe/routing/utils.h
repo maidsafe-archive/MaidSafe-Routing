@@ -21,7 +21,11 @@
 
 #include <vector>
 
+#include "cereal/types/array.hpp"
+
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/rudp/contact.h"
+#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -35,6 +39,7 @@ namespace routing {
 // MurmurHash2 is based on the MurMurHash2 implementation written by Austin Appleby, and placed in
 // the public domain by him.
 MurmurHash MurmurHash2(const std::vector<byte>& input);
+
 
 
 // OLD
@@ -121,5 +126,43 @@ Address NodeInNthBucket(const Address& Address, int bucket);
 }  // namespace routing
 
 }  // namespace maidsafe
+
+namespace cereal {
+
+template <typename Archive>
+void save(Archive& archive, const maidsafe::rudp::Endpoint& endpoint) {
+  using address_v6 = boost::asio::ip::address_v6;
+  address_v6 ip_address;
+  if (endpoint.address().is_v4()) {
+    ip_address = address_v6::v4_compatible(endpoint.address().to_v4());
+  } else {
+    ip_address = endpoint.address().to_v6();
+  }
+  address_v6::bytes_type bytes = ip_address.to_bytes();
+  archive(bytes, endpoint.port());
+}
+
+template <typename Archive>
+void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
+  using address_v6 = boost::asio::ip::address_v6;
+  using address = boost::asio::ip::address;
+  address_v6::bytes_type bytes;
+  unsigned short port;
+  archive(bytes, port);
+  address_v6 ip_v6_address(bytes);
+  address ip_address;
+  if (ip_v6_address.is_v4_compatible())
+    ip_address = ip_v6_address.to_v4();
+  else
+    ip_address = ip_v6_address;
+  endpoint = maidsafe::rudp::Endpoint(ip_address, port);
+}
+
+template <typename Archive>
+void serialize(Archive& archive, maidsafe::rudp::EndpointPair& endpoints) {
+  archive(endpoints.local, endpoints.external);
+}
+
+}  // namespace cereal
 
 #endif  // MAIDSAFE_ROUTING_UTILS_H_

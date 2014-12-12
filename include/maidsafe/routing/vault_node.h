@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_VAULT_NODE_H_
 #define MAIDSAFE_ROUTING_VAULT_NODE_H_
 
+#include <memory>
+
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -58,9 +60,10 @@ class VaultNode : private rudp::ManagedConnections::Listener {
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
   int NetworkStatus() const;
-  class Listener : private rudp::ManagedConnections::Listener : std::shared_from_this {
+  class Listener : private rudp::ManagedConnections::Listener,
+                   std::enable_shared_from_this<Listener> {
    public:
-    virtual void MessageReceived(NodeId peer_id, ReceivedMessage message);
+    virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message);
     virtual void ConnectionLost(NodeId peer_id);
   };
 

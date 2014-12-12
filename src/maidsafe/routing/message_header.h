@@ -58,8 +58,8 @@ struct MessageHeader {
   }
 
   template <typename Archive>
-  void Serialize(Archive& archive) {
-    archive(destination, source, message_id);
+  void serialize(Archive& archive) {
+    archive(destination.data, source.data, message_id.data);
   }
 
   DestinationAddress destination{};

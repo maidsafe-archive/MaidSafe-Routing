@@ -27,6 +27,7 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -37,20 +38,29 @@ struct Connect {
       static_cast<SerialisableTypeTag>(MessageTypeTag::kConnect);
 
   Connect() = default;
+
   Connect(const Connect&) = delete;
+
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
+
   Connect(DestinationAddress destination, SourceAddress source,
           rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
         requester_id(std::move(requester_id_in)),
         receiver_id(std::move(receiver_id_in)) {}
+
+  explicit Connect(MessageHeader header_in)
+      : header(std::move(header_in)), requester_endpoints(), requester_id(), receiver_id() {}
+
   ~Connect() = default;
+
   Connect& operator=(const Connect&) = delete;
+
   Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
@@ -60,8 +70,17 @@ struct Connect {
   };
 
   template <typename Archive>
-  void serialize(Archive& archive) const {
-    archive(header, requester_endpoints, requester_id, receiver_id);
+  void save(Archive& archive) const {
+    archive(header, kSerialisableTypeTag, requester_endpoints, requester_id, receiver_id);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    if (!header.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    archive(requester_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;

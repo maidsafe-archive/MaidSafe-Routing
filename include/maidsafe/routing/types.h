@@ -32,6 +32,7 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
+#include "maidsafe/rudp/contact.h"
 
 namespace maidsafe {
 
