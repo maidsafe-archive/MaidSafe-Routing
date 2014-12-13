@@ -66,7 +66,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
     : table_(Address{RandomString(Address::kSize)}),
       buckets_(InitialiseBuckets()),
       info_(),
-      initial_count_((RandomUint32() % (kGroupSize - 1)) + 1),
+      initial_count_((RandomUint32() % (GroupSize - 1)) + 1),
       added_ids_() {
   for (int i = 0; i < 99; ++i) {
     EXPECT_TRUE(
@@ -84,7 +84,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
   EXPECT_TRUE(Address::CloserToTarget(buckets_[99].close_contact, buckets_[99].mid_contact,
                                       table_.OurId()));
 
-  const asymm::Keys keys{asymm::GenerateKeyPair()};
+  const asymm::Keys keys(asymm::GenerateKeyPair());
   info_.public_key = keys.public_key;
 }
 

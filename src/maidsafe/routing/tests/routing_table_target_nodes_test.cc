@@ -58,8 +58,8 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
 
   // Try with our ID (should return closest to us, i.e. buckets 63 to 32)
   target_nodes = table_.TargetNodes(table_.OurId());
-  EXPECT_EQ(kGroupSize, target_nodes.size());
-  for (size_t i = RoutingTable::OptimalSize() - 1; i > RoutingTable::OptimalSize() - 1 - kGroupSize;
+  EXPECT_EQ(GroupSize, target_nodes.size());
+  for (size_t i = RoutingTable::OptimalSize() - 1; i > RoutingTable::OptimalSize() - 1 - GroupSize;
        --i) {
     EXPECT_TRUE(
         std::any_of(std::begin(target_nodes), std::end(target_nodes),
@@ -68,7 +68,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
 
   // Try with nodes far from us *not* in table (should return 'RoutingTable::Parallelism()' contacts
   // closest to target)
-  for (size_t i = 0; i < RoutingTable::OptimalSize() - kGroupSize; ++i) {
+  for (size_t i = 0; i < RoutingTable::OptimalSize() - GroupSize; ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].far_contact);
     EXPECT_EQ(RoutingTable::Parallelism(), target_nodes.size());
     std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + RoutingTable::Parallelism(),
@@ -84,7 +84,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
 
   // Try with node far from us, but *in* table (should return 'RoutingTable::Parallelism()' contacts
   // closest to target excluding target itself)
-  for (size_t i = 0; i < RoutingTable::OptimalSize() - kGroupSize - 1; ++i) {
+  for (size_t i = 0; i < RoutingTable::OptimalSize() - GroupSize - 1; ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].mid_contact);
     EXPECT_EQ(RoutingTable::Parallelism(), target_nodes.size());
     std::partial_sort(std::begin(added_ids_),
@@ -100,31 +100,31 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
   }
 
   // Try with node close to us *not* in table (should return kGroupSize closest to target)
-  for (size_t i = RoutingTable::OptimalSize() - kGroupSize; i < RoutingTable::OptimalSize(); ++i) {
+  for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].far_contact);
-    EXPECT_EQ(kGroupSize, target_nodes.size());
-    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + kGroupSize,
+    EXPECT_EQ(GroupSize, target_nodes.size());
+    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
                       std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
       return Address::CloserToTarget(lhs, rhs, buckets_[i].far_contact);
     });
 
     for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + kGroupSize,
+      EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
                               [&](const Address& added_id) { return added_id == target_node.id; }));
     }
   }
 
   // Try with node close to us, but *in* table (should return kGroupSize closest to target excluding
   // target itself)
-  for (size_t i = RoutingTable::OptimalSize() - kGroupSize; i < RoutingTable::OptimalSize(); ++i) {
+  for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].mid_contact);
-    EXPECT_EQ(kGroupSize - 1, target_nodes.size());
-    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + kGroupSize + 1,
+    EXPECT_EQ(GroupSize - 1, target_nodes.size());
+    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize + 1,
                       std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
       return Address::CloserToTarget(lhs, rhs, buckets_[i].mid_contact);
     });
     for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_) + 1, std::begin(added_ids_) + kGroupSize + 1,
+      EXPECT_TRUE(std::any_of(std::begin(added_ids_) + 1, std::begin(added_ids_) + GroupSize + 1,
                               [&](const Address& added_id) { return added_id == target_node.id; }));
     }
   }

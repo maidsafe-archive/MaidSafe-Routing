@@ -35,8 +35,7 @@ namespace routing {
 class VaultNode : private rudp::ManagedConnections::Listener {
  public:
   VaultNode(AsioService& asio_service, rudp::ManagedConnections& managed_connections,
-            const passport::Pmid& pmid);
-
+            boost::filesystem::path db_location, const passport::Pmid& pmid);
   VaultNode(const VaultNode&) = delete;
   VaultNode(VaultNode&&) = delete;
   VaultNode& operator=(const VaultNode&) = delete;
@@ -47,6 +46,9 @@ class VaultNode : private rudp::ManagedConnections::Listener {
   // simultaneously or to connect to a specific VaultNode.
   template <typename CompletionToken>
   BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token);
+
+  template <typename CompletionToken>
+  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
 
   template <typename CompletionToken>
   GetReturn<CompletionToken> Get(const Identity& key, CompletionToken&& token);
@@ -65,25 +67,38 @@ class VaultNode : private rudp::ManagedConnections::Listener {
                    public std::enable_shared_from_this<Listener> {
    public:
     std::shared_ptr<Listener> GetListenerPtr() { return shared_from_this(); }
-    virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message);
-    virtual void ConnectionLost(NodeId peer_id);
-  };
+    virtual void MessageReceived(NodeId /* peer_id, */,
+                                 rudp::ReceivedMessage /* message) */) override final {}
+    virtual void ConnectionLost(NodeId /* peer_) */) override final {}
+  } listener;
 
  private:
   AsioService& asio_service_;
   rudp::ManagedConnections& rudp_;
-  BootstrapHandler bootsrtap_handler_;
+  BootstrapHandler bootstrap_handler_;
   const Address our_id_;
   const asymm::Keys keys_;
 };
 
 template <typename CompletionToken>
 BootstrapReturn<CompletionToken> VaultNode::Bootstrap(CompletionToken&& token) {
-  BootstrapHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio_service_.service().post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.GetBootstrapList, listener, our_id, keys, handler,
-                    local_endpoint);
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), listener.GetListenerPtr(), our_id_,
+                    keys_, handler);
+  });
+  return result.get();
+}
+
+template <typename CompletionToken>
+BootstrapReturn<CompletionToken> VaultNode::Bootstrap(Endpoint local_endpoint,
+                                                      CompletionToken&& token) {
+  BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  asio_service_.service().post([=] {
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), listener.GetListenerPtr(), our_id_,
+                    keys_, handler, local_endpoint);
   });
   return result.get();
 }

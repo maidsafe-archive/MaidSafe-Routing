@@ -61,7 +61,7 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
 
   // new close group member
   auto result = std::make_pair(true, boost::optional<NodeInfo>());
-  if (Address::CloserToTarget(their_info.id, nodes_.at(kGroupSize).id, our_id_)) {
+  if (Address::CloserToTarget(their_info.id, nodes_.at(GroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     PushBackThenSort(std::move(their_info));
@@ -101,7 +101,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
     return true;
 
   // close node
-  if (Address::CloserToTarget(their_id, nodes_.at(kGroupSize).id, our_id_))
+  if (Address::CloserToTarget(their_id, nodes_.at(GroupSize).id, our_id_))
     return true;
 
   return NewNodeIsBetterThanExisting(their_id, FindCandidateForRemoval());
@@ -130,7 +130,7 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
       if (target == itr->id)
         continue;
       // close group is first 'kGroupSize' contacts
-      if (iterations < kGroupSize)
+      if (iterations < GroupSize)
         our_close_group.push_back(itr);
       // add 'itr' to collection of all iterators for later partial sorting by closeness to target
       closest_to_target.push_back(itr);
@@ -159,10 +159,10 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
 
 std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {
   std::vector<NodeInfo> result;
-  result.reserve(kGroupSize);
+  result.reserve(GroupSize);
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto size = std::min(kGroupSize, nodes_.size());
+    auto size = std::min(GroupSize, nodes_.size());
     std::copy(std::begin(nodes_), std::begin(nodes_) + size, std::back_inserter(result));
   }
   return result;
@@ -199,7 +199,7 @@ std::vector<NodeInfo>::const_iterator RoutingTable::FindCandidateForRemoval() co
   assert(nodes_.size() >= OptimalSize());
   size_t number_in_bucket(0);
   int bucket(0);
-  auto furthest_group_member = nodes_.rbegin() + nodes_.size() - kGroupSize;
+  auto furthest_group_member = nodes_.rbegin() + nodes_.size() - GroupSize;
   auto found = std::find_if(nodes_.rbegin(), furthest_group_member,
                             [&number_in_bucket, &bucket, this](const NodeInfo& node) {
     if (BucketIndex(node.id) != bucket) {

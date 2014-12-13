@@ -38,8 +38,8 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t kGroupSize = 32;
-static const size_t kQuorumSize = 29;
+static const size_t GroupSize = 32;
+static const size_t QuorumSize = 29;
 using Address = NodeId;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using SourceAddress = TaggedValue<Address, struct SourceTag>;
@@ -47,7 +47,7 @@ using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = boost::asio::ip::udp::endpoint;
 using Connection = boost::asio::ip::udp::endpoint;
 using MurmurHash = uint32_t;
-using Checksums = std::array<MurmurHash, kGroupSize - 1>;
+using Checksums = std::array<MurmurHash, GroupSize - 1>;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 

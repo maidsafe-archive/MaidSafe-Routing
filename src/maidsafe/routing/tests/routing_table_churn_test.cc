@@ -67,13 +67,12 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckChurn) {
   addresses.erase(std::begin(addresses), std::begin(addresses) + nodes_to_remove);
 
   for (const auto& node : routing_tables) {
-    size_t size = std::min(kGroupSize, static_cast<size_t>(node->Size()));
+    size_t size = std::min(GroupSize, static_cast<size_t>(node->Size()));
     auto id = node->OurId();
     // + 1 as addresses includes our ID
     std::partial_sort(std::begin(addresses), std::begin(addresses) + size + 1, std::end(addresses),
-                      [id](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, id);
-    });
+                      [id](const Address& lhs,
+                           const Address& rhs) { return Address::CloserToTarget(lhs, rhs, id); });
     auto groups = node->OurCloseGroup();
     EXPECT_EQ(groups.size(), size);
     // currently disabled as nodes are not doing a get_close_group to begin and this
