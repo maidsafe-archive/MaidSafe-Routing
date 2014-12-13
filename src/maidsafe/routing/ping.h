@@ -36,24 +36,44 @@ struct Ping {
       static_cast<SerialisableTypeTag>(MessageTypeTag::kPing);
 
   Ping() = default;
+
   Ping(const Ping&) = delete;
-  Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
+
+  Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                         random_value(std::move(other.random_value)) {}
+
   Ping(DestinationAddress destination, SourceAddress source)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) {}
-  explicit Ping(MessageHeader header_in) : header(std::move(header_in)) {}
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
+        random_value(RandomInt32()) {}
+
+  explicit Ping(MessageHeader header_in) : header(std::move(header_in)), random_value(0) {}
+
   ~Ping() = default;
+
   Ping& operator=(const Ping&) = delete;
+
   Ping& operator=(Ping&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
+    random_value = std::move(other.random_value);
     return *this;
   };
 
   template <typename Archive>
-  void serialize(Archive& archive) const {
-    archive(header);
+  void save(Archive& archive) const {
+    archive(header, kSerialisableTypeTag, random_value);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    if (!header.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    archive(random_value);
   }
 
   MessageHeader header;
+  int random_value;
 };
 
 }  // namespace routing

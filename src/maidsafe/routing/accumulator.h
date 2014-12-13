@@ -19,17 +19,22 @@
 #ifndef MAIDSAFE_ROUTING_ACCUMULATOR_H_
 #define MAIDSAFE_ROUTING_ACCUMULATOR_H_
 
-
 #include <cassert>
-#include <tuple>
+#include <chrono>
+#include <limits>
 #include <list>
 #include <map>
-#include <chrono>
+#include <tuple>
 #include <type_traits>
-#include "maidsafe/common/make_unique.h"
+#include <utility>
+#include <vector>
+
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/make_unique.h"
 
 namespace maidsafe {
+
+namespace routing {
 
 // Accumulate data parts with time_to_live LRU-replacement cache
 // requires sender id to ensure parts are delivered from different senders
@@ -40,12 +45,12 @@ class Accumulator {
       : time_to_live_(time_to_live), capacity_(std::numeric_limits<size_t>::max()) {}
 
   ~Accumulator() = default;
-  Accumulator(Accumulator const&) = delete;
+  Accumulator(const Accumulator&) = delete;
   Accumulator(Accumulator&&) = delete;
-  Accumulator& operator=(Accumulator const&) = delete;
+  Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
 
-  std::pair<bool, ValueTyp()> Add(KeyType key, ValueType value, NodeId sender) {
+  std::pair<bool, ValueType> Add(KeyType key, ValueType value, NodeId sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       AddNew(key, value, sender);
@@ -57,7 +62,7 @@ class Accumulator {
       for (const auto& part : std::get<0>(it->second))
         ret_vec.push_back(part);
 
-      return {true, crypto::InfoRetreive(GroupSize, ret_vec)};
+      return {true, crypto::InfoRetrieve(GroupSize, ret_vec)};
     }
     return {false, ValueType()};
   }
@@ -65,7 +70,7 @@ class Accumulator {
   // this is called when the return from Add returns a type that is incorrect
   // this means a node sent bad dta, this method allows all parts to be collected
   // and we can attempt to identify the bad node.
-  std::pair<bool, std::vector<ValueType>> GetAllParts(KeyType key) {
+  std::pair<bool, std::vector<ValueType>> GetAllParts(const KeyType& key) const {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       return {false, std::vector<ValueType>()};
@@ -78,7 +83,7 @@ class Accumulator {
     return {true, ret_vec};
   }
 
-  size_t size() { return storage_.size(); }
+  size_t size() const { return storage_.size(); }
 
  private:
   void AddNew(KeyType key, ValueType value, NodeId sender) {
@@ -107,7 +112,7 @@ class Accumulator {
     key_order_.pop_front();
   }
 
-  bool CheckTimeExpired() {
+  bool CheckTimeExpired() const {
     if (time_to_live_ == std::chrono::steady_clock::duration::zero() || storage_.empty())
       return false;
     auto key = storage_.find(key_order_.front());
@@ -128,7 +133,7 @@ class Accumulator {
                                std::chrono::steady_clock::time_point>> storage_;
 };
 
-
+}  // namespace routing
 
 }  // namespace maidsafe
 

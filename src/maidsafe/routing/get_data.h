@@ -36,14 +36,22 @@ struct GetData {
       static_cast<SerialisableTypeTag>(MessageTypeTag::kGetData);
 
   GetData() = default;
+
   GetData(const GetData&) = delete;
+
   GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
                                                data_name(std::move(other.data_name)) {}
+
   GetData(DestinationAddress destination, SourceAddress source, Address data_name_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         data_name(std::move(data_name_in)) {}
+
+  explicit GetData(MessageHeader header_in) : header(std::move(header_in)), data_name() {}
+
   ~GetData() = default;
+
   GetData& operator=(const GetData&) = delete;
+
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
@@ -51,8 +59,17 @@ struct GetData {
   };
 
   template <typename Archive>
-  void serialize(Archive& archive) const {
-    archive(header, data_name);
+  void save(Archive& archive) const {
+    archive(header, kSerialisableTypeTag, data_name);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    if (!header.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    archive(data_name);
   }
 
   MessageHeader header;

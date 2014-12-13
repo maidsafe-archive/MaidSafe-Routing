@@ -33,12 +33,13 @@ This object in itself will very possibly end up in rudp itself.
 #include <vector>
 #include <tuple>
 #include <chrono>
-
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/sqlite3_wrapper.h"
-#include "maidsfe/common/rsa.h"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
+
+#include "maidsafe/routing/types.h"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/sqlite3_wrapper.h"
+#include "maidsafe/common/rsa.h"
 
 namespace maidsafe {
 namespace routing {
@@ -47,6 +48,8 @@ class BootstrapHandler {
  public:
   using Endpoint = boost::asio::ip::udp::endpoint;
   using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
+  using BootstrapContacts = std::vector<BootstrapContact>;
+
   static const int MaxListSize = 1500;
   BootstrapHandler(boost::filesystem::path bootstrap_filename);
   BootstrapHandler(BootstrapHandler const&) = delete;
@@ -56,8 +59,8 @@ class BootstrapHandler {
   BootstrapHandler& operator=(BootstrapHandler&& rhs) = delete;
 
   void AddBootstrapContact(const BootstrapContact& bootstrap_contact);
-  BootstrapContacts ReadBootstrapContacts();
-  void ReplaceBootstrapContacts(const BootstrapContacts& bootstrap_contacts);
+  std::vector<BootstrapContact> ReadBootstrapContacts();
+  void ReplaceBootstrapContacts(const std::vector<BootstrapContact>& bootstrap_contacts);
 
  private:
   // Insert many contacts at once

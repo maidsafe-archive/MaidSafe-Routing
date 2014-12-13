@@ -47,12 +47,15 @@ set(RoutingLibApiFiles
     )
 source_group("Routing API Files" FILES ${RoutingLibApiFiles})
 set(RoutingLibHeaders
+    ${RoutingSourcesDir}/accumulator.h
 #    ${RoutingSourcesDir}/acknowledgement.h
 #    ${RoutingSourcesDir}/bootstrap_file_operations.h
 #    ${RoutingSourcesDir}/bootstrap_utils.h
     ${RoutingSourcesDir}/connect.h
     ${RoutingSourcesDir}/connection_manager.h
     ${RoutingSourcesDir}/connect_response.h
+    ${RoutingSourcesDir}/find_group.h
+    ${RoutingSourcesDir}/find_group_response.h
     ${RoutingSourcesDir}/get_data.h
     ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
@@ -72,7 +75,7 @@ set(RoutingLibSources
 #    ${RoutingSourcesDir}/bootstrap_utils.cc
 #    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
-    ${RoutingSourcesDir}/message_handler.cc
+    # ${RoutingSourcesDir}/message_handler.cc
 #    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc

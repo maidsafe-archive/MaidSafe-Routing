@@ -31,7 +31,6 @@
 
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/bootstrap_file_operations.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/utils.h"
@@ -42,14 +41,6 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-
-struct ScopedBootstrapFile {
-  explicit ScopedBootstrapFile(const BootstrapContacts& bootstrap_contacts);
-  ~ScopedBootstrapFile();
-
- private:
-  const boost::filesystem::path kFilePath;
-};
 
 struct NodeInfoAndPrivateKey {
   NodeInfoAndPrivateKey() : node_info(), private_key() {}

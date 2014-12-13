@@ -36,25 +36,46 @@ struct PingResponse {
       static_cast<SerialisableTypeTag>(MessageTypeTag::kPingResponse);
 
   PingResponse() = default;
+
   PingResponse(const PingResponse&) = delete;
-  PingResponse(PingResponse&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) {}
-  explicit PingResponse(Ping Ping)
-      : header(DestinationAddress(std::move(Ping.header.source.data)),
-               SourceAddress(std::move(Ping.header.destination.data)),
-               MessageId(std::move(Ping.header.message_id))) {}
+
+  PingResponse(PingResponse&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                                         ping_value(std::move(other.ping_value)) {}
+
+  explicit PingResponse(Ping ping)
+      : header(DestinationAddress(std::move(ping.header.source.data)),
+               SourceAddress(std::move(ping.header.destination.data)),
+               MessageId(std::move(ping.header.message_id))),
+        ping_value(std::move(ping.random_value)) {}
+
+  explicit PingResponse(MessageHeader header_in) : header(std::move(header_in)), ping_value(0) {}
+
   ~PingResponse() = default;
+
   PingResponse& operator=(const PingResponse&) = delete;
+
   PingResponse& operator=(PingResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
+    ping_value = std::move(other.ping_value);
     return *this;
   };
 
   template <typename Archive>
-  void serialize(Archive& archive) const {
-    archive(header);
+  void save(Archive& archive) const {
+    archive(header, kSerialisableTypeTag, ping_value);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    if (!header.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    archive(ping_value);
   }
 
   MessageHeader header;
+  int ping_value;
 };
 
 }  // namespace routing

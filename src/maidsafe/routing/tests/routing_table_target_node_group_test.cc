@@ -57,12 +57,12 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
       return Address::CloserToTarget(lhs, rhs, node->OurId());
     });
     // if target is in close group return the whole close group
-    for (size_t i = 1; i < kGroupSize + 1; ++i) {
+    for (size_t i = 1; i < GroupSize + 1; ++i) {
       auto target_close_group = node->TargetNodes(addresses.at(i));
       // check the close group is correct
-      for (size_t j = 0; j < kGroupSize; ++j) {
+      for (size_t j = 0; j < GroupSize; ++j) {
         EXPECT_EQ(target_close_group.at(j).id, addresses.at(j + 1)) << " node mismatch at " << j;
-        EXPECT_EQ(kGroupSize, (node->TargetNodes(addresses.at(j + 1))).size())
+        EXPECT_EQ(GroupSize, (node->TargetNodes(addresses.at(j + 1))).size())
             << "mismatch at index " << j;
       }
     }
@@ -74,7 +74,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
     // but not so far as to not check any of the return values being == 1
     // so magic number but for the best reasons we can think of.
     auto xor_closeness_buffer(10);
-    for (size_t i = kGroupSize + xor_closeness_buffer; i < network_size - 1; ++i) {
+    for (size_t i = GroupSize + xor_closeness_buffer; i < network_size - 1; ++i) {
       EXPECT_EQ(1, (node->TargetNodes(addresses.at(i))).size()) << "mismatch at index " << i;
     }
   }

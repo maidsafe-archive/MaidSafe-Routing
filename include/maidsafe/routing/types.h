@@ -29,16 +29,17 @@
 #include "asio/ip/udp.hpp"
 
 #include "boost/asio/ip/udp.hpp"
-
+#include "maidsafe/rudp/contact.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
+#include "maidsafe/rudp/contact.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-static const size_t kGroupSize = 32;
-static const size_t kQuorumSize = 29;
+static const size_t GroupSize = 32;
+static const size_t QuorumSize = 29;
 using Address = NodeId;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using SourceAddress = TaggedValue<Address, struct SourceTag>;
@@ -46,16 +47,16 @@ using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = boost::asio::ip::udp::endpoint;
 using Connection = boost::asio::ip::udp::endpoint;
 using MurmurHash = uint32_t;
-using Checksums = std::array<MurmurHash, kGroupSize - 1>;
+using Checksums = std::array<MurmurHash, GroupSize - 1>;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 template <typename CompletionToken>
-using BootstrapHandler =
+using BootstrapHandlerHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, rudp::Contact)>::type;
 
 template <typename CompletionToken>
-using BootstrapReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+using BootstrapReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
 using PostHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
@@ -74,7 +75,7 @@ using GetHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, SerialisedMessage)>::type;
 
 template <typename CompletionToken>
-using GetReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+using GetReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
 using SendHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;

@@ -18,6 +18,7 @@
 
 #include "maidsafe/routing/vault_node.h"
 
+#include "boost/filesystem/path.hpp"
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
@@ -29,9 +30,10 @@ namespace maidsafe {
 namespace routing {
 
 VaultNode::VaultNode(AsioService& asio_service, rudp::ManagedConnections& managed_connections,
-                     const passport::Pmid& pmid)
+                     boost::filesystem::path db_location, const passport::Pmid& pmid)
     : asio_service_(asio_service),
       rudp_(managed_connections),
+      bootstrap_handler_(db_location),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;

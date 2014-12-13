@@ -40,12 +40,15 @@ struct PutData {
       static_cast<SerialisableTypeTag>(MessageTypeTag::kPutData);
 
   PutData() = default;
+
   PutData(const PutData&) = delete;
+
   PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
                                                data_name(std::move(other.data_name)),
                                                signature(std::move(other.signature)),
                                                data(std::move(other.data)),
                                                part(std::move(other.part)) {}
+
   PutData(DestinationAddress destination, SourceAddress source, Address data_name_in,
           asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
@@ -53,8 +56,14 @@ struct PutData {
         signature(std::move(signature_in)),
         data(std::move(data_in)),
         part(std::move(part_in)) {}
+
+  explicit PutData(MessageHeader header_in)
+      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
+
   ~PutData() = default;
+
   PutData& operator=(const PutData&) = delete;
+
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
@@ -65,8 +74,17 @@ struct PutData {
   };
 
   template <typename Archive>
-  void serialize(Archive& archive) const {
-    archive(header, data_name, signature, data, part);
+  void save(Archive& archive) const {
+    archive(header, kSerialisableTypeTag, data_name, signature, data, part);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    if (!header.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    archive(data_name, signature, data, part);
   }
 
   MessageHeader header;

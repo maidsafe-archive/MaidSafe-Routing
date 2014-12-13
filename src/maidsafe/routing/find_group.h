@@ -16,17 +16,13 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_POST_H_
-#define MAIDSAFE_ROUTING_POST_H_
-
-#include <cstdint>
-#include <vector>
+#ifndef MAIDSAFE_ROUTING_FIND_GROUP_H_
+#define MAIDSAFE_ROUTING_FIND_GROUP_H_
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages.h"
@@ -36,67 +32,62 @@ namespace maidsafe {
 
 namespace routing {
 
-struct Post {
+struct FindGroup {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPost);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroup);
 
-  Post() = default;
+  FindGroup() = default;
 
-  Post(const Post&) = delete;
+  FindGroup(const FindGroup&) = delete;
 
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                         data_name(std::move(other.data_name)),
-                                         signature(std::move(other.signature)),
-                                         data(std::move(other.data)),
-                                         part(std::move(other.part)) {}
+  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) /*,
+        requester_endpoints(std::move(other.requester_endpoints)),
+        requester_id(std::move(other.requester_id)),
+        receiver_id(std::move(other.receiver_id))*/ {}
 
-  Post(DestinationAddress destination, SourceAddress source, Address data_name_in,
-       asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        data_name(std::move(data_name_in)),
-        signature(std::move(signature_in)),
-        data(std::move(data_in)),
-        part(std::move(part_in)) {}
+  FindGroup(DestinationAddress destination, SourceAddress source /*,
+          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in*/)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) /*,
+        requester_endpoints(std::move(requester_endpoints)),
+        requester_id(std::move(requester_id_in)),
+        receiver_id(std::move(receiver_id_in))*/ {}
 
-  explicit Post(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
+  explicit FindGroup(MessageHeader header_in)
+      : header(std::move(header_in)) /*, requester_endpoints(), requester_id(), receiver_id()*/ {}
 
-  ~Post() = default;
+  ~FindGroup() = default;
 
-  Post& operator=(const Post&) = delete;
+  FindGroup& operator=(const FindGroup&) = delete;
 
-  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
+  FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    data_name = std::move(other.data_name);
-    signature = std::move(other.signature);
-    data = std::move(other.data);
-    part = std::move(other.part);
+    // requester_endpoints = std::move(other.requester_endpoints);
+    // requester_id = std::move(other.requester_id);
+    // receiver_id = std::move(other.receiver_id);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name, signature, data, part);
+    archive(header, kSerialisableTypeTag /*, requester_endpoints, requester_id, receiver_id*/);
   }
 
   template <typename Archive>
-  void load(Archive& archive) {
+  void load(Archive& /*archive*/) {
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(data_name, signature, data, part);
+    // archive(/*requester_endpoints, requester_id, receiver_id*/);
   }
 
   MessageHeader header;
-  Address data_name;
-  asymm::Signature signature;
-  std::vector<byte> data;
-  uint8_t part;
+  // rudp::EndpointPair requester_endpoints;
+  // Address requester_id, receiver_id;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_POST_H_
+#endif  // MAIDSAFE_ROUTING_FIND_GROUP_H_

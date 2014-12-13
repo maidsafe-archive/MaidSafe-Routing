@@ -19,7 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
-#include "maidsafe/common/asio_service.h"
+#include "asio/io_service.hpp"
+
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/messages.h"
@@ -41,7 +42,7 @@ struct Post;
 
 class MessageHandler {
  public:
-  MessageHandler(AsioService& asio_service, rudp::ManagedConnections& managed_connections,
+  MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
                  ConnectionManager& connection_manager);
   MessageHandler() = delete;
   ~MessageHandler() = default;
@@ -54,15 +55,15 @@ class MessageHandler {
  private:
   void HandleMessage(Ping&& ping);
   void HandleMessage(PingResponse&& ping_response);
-  // void HandleMessage(FindGroup&& find_group);
-  // void HandleMessage(FindGroupResponse&& find_group_reponse);
+  void HandleMessage(FindGroup&& find_group);
+  void HandleMessage(FindGroupResponse&& find_group_reponse);
   void HandleMessage(Connect&& connect);
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetData&& get_data);
   void HandleMessage(PutData&& put_data);
   void HandleMessage(Post&& post);
 
-  AsioService& asio_service_;
+  asio::io_service& io_service_;
   rudp::ManagedConnections& rudp_;
   ConnectionManager& connection_manager_;
 };

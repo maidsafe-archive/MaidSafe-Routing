@@ -44,21 +44,21 @@ TEST_F(RoutingTableUnitTest, BEH_OurCloseGroup) {
   EXPECT_EQ(initial_count_, our_close_group.size());
   for (size_t i = 0; i < initial_count_; ++i) {
     EXPECT_TRUE(
-      std::any_of(std::begin(our_close_group), std::end(our_close_group),
+        std::any_of(std::begin(our_close_group), std::end(our_close_group),
                     [&](const NodeInfo& node) { return node.id == buckets_[i].mid_contact; }));
   }
 
   // Complete filling the table up to RoutingTable::OptimalSize() contacts and test again
   CompleteFillingTable();
   our_close_group = table_.OurCloseGroup();
-  EXPECT_EQ(kGroupSize, our_close_group.size());
-  std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + kGroupSize,
-    std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
+  EXPECT_EQ(GroupSize, our_close_group.size());
+  std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
+                    std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
     return Address::CloserToTarget(lhs, rhs, table_.OurId());
   });
   for (const auto& node : our_close_group) {
-    EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + kGroupSize,
-      [&](const Address& added_id) { return added_id == node.id; }));
+    EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
+                            [&](const Address& added_id) { return added_id == node.id; }));
   }
 }
 
