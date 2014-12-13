@@ -70,10 +70,10 @@ void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_e
     if (!error) {
       auto added = routing_table_.AddNode(node_to_add);
       if (!added.first) {
-        rudp_.Remove(node_to_add.id, asio::use_future);  // become invalid for us
+        // rudp_.Remove(node_to_add.id, asio::use_future);  // become invalid for us
         GroupChanged();
       } else if (added.second) {
-        rudp_.Remove(added.second->id, asio::use_future);  // a sacrificlal node was found
+        // rudp_.Remove(added.second->id, asio::use_future);  // a sacrificlal node was found
         GroupChanged();
       }
     }
