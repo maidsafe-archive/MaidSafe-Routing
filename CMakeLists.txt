@@ -72,7 +72,7 @@ set(RoutingLibSources
 #    ${RoutingSourcesDir}/bootstrap_utils.cc
 #    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
-    ${RoutingSourcesDir}/message_handler.cc
+    # ${RoutingSourcesDir}/message_handler.cc
 #    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc

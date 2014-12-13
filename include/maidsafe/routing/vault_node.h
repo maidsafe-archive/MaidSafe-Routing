@@ -24,6 +24,7 @@
 #include "maidsafe/rudp/managed_connections.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/bootstrap_handler.h"
 
 namespace maidsafe {
 
@@ -58,21 +59,24 @@ class VaultNode : private rudp::ManagedConnections::Listener {
 
   // Returns a number between 0 to 100 representing % network health w.r.t. number of connections
   int NetworkStatus() const;
-  class Listener : private rudp::ManagedConnections::Listener : std::shared_from_this {
+  class Listener : private rudp::ManagedConnections::Listener,
+                   public std::enable_shared_from_this<Listener> {
    public:
-    virtual void MessageReceived(NodeId peer_id, ReceivedMessage message);
+    std::shared_ptr<Listener> GetListenerPtr() { return shared_from_this(); }
+    virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message);
     virtual void ConnectionLost(NodeId peer_id);
   };
 
  private:
   AsioService& asio_service_;
   rudp::ManagedConnections& rudp_;
+  BootstrapHandler bootsrtap_handler_;
   const Address our_id_;
   const asymm::Keys keys_;
 };
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token) {
+BootstrapReturn<CompletionToken> VaultNode::Bootstrap(CompletionToken&& token) {
   BootstrapHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio_service_.service().post([=] {
@@ -83,7 +87,7 @@ BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token) {
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> Get(const Identity& key, CompletionToken&& token) {
+GetReturn<CompletionToken> VaultNode::Get(const Identity& key, CompletionToken&& token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio_service_.service().post([=] { DoGet(key, handler); });

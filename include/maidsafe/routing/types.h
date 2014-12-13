@@ -29,7 +29,7 @@
 #include "asio/ip/udp.hpp"
 
 #include "boost/asio/ip/udp.hpp"
-
+#include "maidsafe/rudp/contact.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
 
@@ -51,11 +51,11 @@ using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 template <typename CompletionToken>
-using BootstrapHandler =
+using BootstrapHandlerHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, rudp::Contact)>::type;
 
 template <typename CompletionToken>
-using BootstrapReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+using BootstrapReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
 using PostHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
@@ -74,7 +74,7 @@ using GetHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, SerialisedMessage)>::type;
 
 template <typename CompletionToken>
-using GetReturn = typename asio::async_result<BootstrapHandler<CompletionToken>>::type;
+using GetReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
 using SendHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;

@@ -36,7 +36,7 @@ This object in itself will very possibly end up in rudp itself.
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
-#include "maidsfe/common/rsa.h"
+#include "maidsafe/common/rsa.h"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 
