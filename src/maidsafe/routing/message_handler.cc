@@ -18,6 +18,7 @@
 
 #include "maidsafe/routing/message_handler.h"
 
+#include <utility>
 #include <vector>
 
 #include "maidsafe/common/log.h"

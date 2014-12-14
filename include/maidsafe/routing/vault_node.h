@@ -66,14 +66,15 @@ class VaultNode : private rudp::ManagedConnections::Listener {
   class Listener : private rudp::ManagedConnections::Listener,
                    public std::enable_shared_from_this<Listener> {
    public:
+    virtual ~Listener() {}
     std::shared_ptr<Listener> GetListenerPtr() { return shared_from_this(); }
-    virtual void MessageReceived(NodeId /* peer_id, */,
-                                 rudp::ReceivedMessage /* message) */) override final {}
-    virtual void ConnectionLost(NodeId /* peer_) */) override final {}
-  } listener;
+    virtual void MessageReceived(NodeId /*peer_id*/, rudp::ReceivedMessage /*message*/) = 0;
+    virtual void ConnectionLost(NodeId /*peer_*/) = 0;
+  };
 
  private:
   AsioService& asio_service_;
+  std::weak_ptr<Listener> listener_;
   rudp::ManagedConnections& rudp_;
   BootstrapHandler bootstrap_handler_;
   const Address our_id_;

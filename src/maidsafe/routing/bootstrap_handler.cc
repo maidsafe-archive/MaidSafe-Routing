@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -21,24 +21,22 @@
 #include <cstdint>
 #include <string>
 
-#include "boost/filesystem/path.hpp"
-#include "boost/asio/ip/udp.hpp"
-#include "maidsafe/common/sqlite3_wrapper.h"
-#include "boost/asio/ip/udp.hpp"
-
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
+
 namespace routing {
 
-namespace fs = boost::filesystem;
+#if !defined(_MSC_VER) || _MSC_VER != 1800
 const int MaxListSize;
+#endif
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
-    : bootstrap_filename_(bootstrap_filename),
-      database_(bootstrap_filename, sqlite::Mode::kReadWriteCreate),
-      bootstrap_contacts_() , last_updated_(std::chrono::steady_clock::now()){
-  sqlite::Statement statement{database,
+    : bootstrap_filename_(std::move(bootstrap_filename)),
+      database_(bootstrap_filename_, sqlite::Mode::kReadWriteCreate),
+      bootstrap_contacts_(),
+      last_updated_(std::chrono::steady_clock::now()) {
+  sqlite::Statement statement{database_,
                               "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID TEXT PRIMARY "
                               "KEY NOT NULL, PUBLIC_KEY TEXT, ENDPOINT TEXT);"};
   statement.Step();
@@ -46,7 +44,6 @@ BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
 }
 
 void BootstrapHandler::AddBootstrapContact(const BootstrapContact& bootstrap_contact) {
-
   sqlite::Transaction transaction(database_);
   InsertBootstrapContacts(BootstrapContacts(1, bootstrap_contact));
   transaction.Commit();
@@ -54,7 +51,7 @@ void BootstrapHandler::AddBootstrapContact(const BootstrapContact& bootstrap_con
     CheckBoostrapContacts();  // put on active object
 }
 
-std::vector<BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
+std::vector<BootstrapContact> BootstrapHandler::ReadBootstrapContacts() const {
   BootstrapContacts bootstrap_contacts;
   sqlite::Statement statement{database_, "SELECT * from BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow)
@@ -65,14 +62,13 @@ std::vector<BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
 }
 
 void BootstrapHandler::ReplaceBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
-  if(bootstrap_contacts.size() > MaxListSize)
-  bootstrap_contacts.resize(MaxListSize);
+  if (bootstrap_contacts.size() > MaxListSize)
+    bootstrap_contacts.resize(MaxListSize);
   sqlite::Transaction transaction(database_);
   RemoveBoostrapContacts();
   InsertBootstrapContacts(bootstrap_contacts);
   transaction.Commit();
 }
-
 
 void BootstrapHandler::InsertBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
   sqlite::Statement statement{
@@ -92,6 +88,7 @@ void BootstrapHandler::RemoveBootstrapContacts() {
   statement.Step();
   statement.Reset();
 }
+
 void BootstrapHandler::CheckBootstrapContats()[
 
 ]
