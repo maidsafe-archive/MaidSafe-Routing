@@ -74,7 +74,11 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
                                ConnectionManager& connection_manager)
     : io_service_(io_service),
       rudp_(managed_connections),
-      connection_manager_(connection_manager) {}
+      connection_manager_(connection_manager) {
+        (void)io_service_;
+        (void)rudp_;
+        (void)connection_manager_;
+      }
 
 void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   try {
