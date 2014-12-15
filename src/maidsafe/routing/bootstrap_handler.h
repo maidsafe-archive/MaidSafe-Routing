@@ -14,8 +14,7 @@
     OF ANY KIND, either express or implied.
 
     See the Licences for the specific language governing permissions and limitations relating to
-    use of the MaidSafe Software.
- */
+    use of the MaidSafe Software.                                                                 */
 /*
 The purpose of this simple object is to maintain a list of bootstrap nodes. These are nodes that
 are accessible through their published endpoint (external). Rudp confirms these nodes
@@ -49,32 +48,35 @@ class BootstrapHandler {
   using Endpoint = boost::asio::ip::udp::endpoint;
   using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
   using BootstrapContacts = std::vector<BootstrapContact>;
-
   static const int MaxListSize = 1500;
+  const std::chrono::steady_clock::duration UpdateDuration = std::chrono::hours(4);
   BootstrapHandler(boost::filesystem::path bootstrap_filename);
-  BootstrapHandler(BootstrapHandler const&) = delete;
+  BootstrapHandler(BootstrapHandler const&) = default;
   BootstrapHandler(BootstrapHandler&&) = delete;
   ~BootstrapHandler() = default;
   BootstrapHandler& operator=(BootstrapHandler const&) = delete;
   BootstrapHandler& operator=(BootstrapHandler&& rhs) = delete;
 
-  void AddBootstrapContact(const BootstrapContact& bootstrap_contact);
+  void AddBootstrapContacts(BootstrapContacts bootstrap_contacts);
   std::vector<BootstrapContact> ReadBootstrapContacts();
-  void ReplaceBootstrapContacts(const std::vector<BootstrapContact>& bootstrap_contacts);
+  void ReplaceBootstrapContacts(std::vector<BootstrapContact> bootstrap_contacts);
+  bool OutOfDate() { return (std::chrono::steady_clock::now() + UpdateDuration > last_updated_); }
+  void ResetTimer() { last_updated_ = std::chrono::steady_clock::now(); }
 
  private:
   // Insert many contacts at once
-  void InsertBootstrapContacts(const BootstrapContacts& bootstrap_contacts);
+  void InsertBootstrapContacts(BootstrapContacts bootstrap_contacts);
   // if we are asked to remove a contact for some reason
-  void RemoveBoostrapContacts();
+  void RemoveBootstrapContacts();
   // this should be put on an active object
   // we get all contacts and ping them (rudp_.ping) and when we have
   // MaxListSize or exhaunsted the list we replace the current list with the
   void CheckBootstrapContacts();
-  sqlite::Database& database_;
+  boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint);
   boost::filesystem::path bootstrap_filename_;
+  sqlite::Database database_;
   std::vector<BootstrapContact> bootstrap_contacts_;
-  std::chrono::steady_clock::duration last_updated_;
+  std::chrono::steady_clock::time_point last_updated_;
 };
 
 }  // namespace routing
