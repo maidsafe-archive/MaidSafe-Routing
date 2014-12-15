@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,25 +16,22 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
+#include "maidsafe/routing/bootstrap_handler.h"
 
-#include <cstdint>
 #include <vector>
-#include <string>
-
-#include "boost/asio/ip/address.hpp"
+#include <tuple>
+#include <chrono>
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/filesystem/operations.hpp"
 
+#include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/passport/types.h"
-
-#include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/utils.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/common/test.h"
 
 
 namespace maidsafe {
@@ -42,17 +39,21 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+namespace fs = boost::filesystem;
 
-BootstrapHandler::BootstrapContact CreateBootstrapContact();
-
-std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number);
-
-std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size);
+TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
+  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
+  fs::path bootstrap_file_path(*test_path / "bootstrap");
+  BootstrapHandler test_handler(bootstrap_file_path);
+  for (int i = 0; i < 100; ++i) {
+    EXPECT_NO_THROW(test_handler.AddBootstrapContacts(CreateBootstrapContacts(10)));
+  }
+  std::vector<BootstrapHandler::BootstrapContact> contacts(CreateBootstrapContacts(1000));
+  EXPECT_NO_THROW(test_handler.AddBootstrapContacts(contacts));
+}
 
 }  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
