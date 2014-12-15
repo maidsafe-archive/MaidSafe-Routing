@@ -28,8 +28,6 @@
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
 
-#include "boost/asio/ip/udp.hpp"
-#include "maidsafe/rudp/contact.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/rudp/contact.h"
@@ -44,8 +42,8 @@ using Address = NodeId;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
-using Endpoint = boost::asio::ip::udp::endpoint;
-using Connection = boost::asio::ip::udp::endpoint;
+using Endpoint = asio::ip::udp::endpoint;
+using Connection = asio::ip::udp::endpoint;
 using MurmurHash = uint32_t;
 using Checksums = std::array<MurmurHash, GroupSize - 1>;
 using SerialisedMessage = std::vector<byte>;

@@ -58,7 +58,6 @@ struct ConnectResponse {
         requester_id(std::move(originator.requester_id)),
         receiver_id(std::move(originator.receiver_id)) {}
 
-
   explicit ConnectResponse(MessageHeader header_in)
       : header(std::move(header_in)),
         requester_endpoints(),

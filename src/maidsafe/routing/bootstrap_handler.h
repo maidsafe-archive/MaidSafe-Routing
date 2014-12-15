@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2012 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -15,11 +15,12 @@
 
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
+
 /*
-The purpose of this simple object is to maintain a list of bootstrap nodes. These are nodes that
-are accessible through their published endpoint (external). Rudp confirms these nodes
-and passes us the NodeId:PublicKey:Endpoint. This is maintained as a sqlite3 db for the
-time being to allow multi process access (particularly useful for vaults).
+The purpose of this simple object is to maintain a list of bootstrap nodes. These are nodes that are
+accessible through their published endpoint (external). Rudp confirms these nodes and passes us the
+NodeId:PublicKey:Endpoint. This is maintained as a sqlite3 db for the time being to  multi-
+process access (particularly useful for vaults).
 
 This object in itself will very possibly end up in rudp itself.
 */
@@ -27,40 +28,46 @@ This object in itself will very possibly end up in rudp itself.
 #ifndef MAIDSAFE_ROUTING_BOOTSTRAP_HANDLER_H_
 #define MAIDSAFE_ROUTING_BOOTSTRAP_HANDLER_H_
 
-
-#include <string>
-#include <vector>
-#include <tuple>
 #include <chrono>
-#include "boost/asio/ip/udp.hpp"
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include "asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/routing/types.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/sqlite3_wrapper.h"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 class BootstrapHandler {
  public:
-  using Endpoint = boost::asio::ip::udp::endpoint;
+  using Endpoint = asio::ip::udp::endpoint;
   using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
   using BootstrapContacts = std::vector<BootstrapContact>;
+
   static const int MaxListSize = 1500;
-  const std::chrono::steady_clock::duration UpdateDuration = std::chrono::hours(4);
-  BootstrapHandler(boost::filesystem::path bootstrap_filename);
-  BootstrapHandler(BootstrapHandler const&) = default;
+  static const std::chrono::steady_clock::duration UpdateDuration;
+
+  explicit BootstrapHandler(boost::filesystem::path bootstrap_filename);
+  BootstrapHandler(const BootstrapHandler&) = default;
   BootstrapHandler(BootstrapHandler&&) = delete;
   ~BootstrapHandler() = default;
-  BootstrapHandler& operator=(BootstrapHandler const&) = delete;
-  BootstrapHandler& operator=(BootstrapHandler&& rhs) = delete;
+  BootstrapHandler& operator=(const BootstrapHandler&) = delete;
+  BootstrapHandler& operator=(BootstrapHandler&&) = delete;
 
   void AddBootstrapContacts(BootstrapContacts bootstrap_contacts);
-  std::vector<BootstrapContact> ReadBootstrapContacts();
-  void ReplaceBootstrapContacts(std::vector<BootstrapContact> bootstrap_contacts);
-  bool OutOfDate() { return (std::chrono::steady_clock::now() + UpdateDuration > last_updated_); }
+  BootstrapContacts ReadBootstrapContacts();
+  void ReplaceBootstrapContacts(BootstrapContacts bootstrap_contacts);
+  bool OutOfDate() const {
+    return (std::chrono::steady_clock::now() + UpdateDuration > last_updated_);
+  }
   void ResetTimer() { last_updated_ = std::chrono::steady_clock::now(); }
 
  private:
@@ -70,18 +77,18 @@ class BootstrapHandler {
   void RemoveBootstrapContacts();
   // this should be put on an active object
   // we get all contacts and ping them (rudp_.ping) and when we have
-  // MaxListSize or exhaunsted the list we replace the current list with the
+  // MaxListSize or exhausted the list we replace the current list with the
   void CheckBootstrapContacts();
-  boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint);
+  Endpoint GetEndpoint(const std::string& endpoint) const;
+
   boost::filesystem::path bootstrap_filename_;
   sqlite::Database database_;
-  std::vector<BootstrapContact> bootstrap_contacts_;
+  BootstrapContacts bootstrap_contacts_;
   std::chrono::steady_clock::time_point last_updated_;
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
-
-
 
 #endif  // MAIDSAFE_ROUTING_BOOTSTRAP_HANDLER_H_

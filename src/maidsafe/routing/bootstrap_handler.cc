@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -21,22 +21,20 @@
 #include <cstdint>
 #include <string>
 
-#include "boost/filesystem/path.hpp"
-#include "boost/asio/ip/udp.hpp"
-#include "maidsafe/common/sqlite3_wrapper.h"
-#include "boost/asio/ip/udp.hpp"
-
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
+
 namespace routing {
 
-namespace fs = boost::filesystem;
-// const int MaxListSize;
+#if !defined(_MSC_VER) || _MSC_VER != 1800
+const int BootstrapHandler::MaxListSize;
+#endif
+const std::chrono::steady_clock::duration BootstrapHandler::UpdateDuration = std::chrono::hours(4);
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
-    : bootstrap_filename_(bootstrap_filename),
-      database_(bootstrap_filename, sqlite::Mode::kReadWriteCreate),
+    : bootstrap_filename_(std::move(bootstrap_filename)),
+      database_(bootstrap_filename_, sqlite::Mode::kReadWriteCreate),
       bootstrap_contacts_(),
       last_updated_(std::chrono::steady_clock::now()) {
   sqlite::Statement statement{database_,
@@ -75,7 +73,6 @@ void BootstrapHandler::ReplaceBootstrapContacts(BootstrapContacts bootstrap_cont
   transaction.Commit();
 }
 
-
 void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_contacts) {
   sqlite::Statement statement{
       database_,
@@ -96,11 +93,11 @@ void BootstrapHandler::RemoveBootstrapContacts() {
 }
 void BootstrapHandler::CheckBootstrapContacts() {}
 
-boost::asio::ip::udp::endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) {
+BootstrapHandler::Endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) const {
   size_t delim = endpoint.rfind(':');
-  boost::asio::ip::udp::endpoint ep;
+  Endpoint ep;
   ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
-  ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
+  ep.address(asio::ip::address::from_string(endpoint.substr(0, delim)));
   return ep;
 }
 

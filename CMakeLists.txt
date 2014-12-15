@@ -50,6 +50,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/accumulator.h
 #    ${RoutingSourcesDir}/acknowledgement.h
 #    ${RoutingSourcesDir}/bootstrap_file_operations.h
+    ${RoutingSourcesDir}/bootstrap_handler.h
 #    ${RoutingSourcesDir}/bootstrap_utils.h
     ${RoutingSourcesDir}/connect.h
     ${RoutingSourcesDir}/connection_manager.h
@@ -73,9 +74,10 @@ set(RoutingLibSources
 #    ${RoutingSourcesDir}/acknowledgement.cc
 #    ${RoutingSourcesDir}/bootstrap_file_operations.cc
     ${RoutingSourcesDir}/bootstrap_handler.cc
+#    ${RoutingSourcesDir}/bootstrap_utils.cc
 #    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
-    # ${RoutingSourcesDir}/message_handler.cc
+    ${RoutingSourcesDir}/message_handler.cc
 #    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
