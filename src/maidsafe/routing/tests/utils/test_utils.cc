@@ -36,7 +36,7 @@ BootstrapHandler::BootstrapContact CreateBootstrapContact() {
   auto keys(asymm::GenerateKeyPair());
   return std::make_tuple(
       NodeId(RandomString(NodeId::kSize)), keys.public_key,
-      Endpoint(boost::asio::ip::address::from_string("1.1.1.1"), (RandomUint32() + 1) % 65536));
+      Endpoint(asio::ip::address::from_string("1.1.1.1"), (RandomUint32() + 1) % 65536));
 }
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number) {

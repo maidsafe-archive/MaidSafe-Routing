@@ -51,8 +51,10 @@ class BootstrapHandler {
   using Endpoint = asio::ip::udp::endpoint;
   using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
   using BootstrapContacts = std::vector<BootstrapContact>;
+
   static const int MaxListSize = 1500;
-  static const std::chrono::steady_clock::duration UpdateDuration = std::chrono::hours(4);
+  static const std::chrono::steady_clock::duration UpdateDuration;
+
   explicit BootstrapHandler(boost::filesystem::path bootstrap_filename);
   BootstrapHandler(const BootstrapHandler&) = default;
   BootstrapHandler(BootstrapHandler&&) = delete;
@@ -61,9 +63,11 @@ class BootstrapHandler {
   BootstrapHandler& operator=(BootstrapHandler&&) = delete;
 
   void AddBootstrapContacts(BootstrapContacts bootstrap_contacts);
-  BootstrapContacts ReadBootstrapContacts() const;
+  BootstrapContacts ReadBootstrapContacts();
   void ReplaceBootstrapContacts(BootstrapContacts bootstrap_contacts);
-  bool OutOfDate() const { return (std::chrono::steady_clock::now() + UpdateDuration > last_updated_); }
+  bool OutOfDate() const {
+    return (std::chrono::steady_clock::now() + UpdateDuration > last_updated_);
+  }
   void ResetTimer() { last_updated_ = std::chrono::steady_clock::now(); }
 
  private:
@@ -73,9 +77,10 @@ class BootstrapHandler {
   void RemoveBootstrapContacts();
   // this should be put on an active object
   // we get all contacts and ping them (rudp_.ping) and when we have
-  // MaxListSize or exhaunsted the list we replace the current list with the
+  // MaxListSize or exhausted the list we replace the current list with the
   void CheckBootstrapContacts();
-  boost::asio::ip::udp::endpoint GetEndpoint(const std::string& endpoint) const;
+  Endpoint GetEndpoint(const std::string& endpoint) const;
+
   boost::filesystem::path bootstrap_filename_;
   sqlite::Database database_;
   BootstrapContacts bootstrap_contacts_;

@@ -16,29 +16,31 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/bootstrap_handler.h"
 
-#include <vector>
-#include <tuple>
 #include <chrono>
-#include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
+#include <tuple>
+#include <vector>
+
+#include "asio/ip/udp.hpp"
 #include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/path.hpp"
 
-#include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/types.h"
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
+#include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/bootstrap_handler.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
+
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {

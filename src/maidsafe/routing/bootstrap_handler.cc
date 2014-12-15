@@ -28,8 +28,9 @@ namespace maidsafe {
 namespace routing {
 
 #if !defined(_MSC_VER) || _MSC_VER != 1800
-// const int MaxListSize;
+const int BootstrapHandler::MaxListSize;
 #endif
+const std::chrono::steady_clock::duration BootstrapHandler::UpdateDuration = std::chrono::hours(4);
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
     : bootstrap_filename_(std::move(bootstrap_filename)),
@@ -51,7 +52,7 @@ void BootstrapHandler::AddBootstrapContacts(BootstrapContacts bootstrap_contacts
     CheckBootstrapContacts();  // put on active object
 }
 
-std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapContacts() const {
+std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
   BootstrapContacts bootstrap_contacts;
   sqlite::Statement statement{database_,
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT from BOOTSTRAP_CONTACTS"};
@@ -92,11 +93,11 @@ void BootstrapHandler::RemoveBootstrapContacts() {
 }
 void BootstrapHandler::CheckBootstrapContacts() {}
 
-boost::asio::ip::udp::endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) {
+BootstrapHandler::Endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) const {
   size_t delim = endpoint.rfind(':');
-  boost::asio::ip::udp::endpoint ep;
+  Endpoint ep;
   ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
-  ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
+  ep.address(asio::ip::address::from_string(endpoint.substr(0, delim)));
   return ep;
 }
 
