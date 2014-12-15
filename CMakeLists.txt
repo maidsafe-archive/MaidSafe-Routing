@@ -72,7 +72,7 @@ source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingLibSources
 #    ${RoutingSourcesDir}/acknowledgement.cc
 #    ${RoutingSourcesDir}/bootstrap_file_operations.cc
-#    ${RoutingSourcesDir}/bootstrap_utils.cc
+    ${RoutingSourcesDir}/bootstrap_handler.cc
 #    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
     # ${RoutingSourcesDir}/message_handler.cc

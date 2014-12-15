@@ -32,69 +32,77 @@ namespace maidsafe {
 namespace routing {
 
 namespace fs = boost::filesystem;
-const int MaxListSize;
+// const int MaxListSize;
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
     : bootstrap_filename_(bootstrap_filename),
       database_(bootstrap_filename, sqlite::Mode::kReadWriteCreate),
-      bootstrap_contacts_() , last_updated_(std::chrono::steady_clock::now()){
-  sqlite::Statement statement{database,
+      bootstrap_contacts_(),
+      last_updated_(std::chrono::steady_clock::now()) {
+  sqlite::Statement statement{database_,
                               "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID TEXT PRIMARY "
                               "KEY NOT NULL, PUBLIC_KEY TEXT, ENDPOINT TEXT);"};
   statement.Step();
   statement.Reset();
 }
 
-void BootstrapHandler::AddBootstrapContact(const BootstrapContact& bootstrap_contact) {
-
+void BootstrapHandler::AddBootstrapContacts(BootstrapContacts bootstrap_contacts) {
   sqlite::Transaction transaction(database_);
-  InsertBootstrapContacts(BootstrapContacts(1, bootstrap_contact));
+  InsertBootstrapContacts(bootstrap_contacts);
   transaction.Commit();
   if (std::chrono::steady_clock::now() + UpdateDuration > last_updated_)
-    CheckBoostrapContacts();  // put on active object
+    CheckBootstrapContacts();  // put on active object
 }
 
-std::vector<BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
+std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
   BootstrapContacts bootstrap_contacts;
-  sqlite::Statement statement{database_, "SELECT * from BOOTSTRAP_CONTACTS"};
+  sqlite::Statement statement{database_,
+                              "SELECT NODEID, PUBLIC_KEY, ENDPOINT from BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow)
-    bootstrap_contacts.push_back(NodeId(statement.ColumnText(0)),
-                                 DecodeKey(statement.ColumnText(0)),
-                                 Endpoint(statement.ColumnText(0)));
+    bootstrap_contacts.push_back(
+        std::make_tuple(NodeId(statement.ColumnText(0)),
+                        asymm::DecodeKey(asymm::EncodedPublicKey(statement.ColumnText(1))),
+                        GetEndpoint(statement.ColumnText(2))));
   return bootstrap_contacts;
 }
 
-void BootstrapHandler::ReplaceBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
-  if(bootstrap_contacts.size() > MaxListSize)
-  bootstrap_contacts.resize(MaxListSize);
+void BootstrapHandler::ReplaceBootstrapContacts(BootstrapContacts bootstrap_contacts) {
+  if (bootstrap_contacts.size() > MaxListSize)
+    bootstrap_contacts.resize(MaxListSize);
   sqlite::Transaction transaction(database_);
-  RemoveBoostrapContacts();
+  RemoveBootstrapContacts();
   InsertBootstrapContacts(bootstrap_contacts);
   transaction.Commit();
 }
 
 
-void BootstrapHandler::InsertBootstrapContacts(const BootstrapContacts& bootstrap_contacts) {
+void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_contacts) {
   sqlite::Statement statement{
       database_,
       "INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS (NODEID, PUBLIC_KEY, ENDPOINT) VALUES (?, ?, ?)"};
-  for (const auto& bootstrap_contact : bootstrap_contacts_) {
-    statement.BindText(3, serialize(std::get<0>(bootstrap_contact)));
-    statement.BindText(2, EncodeKey(std::get<0>(bootstrap_contact)));
-    statement.BindText(1, serialize(std::get<0>(bootstrap_contact)));
+  for (auto& bootstrap_contact : bootstrap_contacts) {
+    statement.BindText(3, boost::lexical_cast<std::string>((std::get<2>(bootstrap_contact))));
+    statement.BindText(2, asymm::EncodeKey(std::get<1>(bootstrap_contact)).string());
+    statement.BindText(1, (std::get<0>(bootstrap_contact)).string());
     statement.Step();
     statement.Reset();
   }
 }
 
 void BootstrapHandler::RemoveBootstrapContacts() {
-  sqlite::Statement statement{database, "DROP TABLE BOOTSTRAP_CONTACTS;"};
+  sqlite::Statement statement{database_, "DEL * from BOOTSTRAP_CONTACTS;"};
   statement.Step();
   statement.Reset();
 }
-void BootstrapHandler::CheckBootstrapContats()[
+void BootstrapHandler::CheckBootstrapContacts() {}
 
-]
+boost::asio::ip::udp::endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) {
+  size_t delim = endpoint.rfind(':');
+  boost::asio::ip::udp::endpoint ep;
+  ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
+  ep.address(boost::asio::ip::address::from_string(endpoint.substr(0, delim)));
+  return ep;
+}
 
 }  // namespace routing
 
