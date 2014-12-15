@@ -56,14 +56,19 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
               [&node](const Address& lhs, const Address& rhs) {
       return Address::CloserToTarget(lhs, rhs, node->OurId());
     });
-    // if target is in close group return the whole close group
+    // if target is in close group return the whole close group excluding target
     for (size_t i = 1; i < GroupSize + 1; ++i) {
+      auto addresses_itr = std::begin(addresses);  // our ID
+      ++addresses_itr;  // first of our close group
       auto target_close_group = node->TargetNodes(addresses.at(i));
-      // check the close group is correct
-      for (size_t j = 0; j < GroupSize; ++j) {
-        EXPECT_EQ(target_close_group.at(j).id, addresses.at(j + 1)) << " node mismatch at " << j;
-        EXPECT_EQ(GroupSize, (node->TargetNodes(addresses.at(j + 1))).size())
-            << "mismatch at index " << j;
+      EXPECT_EQ(GroupSize - 1, target_close_group.size());
+      if (GroupSize - 1 != target_close_group.size())
+        continue;
+      // should contain our close group minus 'addresses.at(i)'
+      for (auto itr = std::begin(target_close_group); itr != std::end(target_close_group); ++itr) {
+        if (*addresses_itr == addresses.at(i))
+          ++addresses_itr;
+        EXPECT_EQ(*addresses_itr++, itr->id);
       }
     }
 
@@ -74,9 +79,8 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
     // but not so far as to not check any of the return values being == 1
     // so magic number but for the best reasons we can think of.
     auto xor_closeness_buffer(10);
-    for (size_t i = GroupSize + xor_closeness_buffer; i < network_size - 1; ++i) {
-      EXPECT_EQ(1, (node->TargetNodes(addresses.at(i))).size()) << "mismatch at index " << i;
-    }
+    for (size_t i = GroupSize + xor_closeness_buffer; i < network_size - 1; ++i)
+      EXPECT_EQ(RoutingTable::Parallelism(), node->TargetNodes(addresses.at(i)).size());
   }
 }
 
