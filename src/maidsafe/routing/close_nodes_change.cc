@@ -243,10 +243,10 @@ std::string CloseNodesChange::ReportConnection() const {
   std::stringstream stringstream;
   {
     cereal::JSONOutputArchive archive{stringstream};
-    if (!lost_node_.IsZero())
+    if (lost_node_.IsValid())
       archive(cereal::make_nvp("vaultRemoved",
                                lost_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
-    if (!new_node_.IsZero())
+    if (new_node_.IsValid())
       archive(cereal::make_nvp("vaultAdded",
                                new_node_.ToStringEncoded(NodeId::EncodingType::kHex)));
 

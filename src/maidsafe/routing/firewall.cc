@@ -33,7 +33,7 @@ Firewall::Firewall()
     : mutex_(), history_() {}
 
 bool Firewall::Add(const NodeId& source_id, int32_t message_id) {
-  if (source_id.IsZero())
+  if (!source_id.IsValid())
     return false;
 
   std::unique_lock<std::mutex> lock(mutex_);
@@ -55,7 +55,7 @@ void Firewall::Remove(std::unique_lock<std::mutex>& lock) {
   using  accounts_by_update_time = boost::multi_index::index<ProcessedEntrySet, BirthTimeTag>::type;
   accounts_by_update_time& birth_time_index =
       boost::multi_index::get<BirthTimeTag>(history_);
-  ProcessedEntry dummy(NodeId(NodeId::IdType::kRandomId), RandomInt32());
+  ProcessedEntry dummy(NodeId(RandomString(NodeId::kSize)), RandomInt32());
   auto upper(std::upper_bound(
       std::begin(birth_time_index), std::end(birth_time_index), dummy,
       [this](const ProcessedEntry& lhs, const ProcessedEntry& rhs) {

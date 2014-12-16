@@ -163,7 +163,7 @@ TEST_F(RoutingStandAloneTest, FUNC_ExtendedSendToGroupRandomId) {
   unsigned int loop(10);
   while (loop-- > 0) {
     for (unsigned int index(0); index < message_count; ++index) {
-      NodeId random_id(NodeId::IdType::kRandomId);
+      NodeId random_id(RandomString(NodeId::kSize));
       std::vector<NodeId> groupd_ids(GroupIds(random_id));
       EXPECT_TRUE(SendGroup(random_id, 1));
       for (const auto& node : nodes_) {
@@ -272,7 +272,7 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassing) 
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
-      target = NodeId(NodeId::IdType::kRandomId);
+      target = NodeId(RandomString(NodeId::kSize));
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
@@ -295,7 +295,7 @@ TEST_F(ProportionedRoutingStandAloneTest, DISABLED_FUNC_ExtendedMessagePassingSy
     NodeId target;
     std::cout << "SendGroup (to random)..." << std::endl;
     for (unsigned int i(0); i < nodes_.size(); ++i) {
-      target = NodeId(NodeId::IdType::kRandomId);
+      target = NodeId(RandomString(NodeId::kSize));
       ASSERT_TRUE(SendGroup(target, 1, i, 10));
     }
     std::cout << "SendGroup (to existing)..." << std::endl;
