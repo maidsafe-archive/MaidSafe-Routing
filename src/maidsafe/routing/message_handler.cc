@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
@@ -72,13 +73,11 @@ MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) 
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
                                ConnectionManager& connection_manager)
-    : io_service_(io_service),
-      rudp_(managed_connections),
-      connection_manager_(connection_manager) {
-        (void)io_service_;
-        (void)rudp_;
-        (void)connection_manager_;
-      }
+    : io_service_(io_service), rudp_(managed_connections), connection_manager_(connection_manager) {
+  (void)io_service_;
+  (void)rudp_;
+  (void)connection_manager_;
+}
 
 void MessageHandler::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   try {
