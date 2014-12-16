@@ -515,7 +515,9 @@ void Routing::Impl::OnMessageReceived(const std::string& message) {
   if (running_) {
     std::shared_ptr<Routing::Impl> this_ptr(shared_from_this());
     std::shared_ptr<std::string> message_ptr(new std::string(message.data(), message.size()));
-    asio_service_.service().post([this_ptr, message_ptr]() { this_ptr->DoOnMessageReceived(*message_ptr); });
+    asio_service_.service().post([this_ptr, message_ptr]() {
+                                   this_ptr->DoOnMessageReceived(*message_ptr);
+                                 });
   }
 }
 
