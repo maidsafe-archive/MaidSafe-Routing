@@ -41,8 +41,8 @@ namespace routing {
 #if !defined(_MSC_VER) || _MSC_VER != 1800
 const SerialisableTypeTag Ping::kSerialisableTypeTag;
 const SerialisableTypeTag PingResponse::kSerialisableTypeTag;
-// const SerialisableTypeTag FindGroup::kSerialisableTypeTag;
-// const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
+const SerialisableTypeTag FindGroup::kSerialisableTypeTag;
+const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
 const SerialisableTypeTag Connect::kSerialisableTypeTag;
 const SerialisableTypeTag ConnectResponse::kSerialisableTypeTag;
 const SerialisableTypeTag GetData::kSerialisableTypeTag;

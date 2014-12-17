@@ -19,17 +19,18 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
-#include <utility>
 #include <chrono>
+#include <utility>
+
 #include "asio/io_service.hpp"
 
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/rudp/managed_connections.h"
+
 #include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/accumulator.h"
-#include "maidsafe/common/types.h"
-#include "maidsafe/common/containers/lru_cache.h"
-
 
 namespace maidsafe {
 
@@ -47,7 +48,6 @@ struct PutData;
 struct Post;
 
 class MessageHandler {
-
  public:
   MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
                  ConnectionManager& connection_manager);
@@ -57,9 +57,7 @@ class MessageHandler {
   MessageHandler(MessageHandler&&) = delete;
   MessageHandler& operator=(const MessageHandler&) = delete;
   MessageHandler& operator=(MessageHandler&&) = delete;
-  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
 
- private:
   void HandleMessage(Ping&& ping);
   void HandleMessage(PingResponse&& ping_response);
   void HandleMessage(FindGroup&& find_group);
@@ -70,9 +68,12 @@ class MessageHandler {
   void HandleMessage(PutData&& put_data);
   void HandleMessage(Post&& post);
 
+ private:
   asio::io_service& io_service_;
   rudp::ManagedConnections& rudp_;
   ConnectionManager& connection_manager_;
+  LruCache<Identity, SerialisedMessage> cache_;
+  Accumulator<Identity, SerialisedMessage> accumulator_;
 };
 
 }  // namespace routing

@@ -18,15 +18,54 @@
 
 #include "maidsafe/routing/vault_node.h"
 
+#include <utility>
+
+#include "maidsafe/common/serialisation/binary_archive.h"
+#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/common/serialisation/serialisation.h"
+
+#include "maidsafe/routing/connect.h"
+#include "maidsafe/routing/connect_response.h"
+#include "maidsafe/routing/find_group.h"
+#include "maidsafe/routing/find_group_response.h"
+#include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/ping.h"
+#include "maidsafe/routing/ping_response.h"
+#include "maidsafe/routing/post.h"
+#include "maidsafe/routing/put_data.h"
+
 namespace maidsafe {
 
 namespace routing {
 
+namespace {
+
+std::pair<MessageHeader, SerialisableTypeTag> ParseHeaderAndTypeEnum(
+    InputVectorStream& binary_input_stream) {
+  auto result = std::make_pair(MessageHeader{}, SerialisableTypeTag{});
+  {
+    BinaryInputArchive binary_input_archive(binary_input_stream);
+    binary_input_archive(result.first, result.second);
+  }
+  return result;
+}
+
+template <typename MessageType>
+MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) {
+  MessageType parsed_message(std::move(header));
+  {
+    BinaryInputArchive binary_input_archive(binary_input_stream);
+    binary_input_archive(parsed_message);
+  }
+  return parsed_message;
+}
+
+}  // unnamed namespace
+
 VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
                      const passport::Pmid& pmid)
     : io_service_(io_service),
-      rudp_(),
-      bootstrap_handler_(std::move(db_location)),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;
@@ -34,7 +73,70 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
         keys.public_key = pmid.public_key();
         return keys;
       }()),
+      rudp_(),
+      bootstrap_handler_(std::move(db_location)),
+      connection_manager_(io_service, rudp_, our_id_,
+                          [this](CloseGroupDifference close_group_difference) {
+        OnCloseGroupChanged(std::move(close_group_difference));
+      }),
+      message_handler_(io_service, rudp_, connection_manager_),
       rudp_listener_(std::make_shared<RudpListener>()) {}
+
+void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
+  try {
+    InputVectorStream binary_input_stream{std::move(serialised_message)};
+    auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+    switch (header_and_type_enum.second) {
+      case Ping::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<Ping>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case PingResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<PingResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case FindGroup::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<FindGroup>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case FindGroupResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<FindGroupResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case Connect::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case ConnectResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<ConnectResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case GetData::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<GetData>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case PutData::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<PutData>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case Post::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<routing::Post>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      default:
+        LOG(kWarning) << "Received message of unknown type.";
+        break;
+    }
+  } catch (const std::exception& e) {
+    LOG(kWarning) << "Exception while handling incoming message: "
+                  << boost::diagnostic_information(e);
+  }
+
+  // auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
+  //// FIXME (dirvine) Check firewall 19/11/2014
+  // HandleMessage(message);
+  //// FIXME (dirvine) add to firewall 19/11/2014
+}
 
 }  // namespace routing
 

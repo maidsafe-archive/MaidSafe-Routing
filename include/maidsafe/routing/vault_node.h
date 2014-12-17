@@ -19,34 +19,33 @@
 #ifndef MAIDSAFE_ROUTING_VAULT_NODE_H_
 #define MAIDSAFE_ROUTING_VAULT_NODE_H_
 
+#include <chrono>
 #include <memory>
 #include <utility>
-#include <chrono>
+
 #include "asio/io_service.hpp"
 #include "boost/filesystem/path.hpp"
 // #include "boost/expected/expected.hpp"
 
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
-#include "maidsafe/routing/accumulator.h"
-#include "maidsafe/routing/bootstrap_handler.h"
-
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/managed_connections.h"
-
-#include "maidsafe/passport/types.h"
-
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
+#include "maidsafe/passport/types.h"
+#include "maidsafe/rudp/managed_connections.h"
+#include "maidsafe/rudp/types.h"
 
+#include "maidsafe/routing/bootstrap_handler.h"
+#include "maidsafe/routing/connection_manager.h"
+#include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+struct MessageHeader;
+
 class VaultNode {
  public:  // key      value
-  using Cache = LruCache<Identity, SerialisedMessage>;
   using Filter = LruCache<std::pair<DestinationAddress, MessageId>, void>;
 
  public:
@@ -93,16 +92,18 @@ class VaultNode {
     virtual void ConnectionLost(NodeId /*peer_*/) override final {}
   };
 
+  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
+  void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
+
   asio::io_service& io_service_;
-  rudp::ManagedConnections rudp_;
-  BootstrapHandler bootstrap_handler_;
   const Address our_id_;
   const asymm::Keys keys_;
+  rudp::ManagedConnections rudp_;
+  BootstrapHandler bootstrap_handler_;
+  ConnectionManager connection_manager_;
+  MessageHandler message_handler_;
   std::shared_ptr<RudpListener> rudp_listener_;
   Filter filter_{std::chrono::minutes(20)};
-  Cache cache_{std::chrono::minutes(60)};
-  // src key part
-  Accumulator<Identity, SerialisedMessage> accumulator_{std::chrono::minutes(10)};
 };
 
 template <typename CompletionToken>
@@ -153,8 +154,6 @@ PostReturn<CompletionToken> VaultNode::Post(Address key, SerialisedMessage messa
   io_service_.post([=] { DoPost(key, message, handler); });
   return result.get();
 }
-
-
 
 }  // namespace routing
 
