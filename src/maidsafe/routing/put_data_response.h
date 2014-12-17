@@ -45,27 +45,31 @@ struct PutDataResponse {
 
   PutDataResponse(const PutDataResponse&) = delete;
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                               data_name(std::move(other.data_name)),
-                                               result(std::move(other.result)) {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : header(std::move(other.header)),
+        data_name(std::move(other.data_name)),
+        part(std::move(other.part)),
+        result(std::move(other.result)) {}
 
   PutDataResponse(PutData request, maidsafe_error result_in)
       : header(DestinationAddress(std::move(request.header.source.data)),
                SourceAddress(std::move(request.header.destination.data)),
                request.header.message_id),
         data_name(std::move(request.data_name)),
+        part(std::move(request.part)),
         result(std::move(result_in)) {}
 
   explicit PutDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), result() {}
+      : header(std::move(header_in)), data_name(), part(0), result() {}
 
   ~PutDataResponse() = default;
 
   PutDataResponse& operator=(const PutDataResponse&) = delete;
 
-  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT{
+  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
+    part = std::move(other.part);
     result = std::move(other.result);
     return *this;
   };
@@ -86,6 +90,7 @@ struct PutDataResponse {
 
   MessageHeader header;
   Address data_name;
+  uint8_t part;
   maidsafe_error result;
 };
 
