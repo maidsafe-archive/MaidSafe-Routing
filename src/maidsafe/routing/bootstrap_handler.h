@@ -56,7 +56,7 @@ class BootstrapHandler {
   static const std::chrono::steady_clock::duration UpdateDuration;
 
   explicit BootstrapHandler(boost::filesystem::path bootstrap_filename);
-  BootstrapHandler(const BootstrapHandler&) = default;
+  BootstrapHandler(const BootstrapHandler&) = delete;
   BootstrapHandler(BootstrapHandler&&) = delete;
   ~BootstrapHandler() = default;
   BootstrapHandler& operator=(const BootstrapHandler&) = delete;

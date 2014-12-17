@@ -42,7 +42,7 @@ template <typename KeyType, typename ValueType>
 class Accumulator {
  public:
   explicit Accumulator(std::chrono::steady_clock::duration time_to_live)
-      : time_to_live_(time_to_live), capacity_(std::numeric_limits<size_t>::max()) {}
+      : time_to_live_(time_to_live) {}
 
   ~Accumulator() = default;
   Accumulator(const Accumulator&) = delete;

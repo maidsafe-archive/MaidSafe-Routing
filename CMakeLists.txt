@@ -58,6 +58,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/find_group.h
     ${RoutingSourcesDir}/find_group_response.h
     ${RoutingSourcesDir}/get_data.h
+    ${RoutingSourcesDir}/get_data_response.h
     ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
@@ -66,6 +67,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/ping_response.h
     ${RoutingSourcesDir}/post.h
     ${RoutingSourcesDir}/put_data.h
+    ${RoutingSourcesDir}/put_data_response.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )
@@ -103,7 +105,7 @@ if(INCLUDE_TESTS)
   file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
   foreach(TestFile ${TestFiles})
     get_filename_component(TestName ${TestFile} NAME_WE)
-    string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
+    # string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
     ms_add_executable(${TestName} "Tests/Routing" ${TestFile})
     target_link_libraries(${TestName} maidsafe_test_routing)
     list(APPEND RoutingTests ${TestName})
@@ -130,10 +132,17 @@ include(standard_flags)
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
+function(ms_add_test TestTarget)
+  add_test(NAME ${TestTarget} COMMAND ${TestTarget})
+  set(AllGtests ${AllGtests} ${TestTarget} PARENT_SCOPE)
+  set_property(TEST ${TestTarget} PROPERTY LABELS ${CamelCaseProjectName} Behavioural ${NetworkTestLabel} ${TASK_LABEL})
+endfunction()
+
 if(INCLUDE_TESTS)
-  ms_add_default_tests()
+  enable_testing()
   foreach(RoutingTest ${RoutingTests})
-    ms_add_gtests(${RoutingTest})
+    ms_add_test("${RoutingTest}")
   endforeach()
+  ms_add_default_tests()
   ms_test_summary_output()
 endif()

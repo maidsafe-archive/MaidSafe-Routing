@@ -33,8 +33,11 @@ enum class MessageTypeTag : SerialisableTypeTag {
   kConnect,
   kConnectResponse,
   kGetData,
+  kGetDataResponse,
   kPutData,
-  kPost
+  kPutDataResponse,
+  kPost,
+  kPostResponse
 };
 
 /*

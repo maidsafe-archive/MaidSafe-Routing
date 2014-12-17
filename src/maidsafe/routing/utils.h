@@ -103,7 +103,7 @@ MurmurHash MurmurHash2(const std::vector<byte>& input);
 //                                                  const bool is_destination_client);
 // bool CheckId(const std::string& id_to_test);
 // bool ValidateMessage(const protobuf::Message& message);
-Address NodeInNthBucket(const Address& Address, int bucket);
+// Address NodeInNthBucket(const Address& Address, int bucket);
 // void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
 //                          protobuf::Endpoint* pb_endpoint);
 // boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
