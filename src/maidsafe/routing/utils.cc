@@ -25,10 +25,14 @@
 #include "maidsafe/routing/connect.h"
 #include "maidsafe/routing/connect_response.h"
 #include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/get_data_response.h"
+#include "maidsafe/routing/find_group.h"
+#include "maidsafe/routing/find_group_response.h"
 #include "maidsafe/routing/ping.h"
 #include "maidsafe/routing/ping_response.h"
 #include "maidsafe/routing/post.h"
 #include "maidsafe/routing/put_data.h"
+#include "maidsafe/routing/put_data_response.h"
 
 namespace maidsafe {
 
