@@ -16,51 +16,62 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_PING_H_
-#define MAIDSAFE_ROUTING_PING_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
+#define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Ping {
+struct Connect {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPing);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kConnect);
 
-  Ping() = default;
+  Connect() = default;
 
-  Ping(const Ping&) = delete;
+  Connect(const Connect&) = delete;
 
-  Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                         random_value(std::move(other.random_value)) {}
+  Connect(Connect&& other) MAIDSAFE_NOEXCEPT
+      : header(std::move(other.header)),
+        requester_endpoints(std::move(other.requester_endpoints)),
+        requester_id(std::move(other.requester_id)),
+        receiver_id(std::move(other.receiver_id)) {}
 
-  Ping(DestinationAddress destination, SourceAddress source)
+  Connect(DestinationAddress destination, SourceAddress source,
+          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        random_value(RandomInt32()) {}
+        requester_endpoints(std::move(requester_endpoints)),
+        requester_id(std::move(requester_id_in)),
+        receiver_id(std::move(receiver_id_in)) {}
 
-  explicit Ping(MessageHeader header_in) : header(std::move(header_in)), random_value(0) {}
+  explicit Connect(MessageHeader header_in)
+      : header(std::move(header_in)), requester_endpoints(), requester_id(), receiver_id() {}
 
-  ~Ping() = default;
+  ~Connect() = default;
 
-  Ping& operator=(const Ping&) = delete;
+  Connect& operator=(const Connect&) = delete;
 
-  Ping& operator=(Ping&& other) MAIDSAFE_NOEXCEPT {
+  Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    random_value = std::move(other.random_value);
+    requester_endpoints = std::move(other.requester_endpoints);
+    requester_id = std::move(other.requester_id);
+    receiver_id = std::move(other.receiver_id);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, random_value);
+    archive(header, kSerialisableTypeTag, requester_endpoints, requester_id, receiver_id);
   }
 
   template <typename Archive>
@@ -69,15 +80,16 @@ struct Ping {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(random_value);
+    archive(requester_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;
-  int random_value;
+  rudp::EndpointPair requester_endpoints;
+  Address requester_id, receiver_id;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_PING_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_

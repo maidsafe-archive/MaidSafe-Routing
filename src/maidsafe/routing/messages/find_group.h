@@ -16,63 +16,56 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_FIND_GROUP_RESPONSE_H_
-#define MAIDSAFE_ROUTING_FIND_GROUP_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/rudp/contact.h"
 
-#include "maidsafe/routing/find_group.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct FindGroupResponse {
+struct FindGroup {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroupResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroup);
 
-  FindGroupResponse() = default;
+  FindGroup() = default;
 
-  FindGroupResponse(const FindGroupResponse&) = delete;
+  FindGroup(const FindGroup&) = delete;
 
-  FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)) /*,
+  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) /*,
         requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id))*/ {}
 
-  FindGroupResponse(FindGroup originator /*, rudp::EndpointPair receiver_endpoints*/)
-      : header(DestinationAddress(std::move(originator.header.source.data)),
-               SourceAddress(std::move(originator.header.destination.data)),
-               originator.header.message_id) /*,
-        requester_endpoints(std::move(originator.requester_endpoints)),
-        receiver_endpoints(std::move(receiver_endpoints)),
-        requester_id(std::move(originator.requester_id)),
-        receiver_id(std::move(originator.receiver_id))*/ {}
+  FindGroup(DestinationAddress destination, SourceAddress source /*,
+          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in*/)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) /*,
+        requester_endpoints(std::move(requester_endpoints)),
+        requester_id(std::move(requester_id_in)),
+        receiver_id(std::move(receiver_id_in))*/ {}
 
-  explicit FindGroupResponse(MessageHeader header_in)
+  explicit FindGroup(MessageHeader header_in)
       : header(std::move(header_in)) /*, requester_endpoints(), requester_id(), receiver_id()*/ {}
 
-  ~FindGroupResponse() = default;
+  ~FindGroup() = default;
 
-  FindGroupResponse& operator=(const FindGroupResponse&) = delete;
+  FindGroup& operator=(const FindGroup&) = delete;
 
-  FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
+  FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     // requester_endpoints = std::move(other.requester_endpoints);
-    // receiver_endpoints = std::move(other.receiver_endpoints);
     // requester_id = std::move(other.requester_id);
     // receiver_id = std::move(other.receiver_id);
     return *this;
   };
-
 
   template <typename Archive>
   void save(Archive& archive) const {
@@ -89,7 +82,7 @@ struct FindGroupResponse {
   }
 
   MessageHeader header;
-  // rudp::EndpointPair requester_endpoints, receiver_endpoints;
+  // rudp::EndpointPair requester_endpoints;
   // Address requester_id, receiver_id;
 };
 
@@ -97,4 +90,4 @@ struct FindGroupResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_FIND_GROUP_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_

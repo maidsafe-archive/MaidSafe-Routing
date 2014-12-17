@@ -16,40 +16,40 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
-#define MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/rudp/contact.h"
 
-#include "maidsafe/routing/connect.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/messages/join.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct ConnectResponse {
+struct JoinResponse {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kConnectResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kJoinResponse);
 
-  ConnectResponse() = default;
+  JoinResponse() = default;
 
-  ConnectResponse(const ConnectResponse&) = delete;
+  JoinResponse(const JoinResponse&) = delete;
 
-  ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
+  JoinResponse(JoinResponse&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
 
-  ConnectResponse(Connect originator, rudp::EndpointPair receiver_endpoints)
+  JoinResponse(Connect originator, rudp::EndpointPair receiver_endpoints)
       : header(DestinationAddress(std::move(originator.header.source.data)),
                SourceAddress(std::move(originator.header.destination.data)),
                originator.header.message_id),
@@ -58,18 +58,18 @@ struct ConnectResponse {
         requester_id(std::move(originator.requester_id)),
         receiver_id(std::move(originator.receiver_id)) {}
 
-  explicit ConnectResponse(MessageHeader header_in)
+  explicit JoinResponse(MessageHeader header_in)
       : header(std::move(header_in)),
         requester_endpoints(),
         receiver_endpoints(),
         requester_id(),
         receiver_id() {}
 
-  ~ConnectResponse() = default;
+  ~JoinResponse() = default;
 
-  ConnectResponse& operator=(const ConnectResponse&) = delete;
+  JoinResponse& operator=(const JoinResponse&) = delete;
 
-  ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
+  JoinResponse& operator=(JoinResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
@@ -102,4 +102,4 @@ struct ConnectResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_CONNECT_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_

@@ -26,20 +26,10 @@
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
-#include "maidsafe/routing/connect.h"
-#include "maidsafe/routing/connect_response.h"
 #include "maidsafe/routing/connection_manager.h"
-#include "maidsafe/routing/find_group.h"
-#include "maidsafe/routing/find_group_response.h"
-#include "maidsafe/routing/get_data.h"
-#include "maidsafe/routing/get_data_response.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/ping.h"
-#include "maidsafe/routing/ping_response.h"
-#include "maidsafe/routing/post.h"
-#include "maidsafe/routing/put_data.h"
-#include "maidsafe/routing/put_data_response.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages.h"
 
 namespace maidsafe {
 
@@ -47,8 +37,8 @@ namespace routing {
 
 namespace {
 
-using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Connect,
-                          ConnectResponse, GetData, PutData, Post>::Map;
+using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Join, JoinResponse,
+                          Connect, ForwardConnect, GetData, PutData, Post>::Map;
 
 }  // unnamed namespace
 
@@ -91,6 +81,10 @@ void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
 
 void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
 
+void MessageHandler::HandleMessage(Join&& /*join*/) {}
+
+void MessageHandler::HandleMessage(JoinResponse&& /*join_response*/) {}
+
 void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   // if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
   //  if (connection_mgr_.suggest_node(connect_msg.header.source)) {
@@ -111,7 +105,7 @@ void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   //}
 }
 
-void MessageHandler::HandleMessage(ConnectResponse&& /*connect_response*/) {}
+void MessageHandler::HandleMessage(ForwardConnect&& /*forward_connect*/) {}
 
 void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
 

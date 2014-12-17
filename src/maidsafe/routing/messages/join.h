@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_FIND_GROUP_H_
-#define MAIDSAFE_ROUTING_FIND_GROUP_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_JOIN_H_
+#define MAIDSAFE_ROUTING_MESSAGES_JOIN_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
@@ -25,69 +25,70 @@
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct FindGroup {
+struct Join {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroup);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kJoin);
 
-  FindGroup() = default;
+  Join() = default;
 
-  FindGroup(const FindGroup&) = delete;
+  Join(const Join&) = delete;
 
-  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) /*,
-        requester_endpoints(std::move(other.requester_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id))*/ {}
+  Join(Join&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                         requester_endpoints(std::move(other.requester_endpoints)),
+                                         requester_id(std::move(other.requester_id)),
+                                         receiver_id(std::move(other.receiver_id)) {}
 
-  FindGroup(DestinationAddress destination, SourceAddress source /*,
-          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in*/)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) /*,
+  Join(DestinationAddress destination, SourceAddress source, rudp::EndpointPair requester_endpoints,
+       Address requester_id_in, Address receiver_id_in)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
         requester_id(std::move(requester_id_in)),
-        receiver_id(std::move(receiver_id_in))*/ {}
+        receiver_id(std::move(receiver_id_in)) {}
 
-  explicit FindGroup(MessageHeader header_in)
-      : header(std::move(header_in)) /*, requester_endpoints(), requester_id(), receiver_id()*/ {}
+  explicit Join(MessageHeader header_in)
+      : header(std::move(header_in)), requester_endpoints(), requester_id(), receiver_id() {}
 
-  ~FindGroup() = default;
+  ~Join() = default;
 
-  FindGroup& operator=(const FindGroup&) = delete;
+  Join& operator=(const Join&) = delete;
 
-  FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
+  Join& operator=(Join&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    // requester_endpoints = std::move(other.requester_endpoints);
-    // requester_id = std::move(other.requester_id);
-    // receiver_id = std::move(other.receiver_id);
+    requester_endpoints = std::move(other.requester_endpoints);
+    requester_id = std::move(other.requester_id);
+    receiver_id = std::move(other.receiver_id);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag /*, requester_endpoints, requester_id, receiver_id*/);
+    archive(header, kSerialisableTypeTag, requester_endpoints, requester_id, receiver_id);
   }
 
   template <typename Archive>
-  void load(Archive& /*archive*/) {
+  void load(Archive& archive) {
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    // archive(/*requester_endpoints, requester_id, receiver_id*/);
+    archive(requester_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;
-  // rudp::EndpointPair requester_endpoints;
-  // Address requester_id, receiver_id;
+  rudp::EndpointPair requester_endpoints;
+  Address requester_id, receiver_id;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_FIND_GROUP_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_JOIN_H_

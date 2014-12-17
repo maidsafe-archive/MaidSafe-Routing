@@ -19,6 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 
+#include <cstdint>
 #include <tuple>
 
 #include "maidsafe/common/config.h"
@@ -32,39 +33,54 @@ namespace routing {
 
 struct MessageHeader {
   MessageHeader() = default;
+
   MessageHeader(const MessageHeader&) = delete;
+
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
-        message_id(std::move(other.message_id)) {}
-  // MessageHeader(DestinationAddress destination_in, SourceAddress source_in,
-  //              MessageId message_id_in, MurmurHash checksum_in, Checksums other_checksums_in)
-  //    : destination(std::move(destination_in)),
-  //      source(std::move(source_in)),
-  //      message_id(std::move(message_id_in)),
-  //      checksum(std::move(checksum_in)),
-  //      other_checksums((std::move(other_checksums_in))) {}
+        message_id(std::move(other.message_id)),
+        checksum_index(std::move(other.checksum_index)),
+        checksums(std::move(other.checksums)) {}
+
+  MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in,
+                uint8_t checksum_index_in, Checksums checksums_in)
+      : destination(std::move(destination_in)),
+        source(std::move(source_in)),
+        message_id(std::move(message_id_in)),
+        checksum_index(std::move(checksum_index_in)),
+        checksums(std::move(checksums_in)) {}
+
   MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
-        message_id(std::move(message_id_in)) {}
+        message_id(std::move(message_id_in)),
+        checksum_index(0),
+        checksums() {}
+
   ~MessageHeader() = default;
+
   MessageHeader& operator=(const MessageHeader&) = delete;
+
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination = std::move(other.destination);
     source = std::move(other.source);
     message_id = std::move(other.message_id);
+    checksum_index = std::move(other.checksum_index);
+    checksums = std::move(other.checksums);
     return *this;
   }
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination.data, source.data, message_id.data);
+    archive(destination.data, source.data, message_id.data, checksum_index, checksums);
   }
 
-  DestinationAddress destination{};
-  SourceAddress source{};
-  MessageId message_id{};
+  DestinationAddress destination;
+  SourceAddress source;
+  MessageId message_id;
+  uint8_t checksum_index;
+  Checksums checksums;
 };
 
 inline bool operator==(const MessageHeader& lhs, const MessageHeader& rhs) {

@@ -16,55 +16,56 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_PUT_DATA_H_
-#define MAIDSAFE_ROUTING_PUT_DATA_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
 
 #include <cstdint>
 #include <vector>
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct PutData {
+struct Post {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPutData);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPost);
 
-  PutData() = default;
+  Post() = default;
 
-  PutData(const PutData&) = delete;
+  Post(const Post&) = delete;
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                               data_name(std::move(other.data_name)),
-                                               signature(std::move(other.signature)),
-                                               data(std::move(other.data)),
-                                               part(std::move(other.part)) {}
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                         data_name(std::move(other.data_name)),
+                                         signature(std::move(other.signature)),
+                                         data(std::move(other.data)),
+                                         part(std::move(other.part)) {}
 
-  PutData(DestinationAddress destination, SourceAddress source, Address data_name_in,
-          asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
+  Post(DestinationAddress destination, SourceAddress source, Address data_name_in,
+       asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         data_name(std::move(data_name_in)),
         signature(std::move(signature_in)),
         data(std::move(data_in)),
         part(std::move(part_in)) {}
 
-  explicit PutData(MessageHeader header_in)
+  explicit Post(MessageHeader header_in)
       : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
 
-  ~PutData() = default;
+  ~Post() = default;
 
-  PutData& operator=(const PutData&) = delete;
+  Post& operator=(const Post&) = delete;
 
-  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
+  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
     signature = std::move(other.signature);
@@ -98,4 +99,4 @@ struct PutData {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_PUT_DATA_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_

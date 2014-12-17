@@ -16,67 +16,67 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_POST_H_
-#define MAIDSAFE_ROUTING_POST_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 
 #include <cstdint>
 #include <vector>
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/messages/put_data.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Post {
+struct PutDataResponse {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPost);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPutDataResponse);
 
-  Post() = default;
+  PutDataResponse() = default;
 
-  Post(const Post&) = delete;
+  PutDataResponse(const PutDataResponse&) = delete;
 
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                         data_name(std::move(other.data_name)),
-                                         signature(std::move(other.signature)),
-                                         data(std::move(other.data)),
-                                         part(std::move(other.part)) {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : header(std::move(other.header)),
+        data_name(std::move(other.data_name)),
+        part(std::move(other.part)),
+        result(std::move(other.result)) {}
 
-  Post(DestinationAddress destination, SourceAddress source, Address data_name_in,
-       asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        data_name(std::move(data_name_in)),
-        signature(std::move(signature_in)),
-        data(std::move(data_in)),
-        part(std::move(part_in)) {}
+  PutDataResponse(PutData request, maidsafe_error result_in)
+      : header(DestinationAddress(std::move(request.header.source.data)),
+               SourceAddress(std::move(request.header.destination.data)),
+               request.header.message_id),
+        data_name(std::move(request.data_name)),
+        part(std::move(request.part)),
+        result(std::move(result_in)) {}
 
-  explicit Post(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
+  explicit PutDataResponse(MessageHeader header_in)
+      : header(std::move(header_in)), data_name(), part(0), result() {}
 
-  ~Post() = default;
+  ~PutDataResponse() = default;
 
-  Post& operator=(const Post&) = delete;
+  PutDataResponse& operator=(const PutDataResponse&) = delete;
 
-  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
+  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
-    signature = std::move(other.signature);
-    data = std::move(other.data);
     part = std::move(other.part);
+    result = std::move(other.result);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name, signature, data, part);
+    archive(header, kSerialisableTypeTag, data_name, result);
   }
 
   template <typename Archive>
@@ -85,18 +85,17 @@ struct Post {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(data_name, signature, data, part);
+    archive(data_name, result);
   }
 
   MessageHeader header;
   Address data_name;
-  asymm::Signature signature;
-  std::vector<byte> data;
   uint8_t part;
+  maidsafe_error result;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_POST_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_

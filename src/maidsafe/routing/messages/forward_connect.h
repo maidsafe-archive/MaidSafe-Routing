@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_CONNECT_H_
-#define MAIDSAFE_ROUTING_CONNECT_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
@@ -25,45 +25,54 @@
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/messages/connect.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Connect {
+struct ForwardConnect {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kConnect);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kForwardConnect);
 
-  Connect() = default;
+  ForwardConnect() = default;
 
-  Connect(const Connect&) = delete;
+  ForwardConnect(const ForwardConnect&) = delete;
 
-  Connect(Connect&& other) MAIDSAFE_NOEXCEPT
+  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
+        receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
 
-  Connect(DestinationAddress destination, SourceAddress source,
-          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        requester_endpoints(std::move(requester_endpoints)),
-        requester_id(std::move(requester_id_in)),
-        receiver_id(std::move(receiver_id_in)) {}
+  ForwardConnect(Connect originator, rudp::EndpointPair receiver_endpoints)
+      : header(DestinationAddress(std::move(originator.header.source.data)),
+               SourceAddress(std::move(originator.header.destination.data)),
+               originator.header.message_id),
+        requester_endpoints(std::move(originator.requester_endpoints)),
+        receiver_endpoints(std::move(receiver_endpoints)),
+        requester_id(std::move(originator.requester_id)),
+        receiver_id(std::move(originator.receiver_id)) {}
 
-  explicit Connect(MessageHeader header_in)
-      : header(std::move(header_in)), requester_endpoints(), requester_id(), receiver_id() {}
+  explicit ForwardConnect(MessageHeader header_in)
+      : header(std::move(header_in)),
+        requester_endpoints(),
+        receiver_endpoints(),
+        requester_id(),
+        receiver_id() {}
 
-  ~Connect() = default;
+  ~ForwardConnect() = default;
 
-  Connect& operator=(const Connect&) = delete;
+  ForwardConnect& operator=(const ForwardConnect&) = delete;
 
-  Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
+  ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
+    receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
     return *this;
@@ -71,7 +80,8 @@ struct Connect {
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, requester_endpoints, requester_id, receiver_id);
+    archive(header, kSerialisableTypeTag, requester_endpoints, receiver_endpoints, requester_id,
+            receiver_id);
   }
 
   template <typename Archive>
@@ -80,11 +90,11 @@ struct Connect {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(requester_endpoints, requester_id, receiver_id);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;
-  rudp::EndpointPair requester_endpoints;
+  rudp::EndpointPair requester_endpoints, receiver_endpoints;
   Address requester_id, receiver_id;
 };
 
@@ -92,4 +102,4 @@ struct Connect {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_CONNECT_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_

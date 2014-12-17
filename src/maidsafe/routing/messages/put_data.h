@@ -16,51 +16,66 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_GET_DATA_H_
-#define MAIDSAFE_ROUTING_GET_DATA_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+
+#include <cstdint>
+#include <vector>
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct GetData {
+struct PutData {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kGetData);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPutData);
 
-  GetData() = default;
+  PutData() = default;
 
-  GetData(const GetData&) = delete;
+  PutData(const PutData&) = delete;
 
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                               data_name(std::move(other.data_name)) {}
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                               data_name(std::move(other.data_name)),
+                                               signature(std::move(other.signature)),
+                                               data(std::move(other.data)),
+                                               part(std::move(other.part)) {}
 
-  GetData(DestinationAddress destination, SourceAddress source, Address data_name_in)
+  PutData(DestinationAddress destination, SourceAddress source, Address data_name_in,
+          asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        data_name(std::move(data_name_in)) {}
+        data_name(std::move(data_name_in)),
+        signature(std::move(signature_in)),
+        data(std::move(data_in)),
+        part(std::move(part_in)) {}
 
-  explicit GetData(MessageHeader header_in) : header(std::move(header_in)), data_name() {}
+  explicit PutData(MessageHeader header_in)
+      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
 
-  ~GetData() = default;
+  ~PutData() = default;
 
-  GetData& operator=(const GetData&) = delete;
+  PutData& operator=(const PutData&) = delete;
 
-  GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
+  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
+    signature = std::move(other.signature);
+    data = std::move(other.data);
+    part = std::move(other.part);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name);
+    archive(header, kSerialisableTypeTag, data_name, signature, data, part);
   }
 
   template <typename Archive>
@@ -69,15 +84,18 @@ struct GetData {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(data_name);
+    archive(data_name, signature, data, part);
   }
 
   MessageHeader header;
   Address data_name;
+  asymm::Signature signature;
+  std::vector<byte> data;
+  uint8_t part;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_GET_DATA_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_

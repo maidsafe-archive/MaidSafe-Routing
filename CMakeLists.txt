@@ -52,26 +52,32 @@ set(RoutingLibHeaders
 #    ${RoutingSourcesDir}/bootstrap_file_operations.h
     ${RoutingSourcesDir}/bootstrap_handler.h
 #    ${RoutingSourcesDir}/bootstrap_utils.h
-    ${RoutingSourcesDir}/connect.h
     ${RoutingSourcesDir}/connection_manager.h
-    ${RoutingSourcesDir}/connect_response.h
-    ${RoutingSourcesDir}/find_group.h
-    ${RoutingSourcesDir}/find_group_response.h
-    ${RoutingSourcesDir}/get_data.h
-    ${RoutingSourcesDir}/get_data_response.h
-    ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
 #    ${RoutingSourcesDir}/network.h
-    ${RoutingSourcesDir}/ping.h
-    ${RoutingSourcesDir}/ping_response.h
-    ${RoutingSourcesDir}/post.h
-    ${RoutingSourcesDir}/put_data.h
-    ${RoutingSourcesDir}/put_data_response.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
+set(RoutingMessagesHeaders
+    ${RoutingSourcesDir}/messages/connect.h
+    ${RoutingSourcesDir}/messages/forward_connect.h
+    ${RoutingSourcesDir}/messages/find_group.h
+    ${RoutingSourcesDir}/messages/find_group_response.h
+    ${RoutingSourcesDir}/messages/get_data.h
+    ${RoutingSourcesDir}/messages/get_data_response.h
+    ${RoutingSourcesDir}/messages/join.h
+    ${RoutingSourcesDir}/messages/join_response.h
+    ${RoutingSourcesDir}/messages/messages.h
+    ${RoutingSourcesDir}/messages/messages_fwd.h
+    ${RoutingSourcesDir}/messages/ping.h
+    ${RoutingSourcesDir}/messages/ping_response.h
+    ${RoutingSourcesDir}/messages/post.h
+    ${RoutingSourcesDir}/messages/put_data.h
+    ${RoutingSourcesDir}/messages/put_data_response.h
+    )
+source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
 #    ${RoutingSourcesDir}/acknowledgement.cc
 #    ${RoutingSourcesDir}/bootstrap_file_operations.cc
@@ -86,7 +92,17 @@ set(RoutingLibSources
     ${RoutingSourcesDir}/vault_node.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
-ms_add_static_library(maidsafe_routing ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
+set(RoutingMessagesSources
+    ${RoutingSourcesDir}/messages/messages.cc
+    )
+source_group("Routing Messages Source Files" FILES ${RoutingMessagesSources})
+ms_add_static_library(maidsafe_routing
+    ${RoutingLibApiFiles}
+    ${RoutingLibHeaders}
+    ${RoutingMessagesHeaders}
+    ${RoutingLibSources}
+    ${RoutingMessagesSources}
+    )
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)

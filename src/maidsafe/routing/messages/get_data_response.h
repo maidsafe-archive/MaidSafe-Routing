@@ -16,17 +16,17 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_GET_DATA_RESPONSE_H_
-#define MAIDSAFE_ROUTING_GET_DATA_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
-#include "maidsafe/routing/get_data.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/get_data.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -89,4 +89,4 @@ struct GetDataResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_GET_DATA_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_

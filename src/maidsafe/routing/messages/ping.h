@@ -16,67 +16,51 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
-#define MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
-
-#include <cstdint>
-#include <vector>
+#ifndef MAIDSAFE_ROUTING_MESSAGES_PING_H_
+#define MAIDSAFE_ROUTING_MESSAGES_PING_H_
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/error.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
-#include "maidsafe/routing/put_data.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct PutDataResponse {
+struct Ping {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPutDataResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kPing);
 
-  PutDataResponse() = default;
+  Ping() = default;
 
-  PutDataResponse(const PutDataResponse&) = delete;
+  Ping(const Ping&) = delete;
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        part(std::move(other.part)),
-        result(std::move(other.result)) {}
+  Ping(Ping&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                         random_value(std::move(other.random_value)) {}
 
-  PutDataResponse(PutData request, maidsafe_error result_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        part(std::move(request.part)),
-        result(std::move(result_in)) {}
+  Ping(DestinationAddress destination, SourceAddress source)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
+        random_value(RandomInt32()) {}
 
-  explicit PutDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), part(0), result() {}
+  explicit Ping(MessageHeader header_in) : header(std::move(header_in)), random_value(0) {}
 
-  ~PutDataResponse() = default;
+  ~Ping() = default;
 
-  PutDataResponse& operator=(const PutDataResponse&) = delete;
+  Ping& operator=(const Ping&) = delete;
 
-  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
+  Ping& operator=(Ping&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    data_name = std::move(other.data_name);
-    part = std::move(other.part);
-    result = std::move(other.result);
+    random_value = std::move(other.random_value);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name, result);
+    archive(header, kSerialisableTypeTag, random_value);
   }
 
   template <typename Archive>
@@ -85,17 +69,15 @@ struct PutDataResponse {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(data_name, result);
+    archive(random_value);
   }
 
   MessageHeader header;
-  Address data_name;
-  uint8_t part;
-  maidsafe_error result;
+  int random_value;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_PING_H_
