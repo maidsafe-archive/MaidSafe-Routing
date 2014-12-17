@@ -58,6 +58,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/find_group.h
     ${RoutingSourcesDir}/find_group_response.h
     ${RoutingSourcesDir}/get_data.h
+    ${RoutingSourcesDir}/get_data_response.h
     ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
@@ -66,6 +67,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/ping_response.h
     ${RoutingSourcesDir}/post.h
     ${RoutingSourcesDir}/put_data.h
+    ${RoutingSourcesDir}/put_data_response.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )

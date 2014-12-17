@@ -46,7 +46,9 @@ const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
 const SerialisableTypeTag Connect::kSerialisableTypeTag;
 const SerialisableTypeTag ConnectResponse::kSerialisableTypeTag;
 const SerialisableTypeTag GetData::kSerialisableTypeTag;
+const SerialisableTypeTag GetDataResponse::kSerialisableTypeTag;
 const SerialisableTypeTag PutData::kSerialisableTypeTag;
+const SerialisableTypeTag PutDataResponse::kSerialisableTypeTag;
 const SerialisableTypeTag Post::kSerialisableTypeTag;
 #endif
 

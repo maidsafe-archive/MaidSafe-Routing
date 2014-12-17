@@ -32,11 +32,13 @@
 #include "maidsafe/routing/find_group.h"
 #include "maidsafe/routing/find_group_response.h"
 #include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/get_data_response.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/ping.h"
 #include "maidsafe/routing/ping_response.h"
 #include "maidsafe/routing/post.h"
 #include "maidsafe/routing/put_data.h"
+#include "maidsafe/routing/put_data_response.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -113,7 +115,11 @@ void MessageHandler::HandleMessage(ConnectResponse&& /*connect_response*/) {}
 
 void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
 
+void MessageHandler::HandleMessage(GetDataResponse&& /*get_data_response*/) {}
+
 void MessageHandler::HandleMessage(PutData&& /*put_data*/) {}
+
+void MessageHandler::HandleMessage(PutDataResponse&& /*put_data_response*/) {}
 
 void MessageHandler::HandleMessage(Post&& /*post*/) {}
 

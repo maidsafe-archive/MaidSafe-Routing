@@ -44,7 +44,9 @@ struct FindGroupResponse;
 struct Connect;
 struct ConnectResponse;
 struct GetData;
+struct GetDataResponse;
 struct PutData;
+struct PutDataResponse;
 struct Post;
 
 class MessageHandler {
@@ -65,7 +67,9 @@ class MessageHandler {
   void HandleMessage(Connect&& connect);
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetData&& get_data);
+  void HandleMessage(GetDataResponse&& get_data_response);
   void HandleMessage(PutData&& put_data);
+  void HandleMessage(PutDataResponse&& put_data_response);
   void HandleMessage(Post&& post);
 
  private:

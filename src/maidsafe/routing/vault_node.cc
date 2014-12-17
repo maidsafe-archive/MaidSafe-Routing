@@ -29,11 +29,13 @@
 #include "maidsafe/routing/find_group.h"
 #include "maidsafe/routing/find_group_response.h"
 #include "maidsafe/routing/get_data.h"
+#include "maidsafe/routing/get_data_response.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/ping.h"
 #include "maidsafe/routing/ping_response.h"
 #include "maidsafe/routing/post.h"
 #include "maidsafe/routing/put_data.h"
+#include "maidsafe/routing/put_data_response.h"
 
 namespace maidsafe {
 
@@ -115,9 +117,17 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
         message_handler_.HandleMessage(
             Parse<GetData>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
+      case GetDataResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+          Parse<GetDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
       case PutData::kSerialisableTypeTag:
         message_handler_.HandleMessage(
             Parse<PutData>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case PutDataResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+          Parse<PutDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case Post::kSerialisableTypeTag:
         message_handler_.HandleMessage(
