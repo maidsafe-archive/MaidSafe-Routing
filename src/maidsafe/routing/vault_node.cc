@@ -22,10 +22,10 @@ namespace maidsafe {
 
 namespace routing {
 
-VaultNode::VaultNode(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
-                     boost::filesystem::path db_location, const passport::Pmid& pmid)
+VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
+                     const passport::Pmid& pmid)
     : io_service_(io_service),
-      rudp_(managed_connections),
+      rudp_(),
       bootstrap_handler_(std::move(db_location)),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {

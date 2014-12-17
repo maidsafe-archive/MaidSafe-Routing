@@ -47,9 +47,6 @@ struct PutData;
 struct Post;
 
 class MessageHandler {
- public:  // key      value
-  using Cache = LruCache<Identity, SerialisedMessage>;
-  using Filter = LruCache<std::pair<DestinationAddress, MessageId>, void>;
 
  public:
   MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
@@ -76,11 +73,6 @@ class MessageHandler {
   asio::io_service& io_service_;
   rudp::ManagedConnections& rudp_;
   ConnectionManager& connection_manager_;
-  Filter filter_{std::chrono::minutes(20)};
-  Cache cache_{std::chrono::minutes(60)};
-  // src key part
-  Accumulator<Identity, SerialisedMessage> accumulator_{
-      std::chrono::minutes(10)};
 };
 
 }  // namespace routing
