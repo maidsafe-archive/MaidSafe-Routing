@@ -71,7 +71,7 @@ class Network {
   // direct endpoint.
   void SendToDirect(const protobuf::Message& message, const Address& peer_connection_id,
                     const rudp::MessageSentFunctor& message_sent_functor);
-  void SendAck(const protobuf::Message& message);
+  void SendAck(const protobuf::Message message);
   void AdjustAckHistory(protobuf::Message& message);
   virtual void SendToDirect(protobuf::Message& message, const Address& peer_Address,
                             const Address& peer_connection_id);

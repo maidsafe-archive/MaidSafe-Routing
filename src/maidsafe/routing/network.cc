@@ -369,7 +369,7 @@ maidsafe::Address Network::this_node_relay_connection_id() const {
 
 rudp::NatType Network::nat_type() const { return nat_type_; }
 
-void Network::SendAck(const protobuf::Message& message) {
+void Network::SendAck(const protobuf::Message message) {
   if (message.ack_id() == 0)
     return;
 

@@ -58,7 +58,7 @@ typedef std::function<void(const boost::system::error_code& error)> Handler;
 enum class GroupMessageAckStatus { kPending = 0, kSuccess = 1, kFailure = 2 };
 
 struct AckTimer {
-  AckTimer(AckId ack_id_in, const protobuf::Message& message_in, TimerPointer timer_in,
+  AckTimer(AckId ack_id_in, const protobuf::Message message_in, TimerPointer timer_in,
            unsigned int quantity_in)
       : ack_id(ack_id_in), message(message_in), timer(timer_in), quantity(quantity_in) {}
   AckId ack_id;
