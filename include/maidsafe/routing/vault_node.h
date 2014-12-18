@@ -85,7 +85,7 @@ class VaultNode {
   Address OurId() const { return our_id_; }
 
  private:
-  class RudpListener : private rudp::ManagedConnections::Listener,
+  class RudpListener : public rudp::ManagedConnections::Listener,
                        public std::enable_shared_from_this<RudpListener> {
    public:
     virtual void MessageReceived(NodeId /*peer_id*/,
@@ -93,6 +93,15 @@ class VaultNode {
     virtual void ConnectionLost(NodeId peer_) override final {
       connection_manager_.LostNetworkConnection(peer);
     }
+  };
+
+  class MessageHandlerListener : public MessageHandler::Listener,
+                                 public std::enable_shared_from_this<MessageHandlerListener> {
+   public:
+    virtual void GetDataResponseReceived(SerialisedData /*data*/) override final {}
+    virtual void PutDataResponseReceived(Address /*data_name*/,
+                                         maidsafe_error /*result*/) override final {}
+    virtual void PostReceived(Address /*data_name*/, SerialisedData /*data*/) override final {}
   };
 
   void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
@@ -104,10 +113,11 @@ class VaultNode {
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
-  MessageHandler message_handler_;
   std::shared_ptr<RudpListener> rudp_listener_;
+  std::shared_ptr<MessageHandlerListener> message_handler_listener_;
   std::weak_ptr<Listener> listener_ptr_;
-  Filter filter_{std::chrono::minutes(20)};
+  MessageHandler message_handler_;
+  Filter filter_;
 };
 
 template <typename CompletionToken>

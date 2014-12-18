@@ -72,22 +72,24 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
                           [this](CloseGroupDifference close_group_difference) {
         OnCloseGroupChanged(std::move(close_group_difference));
       }),
-      message_handler_(io_service, rudp_, connection_manager_),
       rudp_listener_(std::make_shared<RudpListener>()),
-      listener_ptr_(listener_ptr) {}
+      message_handler_listener_(std::make_shared<MessageHandlerListener>()),
+      listener_ptr_(listener_ptr),
+      message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
+      filter_(std::chrono::minutes(20)) {}
 
 void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
     switch (header_and_type_enum.second) {
-      case Ping::kSerialisableTypeTag:
+      case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
-            Parse<Ping>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case PingResponse::kSerialisableTypeTag:
+      case ForwardConnect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
-            Parse<PingResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<ForwardConnect>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case FindGroup::kSerialisableTypeTag:
         message_handler_.HandleMessage(
@@ -96,22 +98,6 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
       case FindGroupResponse::kSerialisableTypeTag:
         message_handler_.HandleMessage(
             Parse<FindGroupResponse>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case Join::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<Join>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case JoinResponse::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<JoinResponse>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case Connect::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case ForwardConnect::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<ForwardConnect>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case GetData::kSerialisableTypeTag:
         message_handler_.HandleMessage(

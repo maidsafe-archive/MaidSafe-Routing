@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
 #include <chrono>
+#include <memory>
 #include <utility>
 
 #include "asio/io_service.hpp"
@@ -40,8 +41,16 @@ class ConnectionManager;
 
 class MessageHandler {
  public:
+  class Listener {
+   public:
+    virtual ~Listener() {}
+    virtual void GetDataResponseReceived(SerialisedData data) = 0;
+    virtual void PutDataResponseReceived(Address data_name, maidsafe_error result) = 0;
+    virtual void PostReceived(Address data_name, SerialisedData data) = 0;
+  };
+
   MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
-                 ConnectionManager& connection_manager);
+                 ConnectionManager& connection_manager, std::shared_ptr<Listener> listener);
   MessageHandler() = delete;
   ~MessageHandler() = default;
   MessageHandler(const MessageHandler&) = delete;
@@ -49,14 +58,10 @@ class MessageHandler {
   MessageHandler& operator=(const MessageHandler&) = delete;
   MessageHandler& operator=(MessageHandler&&) = delete;
 
-  void HandleMessage(Ping&& ping);
-  void HandleMessage(PingResponse&& ping_response);
-  void HandleMessage(FindGroup&& find_group);
-  void HandleMessage(FindGroupResponse&& find_group_reponse);
-  void HandleMessage(Join&& join);
-  void HandleMessage(JoinResponse&& join_response);
   void HandleMessage(Connect&& connect);
   void HandleMessage(ForwardConnect&& forward_connect);
+  void HandleMessage(FindGroup&& find_group);
+  void HandleMessage(FindGroupResponse&& find_group_reponse);
   void HandleMessage(GetData&& get_data);
   void HandleMessage(GetDataResponse&& get_data_response);
   void HandleMessage(PutData&& put_data);
@@ -69,6 +74,7 @@ class MessageHandler {
   ConnectionManager& connection_manager_;
   LruCache<Identity, SerialisedMessage> cache_;
   Accumulator<Identity, SerialisedMessage> accumulator_;
+  std::weak_ptr<Listener> listener_;
 };
 
 }  // namespace routing

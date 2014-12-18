@@ -42,7 +42,7 @@ TEST(UtilsTest, BEH_Serialisation) {
   auto endpoint_v4 = rudp::Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
   auto serialised_endpoint = Serialise(endpoint_v4);
 
-  InputVectorStream binary_input_stream{Serialise(endpoint_v4)};
+  InputVectorStream binary_input_stream{serialised_endpoint};
   auto parsed_endpoint = Parse<rudp::Endpoint>(binary_input_stream);
   EXPECT_EQ(endpoint_v4, parsed_endpoint);
 
