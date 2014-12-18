@@ -24,18 +24,8 @@
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
-#include "maidsafe/routing/connect.h"
-#include "maidsafe/routing/connect_response.h"
-#include "maidsafe/routing/find_group.h"
-#include "maidsafe/routing/find_group_response.h"
-#include "maidsafe/routing/get_data.h"
-#include "maidsafe/routing/get_data_response.h"
+#include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/ping.h"
-#include "maidsafe/routing/ping_response.h"
-#include "maidsafe/routing/post.h"
-#include "maidsafe/routing/put_data.h"
-#include "maidsafe/routing/put_data_response.h"
 
 namespace maidsafe {
 
@@ -106,13 +96,21 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
         message_handler_.HandleMessage(
             Parse<FindGroupResponse>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
+      case Join::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<Join>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
+      case JoinResponse::kSerialisableTypeTag:
+        message_handler_.HandleMessage(
+            Parse<JoinResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+        break;
       case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
             Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case ConnectResponse::kSerialisableTypeTag:
+      case ForwardConnect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
-            Parse<ConnectResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<ForwardConnect>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case GetData::kSerialisableTypeTag:
         message_handler_.HandleMessage(

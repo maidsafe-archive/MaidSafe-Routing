@@ -28,26 +28,15 @@
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/accumulator.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 class ConnectionManager;
-struct Ping;
-struct PingResponse;
-struct FindGroup;
-struct FindGroupResponse;
-struct Connect;
-struct ConnectResponse;
-struct GetData;
-struct GetDataResponse;
-struct PutData;
-struct PutDataResponse;
-struct Post;
 
 class MessageHandler {
  public:
@@ -64,8 +53,10 @@ class MessageHandler {
   void HandleMessage(PingResponse&& ping_response);
   void HandleMessage(FindGroup&& find_group);
   void HandleMessage(FindGroupResponse&& find_group_reponse);
+  void HandleMessage(Join&& join);
+  void HandleMessage(JoinResponse&& join_response);
   void HandleMessage(Connect&& connect);
-  void HandleMessage(ConnectResponse&& connect_response);
+  void HandleMessage(ForwardConnect&& forward_connect);
   void HandleMessage(GetData&& get_data);
   void HandleMessage(GetDataResponse&& get_data_response);
   void HandleMessage(PutData&& put_data);

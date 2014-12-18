@@ -22,39 +22,12 @@
 
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/connect.h"
-#include "maidsafe/routing/connect_response.h"
-#include "maidsafe/routing/get_data.h"
-#include "maidsafe/routing/get_data_response.h"
-#include "maidsafe/routing/find_group.h"
-#include "maidsafe/routing/find_group_response.h"
-#include "maidsafe/routing/ping.h"
-#include "maidsafe/routing/ping_response.h"
-#include "maidsafe/routing/post.h"
-#include "maidsafe/routing/put_data.h"
-#include "maidsafe/routing/put_data_response.h"
-
 namespace maidsafe {
 
 namespace routing {
 
 // NEW
 // #################################################################################################
-
-// Define all messages' static const members here
-#if !defined(_MSC_VER) || _MSC_VER != 1800
-const SerialisableTypeTag Ping::kSerialisableTypeTag;
-const SerialisableTypeTag PingResponse::kSerialisableTypeTag;
-const SerialisableTypeTag FindGroup::kSerialisableTypeTag;
-const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
-const SerialisableTypeTag Connect::kSerialisableTypeTag;
-const SerialisableTypeTag ConnectResponse::kSerialisableTypeTag;
-const SerialisableTypeTag GetData::kSerialisableTypeTag;
-const SerialisableTypeTag GetDataResponse::kSerialisableTypeTag;
-const SerialisableTypeTag PutData::kSerialisableTypeTag;
-const SerialisableTypeTag PutDataResponse::kSerialisableTypeTag;
-const SerialisableTypeTag Post::kSerialisableTypeTag;
-#endif
 
 MurmurHash MurmurHash2(const std::vector<byte>& input) {
   assert(input.size() < std::numeric_limits<uint32_t>::max());

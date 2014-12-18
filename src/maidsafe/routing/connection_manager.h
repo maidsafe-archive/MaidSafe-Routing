@@ -51,7 +51,6 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
 
-
 namespace maidsafe {
 
 namespace routing {

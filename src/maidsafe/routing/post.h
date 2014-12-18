@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_POST_H_
-#define MAIDSAFE_ROUTING_POST_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
 
 #include <cstdint>
 #include <vector>
@@ -29,8 +29,8 @@
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -99,4 +99,4 @@ struct Post {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_POST_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_

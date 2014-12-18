@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
@@ -27,29 +27,29 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/messages/join.h"
+#include "maidsafe/routing/messages/connect.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct JoinResponse {
+struct ForwardConnect {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kJoinResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::kForwardConnect);
 
-  JoinResponse() = default;
+  ForwardConnect() = default;
 
-  JoinResponse(const JoinResponse&) = delete;
+  ForwardConnect(const ForwardConnect&) = delete;
 
-  JoinResponse(JoinResponse&& other) MAIDSAFE_NOEXCEPT
+  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
 
-  JoinResponse(Connect originator, rudp::EndpointPair receiver_endpoints)
+  ForwardConnect(Connect originator, rudp::EndpointPair receiver_endpoints)
       : header(DestinationAddress(std::move(originator.header.source.data)),
                SourceAddress(std::move(originator.header.destination.data)),
                originator.header.message_id),
@@ -58,18 +58,18 @@ struct JoinResponse {
         requester_id(std::move(originator.requester_id)),
         receiver_id(std::move(originator.receiver_id)) {}
 
-  explicit JoinResponse(MessageHeader header_in)
+  explicit ForwardConnect(MessageHeader header_in)
       : header(std::move(header_in)),
         requester_endpoints(),
         receiver_endpoints(),
         requester_id(),
         receiver_id() {}
 
-  ~JoinResponse() = default;
+  ~ForwardConnect() = default;
 
-  JoinResponse& operator=(const JoinResponse&) = delete;
+  ForwardConnect& operator=(const ForwardConnect&) = delete;
 
-  JoinResponse& operator=(JoinResponse&& other) MAIDSAFE_NOEXCEPT {
+  ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
@@ -102,4 +102,4 @@ struct JoinResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_JOIN_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_

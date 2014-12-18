@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
-#define MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 
 #include <cstdint>
 #include <vector>
@@ -29,9 +29,9 @@
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages.h"
-#include "maidsafe/routing/put_data.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/messages/put_data.h"
 
 namespace maidsafe {
 
@@ -98,4 +98,4 @@ struct PutDataResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_PUT_DATA_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
