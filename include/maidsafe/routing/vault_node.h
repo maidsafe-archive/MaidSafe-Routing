@@ -58,7 +58,7 @@ class VaultNode {
   };
 
   VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
-            const passport::Pmid& pmid);
+            const passport::Pmid& pmid, std::shared_ptr<Listener> listen_ptr);
   VaultNode(const VaultNode&) = delete;
   VaultNode(VaultNode&&) = delete;
   VaultNode& operator=(const VaultNode&) = delete;
@@ -103,6 +103,7 @@ class VaultNode {
   ConnectionManager connection_manager_;
   MessageHandler message_handler_;
   std::shared_ptr<RudpListener> rudp_listener_;
+  std::shared_ptr<Listener> listener_ptr_;
   Filter filter_{std::chrono::minutes(20)};
 };
 

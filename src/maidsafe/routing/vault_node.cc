@@ -66,7 +66,7 @@ MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) 
 }  // unnamed namespace
 
 VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
-                     const passport::Pmid& pmid)
+                     const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
     : io_service_(io_service),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
@@ -82,7 +82,8 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
         OnCloseGroupChanged(std::move(close_group_difference));
       }),
       message_handler_(io_service, rudp_, connection_manager_),
-      rudp_listener_(std::make_shared<RudpListener>()) {}
+      rudp_listener_(std::make_shared<RudpListener>()),
+      listener_ptr_(listener_ptr) {}
 
 void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
   try {
@@ -119,7 +120,7 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
         break;
       case GetDataResponse::kSerialisableTypeTag:
         message_handler_.HandleMessage(
-          Parse<GetDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GetDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case PutData::kSerialisableTypeTag:
         message_handler_.HandleMessage(
@@ -127,7 +128,7 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
         break;
       case PutDataResponse::kSerialisableTypeTag:
         message_handler_.HandleMessage(
-          Parse<PutDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<PutDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case Post::kSerialisableTypeTag:
         message_handler_.HandleMessage(
