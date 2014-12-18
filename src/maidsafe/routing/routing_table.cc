@@ -129,7 +129,7 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
       // we don't want to include the actual target in our results
       if (target == itr->id)
         continue;
-      // close group is first 'kGroupSize' contacts
+      // close group is first 'GroupSize' contacts
       if (iterations < GroupSize)
         our_close_group.push_back(itr);
       // add 'itr' to collection of all iterators for later partial sorting by closeness to target

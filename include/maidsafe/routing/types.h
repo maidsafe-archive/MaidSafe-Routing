@@ -44,6 +44,7 @@ using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = asio::ip::udp::endpoint;
 using Connection = asio::ip::udp::endpoint;
+using Port = uint16_t;
 using MurmurHash = uint32_t;
 using Checksums = std::array<MurmurHash, GroupSize>;
 using SerialisedMessage = std::vector<byte>;

@@ -20,34 +20,41 @@
 #define MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
 
 #include <cstdint>
-#include <vector>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/rsa.h"
-
-#include "maidsafe/passport/types.h"
+#include "maidsafe/rudp/types.h"
+#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/utils.h"
-
 
 namespace maidsafe {
 
 namespace routing {
 
+class RoutingTable;
+
 namespace test {
+
+using address_v6 = boost::asio::ip::address_v6;
+using address_v4 = boost::asio::ip::address_v4;
+using address = boost::asio::ip::address;
 
 BootstrapHandler::BootstrapContact CreateBootstrapContact();
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number);
 
 std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size);
+
+address_v4 GetRandomIPv4Address();
+
+address_v6 GetRandomIPv6Address();
+
+rudp::Endpoint GetRandomEndpoint();
 
 }  // namespace test
 

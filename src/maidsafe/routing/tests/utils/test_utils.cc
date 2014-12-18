@@ -18,10 +18,13 @@
 
 #include "maidsafe/routing/tests/utils/test_utils.h"
 
+#include <string>
 #include <vector>
 
-#include "maidsafe/common/utils.h"
 #include "maidsafe/common/make_unique.h"
+#include "maidsafe/common/rsa.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
@@ -52,6 +55,25 @@ std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {
         maidsafe::make_unique<RoutingTable>(Address(RandomString(Address::kSize))));
   }
   return routing_tables;
+}
+
+address_v4 GetRandomIPv4Address() {
+  auto address = std::to_string(RandomUint32() % 256);
+  for (int i = 0; i != 3; ++i)
+    address += '.' + std::to_string(RandomUint32() % 256);
+  return address_v4::from_string(address.c_str());
+}
+
+address_v6 GetRandomIPv6Address() {
+  std::stringstream address;
+  address << std::hex << (RandomUint32() % 65536);
+  for (int i = 0; i != 7; ++i)
+    address << ':' << RandomUint32() % 65536;
+  return address_v6::from_string(address.str().c_str());
+}
+
+rudp::Endpoint GetRandomEndpoint() {
+  return rudp::Endpoint{GetRandomIPv4Address(), static_cast<Port>(RandomUint32() % 65536)};
 }
 
 }  // namespace test

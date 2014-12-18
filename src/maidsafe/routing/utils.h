@@ -147,7 +147,7 @@ void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
   using address_v6 = boost::asio::ip::address_v6;
   using address = boost::asio::ip::address;
   address_v6::bytes_type bytes;
-  unsigned short port;
+  maidsafe::routing::Port port;
   archive(bytes, port);
   address_v6 ip_v6_address(bytes);
   address ip_address;
@@ -161,6 +161,11 @@ void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
 template <typename Archive>
 void serialize(Archive& archive, maidsafe::rudp::EndpointPair& endpoints) {
   archive(endpoints.local, endpoints.external);
+}
+
+template <typename Archive>
+void serialize(Archive& archive, maidsafe::rudp::Contact& contact) {
+  archive(contact.id, contact.endpoint_pair, contact.public_key);
 }
 
 }  // namespace cereal

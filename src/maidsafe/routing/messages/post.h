@@ -27,6 +27,7 @@
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
@@ -91,7 +92,7 @@ struct Post {
   MessageHeader header;
   Address data_name;
   asymm::Signature signature;
-  std::vector<byte> data;
+  SerialisedData data;
   uint8_t part;
 };
 

@@ -28,26 +28,18 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/tests/utils/test_utils.h"
+
 namespace maidsafe {
 
 namespace routing {
 
 namespace test {
 
-using address_v6 = boost::asio::ip::address_v6;
-using address_v4 = boost::asio::ip::address_v4;
-using address = boost::asio::ip::address;
-
 TEST(UtilsTest, BEH_Serialisation) {
   // Load/save endpoints in IPv4 format
-  std::string v4 = std::to_string(RandomUint32() % 256);
-  for (int i = 0; i != 3; ++i)
-    v4 += '.' + std::to_string(RandomUint32() % 256);
-  auto test_address_v4 = address_v4::from_string(v4.c_str());
-  auto test_address = address{test_address_v4};
-
-  auto endpoint_v4 =
-      rudp::Endpoint{test_address, (static_cast<unsigned short>(RandomUint32() % 65536))};
+  auto test_address = address{GetRandomIPv4Address()};
+  auto endpoint_v4 = rudp::Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
   auto serialised_endpoint = Serialise(endpoint_v4);
 
   InputVectorStream binary_input_stream{Serialise(endpoint_v4)};
@@ -55,16 +47,8 @@ TEST(UtilsTest, BEH_Serialisation) {
   EXPECT_EQ(endpoint_v4, parsed_endpoint);
 
   // Load/save endpoints in IPv6 format
-  std::stringstream v6_stream;
-  v6_stream << std::hex << (RandomUint32() % 65536);
-  for (int i = 0; i != 7; ++i)
-    v6_stream << ':' << RandomUint32() % 65536;
-  auto v6 = v6_stream.str();
-  auto test_address_v6 = address_v6::from_string(v6.c_str());
-  test_address = address{test_address_v6};
-
-  auto endpoint_v6 =
-      rudp::Endpoint{test_address, static_cast<unsigned short>((RandomUint32() % 65536))};
+  test_address = address{GetRandomIPv6Address()};
+  auto endpoint_v6 = rudp::Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
   serialised_endpoint = Serialise(endpoint_v6);
 
   binary_input_stream.swap_vector(serialised_endpoint);

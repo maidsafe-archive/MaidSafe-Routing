@@ -26,6 +26,7 @@
 
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 

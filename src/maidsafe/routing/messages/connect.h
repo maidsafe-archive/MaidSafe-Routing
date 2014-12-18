@@ -44,18 +44,16 @@ struct Connect {
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
         requester_endpoints(std::move(other.requester_endpoints)),
-        requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
 
   Connect(DestinationAddress destination, SourceAddress source,
-          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
+          rudp::EndpointPair requester_endpoints, Address receiver_id_in)
       : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
         requester_endpoints(std::move(requester_endpoints)),
-        requester_id(std::move(requester_id_in)),
         receiver_id(std::move(receiver_id_in)) {}
 
   explicit Connect(MessageHeader header_in)
-      : header(std::move(header_in)), requester_endpoints(), requester_id(), receiver_id() {}
+      : header(std::move(header_in)), requester_endpoints(), receiver_id() {}
 
   ~Connect() = default;
 
@@ -64,14 +62,15 @@ struct Connect {
   Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
-    requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, requester_endpoints, requester_id, receiver_id);
+    auto payload = Serialise(requester_endpoints, receiver_id);
+    header.checksums.assign(MurmurHash2(payload));
+    archive(header, kSerialisableTypeTag, payload);
   }
 
   template <typename Archive>
@@ -80,12 +79,18 @@ struct Connect {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(requester_endpoints, requester_id, receiver_id);
+    SerialisedData payload;
+    archive(payload);
+    if (MurmurHash2(payload) != header.checksums.at(header.checksum_index)) {
+      LOG(kError) << "Checksum failure.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    Parse(payload, requester_endpoints, receiver_id);
   }
 
-  MessageHeader header;
+  mutable MessageHeader header;
   rudp::EndpointPair requester_endpoints;
-  Address requester_id, receiver_id;
+  Address receiver_id;
 };
 
 }  // namespace routing

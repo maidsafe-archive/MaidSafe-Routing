@@ -42,28 +42,17 @@ struct ForwardConnect {
 
   ForwardConnect(const ForwardConnect&) = delete;
 
-  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_endpoints(std::move(other.receiver_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)) {}
+  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
+                                                             requester(std::move(other.requester)) {
+  }
 
-  ForwardConnect(Connect originator, rudp::EndpointPair receiver_endpoints)
-      : header(DestinationAddress(std::move(originator.header.source.data)),
-               SourceAddress(std::move(originator.header.destination.data)),
+  ForwardConnect(Connect originator, SourceAddress source, asymm::PublicKey requester_public_key)
+      : header(DestinationAddress(std::move(originator.receiver_id)), std::move(source),
                originator.header.message_id),
-        requester_endpoints(std::move(originator.requester_endpoints)),
-        receiver_endpoints(std::move(receiver_endpoints)),
-        requester_id(std::move(originator.requester_id)),
-        receiver_id(std::move(originator.receiver_id)) {}
+        requester(std::move(originator.header.source.data),
+                  std::move(originator.requester_endpoints), std::move(requester_public_key)) {}
 
-  explicit ForwardConnect(MessageHeader header_in)
-      : header(std::move(header_in)),
-        requester_endpoints(),
-        receiver_endpoints(),
-        requester_id(),
-        receiver_id() {}
+  explicit ForwardConnect(MessageHeader header_in) : header(std::move(header_in)), requester() {}
 
   ~ForwardConnect() = default;
 
@@ -71,17 +60,13 @@ struct ForwardConnect {
 
   ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    requester_endpoints = std::move(other.requester_endpoints);
-    receiver_endpoints = std::move(other.receiver_endpoints);
-    requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
+    requester = std::move(other.requester);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, requester_endpoints, receiver_endpoints, requester_id,
-            receiver_id);
+    archive(header, kSerialisableTypeTag, requester);
   }
 
   template <typename Archive>
@@ -90,12 +75,11 @@ struct ForwardConnect {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
+    archive(requester);
   }
 
   MessageHeader header;
-  rudp::EndpointPair requester_endpoints, receiver_endpoints;
-  Address requester_id, receiver_id;
+  rudp::Contact requester;
 };
 
 }  // namespace routing

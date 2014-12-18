@@ -103,7 +103,7 @@ class VaultNode {
   ConnectionManager connection_manager_;
   MessageHandler message_handler_;
   std::shared_ptr<RudpListener> rudp_listener_;
-  std::shared_ptr<Listener> listener_ptr_;
+  std::weak_ptr<Listener> listener_ptr_;
   Filter filter_{std::chrono::minutes(20)};
 };
 

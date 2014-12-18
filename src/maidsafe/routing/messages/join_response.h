@@ -44,26 +44,13 @@ struct JoinResponse {
 
   JoinResponse(JoinResponse&& other) MAIDSAFE_NOEXCEPT
       : header(std::move(other.header)),
-        requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_endpoints(std::move(other.receiver_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)) {}
+        random_value(std::move(other.random_value)) {}
 
-  JoinResponse(Connect originator, rudp::EndpointPair receiver_endpoints)
-      : header(DestinationAddress(std::move(originator.header.source.data)),
-               SourceAddress(std::move(originator.header.destination.data)),
-               originator.header.message_id),
-        requester_endpoints(std::move(originator.requester_endpoints)),
-        receiver_endpoints(std::move(receiver_endpoints)),
-        requester_id(std::move(originator.requester_id)),
-        receiver_id(std::move(originator.receiver_id)) {}
+  JoinResponse(DestinationAddress destination, SourceAddress source)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
+        random_value(RandomInt32()) {}
 
-  explicit JoinResponse(MessageHeader header_in)
-      : header(std::move(header_in)),
-        requester_endpoints(),
-        receiver_endpoints(),
-        requester_id(),
-        receiver_id() {}
+  explicit JoinResponse(MessageHeader header_in) : header(std::move(header_in)), random_value(0) {}
 
   ~JoinResponse() = default;
 
@@ -71,17 +58,13 @@ struct JoinResponse {
 
   JoinResponse& operator=(JoinResponse&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    requester_endpoints = std::move(other.requester_endpoints);
-    receiver_endpoints = std::move(other.receiver_endpoints);
-    requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
+    random_value = std::move(other.random_value);
     return *this;
   };
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, requester_endpoints, receiver_endpoints, requester_id,
-            receiver_id);
+    archive(header, kSerialisableTypeTag, random_value);
   }
 
   template <typename Archive>
@@ -90,12 +73,11 @@ struct JoinResponse {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
+    archive(random_value);
   }
 
   MessageHeader header;
-  rudp::EndpointPair requester_endpoints, receiver_endpoints;
-  Address requester_id, receiver_id;
+  int random_value;
 };
 
 }  // namespace routing

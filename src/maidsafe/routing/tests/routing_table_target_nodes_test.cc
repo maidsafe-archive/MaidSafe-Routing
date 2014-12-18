@@ -36,7 +36,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
   auto target_nodes = table_.TargetNodes(Address{RandomString(Address::kSize)});
   EXPECT_TRUE(target_nodes.empty());
 
-  // Partially fill the table with < kGroupSize contacts
+  // Partially fill the table with < GroupSize contacts
   PartiallyFillTable();
 
   // Check we get all contacts returned
@@ -99,7 +99,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
     }
   }
 
-  // Try with node close to us *not* in table (should return kGroupSize closest to target)
+  // Try with node close to us *not* in table (should return GroupSize closest to target)
   for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].far_contact);
     EXPECT_EQ(GroupSize, target_nodes.size());
@@ -114,7 +114,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
     }
   }
 
-  // Try with node close to us, but *in* table (should return kGroupSize closest to target excluding
+  // Try with node close to us, but *in* table (should return GroupSize closest to target excluding
   // target itself)
   for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
     target_nodes = table_.TargetNodes(buckets_[i].mid_contact);
