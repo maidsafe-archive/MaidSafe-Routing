@@ -39,8 +39,8 @@ namespace routing {
 
 namespace {
 
-using MessageMap = GetMap<Join, JoinResponse, Connect, ForwardConnect, FindGroup, FindGroupResponse,
-                          GetData, PutData, Post>::Map;
+using MessageMap =
+    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
 
 }  // unnamed namespace
 
@@ -58,10 +58,6 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
   (void)cache_;
   (void)accumulator_;
 }
-
-void MessageHandler::HandleMessage(Join&& /*join*/) {}
-
-void MessageHandler::HandleMessage(JoinResponse&& /*join_response*/) {}
 
 void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   // if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
@@ -83,7 +79,9 @@ void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   //}
 }
 
-void MessageHandler::HandleMessage(ForwardConnect&& /*forward_connect*/) {}
+void MessageHandler::HandleMessage(ForwardConnect&& /*forward_connect*/) {
+  // ensure source ID != requester ID
+}
 
 void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
 

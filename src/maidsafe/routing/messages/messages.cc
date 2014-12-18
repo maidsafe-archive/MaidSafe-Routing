@@ -24,8 +24,6 @@ namespace routing {
 
 // Define all messages' static const members here
 #if !defined(_MSC_VER) || _MSC_VER != 1800
-const SerialisableTypeTag Join::kSerialisableTypeTag;
-const SerialisableTypeTag JoinResponse::kSerialisableTypeTag;
 const SerialisableTypeTag Connect::kSerialisableTypeTag;
 const SerialisableTypeTag ForwardConnect::kSerialisableTypeTag;
 const SerialisableTypeTag FindGroup::kSerialisableTypeTag;

@@ -83,14 +83,6 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
     switch (header_and_type_enum.second) {
-      case Join::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<Join>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case JoinResponse::kSerialisableTypeTag:
-        message_handler_.HandleMessage(
-            Parse<JoinResponse>(std::move(header_and_type_enum.first), binary_input_stream));
-        break;
       case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
             Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));

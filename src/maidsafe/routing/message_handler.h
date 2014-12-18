@@ -58,8 +58,6 @@ class MessageHandler {
   MessageHandler& operator=(const MessageHandler&) = delete;
   MessageHandler& operator=(MessageHandler&&) = delete;
 
-  void HandleMessage(Join&& join);
-  void HandleMessage(JoinResponse&& join_response);
   void HandleMessage(Connect&& connect);
   void HandleMessage(ForwardConnect&& forward_connect);
   void HandleMessage(FindGroup&& find_group);

@@ -67,8 +67,6 @@ set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/find_group_response.h
     ${RoutingSourcesDir}/messages/get_data.h
     ${RoutingSourcesDir}/messages/get_data_response.h
-    ${RoutingSourcesDir}/messages/join.h
-    ${RoutingSourcesDir}/messages/join_response.h
     ${RoutingSourcesDir}/messages/messages.h
     ${RoutingSourcesDir}/messages/messages_fwd.h
     ${RoutingSourcesDir}/messages/post.h

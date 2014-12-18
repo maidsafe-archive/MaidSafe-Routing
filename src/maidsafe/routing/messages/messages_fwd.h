@@ -26,8 +26,6 @@ namespace maidsafe {
 namespace routing {
 
 enum class MessageTypeTag : SerialisableTypeTag {
-  kJoin,
-  kJoinResponse,
   kConnect,
   kForwardConnect,
   kFindGroup,
@@ -39,8 +37,6 @@ enum class MessageTypeTag : SerialisableTypeTag {
   kPost
 };
 
-struct Join;
-struct JoinResponse;
 struct Connect;
 struct ForwardConnect;
 struct FindGroup;
