@@ -55,6 +55,7 @@ class VaultNode {
     virtual void PostReceived(MessageHeader header, SerialisedMessage message) = 0;
     // virtual boost::expected<SerialisedMessage, CommonErrors> GetReceived(Identity id) = 0;
     virtual void PutReceived(MessageHeader header, SerialisedMessage message) = 0;
+    virtual void CloseGroupChanged(CloseGroupChanged groups) = 0;
   };
 
   VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
@@ -89,7 +90,9 @@ class VaultNode {
    public:
     virtual void MessageReceived(NodeId /*peer_id*/,
                                  rudp::ReceivedMessage /*message*/) override final {}
-    virtual void ConnectionLost(NodeId /*peer_*/) override final {}
+    virtual void ConnectionLost(NodeId peer_) override final {
+      connection_manager_.LostNetworkConnection(peer);
+    }
   };
 
   void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
