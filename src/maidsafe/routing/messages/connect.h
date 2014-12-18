@@ -69,7 +69,7 @@ struct Connect {
   template <typename Archive>
   void save(Archive& archive) const {
     auto payload = Serialise(requester_endpoints, receiver_id);
-    header.checksums.assign(MurmurHash2(payload));
+    header.checksums.front() = MurmurHash2(payload);
     archive(header, kSerialisableTypeTag, payload);
   }
 
