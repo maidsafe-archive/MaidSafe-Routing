@@ -26,14 +26,12 @@ namespace maidsafe {
 namespace routing {
 
 enum class MessageTypeTag : SerialisableTypeTag {
-  kPing,
-  kPingResponse,
-  kFindGroup,
-  kFindGroupResponse,
   kJoin,
   kJoinResponse,
   kConnect,
   kForwardConnect,
+  kFindGroup,
+  kFindGroupResponse,
   kGetData,
   kGetDataResponse,
   kPutData,
@@ -41,14 +39,12 @@ enum class MessageTypeTag : SerialisableTypeTag {
   kPost
 };
 
-struct Ping;
-struct PingResponse;
-struct FindGroup;
-struct FindGroupResponse;
 struct Join;
 struct JoinResponse;
 struct Connect;
 struct ForwardConnect;
+struct FindGroup;
+struct FindGroupResponse;
 struct GetData;
 struct GetDataResponse;
 struct PutData;

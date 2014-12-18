@@ -21,6 +21,8 @@
 #include <utility>
 #include <vector>
 
+#include "asio/use_future.hpp"
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
@@ -37,49 +39,25 @@ namespace routing {
 
 namespace {
 
-using MessageMap = GetMap<Ping, PingResponse, FindGroup, FindGroupResponse, Join, JoinResponse,
-                          Connect, ForwardConnect, GetData, PutData, Post>::Map;
+using MessageMap = GetMap<Join, JoinResponse, Connect, ForwardConnect, FindGroup, FindGroupResponse,
+                          GetData, PutData, Post>::Map;
 
 }  // unnamed namespace
 
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
-                               ConnectionManager& connection_manager)
+                               ConnectionManager& connection_manager,
+                               std::shared_ptr<Listener> listener)
     : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)) {
+      accumulator_(std::chrono::minutes(10)),
+      listener_(listener) {
   (void)io_service_;
-  (void)rudp_;
-  (void)connection_manager_;
   (void)cache_;
   (void)accumulator_;
 }
-
-void MessageHandler::HandleMessage(Ping&& /*ping*/) {
-  // ping is a single destination message
-  // if (ping_msg.header.destination.data() == connection_mgr_.OurId()) {
-  //  auto targets(connection_mgr_.get_target(ping_msg.header.source.data()));
-  //  for (const auto& target : targets)
-  //    rudp_.Send(target.id, Serialise(PingResponse(ping_msg)));
-  //}
-  // else {  // scatter
-  //  auto targets(connection_mgr_.get_target(ping_msg.header.destination.data()));
-  //  for (const auto& target : targets)
-  //    rudp_.Send(target.id, Serialise(PingResponse(ping_msg)));
-  //  else rudp_.Send(target.id, Serialise(ping_msg));
-  //}
-}
-
-void MessageHandler::HandleMessage(PingResponse&& /*ping_response*/) {
-  // TODO(dirvine): 2014-11-19 FIXME set a future or some async return type in node or
-  // client
-}
-
-void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
-
-void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
 
 void MessageHandler::HandleMessage(Join&& /*join*/) {}
 
@@ -106,6 +84,10 @@ void MessageHandler::HandleMessage(Connect&& /*connect*/) {
 }
 
 void MessageHandler::HandleMessage(ForwardConnect&& /*forward_connect*/) {}
+
+void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
+
+void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
 
 void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
 

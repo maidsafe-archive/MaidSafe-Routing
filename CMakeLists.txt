@@ -71,8 +71,6 @@ set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/join_response.h
     ${RoutingSourcesDir}/messages/messages.h
     ${RoutingSourcesDir}/messages/messages_fwd.h
-    ${RoutingSourcesDir}/messages/ping.h
-    ${RoutingSourcesDir}/messages/ping_response.h
     ${RoutingSourcesDir}/messages/post.h
     ${RoutingSourcesDir}/messages/put_data.h
     ${RoutingSourcesDir}/messages/put_data_response.h
