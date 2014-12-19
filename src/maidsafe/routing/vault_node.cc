@@ -72,7 +72,7 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
                           [this](CloseGroupDifference close_group_difference) {
         OnCloseGroupChanged(std::move(close_group_difference));
       }),
-      rudp_listener_(std::make_shared<RudpListener>()),
+      rudp_listener_(std::make_shared<RudpListener>(connection_manager_)),
       message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),

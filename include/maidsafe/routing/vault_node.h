@@ -87,9 +87,16 @@ class VaultNode {
   class RudpListener : public rudp::ManagedConnections::Listener,
                        public std::enable_shared_from_this<RudpListener> {
    public:
+    explicit RudpListener(ConnectionManager& connection_manager)
+        : connection_manager_(connection_manager) {}
     virtual void MessageReceived(NodeId /*peer_id*/,
                                  rudp::ReceivedMessage /*message*/) override final {}
-    virtual void ConnectionLost(NodeId /*peer_*/) override final {}
+    virtual void ConnectionLost(NodeId peer) override final {
+      connection_manager_.LostNetworkConnection(peer);
+    }
+
+   private:
+    ConnectionManager& connection_manager_;
   };
 
   class MessageHandlerListener : public MessageHandler::Listener,
