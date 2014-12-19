@@ -168,6 +168,18 @@ std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {
   return result;
 }
 
+boost::optional<asymm::PublicKey> RoutingTable::GetPublicKey(const Address& their_id) const {
+  Validate(their_id);
+  NodeInfo their_info;
+  their_info.id = their_id;
+  std::lock_guard<std::mutex> lock(mutex_);
+  assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison_));
+  auto itr = std::lower_bound(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
+  if (itr == std::end(nodes_))
+    return boost::none;
+  return itr->public_key;
+}
+
 size_t RoutingTable::Size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();

@@ -88,7 +88,10 @@ class RoutingTable {
   // table if we hold less than 'GroupSize' contacts in total).
   std::vector<NodeInfo> OurCloseGroup() const;
 
-  Address OurId() const { return our_id_; }
+  // This returns the public key for the given node if the node is in our table.
+  boost::optional<asymm::PublicKey> GetPublicKey(const Address& their_id) const;
+
+  const Address& OurId() const { return our_id_; }
 
   size_t Size() const;
 

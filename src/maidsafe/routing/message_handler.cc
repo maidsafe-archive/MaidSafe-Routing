@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "asio/use_future.hpp"
+#include "asio/spawn.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
@@ -61,9 +61,12 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
   (void)accumulator_;
 }
 
-void MessageHandler::HandleMessage(Connect&& /*connect*/) {
-  // if (connect_msg.header.destination.data() == connection_mgr_.OurId()) {
-  //  if (connection_mgr_.suggest_node(connect_msg.header.source)) {
+void MessageHandler::HandleMessage(Connect&& connect) {
+  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
+    ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
+    //rudp_.
+  }
+
   //    rudp_.GetNextAvailableEndpoint(
   //        connect_msg.header.source,
   //        [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
@@ -73,16 +76,28 @@ void MessageHandler::HandleMessage(Connect&& /*connect*/) {
   //            // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
   //        rudp_.Send(target.id, Serialise(forward_connect());
   //        });
-  //  }
-  //} else {
-  //  auto targets(connection_mgr_.get_target(connect_msg.header.destination.data()));
-  //  for (const auto& target : targets)
-  //    rudp_.Send(target.id, Serialise(Connect(connect_msg)));
-  //}
 }
 
-void MessageHandler::HandleMessage(ForwardConnect&& /*forward_connect*/) {
-  // ensure source ID != requester ID
+void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
+  auto& source_id = forward_connect.header.source.data;
+  if (source_id == forward_connect.requester.id) {
+    LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
+    return;
+  }
+
+  if (!connection_manager_.SuggestNodeToAdd(source_id))
+    return;
+
+  asio::spawn(io_service_, [&](asio::yield_context yield) {
+    std::error_code error;
+    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
+    if (error) {
+      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
+      return;
+    }
+    // if this is a response to our own connect request, we just need to add them to rudp_
+    // otherwise we send our own connect request to them and then add them to rudp_.
+  });
 }
 
 void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
@@ -98,6 +113,10 @@ void MessageHandler::HandleMessage(PutData&& /*put_data*/) {}
 void MessageHandler::HandleMessage(PutDataResponse&& /*put_data_response*/) {}
 
 void MessageHandler::HandleMessage(Post&& /*post*/) {}
+
+SourceAddress MessageHandler::OurSourceAddress() const {
+  return SourceAddress{connection_manager_.OurId()};
+}
 
 }  // namespace routing
 

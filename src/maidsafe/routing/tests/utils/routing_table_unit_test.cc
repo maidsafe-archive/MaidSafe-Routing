@@ -63,7 +63,8 @@ RoutingTableUnitTest::Bucket::Bucket(const Address& furthest_from_tables_own_id,
       close_contact(GetContact(furthest_from_tables_own_id, index, ContactType::kClose)) {}
 
 RoutingTableUnitTest::RoutingTableUnitTest()
-    : table_(Address{RandomString(Address::kSize)}),
+    : our_id_(RandomString(Address::kSize)),
+      table_(our_id_),
       buckets_(InitialiseBuckets()),
       info_(),
       initial_count_((RandomUint32() % (GroupSize - 1)) + 1),

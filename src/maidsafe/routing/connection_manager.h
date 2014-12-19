@@ -44,6 +44,7 @@ destiations. In that case request a close_group message for this node.
 #include <vector>
 
 #include "asio/io_service.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -74,16 +75,21 @@ class ConnectionManager {
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
   bool SuggestNodeToAdd(const Address& node_to_add) const;
-  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
+  std::vector<NodeInfo> GetTarget(const Address& target_node) const {
+    return routing_table_.TargetNodes(target_node);
+  }
   void LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   void DropNode(const Address& their_id);
   void AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair);
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
+  const Address& OurId() const { return routing_table_.OurId(); }
+  boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
+    return routing_table_.GetPublicKey(node);
+  }
 
  private:
   void GroupChanged();
-
 
   std::mutex mutex_;
   asio::io_service& io_service_;
