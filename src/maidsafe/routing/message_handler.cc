@@ -54,6 +54,8 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
       cache_(std::chrono::hours(1)),
       accumulator_(std::chrono::minutes(10)),
       listener_(listener) {
+  (void)rudp_;
+  (void)connection_manager_;
   (void)io_service_;
   (void)cache_;
   (void)accumulator_;
