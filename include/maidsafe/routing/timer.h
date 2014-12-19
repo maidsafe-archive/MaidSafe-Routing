@@ -205,10 +205,7 @@ void Timer<Response>::FinishTask(TaskId task_id, const boost::system::error_code
   }
   for (int i(0); i != outstanding_response_count; ++i)
     asio_service_.service().dispatch([=] { functor(Response()); });
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    cond_var_.notify_one();
-  }
+  cond_var_.notify_one();
 }
 
 template <typename Response>
