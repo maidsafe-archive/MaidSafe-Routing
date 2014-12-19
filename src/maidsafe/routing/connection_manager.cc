@@ -41,15 +41,6 @@ bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
   return routing_table_.CheckNode(node_to_add);
 }
 
-std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
-  auto targets(routing_table_.TargetNodes(target_node));
-  // remove any nodes we are not connected to
-  targets.erase(std::remove_if(std::begin(targets), std::end(targets),
-                               [](const NodeInfo& node) { return !node.connected; }),
-                std::end(targets));
-  return targets;
-}
-
 void ConnectionManager::LostNetworkConnection(const Address& node) {
   routing_table_.DropNode(node);
   GroupChanged();
@@ -63,7 +54,7 @@ void ConnectionManager::DropNode(const Address& their_id) {
 void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
   rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
                              node_to_add.public_key);
-  auto spawn_me([=](asio::yield_context yield) {
+  asio::spawn(io_service_, [=](asio::yield_context yield) {
     asio::error_code error;
     rudp_.Add(std::move(rudp_contact), yield[error]);
 
@@ -78,8 +69,6 @@ void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_e
       }
     }
   });
-
-  asio::spawn(io_service_, spawn_me);
 }
 
 void ConnectionManager::GroupChanged() {

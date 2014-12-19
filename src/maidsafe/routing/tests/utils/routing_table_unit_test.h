@@ -53,6 +53,7 @@ class RoutingTableUnitTest : public testing::Test {
   void PartiallyFillTable();
   void CompleteFillingTable();
 
+  const Address our_id_;
   RoutingTable table_;
   const Buckets buckets_;
   NodeInfo info_;

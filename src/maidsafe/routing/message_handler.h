@@ -69,6 +69,8 @@ class MessageHandler {
   void HandleMessage(Post&& post);
 
  private:
+  SourceAddress OurSourceAddress() const;
+
   asio::io_service& io_service_;
   rudp::ManagedConnections& rudp_;
   ConnectionManager& connection_manager_;
