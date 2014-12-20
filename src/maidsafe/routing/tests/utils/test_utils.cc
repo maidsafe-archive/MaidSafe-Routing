@@ -35,15 +35,20 @@ namespace routing {
 
 namespace test {
 
-BootstrapHandler::BootstrapContact CreateBootstrapContact() {
-  auto keys(asymm::GenerateKeyPair());
-  return std::make_tuple(
-      NodeId(RandomString(NodeId::kSize)), keys.public_key,
-      Endpoint(asio::ip::address::from_string("1.1.1.1"), (RandomUint32() + 1) % 65536));
+BootstrapHandler::BootstrapContact CreateBootstrapContact(asymm::PublicKey public_key) {
+  if (!asymm::ValidateKey(public_key)) {
+    auto keys(asymm::GenerateKeyPair());
+    public_key = keys.public_key;
+  }
+  return std::make_tuple(NodeId(RandomString(NodeId::kSize)), public_key, GetRandomEndpoint());
 }
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number) {
-  return std::vector<BootstrapHandler::BootstrapContact>{number, CreateBootstrapContact()};
+  auto keys(asymm::GenerateKeyPair());
+  std::vector<BootstrapHandler::BootstrapContact> contacts;
+  for (size_t i = 0; i != number; ++i)
+    contacts.push_back(CreateBootstrapContact(keys.public_key));
+  return contacts;
 }
 
 std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {

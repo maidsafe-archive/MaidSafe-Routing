@@ -27,6 +27,7 @@
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
 
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/rudp/types.h"
 #include "maidsafe/rudp/contact.h"
 
@@ -44,7 +45,8 @@ using address_v6 = boost::asio::ip::address_v6;
 using address_v4 = boost::asio::ip::address_v4;
 using address = boost::asio::ip::address;
 
-BootstrapHandler::BootstrapContact CreateBootstrapContact();
+BootstrapHandler::BootstrapContact CreateBootstrapContact(
+    asymm::PublicKey public_key = asymm::PublicKey());
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number);
 
