@@ -18,10 +18,7 @@
 
 #include "maidsafe/routing/bootstrap_handler.h"
 
-#include "boost/algorithm/string/trim.hpp"
-
 #include <cstdint>
-#include <string>
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/serialisation.h"
@@ -98,7 +95,7 @@ void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_conta
 }
 
 void BootstrapHandler::RemoveBootstrapContacts() {
-  sqlite::Statement statement{ database_, "DELETE FROM BOOTSTRAP_CONTACTS" };
+  sqlite::Statement statement{database_, "DELETE FROM BOOTSTRAP_CONTACTS"};
   statement.Step();
   statement.Reset();
 }
