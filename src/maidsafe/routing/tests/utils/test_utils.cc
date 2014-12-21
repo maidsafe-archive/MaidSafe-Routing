@@ -73,7 +73,7 @@ address_v6 GetRandomIPv6Address() {
 }
 
 rudp::Endpoint GetRandomEndpoint() {
-  return rudp::Endpoint{GetRandomIPv4Address(), static_cast<Port>(RandomUint32() % 65536)};
+  return rudp::Endpoint{GetRandomIPv4Address(), static_cast<Port>((RandomUint32() % 65536) + 1024)};
 }
 
 }  // namespace test

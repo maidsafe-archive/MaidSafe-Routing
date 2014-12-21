@@ -41,17 +41,19 @@ bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
   return routing_table_.CheckNode(node_to_add);
 }
 
-void ConnectionManager::LostNetworkConnection(const Address& node) {
+boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+    const Address& node) {
   routing_table_.DropNode(node);
-  GroupChanged();
+  return GroupChanged();
 }
 
-void ConnectionManager::DropNode(const Address& their_id) {
+boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
   routing_table_.DropNode(their_id);
-  GroupChanged();
+  return GroupChanged();
 }
 
-void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
+    NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
   rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
                              node_to_add.public_key);
   asio::spawn(io_service_, [=](asio::yield_context yield) {
@@ -62,16 +64,21 @@ void ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair their_e
       auto added = routing_table_.AddNode(node_to_add);
       if (!added.first) {
         rudp_.Remove(node_to_add.id, asio::use_future);  // become invalid for us
-        GroupChanged();
       } else if (added.second) {
         rudp_.Remove(added.second->id, asio::use_future);  // a sacrificlal node was found
-        GroupChanged();
       }
     }
   });
+  return GroupChanged();
 }
 
-void ConnectionManager::GroupChanged() {
+bool ConnectionManager::InCloseGroup(const Address& their_id) {
+  auto close_group(routing_table_.OurCloseGroup());
+  return std::any_of(std::begin(close_group), std::end(close_group),
+                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
+}
+
+boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   auto new_nodeinfo_group(routing_table_.OurCloseGroup());
   std::vector<Address> new_group;
   for (const auto& nodes : new_nodeinfo_group)
@@ -79,11 +86,11 @@ void ConnectionManager::GroupChanged() {
 
   std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
-    group_changed_functor_([new_group, this]() -> CloseGroupDifference {
-      return std::make_pair(new_group, current_close_group_);
-    }());
-    current_close_group_ = new_group;
+      auto changed = std::make_pair(new_group, current_close_group_);
+      current_close_group_ = new_group;
+      return changed;
   }
+  return boost::none;
 }
 
 }  // namespace routing
