@@ -92,7 +92,7 @@ class RoutingTable {
   boost::optional<asymm::PublicKey> GetPublicKey(const Address& their_id) const;
 
   const Address& OurId() const { return our_id_; }
-  
+
   size_t Size() const;
 
  private:
