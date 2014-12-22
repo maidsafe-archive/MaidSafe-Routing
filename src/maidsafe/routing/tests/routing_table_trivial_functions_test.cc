@@ -32,34 +32,36 @@ namespace routing {
 namespace test {
 
 TEST_F(RoutingTableUnitTest, BEH_TrivialFunctions) {  // 'GetPublicKey', 'OurId', and 'Size'
-  info_.id = Address{RandomString(Address::kSize)};
-  auto keys = asymm::GenerateKeyPair();
-  info_.public_key = keys.public_key;
-
-  EXPECT_EQ(our_id_, table_.OurId());
-
   // Check on empty table
   EXPECT_FALSE(table_.GetPublicKey(buckets_[0].mid_contact));
+  EXPECT_EQ(our_id_, table_.OurId());
   EXPECT_EQ(0, table_.Size());
 
   // Check on partially filled the table
   PartiallyFillTable();
+  auto test_id = Address{ RandomString(Address::kSize) };
+  info_.id = test_id;
+  auto keys = asymm::GenerateKeyPair();
+  info_.public_key = keys.public_key;
   ASSERT_TRUE(table_.AddNode(info_).first);
 
   ASSERT_TRUE(!!table_.GetPublicKey(info_.id));
   EXPECT_TRUE(asymm::MatchingKeys(info_.public_key, *table_.GetPublicKey(info_.id)));
   EXPECT_FALSE(table_.GetPublicKey(buckets_.back().far_contact));
+  EXPECT_EQ(our_id_, table_.OurId());
   EXPECT_EQ(initial_count_ + 1, table_.Size());
 
   // Check on fully filled the table
-  table_.DropNode(info_.id);
+  table_.DropNode(test_id);
   CompleteFillingTable();
-  table_.DropNode(buckets_[0].far_contact);
+  table_.DropNode(buckets_[0].mid_contact);
+  info_.id = test_id;
   ASSERT_TRUE(table_.AddNode(info_).first);
 
   ASSERT_TRUE(!!table_.GetPublicKey(info_.id));
   EXPECT_TRUE(asymm::MatchingKeys(info_.public_key, *table_.GetPublicKey(info_.id)));
   EXPECT_FALSE(table_.GetPublicKey(buckets_.back().far_contact));
+  EXPECT_EQ(our_id_, table_.OurId());
   EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());
 
 #ifdef NDEBUG

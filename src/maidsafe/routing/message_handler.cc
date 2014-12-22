@@ -88,13 +88,14 @@ void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
   if (!connection_manager_.SuggestNodeToAdd(source_id))
     return;
 
-  asio::spawn(io_service_, [&](asio::yield_context /* yield) */) {
-    asio::error_code error;
-    // auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
-    // if (error) {
-    //   LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
-    //   return;
-    // }
+  asio::spawn(io_service_, [&](asio::yield_context yield) {
+    std::error_code error;
+    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
+    if (error) {
+      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
+      return;
+    }
+    (void)endpoints;
     // if this is a response to our own connect request, we just need to add them to rudp_
     // otherwise we send our own connect request to them and then add them to rudp_.
   });

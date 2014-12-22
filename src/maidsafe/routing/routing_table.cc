@@ -174,10 +174,11 @@ boost::optional<asymm::PublicKey> RoutingTable::GetPublicKey(const Address& thei
   their_info.id = their_id;
   std::lock_guard<std::mutex> lock(mutex_);
   assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison_));
-  auto itr = std::lower_bound(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
-  if (itr == std::end(nodes_))
+  auto itrs = std::equal_range(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
+  if (itrs.first == itrs.second)
     return boost::none;
-  return itr->public_key;
+  assert(std::distance(itrs.first, itrs.second) == 1);
+  return itrs.first->public_key;
 }
 
 size_t RoutingTable::Size() const {
