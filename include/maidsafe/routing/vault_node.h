@@ -55,6 +55,7 @@ class VaultNode {
     virtual void PostReceived(MessageHeader header, SerialisedMessage message) = 0;
     // virtual boost::expected<SerialisedMessage, CommonErrors> GetReceived(Identity id) = 0;
     virtual void PutReceived(MessageHeader header, SerialisedMessage message) = 0;
+    virtual void CloseGroupDifference(CloseGroupDifference groups) = 0;
   };
 
   VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,

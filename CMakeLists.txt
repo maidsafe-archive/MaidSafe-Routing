@@ -101,7 +101,8 @@ ms_add_static_library(maidsafe_routing
     )
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
+target_link_libraries(maidsafe_routing maidsafe_rudp BoostCoroutine
+BoostContext  maidsafe_passport)
 
 if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_test_routing
@@ -112,7 +113,7 @@ if(INCLUDE_TESTS)
         ${RoutingSourcesDir}/tests/utils/routing_table_unit_test.cc
         )
   target_include_directories(maidsafe_test_routing PUBLIC ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
+  target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_rudp maidsafe_test)
 
   file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
   file(GLOB MessagesTestFiles ${RoutingSourcesDir}/messages/tests/*.cc)

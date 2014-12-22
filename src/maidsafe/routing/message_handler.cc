@@ -54,6 +54,8 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
       cache_(std::chrono::hours(1)),
       accumulator_(std::chrono::minutes(10)),
       listener_(listener) {
+  (void)rudp_;
+  (void)connection_manager_;
   (void)io_service_;
   (void)cache_;
   (void)accumulator_;
@@ -62,7 +64,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
 void MessageHandler::HandleMessage(Connect&& connect) {
   if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
-    //rudp_.
+    // rudp_.
   }
 
   //    rudp_.GetNextAvailableEndpoint(
@@ -86,13 +88,13 @@ void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
   if (!connection_manager_.SuggestNodeToAdd(source_id))
     return;
 
-  asio::spawn(io_service_, [&](asio::yield_context yield) {
-    std::error_code error;
-    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
-    if (error) {
-      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
-      return;
-    }
+  asio::spawn(io_service_, [&](asio::yield_context /* yield) */) {
+    asio::error_code error;
+    // auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
+    // if (error) {
+    //   LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
+    //   return;
+    // }
     // if this is a response to our own connect request, we just need to add them to rudp_
     // otherwise we send our own connect request to them and then add them to rudp_.
   });
