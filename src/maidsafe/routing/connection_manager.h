@@ -63,8 +63,8 @@ class ConnectionManager {
         io_service_(io_service),
         routing_table_(our_id),
         rudp_(rudp),
-        current_close_group_(){}
-  
+        current_close_group_() {}
+
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
   ~ConnectionManager() = default;

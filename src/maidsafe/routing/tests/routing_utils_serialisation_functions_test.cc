@@ -16,8 +16,6 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/utils.h"
-
 #include <string>
 #include <sstream>
 
@@ -28,6 +26,7 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {

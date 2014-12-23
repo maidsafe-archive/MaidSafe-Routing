@@ -126,9 +126,6 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
     std::lock_guard<std::mutex> lock(mutex_);
     auto parallelism = std::min(Parallelism(), nodes_.size());
     for (auto itr = std::begin(nodes_); itr != std::end(nodes_); ++itr, ++iterations) {
-      // we don't want to include the actual target in our results
-      if (target == itr->id)
-        continue;
       // close group is first 'GroupSize' contacts
       if (iterations < GroupSize)
         our_close_group.push_back(itr);

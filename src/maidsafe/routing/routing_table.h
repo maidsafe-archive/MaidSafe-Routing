@@ -80,8 +80,7 @@ class RoutingTable {
   // This returns a collection of contacts to which a message should be sent onwards.  It will
   // return all of our close group (comprising 'GroupSize' contacts) if the closest one to the
   // target is within our close group.  If not, it will return the 'Parallelism()' closest contacts
-  // to the target.  In both cases, if the target is an actual contact in our table, it is excluded
-  // from the returned collection.
+  // to the target.
   std::vector<NodeInfo> TargetNodes(const Address& target) const;
 
   // This returns our close group, i.e. the 'GroupSize' contacts closest to our ID (or the entire

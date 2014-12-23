@@ -61,13 +61,9 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
       auto addresses_itr = std::begin(addresses);  // our ID
       ++addresses_itr;                             // first of our close group
       auto target_close_group = node->TargetNodes(addresses.at(i));
-      EXPECT_EQ(GroupSize - 1, target_close_group.size()) << "Failed at index " << i;
-      if (GroupSize - 1 != target_close_group.size())
-        continue;
-      // should contain our close group minus 'addresses.at(i)'
+      EXPECT_EQ(GroupSize, target_close_group.size()) << "Failed at index " << i;
+      // should contain our close group
       for (auto itr = std::begin(target_close_group); itr != std::end(target_close_group); ++itr) {
-        if (*addresses_itr == addresses.at(i))
-          ++addresses_itr;
         EXPECT_EQ(*addresses_itr++, itr->id);
       }
     }
