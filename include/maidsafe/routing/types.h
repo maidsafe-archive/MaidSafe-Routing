@@ -31,6 +31,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/rudp/contact.h"
+#include "maidsafe/rudp/types.h"
 
 namespace maidsafe {
 
@@ -42,8 +43,7 @@ using Address = NodeId;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
-using Endpoint = boost::asio::ip::udp::endpoint;
-using Connection = asio::ip::udp::endpoint;
+using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
 using MurmurHash = uint32_t;
 using Checksums = std::array<MurmurHash, GroupSize>;

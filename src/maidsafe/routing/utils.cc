@@ -324,7 +324,7 @@ MurmurHash MurmurHash2(const std::vector<byte>& input) {
 //   return Address(binary_string, Address::EncodingType::kBinary);
 // }
 //
-// void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+// void SetProtobufEndpoint(const asio::ip::udp::endpoint& endpoint,
 //                          protobuf::Endpoint* pb_endpoint) {
 //   if (pb_endpoint) {
 //     pb_endpoint->set_ip(endpoint.address().to_string().c_str());
@@ -332,8 +332,8 @@ MurmurHash MurmurHash2(const std::vector<byte>& input) {
 //   }
 // }
 //
-// boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint) {
-//   return boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(pb_endpoint.ip()),
+// asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint) {
+//   return asio::ip::udp::endpoint(asio::ip::address::from_string(pb_endpoint.ip()),
 //                                         static_cast<uint16_t>(pb_endpoint.port()));
 // }
 //
@@ -374,8 +374,8 @@ MurmurHash MurmurHash2(const std::vector<byte>& input) {
 //   return message_type;
 // }
 //
-// std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
-//     std::vector<boost::asio::ip::udp::endpoint> peer_endpoints) {
+// std::vector<asio::ip::udp::endpoint> OrderBootstrapList(
+//     std::vector<asio::ip::udp::endpoint> peer_endpoints) {
 //   if (peer_endpoints.empty())
 //     return peer_endpoints;
 //   auto copy_vector(peer_endpoints);

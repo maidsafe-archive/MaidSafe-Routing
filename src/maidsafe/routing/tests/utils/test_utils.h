@@ -41,9 +41,9 @@ class RoutingTable;
 
 namespace test {
 
-using address_v6 = boost::asio::ip::address_v6;
-using address_v4 = boost::asio::ip::address_v4;
-using address = boost::asio::ip::address;
+using address_v6 = asio::ip::address_v6;
+using address_v4 = asio::ip::address_v4;
+using address = asio::ip::address;
 
 BootstrapHandler::BootstrapContact CreateBootstrapContact(
     asymm::PublicKey public_key = asymm::PublicKey());

@@ -104,12 +104,12 @@ MurmurHash MurmurHash2(const std::vector<byte>& input);
 // bool CheckId(const std::string& id_to_test);
 // bool ValidateMessage(const protobuf::Message& message);
 // Address NodeInNthBucket(const Address& Address, int bucket);
-// void SetProtobufEndpoint(const boost::asio::ip::udp::endpoint& endpoint,
+// void SetProtobufEndpoint(const asio::ip::udp::endpoint& endpoint,
 //                          protobuf::Endpoint* pb_endpoint);
-// boost::asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
+// asio::ip::udp::endpoint GetEndpointFromProtobuf(const protobuf::Endpoint& pb_endpoint);
 // std::string MessageTypeString(const protobuf::Message& message);
-// std::vector<boost::asio::ip::udp::endpoint> OrderBootstrapList(
-//     std::vector<boost::asio::ip::udp::endpoint> peer_endpoints);
+// std::vector<asio::ip::udp::endpoint> OrderBootstrapList(
+//     std::vector<asio::ip::udp::endpoint> peer_endpoints);
 // protobuf::NatType NatTypeProtobuf(const rudp::NatType& nat_type);
 // rudp::NatType NatTypeFromProtobuf(const protobuf::NatType& nat_type_proto);
 // std::string PrintMessage(const protobuf::Message& message);
@@ -131,7 +131,7 @@ namespace cereal {
 
 template <typename Archive>
 void save(Archive& archive, const maidsafe::rudp::Endpoint& endpoint) {
-  using address_v6 = boost::asio::ip::address_v6;
+  using address_v6 = asio::ip::address_v6;
   address_v6 ip_address;
   if (endpoint.address().is_v4()) {
     ip_address = address_v6::v4_compatible(endpoint.address().to_v4());
@@ -144,8 +144,8 @@ void save(Archive& archive, const maidsafe::rudp::Endpoint& endpoint) {
 
 template <typename Archive>
 void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
-  using address_v6 = boost::asio::ip::address_v6;
-  using address = boost::asio::ip::address;
+  using address_v6 = asio::ip::address_v6;
+  using address = asio::ip::address;
   address_v6::bytes_type bytes;
   maidsafe::routing::Port port;
   archive(bytes, port);
