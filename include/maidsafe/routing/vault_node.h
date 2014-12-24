@@ -44,9 +44,9 @@ namespace routing {
 
 struct MessageHeader;
 
-class VaultNode {
+class VaultNode : std::enable_shared_from_this<VaultNode> {
  public:  // key      value
-  using Filter = LruCache<std::pair<DestinationAddress, MessageId>, void>;
+  using Filter = LruCache<std::pair<SourceAddress, MessageId>, void>;
 
  public:
   class Listener {
@@ -85,19 +85,17 @@ class VaultNode {
   Address OurId() const { return our_id_; }
 
  private:
+  std::shared_ptr<VaultNode> node_ptr_;
   class RudpListener : public rudp::ManagedConnections::Listener,
                        public std::enable_shared_from_this<RudpListener> {
    public:
-    explicit RudpListener(ConnectionManager& connection_manager)
-        : connection_manager_(connection_manager) {}
+    RudpListener(std::shared_ptr<VaultNode> node_ptr_) : node_ptr_(node_ptr_) {}
     virtual void MessageReceived(NodeId /*peer_id*/,
-                                 rudp::ReceivedMessage /*message*/) override final {}
-    virtual void ConnectionLost(NodeId peer) override final {
-      connection_manager_.LostNetworkConnection(peer);
-    }
+                                 rudp::ReceivedMessage /*message*/) override final;
+    virtual void ConnectionLost(NodeId peer) override final;
 
    private:
-    ConnectionManager& connection_manager_;
+    std::shared_ptr<VaultNode> node_ptr_;
   };
 
   class MessageHandlerListener : public MessageHandler::Listener,
@@ -109,7 +107,7 @@ class VaultNode {
     virtual void PostReceived(Address /*data_name*/, SerialisedData /*data*/) override final {}
   };
 
-  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message);
+  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
   asio::io_service& io_service_;

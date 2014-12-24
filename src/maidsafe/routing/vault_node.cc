@@ -19,6 +19,7 @@
 #include "maidsafe/routing/vault_node.h"
 
 #include <utility>
+#include "asio/use_future.hpp"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
@@ -58,7 +59,8 @@ MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) 
 
 VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
                      const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
-    : io_service_(io_service),
+    : node_ptr_(shared_from_this()),
+      io_service_(io_service),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;
@@ -69,16 +71,26 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, our_id_),
-      rudp_listener_(std::make_shared<RudpListener>(connection_manager_)),
+      rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
       message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
       filter_(std::chrono::minutes(20)) {}
 
-void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
+void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+    if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
+      return;  // already seen
+    // if from another group member then just handle it, otherwise send to all group
+    if (connection_manager_.InCloseGroup(header_and_type_enum.first.source) &&
+        !connection_manager_.InCloseGroup(peer_id)) {
+      auto targets(connection_manager_.OurCloseGroup());
+      for (const auto& target : targets)
+        // FIXME(dirvine) do we need to check return type ?? :24/12/2014
+        rudp_.Send(target.id, serialised_message, asio::use_future).get();
+    }
     switch (header_and_type_enum.second) {
       case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
@@ -120,15 +132,32 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
         LOG(kWarning) << "Received message of unknown type.";
         break;
     }
+    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
   } catch (const std::exception& e) {
     LOG(kWarning) << "Exception while handling incoming message: "
                   << boost::diagnostic_information(e);
   }
+}
+void VaultNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
+  node_ptr_->OnMessageReceived(std::move(message), peer_id);
+  //   InputVectorStream binary_input_stream{std::move(message)};
+  //   auto type_and_header(ParseHeaderAndTypeEnum(binary_input_stream));
+  //   if (filter_.Check({type_and_header.first.source, type_and_header.first.message_id}))
+  //     return;  // already seen
+  //   // if from another group member then just handle it, otherwise send to all group
+  //   if (connection_manager_.InCloseGroup(type_and_header.first.source) &&
+  //       !connection_manager_.InCloseGroup(peer_id)) {
+  //     auto targets(connection_manager_.OurCloseGroup());
+  //     for (const auto& target : targets)
+  //  // FIXME(dirvine) do we need to check return type ?? :24/12/2014
+  //       rudp_.Send(target.id, message, asio::use_future).get();
+  //   }
+  //
+  //   filter_.Add({type_and_header.first.source, type_and_header.first.message_id});
+}
 
-  // auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
-  //// FIXME (dirvine) Check firewall 19/11/2014
-  // HandleMessage(message);
-  //// FIXME (dirvine) add to firewall 19/11/2014
+void VaultNode::RudpListener::ConnectionLost(NodeId peer) {
+  node_ptr_->connection_manager_.LostNetworkConnection(peer);
 }
 
 }  // namespace routing
