@@ -79,7 +79,7 @@ class Acknowledgement {
 
   ~Acknowledgement();
   AckId GetId();
-  void Add(const protobuf::Message& message, Handler handler, int timeout);
+  void Add(protobuf::Message message, Handler handler, int timeout);
   void Remove(AckId ack_id);
   void HandleMessage(AckId ack_id);
   bool NeedsAck(const protobuf::Message& message, const NodeId& node_id);
