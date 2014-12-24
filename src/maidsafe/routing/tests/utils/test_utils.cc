@@ -40,7 +40,8 @@ BootstrapHandler::BootstrapContact CreateBootstrapContact(asymm::PublicKey publi
     auto keys(asymm::GenerateKeyPair());
     public_key = keys.public_key;
   }
-  return std::make_tuple(NodeId(RandomString(NodeId::kSize)), public_key, GetRandomEndpoint());
+  return BootstrapHandler::BootstrapContact{ NodeId(RandomString(NodeId::kSize)),
+                                             GetRandomEndpoint(), public_key };
 }
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number) {
