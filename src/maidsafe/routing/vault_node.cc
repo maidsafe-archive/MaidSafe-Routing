@@ -74,11 +74,11 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
       message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
+      listener_(),
       message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
       filter_(std::chrono::minutes(20)) {}
 
-void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message,
-                                  NodeId /* peer_id */) {
+void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
@@ -88,7 +88,21 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message,
     filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
     std::vector<NodeInfo> targets;
     // not for us - send on
-    if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination)) {
+    // FIXME(dirvine) We could here check if peer_id (or message source) is in routing table
+    // otherwise its a client and we can
+    // call the Listenere member for the request to check it is allowed . Requires clients
+    // copnnected to all
+    // group though whic shoudl nto be the case. Unless we do not forward this message unless
+    // Listner says OK.  :25/12/2014
+    bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
+                     connection_manager_.InCloseGroup(peer_id));
+    if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
+        !listener_.Put(header_and_type_enum.first, serialised_message))
+      return;  // not allowed by upper layer
+    if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
+        !listener_.Post(header_and_type_enum.first, serialised_message))
+      return;  // not allowed by upper layer
+    if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination) && !client_call) {
       targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
       for (const auto& target : targets)
         rudp_.Send(target.id, serialised_message, asio::use_future).get();

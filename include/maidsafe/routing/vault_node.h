@@ -51,12 +51,12 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   class Listener {
    public:
     virtual ~Listener() {}
-    virtual bool Post(MessageHeader header, SerialisedMessage message) = 0;
+    virtual bool Post(const MessageHeader&, const SerialisedMessage&) { return false; }
     virtual boost::expected<SerialisedMessage, CommonErrors> Get(Identity) {
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
-    virtual bool Put(MessageHeader, SerialisedMessage) { return true; }
-    virtual void CloseGroupDifference(CloseGroupDifference groups) = 0;
+    virtual bool Put(const MessageHeader&, const SerialisedMessage&) { return true; }
+    virtual void CloseGroupDifference(CloseGroupDifference) {}
   };
 
   VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
@@ -120,6 +120,7 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   std::shared_ptr<RudpListener> rudp_listener_;
   std::shared_ptr<MessageHandlerListener> message_handler_listener_;
   std::weak_ptr<Listener> listener_ptr_;
+  Listener listener_;
   MessageHandler message_handler_;
   Filter filter_;
 };
