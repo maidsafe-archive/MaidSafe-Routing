@@ -77,20 +77,35 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
       filter_(std::chrono::minutes(20)) {}
 
-void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
+void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message,
+                                  NodeId /* peer_id */) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
     if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
       return;  // already seen
-    // if from another group member then just handle it, otherwise send to all group
-    if (connection_manager_.InCloseGroup(header_and_type_enum.first.source) &&
-        !connection_manager_.InCloseGroup(peer_id)) {
-      auto targets(connection_manager_.OurCloseGroup());
+               // add to filter as soon as posible
+    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
+    std::vector<NodeInfo> targets;
+    // not for us - send on
+    if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination)) {
+      targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
+      for (const auto& target : targets)
+        rudp_.Send(target.id, serialised_message, asio::use_future).get();
+      return;  // finished
+    } else {
+      // swarm
+      targets = connection_manager_.OurCloseGroup();
       for (const auto& target : targets)
         // FIXME(dirvine) do we need to check return type ?? :24/12/2014
         rudp_.Send(target.id, serialised_message, asio::use_future).get();
     }
+    // here we let the message_handler handle all message types. It may be we want to handle any
+    // more common
+    // parts here (liek signatures, but not all messages are signed so may be fase to do so. There
+    // is a case for
+    // more generic code and specialisations though.
+
     switch (header_and_type_enum.second) {
       case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
@@ -132,7 +147,6 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
         LOG(kWarning) << "Received message of unknown type.";
         break;
     }
-    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
   } catch (const std::exception& e) {
     LOG(kWarning) << "Exception while handling incoming message: "
                   << boost::diagnostic_information(e);
@@ -140,20 +154,6 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
 }
 void VaultNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
   node_ptr_->OnMessageReceived(std::move(message), peer_id);
-  //   InputVectorStream binary_input_stream{std::move(message)};
-  //   auto type_and_header(ParseHeaderAndTypeEnum(binary_input_stream));
-  //   if (filter_.Check({type_and_header.first.source, type_and_header.first.message_id}))
-  //     return;  // already seen
-  //   // if from another group member then just handle it, otherwise send to all group
-  //   if (connection_manager_.InCloseGroup(type_and_header.first.source) &&
-  //       !connection_manager_.InCloseGroup(peer_id)) {
-  //     auto targets(connection_manager_.OurCloseGroup());
-  //     for (const auto& target : targets)
-  //  // FIXME(dirvine) do we need to check return type ?? :24/12/2014
-  //       rudp_.Send(target.id, message, asio::use_future).get();
-  //   }
-  //
-  //   filter_.Add({type_and_header.first.source, type_and_header.first.message_id});
 }
 
 void VaultNode::RudpListener::ConnectionLost(NodeId peer) {

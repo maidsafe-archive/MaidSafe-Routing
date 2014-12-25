@@ -25,7 +25,7 @@
 
 #include "asio/io_service.hpp"
 #include "boost/filesystem/path.hpp"
-// #include "boost/expected/expected.hpp"
+#include "boost/expected/expected.hpp"
 
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
@@ -36,13 +36,12 @@
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_handler.h"
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-struct MessageHeader;
 
 class VaultNode : std::enable_shared_from_this<VaultNode> {
  public:  // key      value
@@ -52,9 +51,11 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   class Listener {
    public:
     virtual ~Listener() {}
-    virtual void PostReceived(MessageHeader header, SerialisedMessage message) = 0;
-    // virtual boost::expected<SerialisedMessage, CommonErrors> GetReceived(Identity id) = 0;
-    virtual void PutReceived(MessageHeader header, SerialisedMessage message) = 0;
+    virtual bool Post(MessageHeader header, SerialisedMessage message) = 0;
+    virtual boost::expected<SerialisedMessage, CommonErrors> Get(Identity) {
+      return boost::make_unexpected(CommonErrors::no_such_element);
+    }
+    virtual bool Put(MessageHeader, SerialisedMessage) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference groups) = 0;
   };
 
