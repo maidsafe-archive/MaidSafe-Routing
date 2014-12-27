@@ -19,6 +19,7 @@
 #include "maidsafe/routing/vault_node.h"
 
 #include <utility>
+#include "asio/use_future.hpp"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
@@ -58,7 +59,8 @@ MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) 
 
 VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
                      const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
-    : io_service_(io_service),
+    : node_ptr_(shared_from_this()),
+      io_service_(io_service),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;
@@ -69,16 +71,55 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, our_id_),
-      rudp_listener_(std::make_shared<RudpListener>(connection_manager_)),
+      rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
       message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
+      listener_(),
       message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
       filter_(std::chrono::minutes(20)) {}
 
-void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
+void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+    if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
+      return;  // already seen
+               // add to filter as soon as posible
+    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
+    std::vector<NodeInfo> targets;
+    // not for us - send on
+    // FIXME(dirvine) We could here check if peer_id (or message source) is in routing table
+    // otherwise its a client and we can
+    // call the Listenere member for the request to check it is allowed . Requires clients
+    // copnnected to all
+    // group though whic shoudl nto be the case. Unless we do not forward this message unless
+    // Listner says OK.  :25/12/2014
+    bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
+                     connection_manager_.InCloseGroup(peer_id));
+    if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
+        !listener_.Put(header_and_type_enum.first, serialised_message))
+      return;  // not allowed by upper layer
+    if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
+        !listener_.Post(header_and_type_enum.first, serialised_message))
+      return;  // not allowed by upper layer
+    if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination) && !client_call) {
+      targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
+      for (const auto& target : targets)
+        rudp_.Send(target.id, serialised_message, asio::use_future).get();
+      return;  // finished
+    } else {
+      // swarm
+      targets = connection_manager_.OurCloseGroup();
+      for (const auto& target : targets)
+        // FIXME(dirvine) do we need to check return type ?? :24/12/2014
+        rudp_.Send(target.id, serialised_message, asio::use_future).get();
+    }
+    // here we let the message_handler handle all message types. It may be we want to handle any
+    // more common
+    // parts here (liek signatures, but not all messages are signed so may be fase to do so. There
+    // is a case for
+    // more generic code and specialisations though.
+
     switch (header_and_type_enum.second) {
       case Connect::kSerialisableTypeTag:
         message_handler_.HandleMessage(
@@ -124,11 +165,13 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message) {
     LOG(kWarning) << "Exception while handling incoming message: "
                   << boost::diagnostic_information(e);
   }
+}
+void VaultNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
+  node_ptr_->OnMessageReceived(std::move(message), peer_id);
+}
 
-  // auto message(Parse<TypeFromMessage>(serialised_message) > (serialised_message));
-  //// FIXME (dirvine) Check firewall 19/11/2014
-  // HandleMessage(message);
-  //// FIXME (dirvine) add to firewall 19/11/2014
+void VaultNode::RudpListener::ConnectionLost(NodeId peer) {
+  node_ptr_->connection_manager_.LostNetworkConnection(peer);
 }
 
 }  // namespace routing

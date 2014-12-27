@@ -51,7 +51,7 @@ TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
     EXPECT_NO_THROW(test_handler.AddBootstrapContacts(CreateBootstrapContacts(10)));
   }
   std::vector<BootstrapHandler::BootstrapContact> contacts(CreateBootstrapContacts(1000));
-  EXPECT_NO_THROW(test_handler.AddBootstrapContacts(contacts));
+  test_handler.AddBootstrapContacts(contacts);
 }
 
 }  // namespace test
