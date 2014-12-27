@@ -223,10 +223,6 @@ std::vector<NodeInfo>::const_iterator RoutingTable::FindCandidateForRemoval() co
   return found == furthest_group_member ? std::end(nodes_) : found.base();
 }
 
-unsigned int RoutingTable::NetworkStatus(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / OptimalSize());
-}
-
 }  // namespace routing
 
 }  // namespace maidsafe
