@@ -41,6 +41,14 @@ bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
   return routing_table_.CheckNode(node_to_add);
 }
 
+std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
+  auto nodes(routing_table_.TargetNodes(target_node));
+  nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+                             [](NodeInfo& node) { return !node.connected; }),
+              std::end(nodes));
+  return nodes;
+}
+
 boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
     const Address& node) {
   routing_table_.DropNode(node);
@@ -86,9 +94,9 @@ boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
 
   std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
-      auto changed = std::make_pair(new_group, current_close_group_);
-      current_close_group_ = new_group;
-      return changed;
+    auto changed = std::make_pair(new_group, current_close_group_);
+    current_close_group_ = new_group;
+    return changed;
   }
   return boost::none;
 }

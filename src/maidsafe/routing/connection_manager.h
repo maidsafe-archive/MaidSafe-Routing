@@ -72,9 +72,7 @@ class ConnectionManager {
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
   bool SuggestNodeToAdd(const Address& node_to_add) const;
-  std::vector<NodeInfo> GetTarget(const Address& target_node) const {
-    return routing_table_.TargetNodes(target_node);
-  }
+  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);

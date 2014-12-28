@@ -115,7 +115,6 @@ class RoutingTable {
                                    std::vector<NodeInfo>::const_iterator removal_candidate) const;
   void PushBackThenSort(NodeInfo&& their_info);
   std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
-  unsigned int NetworkStatus(size_t size) const;
 
   const Address our_id_;
   const Comparison comparison_;

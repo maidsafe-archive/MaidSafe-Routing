@@ -87,13 +87,10 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
                // add to filter as soon as posible
     filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
     std::vector<NodeInfo> targets;
+    // Here we try and handle all generic message routes for now. Most of this work should actually
+    // be in
+    // each message type itself, it will likely move there in template specialisations.
     // not for us - send on
-    // FIXME(dirvine) We could here check if peer_id (or message source) is in routing table
-    // otherwise its a client and we can
-    // call the Listenere member for the request to check it is allowed . Requires clients
-    // copnnected to all
-    // group though whic shoudl nto be the case. Unless we do not forward this message unless
-    // Listner says OK.  :25/12/2014
     bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
                      connection_manager_.InCloseGroup(peer_id));
     if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
@@ -112,13 +109,13 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
       targets = connection_manager_.OurCloseGroup();
       for (const auto& target : targets)
         // FIXME(dirvine) do we need to check return type ?? :24/12/2014
+        // FIXME(dirvine) make sure to sedn to nodes even unreacheable :25/12/2014
         rudp_.Send(target.id, serialised_message, asio::use_future).get();
     }
     // here we let the message_handler handle all message types. It may be we want to handle any
-    // more common
-    // parts here (liek signatures, but not all messages are signed so may be fase to do so. There
-    // is a case for
-    // more generic code and specialisations though.
+    // more common parts here (like signatures, but not all messages are signed so may be false to
+    // do so. There
+    // is a case for more generic code and specialisations though.
 
     switch (header_and_type_enum.second) {
       case Connect::kSerialisableTypeTag:
