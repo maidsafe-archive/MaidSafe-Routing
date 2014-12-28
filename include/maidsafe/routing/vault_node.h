@@ -51,11 +51,17 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   class Listener {
    public:
     virtual ~Listener() {}
+    // default no post allowed unless implemented in upper layers
     virtual bool Post(const MessageHeader&, const SerialisedMessage&) { return false; }
-    virtual boost::expected<SerialisedMessage, CommonErrors> Get(Identity) {
+    virtual boost::expected<DataValue, CommonErrors> Get(DataKey) {
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
-    virtual bool Put(const MessageHeader&, const SerialisedMessage&) { return true; }
+    // default no request allowed unless implemented in upper layers
+    virtual boost::expected<Response, CommonErrors> Request(MessageHeader, SerialisedMessage) {
+      return boost::make_unexpected(CommonErrors::no_such_element);
+    }
+    // default put is allowed unless prevented by upper layers
+    virtual bool Put(DataKey, DataValue) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference) {}
   };
 
@@ -73,15 +79,18 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   // used where we wish to pass a specific node to bootstrap from
   template <typename CompletionToken>
   BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken token);
-
+  // will return with the data
   template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(Address key, CompletionToken token);
-
+  GetReturn<CompletionToken> Get(DataKey data_key, CompletionToken token);
+  // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
-
+  // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
+  // will return with response message
+  template <typename CompletionToken>
+  Response<CompletionToken> Request(Address key, SerialisedMessage message, CompletionToken token);
 
   Address OurId() const { return our_id_; }
 
@@ -99,22 +108,18 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
     std::shared_ptr<VaultNode> node_ptr_;
   };
 
-  class MessageHandlerListener : public MessageHandler::Listener,
-                                 public std::enable_shared_from_this<MessageHandlerListener> {
-   public:
-    virtual void GetDataResponseReceived(SerialisedData /*data*/) override final {}
-    virtual void PutDataResponseReceived(Address /*data_name*/,
-                                         maidsafe_error /*result*/) override final {}
-    virtual void PostReceived(Address /*data_name*/, SerialisedData /*data*/) override final {}
-  };
+  void GetDataResponseReceived(GetData get_data);
+  void PutDataResponseReceived(PutData put_data);
+  void ResponseReceived(Response response);
+};
 
-  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
-  void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
+void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
+void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
-  asio::io_service& io_service_;
-  const Address our_id_;
-  const asymm::Keys keys_;
-  rudp::ManagedConnections rudp_;
+asio::io_service& io_service_;
+const Address our_id_;
+const asymm::Keys keys_;
+rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   std::shared_ptr<RudpListener> rudp_listener_;
@@ -123,6 +128,7 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   Listener listener_;
   MessageHandler message_handler_;
   Filter filter_;
+  Accumulator<Identity, SerialisedMessage> accumulator_;
 };
 
 template <typename CompletionToken>

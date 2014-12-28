@@ -61,7 +61,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
   (void)accumulator_;
 }
 
-void MessageHandler::HandleMessage(Connect&& connect) {
+void MessageHandler::HandleMessage(Connect connect) {
   if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
     // rudp_.
@@ -78,7 +78,7 @@ void MessageHandler::HandleMessage(Connect&& connect) {
   //        });
 }
 
-void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
+void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   auto& source_id = forward_connect.header.source.data;
   if (source_id == forward_connect.requester.id) {
     LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
@@ -101,19 +101,15 @@ void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
   });
 }
 
-void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
+void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
-void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
+void MessageHandler::HandleMessage(FindGroupResponse /*find_group_reponse*/) {}
 
-void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
+void MessageHandler::HandleMessage(GetData /*get_data*/) {}
 
-void MessageHandler::HandleMessage(GetDataResponse&& /*get_data_response*/) {}
+void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
-void MessageHandler::HandleMessage(PutData&& /*put_data*/) {}
-
-void MessageHandler::HandleMessage(PutDataResponse&& /*put_data_response*/) {}
-
-void MessageHandler::HandleMessage(Post&& /*post*/) {}
+void MessageHandler::HandleMessage(Post /*post*/) {}
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return SourceAddress{connection_manager_.OurId()};
