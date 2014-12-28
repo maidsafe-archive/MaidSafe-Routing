@@ -66,7 +66,7 @@ address_v4 GetRandomIPv4Address() {
   auto address = std::to_string(RandomUint32() % 256);
   for (int i = 0; i != 3; ++i)
     address += '.' + std::to_string(RandomUint32() % 256);
-  return address_v4::from_string(address.c_str());
+  return asio::ip::make_address_v4(address.c_str());
 }
 
 address_v6 GetRandomIPv6Address() {
@@ -74,7 +74,7 @@ address_v6 GetRandomIPv6Address() {
   address << std::hex << (RandomUint32() % 65536);
   for (int i = 0; i != 7; ++i)
     address << ':' << RandomUint32() % 65536;
-  return address_v6::from_string(address.str().c_str());
+  return asio::ip::make_address_v6(address.str().c_str());
 }
 
 rudp::Endpoint GetRandomEndpoint() {
