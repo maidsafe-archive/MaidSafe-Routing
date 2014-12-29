@@ -57,7 +57,13 @@ class MessageHandler {
   void HandleMessage(GetData get_data);
   void HandleMessage(GetDataResponse get_data_response);
   void HandleMessage(PutData put_data);
-  void HandleMessage(Post /*post*/);
+  void HandleMessage(PutKey put_key);
+  void HandleMessage(ForwardPutData forward_put_data);
+  void HandleMessage(Post post);
+  void HandleMessage(ForwardPost forward_post);
+  void HandleMessage(ForwardRequest forward_request);
+  void HandleMessage(Request request);
+  void HandleMessage(Response response);
 
  private:
   SourceAddress OurSourceAddress() const;

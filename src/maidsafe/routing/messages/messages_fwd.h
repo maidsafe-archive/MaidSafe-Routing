@@ -26,15 +26,21 @@ namespace maidsafe {
 namespace routing {
 
 enum class MessageTypeTag : SerialisableTypeTag {
-  kConnect,
-  kForwardConnect,
-  kFindGroup,
-  kFindGroupResponse,
-  kGetData,
-  kGetDataResponse,
-  kPutData,
-  kPutDataResponse,
-  kPost
+  Connect,
+  ForwardConnect,
+  FindGroup,
+  FindGroupResponse,
+  GetData,
+  GetDataResponse,
+  PutData,
+  PutKey,
+  ForwardPutData,
+  PutDataResponse,
+  ForwardPost,
+  Post,
+  ForwardRequest,
+  Request,
+  Response
 };
 
 struct Connect;
@@ -44,8 +50,14 @@ struct FindGroupResponse;
 struct GetData;
 struct GetDataResponse;
 struct PutData;
+struct PutKey;
+struct ForwardPutData;
 struct PutDataResponse;
+struct ForwardPost;
 struct Post;
+struct ForwardRequest;
+struct Request;
+struct Response;
 
 }  // namespace routing
 
