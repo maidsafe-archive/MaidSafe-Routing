@@ -46,14 +46,12 @@ using MessageMap =
 
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
-                               ConnectionManager& connection_manager,
-                               std::shared_ptr<Listener> listener)
+                               ConnectionManager& connection_manager)
     : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)),
-      listener_(listener) {
+      accumulator_(std::chrono::minutes(10)) {
   (void)rudp_;
   (void)connection_manager_;
   (void)io_service_;

@@ -57,7 +57,8 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
     // default no request allowed unless implemented in upper layers
-    virtual boost::expected<Response, CommonErrors> Request(MessageHeader, SerialisedMessage) {
+    virtual boost::expected<SerialisedMessage, CommonErrors> Request(MessageHeader,
+                                                                     SerialisedMessage) {
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
     // default put is allowed unless prevented by upper layers
@@ -90,7 +91,8 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
   // will return with response message
   template <typename CompletionToken>
-  Response<CompletionToken> Request(Address key, SerialisedMessage message, CompletionToken token);
+  RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
+                                         CompletionToken token);
 
   Address OurId() const { return our_id_; }
 
@@ -111,21 +113,18 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   void GetDataResponseReceived(GetData get_data);
   void PutDataResponseReceived(PutData put_data);
   void ResponseReceived(Response response);
-};
 
-void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
-void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
+  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
+  void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
-asio::io_service& io_service_;
-const Address our_id_;
-const asymm::Keys keys_;
-rudp::ManagedConnections rudp_;
+  asio::io_service& io_service_;
+  Address our_id_;
+  asymm::Keys keys_;
+  rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   std::shared_ptr<RudpListener> rudp_listener_;
-  std::shared_ptr<MessageHandlerListener> message_handler_listener_;
-  std::weak_ptr<Listener> listener_ptr_;
-  Listener listener_;
+  std::shared_ptr<Listener> listener_ptr_;
   MessageHandler message_handler_;
   Filter filter_;
   Accumulator<Identity, SerialisedMessage> accumulator_;
@@ -155,10 +154,10 @@ BootstrapReturn<CompletionToken> VaultNode::Bootstrap(Endpoint local_endpoint,
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> VaultNode::Get(Address key, CompletionToken token) {
+GetReturn<CompletionToken> VaultNode::Get(DataKey data_key, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoGet(key, handler); });
+  io_service_.post([=] { DoGet(data_key, handler); });
   return result.get();
 }
 

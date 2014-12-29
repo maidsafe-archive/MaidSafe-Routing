@@ -35,7 +35,7 @@ namespace routing {
 
 struct FindGroupResponse {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroupResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::FindGroupResponse);
 
   FindGroupResponse() = default;
 

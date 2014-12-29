@@ -72,11 +72,10 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, our_id_),
       rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
-      message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
-      listener_(),
-      message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
-      filter_(std::chrono::minutes(20)) {}
+      message_handler_(io_service, rudp_, connection_manager_),
+      filter_(std::chrono::minutes(20)),
+      accumulator_(std::chrono::minutes(10)) {}
 
 void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
@@ -93,12 +92,12 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
     // not for us - send on
     bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
                      connection_manager_.InCloseGroup(peer_id));
-    if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
-        !listener_.Put(header_and_type_enum.first, serialised_message))
-      return;  // not allowed by upper layer
-    if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
-        !listener_.Post(header_and_type_enum.first, serialised_message))
-      return;  // not allowed by upper layer
+    // if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
+    //     !listener_ptr_->Put(header_and_type_enum.first, serialised_message))
+    //   return;  // not allowed by upper layer
+    // if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
+    //     !listener_ptr_->Post(header_and_type_enum.first, serialised_message))
+    //   return;  // not allowed by upper layer
     if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination) && !client_call) {
       targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
       for (const auto& target : targets)

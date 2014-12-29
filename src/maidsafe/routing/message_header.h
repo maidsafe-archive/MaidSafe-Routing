@@ -23,6 +23,7 @@
 #include <tuple>
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/crypto.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
@@ -44,7 +45,7 @@ struct MessageHeader {
         checksums(std::move(other.checksums)) {}
 
   MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in,
-                uint8_t checksum_index_in, Checksums checksums_in)
+                uint8_t checksum_index_in, std::vector<crypto::SHA1Hash> checksums_in)
       : destination(std::move(destination_in)),
         source(std::move(source_in)),
         message_id(std::move(message_id_in)),
@@ -70,6 +71,20 @@ struct MessageHeader {
     checksums = std::move(other.checksums);
     return *this;
   }
+  // regular
+  bool operator==(const MessageHeader& other) {
+    return std::tie(message_id, destination, source) ==
+           std::tie(other.message_id, other.destination, other.source);
+  }
+  bool operator!=(const MessageHeader& other) { return !operator==(other); }
+  // fully ordered
+  bool operator<(const MessageHeader& other) {
+    return std::tie(message_id, destination, source) <
+           std::tie(other.message_id, other.destination, other.source);
+  }
+  bool operator>(const MessageHeader& other) { return operator<(other); }
+  bool operator<=(const MessageHeader& other) { return !operator>(other); }
+  bool operator>=(const MessageHeader& other) { return !operator<(other); }
 
   template <typename Archive>
   void serialize(Archive& archive) {
@@ -80,13 +95,9 @@ struct MessageHeader {
   SourceAddress source;
   MessageId message_id;
   uint8_t checksum_index;
-  Checksums checksums;
+  std::vector<crypto::SHA1Hash> checksums;
 };
 
-inline bool operator==(const MessageHeader& lhs, const MessageHeader& rhs) {
-  return std::tie(lhs.message_id, lhs.destination, lhs.source) ==
-         std::tie(rhs.message_id, rhs.destination, rhs.source);
-}
 
 }  // namespace routing
 

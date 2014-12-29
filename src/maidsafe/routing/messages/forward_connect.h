@@ -36,7 +36,7 @@ namespace routing {
 
 struct ForwardConnect {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kForwardConnect);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::ForwardConnect);
 
   ForwardConnect() = default;
 

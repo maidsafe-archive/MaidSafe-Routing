@@ -29,7 +29,7 @@ namespace routing {
 // NEW
 // #################################################################################################
 
-MurmurHash MurmurHash2(const std::vector<byte>& input) {
+uint32_t MurmurHash2(const std::vector<byte>& input) {
   assert(input.size() < std::numeric_limits<uint32_t>::max());
 
   // 'm' and 'r' are mixing constants generated offline.

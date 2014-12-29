@@ -39,7 +39,7 @@ namespace routing {
 
 struct PutDataResponse {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kPutDataResponse);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::PutDataResponse);
 
   PutDataResponse() = default;
 

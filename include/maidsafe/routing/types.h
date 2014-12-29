@@ -48,8 +48,6 @@ using SourceAddress = TaggedValue<Address, struct SourceTag>;
 using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
-using MurmurHash = uint32_t;
-using Checksums = std::array<MurmurHash, GroupSize>;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
@@ -80,10 +78,11 @@ template <typename CompletionToken>
 using GetReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
-using SendHandler = typename asio::handler_type<CompletionToken, void(asio::error_code)>::type;
+using RequestHandler =
+    typename asio::handler_type<CompletionToken, void(asio::error_code, SerialisedMessage)>::type;
 
 template <typename CompletionToken>
-using SendReturn = typename asio::async_result<SendHandler<CompletionToken>>::type;
+using RequestReturn = typename asio::async_result<RequestHandler<CompletionToken>>::type;
 
 
 }  // namespace routing

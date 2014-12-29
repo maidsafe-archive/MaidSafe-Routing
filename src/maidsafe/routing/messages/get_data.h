@@ -33,7 +33,7 @@ namespace routing {
 
 struct GetData {
   static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kGetData);
+      static_cast<SerialisableTypeTag>(MessageTypeTag::GetData);
 
   GetData() = default;
 
