@@ -26,7 +26,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_header.h"
@@ -39,8 +39,8 @@ namespace routing {
 
 namespace {
 
-using MessageMap =
-    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
+//using MessageMap =
+//    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
 
 }  // unnamed namespace
 
@@ -108,6 +108,8 @@ void MessageHandler::HandleMessage(GetData /*get_data*/) {}
 void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
+
+void MessageHandler::HandleMessage(PutDataResponse /*response*/) {}
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return SourceAddress{connection_manager_.OurId()};

@@ -22,18 +22,18 @@ namespace maidsafe {
 
 namespace routing {
 
-// Define all messages' static const members here
-#if !defined(_MSC_VER) || _MSC_VER != 1800
-const SerialisableTypeTag Connect::kSerialisableTypeTag;
-const SerialisableTypeTag ForwardConnect::kSerialisableTypeTag;
-const SerialisableTypeTag FindGroup::kSerialisableTypeTag;
-const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
-const SerialisableTypeTag GetData::kSerialisableTypeTag;
-const SerialisableTypeTag GetDataResponse::kSerialisableTypeTag;
-const SerialisableTypeTag PutData::kSerialisableTypeTag;
-const SerialisableTypeTag PutDataResponse::kSerialisableTypeTag;
-const SerialisableTypeTag Post::kSerialisableTypeTag;
-#endif
+//// Define all messages' static const members here
+//#if !defined(_MSC_VER) || _MSC_VER != 1800
+//const SerialisableTypeTag Connect::kSerialisableTypeTag;
+//const SerialisableTypeTag ForwardConnect::kSerialisableTypeTag;
+//const SerialisableTypeTag FindGroup::kSerialisableTypeTag;
+//const SerialisableTypeTag FindGroupResponse::kSerialisableTypeTag;
+//const SerialisableTypeTag GetData::kSerialisableTypeTag;
+//const SerialisableTypeTag GetDataResponse::kSerialisableTypeTag;
+//const SerialisableTypeTag PutData::kSerialisableTypeTag;
+//const SerialisableTypeTag PutDataResponse::kSerialisableTypeTag;
+//const SerialisableTypeTag Post::kSerialisableTypeTag;
+//#endif
 
 }  // namespace routing
 

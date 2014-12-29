@@ -19,13 +19,11 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
 #define MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
 
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
-
 namespace maidsafe {
 
 namespace routing {
 
-enum class MessageTypeTag : SerialisableTypeTag {
+enum class MessageTypeTag : uint16_t {
   Connect,
   ForwardConnect,
   FindGroup,

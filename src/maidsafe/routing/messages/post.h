@@ -27,7 +27,7 @@
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/routing/serialisation.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
@@ -38,9 +38,6 @@ namespace maidsafe {
 namespace routing {
 
 struct Post {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::Post);
-
   Post() = default;
 
   Post(const Post&) = delete;
@@ -77,7 +74,7 @@ struct Post {
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name, signature, data, part);
+    archive(header, GivenTypeFindTag_v<Post>::value, data_name, signature, data, part);
   }
 
   template <typename Archive>

@@ -68,7 +68,9 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
     auto removal_candidate(FindCandidateForRemoval());
     if (removal_candidate != std::end(nodes_)) {
       result.second = *removal_candidate;
-      nodes_.erase(removal_candidate);
+      auto iter = nodes_.begin();
+      std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+      nodes_.erase(iter);
     }
     return result;
   }
@@ -77,7 +79,9 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
   auto removal_candidate(FindCandidateForRemoval());
   if (NewNodeIsBetterThanExisting(their_info.id, removal_candidate)) {
     result.second = *removal_candidate;
-    nodes_.erase(removal_candidate);
+    auto iter = nodes_.begin();
+    std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+    nodes_.erase(iter);
     PushBackThenSort(std::move(their_info));
   } else {
     result.first = false;

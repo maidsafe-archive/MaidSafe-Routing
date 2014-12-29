@@ -26,7 +26,7 @@
 #include "maidsafe/common/error.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
@@ -38,9 +38,6 @@ namespace maidsafe {
 namespace routing {
 
 struct PutDataResponse {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::PutDataResponse);
-
   PutDataResponse() = default;
 
   PutDataResponse(const PutDataResponse&) = delete;
@@ -76,7 +73,7 @@ struct PutDataResponse {
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name, result);
+    archive(header, GivenTypeFindTag_v<PutDataResponse>::value, data_name, result);
   }
 
   template <typename Archive>

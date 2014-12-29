@@ -64,6 +64,7 @@ class MessageHandler {
   void HandleMessage(ForwardRequest forward_request);
   void HandleMessage(Request request);
   void HandleMessage(Response response);
+  void HandleMessage(PutDataResponse response);
 
  private:
   SourceAddress OurSourceAddress() const;
