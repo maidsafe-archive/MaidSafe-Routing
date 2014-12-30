@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
@@ -34,9 +34,6 @@ namespace maidsafe {
 namespace routing {
 
 struct FindGroupResponse {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kFindGroupResponse);
-
   FindGroupResponse() = default;
 
   FindGroupResponse(const FindGroupResponse&) = delete;
@@ -71,12 +68,13 @@ struct FindGroupResponse {
     // requester_id = std::move(other.requester_id);
     // receiver_id = std::move(other.receiver_id);
     return *this;
-  };
+  }
 
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag /*, requester_endpoints, requester_id, receiver_id*/);
+    archive(header, GivenTypeFindTag_v<FindGroupResponse>::value
+            /*, requester_endpoints, requester_id, receiver_id*/);
   }
 
   template <typename Archive>

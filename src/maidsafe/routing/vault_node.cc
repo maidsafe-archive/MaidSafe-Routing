@@ -22,9 +22,9 @@
 #include "asio/use_future.hpp"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
+#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/utils.h"
@@ -35,9 +35,9 @@ namespace routing {
 
 namespace {
 
-std::pair<MessageHeader, SerialisableTypeTag> ParseHeaderAndTypeEnum(
+std::pair<MessageHeader, MessageTypeTag> ParseHeaderAndTypeEnum(
     InputVectorStream& binary_input_stream) {
-  auto result = std::make_pair(MessageHeader{}, SerialisableTypeTag{});
+  auto result = std::make_pair(MessageHeader{}, MessageTypeTag{});
   {
     BinaryInputArchive binary_input_archive(binary_input_stream);
     binary_input_archive(result.first, result.second);
@@ -72,11 +72,10 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, our_id_),
       rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
-      message_handler_listener_(std::make_shared<MessageHandlerListener>()),
       listener_ptr_(listener_ptr),
-      listener_(),
-      message_handler_(io_service, rudp_, connection_manager_, message_handler_listener_),
-      filter_(std::chrono::minutes(20)) {}
+      message_handler_(io_service, rudp_, connection_manager_),
+      filter_(std::chrono::minutes(20)),
+      accumulator_(std::chrono::minutes(10)) {}
 
 void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
@@ -93,12 +92,12 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
     // not for us - send on
     bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
                      connection_manager_.InCloseGroup(peer_id));
-    if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
-        !listener_.Put(header_and_type_enum.first, serialised_message))
-      return;  // not allowed by upper layer
-    if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
-        !listener_.Post(header_and_type_enum.first, serialised_message))
-      return;  // not allowed by upper layer
+    // if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
+    //     !listener_ptr_->Put(header_and_type_enum.first, serialised_message))
+    //   return;  // not allowed by upper layer
+    // if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
+    //     !listener_ptr_->Post(header_and_type_enum.first, serialised_message))
+    //   return;  // not allowed by upper layer
     if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination) && !client_call) {
       targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
       for (const auto& target : targets)
@@ -118,39 +117,47 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
     // is a case for more generic code and specialisations though.
 
     switch (header_and_type_enum.second) {
-      case Connect::kSerialisableTypeTag:
+      case MessageTypeTag::Connect:
         message_handler_.HandleMessage(
-            Parse<Connect>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case ForwardConnect::kSerialisableTypeTag:
+      case MessageTypeTag::ForwardConnect:
         message_handler_.HandleMessage(
-            Parse<ForwardConnect>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case FindGroup::kSerialisableTypeTag:
+      case MessageTypeTag::FindGroup:
         message_handler_.HandleMessage(
-            Parse<FindGroup>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case FindGroupResponse::kSerialisableTypeTag:
+      case MessageTypeTag::FindGroupResponse:
         message_handler_.HandleMessage(
-            Parse<FindGroupResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case GetData::kSerialisableTypeTag:
+      case MessageTypeTag::GetData:
         message_handler_.HandleMessage(
-            Parse<GetData>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case GetDataResponse::kSerialisableTypeTag:
+      case MessageTypeTag::GetDataResponse:
         message_handler_.HandleMessage(
-            Parse<GetDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case PutData::kSerialisableTypeTag:
+      case MessageTypeTag::PutData:
         message_handler_.HandleMessage(
-            Parse<PutData>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case PutDataResponse::kSerialisableTypeTag:
+      case MessageTypeTag::PutDataResponse:
         message_handler_.HandleMessage(
-            Parse<PutDataResponse>(std::move(header_and_type_enum.first), binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(
+                std::move(header_and_type_enum.first), binary_input_stream));
         break;
-      case Post::kSerialisableTypeTag:
+      case MessageTypeTag::Post:
         message_handler_.HandleMessage(
             Parse<routing::Post>(std::move(header_and_type_enum.first), binary_input_stream));
         break;

@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
@@ -35,9 +35,6 @@ namespace maidsafe {
 namespace routing {
 
 struct ForwardConnect {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kForwardConnect);
-
   ForwardConnect() = default;
 
   ForwardConnect(const ForwardConnect&) = delete;
@@ -62,11 +59,11 @@ struct ForwardConnect {
     header = std::move(other.header);
     requester = std::move(other.requester);
     return *this;
-  };
+  }
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, requester);
+    archive(header, GivenTypeFindTag_v<ForwardConnect>::value, requester);
   }
 
   template <typename Archive>

@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
@@ -32,9 +32,6 @@ namespace maidsafe {
 namespace routing {
 
 struct GetData {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kGetData);
-
   GetData() = default;
 
   GetData(const GetData&) = delete;
@@ -56,11 +53,11 @@ struct GetData {
     header = std::move(other.header);
     data_name = std::move(other.data_name);
     return *this;
-  };
+  }
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, kSerialisableTypeTag, data_name);
+    archive(header, GivenTypeFindTag_v<GetData>::value, data_name);
   }
 
   template <typename Archive>

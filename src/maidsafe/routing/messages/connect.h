@@ -20,23 +20,21 @@
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 struct Connect {
-  static const SerialisableTypeTag kSerialisableTypeTag =
-      static_cast<SerialisableTypeTag>(MessageTypeTag::kConnect);
-
   Connect() = default;
 
   Connect(const Connect&) = delete;
@@ -64,13 +62,14 @@ struct Connect {
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_id = std::move(other.receiver_id);
     return *this;
-  };
+  }
 
   template <typename Archive>
   void save(Archive& archive) const {
     auto payload = Serialise(requester_endpoints, receiver_id);
-    header.checksums.front() = MurmurHash2(payload);
-    archive(header, kSerialisableTypeTag, payload);
+    header.checksums.front() =
+        crypto::Hash<crypto::SHA1>(std::string(std::begin(payload), std::end(payload)));
+    archive(header, GivenTypeFindTag_v<Connect>::value, payload);
   }
 
   template <typename Archive>
@@ -81,7 +80,8 @@ struct Connect {
     }
     SerialisedData payload;
     archive(payload);
-    if (MurmurHash2(payload) != header.checksums.at(header.checksum_index)) {
+    if (crypto::Hash<crypto::SHA1>(std::string(std::begin(payload), std::end(payload))) !=
+        header.checksums.at(header.checksum_index)) {
       LOG(kError) << "Checksum failure.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }

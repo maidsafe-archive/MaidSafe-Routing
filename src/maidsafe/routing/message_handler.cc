@@ -26,7 +26,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
+#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_header.h"
@@ -39,21 +39,19 @@ namespace routing {
 
 namespace {
 
-using MessageMap =
-    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
+//using MessageMap =
+//    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
 
 }  // unnamed namespace
 
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
-                               ConnectionManager& connection_manager,
-                               std::shared_ptr<Listener> listener)
+                               ConnectionManager& connection_manager)
     : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)),
-      listener_(listener) {
+      accumulator_(std::chrono::minutes(10)) {
   (void)rudp_;
   (void)connection_manager_;
   (void)io_service_;
@@ -61,7 +59,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
   (void)accumulator_;
 }
 
-void MessageHandler::HandleMessage(Connect&& connect) {
+void MessageHandler::HandleMessage(Connect connect) {
   if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
     // rudp_.
@@ -78,7 +76,7 @@ void MessageHandler::HandleMessage(Connect&& connect) {
   //        });
 }
 
-void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
+void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   auto& source_id = forward_connect.header.source.data;
   if (source_id == forward_connect.requester.id) {
     LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
@@ -101,19 +99,17 @@ void MessageHandler::HandleMessage(ForwardConnect&& forward_connect) {
   });
 }
 
-void MessageHandler::HandleMessage(FindGroup&& /*find_group*/) {}
+void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
-void MessageHandler::HandleMessage(FindGroupResponse&& /*find_group_reponse*/) {}
+void MessageHandler::HandleMessage(FindGroupResponse /*find_group_reponse*/) {}
 
-void MessageHandler::HandleMessage(GetData&& /*get_data*/) {}
+void MessageHandler::HandleMessage(GetData /*get_data*/) {}
 
-void MessageHandler::HandleMessage(GetDataResponse&& /*get_data_response*/) {}
+void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
-void MessageHandler::HandleMessage(PutData&& /*put_data*/) {}
+void MessageHandler::HandleMessage(Post /*post*/) {}
 
-void MessageHandler::HandleMessage(PutDataResponse&& /*put_data_response*/) {}
-
-void MessageHandler::HandleMessage(Post&& /*post*/) {}
+void MessageHandler::HandleMessage(PutDataResponse /*response*/) {}
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return SourceAddress{connection_manager_.OurId()};

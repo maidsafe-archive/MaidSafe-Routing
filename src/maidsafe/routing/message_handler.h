@@ -41,16 +41,8 @@ class ConnectionManager;
 
 class MessageHandler {
  public:
-  class Listener {
-   public:
-    virtual ~Listener() {}
-    virtual void GetDataResponseReceived(SerialisedData data) = 0;
-    virtual void PutDataResponseReceived(Address data_name, maidsafe_error result) = 0;
-    virtual void PostReceived(Address data_name, SerialisedData data) = 0;
-  };
-
   MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
-                 ConnectionManager& connection_manager, std::shared_ptr<Listener> listener);
+                 ConnectionManager& connection_manager);
   MessageHandler() = delete;
   ~MessageHandler() = default;
   MessageHandler(const MessageHandler&) = delete;
@@ -58,15 +50,21 @@ class MessageHandler {
   MessageHandler& operator=(const MessageHandler&) = delete;
   MessageHandler& operator=(MessageHandler&&) = delete;
 
-  void HandleMessage(Connect&& connect);
-  void HandleMessage(ForwardConnect&& forward_connect);
-  void HandleMessage(FindGroup&& find_group);
-  void HandleMessage(FindGroupResponse&& find_group_reponse);
-  void HandleMessage(GetData&& get_data);
-  void HandleMessage(GetDataResponse&& get_data_response);
-  void HandleMessage(PutData&& put_data);
-  void HandleMessage(PutDataResponse&& put_data_response);
-  void HandleMessage(Post&& post);
+  void HandleMessage(Connect connect);
+  void HandleMessage(ForwardConnect forward_connect);
+  void HandleMessage(FindGroup find_group);
+  void HandleMessage(FindGroupResponse find_group_reponse);
+  void HandleMessage(GetData get_data);
+  void HandleMessage(GetDataResponse get_data_response);
+  void HandleMessage(PutData put_data);
+  void HandleMessage(PutKey put_key);
+  void HandleMessage(ForwardPutData forward_put_data);
+  void HandleMessage(Post post);
+  void HandleMessage(ForwardPost forward_post);
+  void HandleMessage(ForwardRequest forward_request);
+  void HandleMessage(Request request);
+  void HandleMessage(Response response);
+  void HandleMessage(PutDataResponse response);
 
  private:
   SourceAddress OurSourceAddress() const;
@@ -76,7 +74,6 @@ class MessageHandler {
   ConnectionManager& connection_manager_;
   LruCache<Identity, SerialisedMessage> cache_;
   Accumulator<Identity, SerialisedMessage> accumulator_;
-  std::weak_ptr<Listener> listener_;
 };
 
 }  // namespace routing
