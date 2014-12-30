@@ -60,7 +60,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
 }
 
 void MessageHandler::HandleMessage(Connect connect) {
-  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
+  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header_.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
     // rudp_.
   }

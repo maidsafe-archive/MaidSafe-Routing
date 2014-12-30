@@ -61,13 +61,18 @@ struct ForwardConnect {
     return *this;
   }
 
+  void operator()() {
+
+  }
+
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<ForwardConnect>::value, requester);
+    archive(header, requester);
   }
 
   template <typename Archive>
   void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));

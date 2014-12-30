@@ -69,15 +69,20 @@ struct PutDataResponse {
     part = std::move(other.part);
     result = std::move(other.result);
     return *this;
-  };
+  }
+
+  void operator()() {
+
+  }
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<PutDataResponse>::value, data_name, result);
+    archive(header, data_name, result);
   }
 
   template <typename Archive>
   void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));

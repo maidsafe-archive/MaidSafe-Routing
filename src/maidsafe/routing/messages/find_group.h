@@ -37,20 +37,20 @@ struct FindGroup {
 
   FindGroup(const FindGroup&) = delete;
 
-  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) /*,
+  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) ,
         requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id))*/ {}
+        receiver_id(std::move(other.receiver_id)) {}
 
-  FindGroup(DestinationAddress destination, SourceAddress source /*,
-          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in*/)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) /*,
+  FindGroup(DestinationAddress destination, SourceAddress source ,
+          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
+      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) ,
         requester_endpoints(std::move(requester_endpoints)),
         requester_id(std::move(requester_id_in)),
-        receiver_id(std::move(receiver_id_in))*/ {}
+        receiver_id(std::move(receiver_id_in)) {}
 
   explicit FindGroup(MessageHeader header_in)
-      : header(std::move(header_in)) /*, requester_endpoints(), requester_id(), receiver_id()*/ {}
+      : header(std::move(header_in)) , requester_endpoints(), requester_id(), receiver_id() {}
 
   ~FindGroup() = default;
 
@@ -58,30 +58,34 @@ struct FindGroup {
 
   FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
     header = std::move(other.header);
-    // requester_endpoints = std::move(other.requester_endpoints);
-    // requester_id = std::move(other.requester_id);
-    // receiver_id = std::move(other.receiver_id);
+    requester_endpoints = std::move(other.requester_endpoints);
+    requester_id = std::move(other.requester_id);
+    receiver_id = std::move(other.receiver_id);
     return *this;
-  };
+  }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<FindGroup>::value
-            /*, requester_endpoints, requester_id, receiver_id*/);
+  void operator()() {
+
   }
 
   template <typename Archive>
-  void load(Archive& /*archive*/) {
+  void save(Archive& archive) const {
+    archive(header, requester_endpoints, requester_id, receiver_id);
+  }
+
+  template <typename Archive>
+  void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    // archive(/*requester_endpoints, requester_id, receiver_id*/);
+    archive(requester_endpoints, requester_id, receiver_id);
   }
 
   MessageHeader header;
-  // rudp::EndpointPair requester_endpoints;
-  // Address requester_id, receiver_id;
+  rudp::EndpointPair requester_endpoints;
+  Address requester_id, receiver_id;
 };
 
 }  // namespace routing

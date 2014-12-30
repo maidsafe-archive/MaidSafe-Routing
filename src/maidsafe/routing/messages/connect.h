@@ -64,16 +64,21 @@ struct Connect {
     return *this;
   }
 
+  void operator()() {
+
+  }
+
   template <typename Archive>
   void save(Archive& archive) const {
     auto payload = Serialise(requester_endpoints, receiver_id);
     header.checksums.front() =
         crypto::Hash<crypto::SHA1>(std::string(std::begin(payload), std::end(payload)));
-    archive(header, GivenTypeFindTag_v<Connect>::value, payload);
+    archive(header, payload);
   }
 
   template <typename Archive>
   void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));

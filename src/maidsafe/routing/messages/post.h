@@ -70,15 +70,20 @@ struct Post {
     data = std::move(other.data);
     part = std::move(other.part);
     return *this;
-  };
+  }
+
+  void operator()() {
+
+  }
 
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<Post>::value, data_name, signature, data, part);
+    archive(header, data_name, signature, data, part);
   }
 
   template <typename Archive>
   void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
