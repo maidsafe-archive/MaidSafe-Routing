@@ -50,7 +50,7 @@ namespace routing {
 
 class BootstrapHandler {
  public:
-  using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
+  using BootstrapContact = rudp::Contact;
   using BootstrapContacts = std::vector<BootstrapContact>;
 
   static const int MaxListSize = 1500;

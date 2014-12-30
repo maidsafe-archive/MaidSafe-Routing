@@ -58,9 +58,10 @@ std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapC
   sqlite::Statement statement{database_,
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow) {
-    bootstrap_contacts.push_back(std::make_tuple(Parse<NodeId>(statement.ColumnBlob(0)),
-                                                 Parse<asymm::PublicKey>(statement.ColumnBlob(1)),
-                                                 Parse<Endpoint>(statement.ColumnBlob(2))));
+    bootstrap_contacts.push_back(BootstrapContact {
+                                     Parse<NodeId>(statement.ColumnBlob(0)),
+                                     Parse<Endpoint>(statement.ColumnBlob(2)),
+                                     Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
   }
   return bootstrap_contacts;
 }
@@ -85,9 +86,11 @@ void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_conta
 
   int index = 1;
   for (const auto& bootstrap_contact : bootstrap_contacts) {
-    statement.BindBlob(index++, Serialise(std::get<0>(bootstrap_contact)));
-    statement.BindBlob(index++, Serialise(std::get<1>(bootstrap_contact)));
-    statement.BindBlob(index++, Serialise(std::get<2>(bootstrap_contact)));
+    statement.BindBlob(index++, Serialise(bootstrap_contact.id));
+    statement.BindBlob(index++, Serialise(bootstrap_contact.public_key));
+    statement.BindBlob(index++, Serialise(bootstrap_contact.endpoint_pair.external));
+    assert(bootstrap_contact.endpoint_pair.external ==
+           bootstrap_contact.endpoint_pair.local);
   }
 
   statement.Step();
