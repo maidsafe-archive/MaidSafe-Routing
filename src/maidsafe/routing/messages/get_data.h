@@ -55,13 +55,18 @@ struct GetData {
     return *this;
   }
 
+  void operator()() {
+
+  }
+
   template <typename Archive>
   void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<GetData>::value, data_name);
+    archive(header, data_name);
   }
 
   template <typename Archive>
   void load(Archive& archive) {
+    archive(header);
     if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
