@@ -51,20 +51,21 @@ class MessageHandler {
   MessageHandler& operator=(MessageHandler&&) = delete;
 
   void HandleMessage(Connect connect);
+  void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(ForwardConnect forward_connect);
+  void HandleMessage(ForwardConnectResponse forward_connect_response);
   void HandleMessage(FindGroup find_group);
   void HandleMessage(FindGroupResponse find_group_reponse);
   void HandleMessage(GetData get_data);
   void HandleMessage(GetDataResponse get_data_response);
   void HandleMessage(PutData put_data);
-  void HandleMessage(PutKey put_key);
   void HandleMessage(ForwardPutData forward_put_data);
+  void HandleMessage(PutKey put_key);
   void HandleMessage(Post post);
   void HandleMessage(ForwardPost forward_post);
-  void HandleMessage(ForwardRequest forward_request);
   void HandleMessage(Request request);
+  void HandleMessage(ForwardRequest forward_request);
   void HandleMessage(Response response);
-  void HandleMessage(PutDataResponse response);
 
  private:
   SourceAddress OurSourceAddress() const;

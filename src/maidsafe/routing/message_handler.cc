@@ -37,13 +37,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace {
-
-//using MessageMap =
-//    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
-
-}  // unnamed namespace
-
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
                                ConnectionManager& connection_manager)
@@ -60,7 +53,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
 }
 
 void MessageHandler::HandleMessage(Connect connect) {
-  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header_.source.data)) {
+  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
     // rudp_.
   }
@@ -99,17 +92,32 @@ void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   });
 }
 
+void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
+
+void MessageHandler::HandleMessage(ForwardConnectResponse /* forward_connect_response */) {}
+
 void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
 void MessageHandler::HandleMessage(FindGroupResponse /*find_group_reponse*/) {}
 
 void MessageHandler::HandleMessage(GetData /*get_data*/) {}
 
+void MessageHandler::HandleMessage(GetDataResponse /* get_data_response */) {}
+
 void MessageHandler::HandleMessage(PutData /*put_data*/) {}
+
+void MessageHandler::HandleMessage(ForwardPutData /* forward_put_data */) {}
+
+void MessageHandler::HandleMessage(PutKey /* put_key */) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
 
-void MessageHandler::HandleMessage(PutDataResponse /*response*/) {}
+void HandleMessage(ForwardPost /* forward_post */) {}
+
+void MessageHandler::HandleMessage(Request /* request */) {}
+void MessageHandler::HandleMessage(ForwardRequest /* forward_request */) {}
+void MessageHandler::HandleMessage(Response /* response */) {}
+
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return SourceAddress{connection_manager_.OurId()};
