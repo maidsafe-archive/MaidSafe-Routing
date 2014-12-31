@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_VAULT_NODE_H_
-#define MAIDSAFE_ROUTING_VAULT_NODE_H_
+#ifndef MAIDSAFE_ROUTING_ROUTING_NODE_H_
+#define MAIDSAFE_ROUTING_ROUTING_NODE_H_
 
 #include <chrono>
 #include <memory>
@@ -183,4 +183,4 @@ PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage mes
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_VAULT_NODE_H_
+#endif  // MAIDSAFE_ROUTING_ROUTING_NODE_H_

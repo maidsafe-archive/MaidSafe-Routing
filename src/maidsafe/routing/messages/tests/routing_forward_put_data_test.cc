@@ -28,7 +28,7 @@
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
 
-#include "maidsafe/routing/tests/generate_message_header.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 

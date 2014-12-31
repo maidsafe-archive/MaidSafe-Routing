@@ -28,10 +28,10 @@ namespace routing {
 
 namespace test {
 
-MessageHeader GenerateMessageHeader() {
-  const uint32_t max {RandomUint32() % 10 + 1};
+inline MessageHeader GenerateMessageHeader() {
+  const uint32_t max = RandomUint32() % 10 + 1;
 
-  const auto checksum_index {RandomUint32()};
+  const auto checksum_index = RandomUint32();
   const auto destination_id = DestinationAddress {Address {RandomString(Address::kSize)}};
   const auto source_id = SourceAddress {Address {RandomString(Address::kSize)}};
   MessageId message_id {RandomUint32()};
