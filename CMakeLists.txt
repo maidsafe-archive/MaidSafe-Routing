@@ -74,6 +74,13 @@ set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/post.h
     ${RoutingSourcesDir}/messages/put_data.h
     ${RoutingSourcesDir}/messages/put_data_response.h
+    ${RoutingSourcesDir}/messages/forward_put_data.h
+    ${RoutingSourcesDir}/messages/forward_post.h
+    ${RoutingSourcesDir}/messages/forward_request.h
+    ${RoutingSourcesDir}/messages/connect_response.h
+    ${RoutingSourcesDir}/messages/request.h
+    ${RoutingSourcesDir}/messages/response.h
+    ${RoutingSourcesDir}/messages/forward_response.h
     )
 source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
