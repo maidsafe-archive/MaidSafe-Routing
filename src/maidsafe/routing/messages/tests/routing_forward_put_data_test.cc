@@ -16,88 +16,80 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
+#include "maidsafe/routing/messages/forward_put_data.h"
 
-#include <cstdint>
-#include <vector>
-
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/error.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/routing/compile_time_mapper.h"
+#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/contact.h"
 
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/messages/put_data.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
+
+#include "maidsafe/routing/tests/generate_message_header.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct PutDataResponse {
-  PutDataResponse() = default;
+namespace test {
 
-  PutDataResponse(const PutDataResponse&) = delete;
+namespace {
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        part(std::move(other.part)),
-        result(std::move(other.result)) {}
+ForwardPutData GenerateInstance() {
+  const uint32_t max {RandomUint32() % 10 + 1};
+  const auto serialised_message {RandomString(Address::kSize)};
+  const auto keys {asymm::GenerateKeyPair()};
 
-  PutDataResponse(PutData request, maidsafe_error result_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        part(std::move(request.part)),
-        result(std::move(result_in)) {}
-
-  explicit PutDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), part(0), result() {}
-
-  ~PutDataResponse() = default;
-
-  PutDataResponse& operator=(const PutDataResponse&) = delete;
-
-  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    data_name = std::move(other.data_name);
-    part = std::move(other.part);
-    result = std::move(other.result);
-    return *this;
+  std::vector<crypto::SHA1Hash> part;
+  part.reserve(max);
+  for(uint32_t i {}; i < max; ++i) {
+    part.emplace_back(RandomString(crypto::SHA1::DIGESTSIZE));
   }
 
-  void operator()() {
+  return {
+    SerialisedData(serialised_message.begin(), serialised_message.end()),
+    std::move(part),
+    std::move(keys.public_key)
+  };
+}
 
-  }
+}  // anonymous namespace
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, data_name, result);
-  }
+TEST(ForwardPutDataTest, BEH_SerialiseParse) {
+  // Serialise
+  ForwardPutData fwd_put_data_before {GenerateInstance()};
+  auto tag_before = GivenTypeFindTag_v<ForwardPutData>::value;
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    archive(data_name, result);
-  }
+  auto serialised_fwd_put_data = Serialise(tag_before, fwd_put_data_before);
 
-  MessageHeader header;
-  Address data_name;
-  uint8_t part;
-  maidsafe_error result;
-};
+  // Parse
+  ForwardPutData put_data_after {GenerateInstance()};
+  auto tag_after = MessageTypeTag {};
+
+  InputVectorStream binary_input_stream {serialised_fwd_put_data};
+
+  // Parse Tag
+  Parse(binary_input_stream, tag_after);
+
+  EXPECT_EQ(tag_before, tag_after);
+
+  // Parse the rest
+  Parse(binary_input_stream, put_data_after);
+
+  EXPECT_EQ(fwd_put_data_before.data.size(), put_data_after.data.size());
+  EXPECT_TRUE(std::equal(fwd_put_data_before.data.begin(), fwd_put_data_before.data.end(),
+                         fwd_put_data_before.data.begin()));
+  EXPECT_EQ(fwd_put_data_before.part.size(), put_data_after.part.size());
+  EXPECT_TRUE(std::equal(fwd_put_data_before.part.begin(), fwd_put_data_before.part.end(),
+                         fwd_put_data_before.part.begin()));
+  EXPECT_EQ(fwd_put_data_before.requester_public_key, put_data_after.requester_public_key);
+}
+
+}  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_

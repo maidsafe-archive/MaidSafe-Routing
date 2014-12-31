@@ -37,6 +37,13 @@ struct ForwardPutData {
         part(std::move(other.part)),
         requester_public_key(std::move(other.requester_public_key)) {}
 
+  ForwardPutData(SerialisedMessage new_data,
+                 std::vector<crypto::SHA1Hash> new_part,
+                 asymm::PublicKey new_requester_public_key)
+    : data {std::move(new_data)},
+      part {std::move(new_part)},
+      requester_public_key {std::move(new_requester_public_key)} {}
+
   ~ForwardPutData() = default;
 
   ForwardPutData& operator=(const ForwardPutData&) = delete;
