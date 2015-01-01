@@ -29,17 +29,18 @@ namespace routing {
 
 struct Response {
   Response() = default;
+  ~Response() = default;
 
-  Response(const Response&) = delete;
+  template<typename T, typename U, typename V>
+  Response(T&& key_in, U&& data_in, V&& checksum_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        checksum{std::forward<V>(checksum_in)} {}
 
   Response(Response&& other) MAIDSAFE_NOEXCEPT
       : key(std::move(other.key)),
         data(std::move(other.data)),
         checksum(std::move(other.checksum)) {}
-
-  ~Response() = default;
-
-  Response& operator=(const Response&) = delete;
 
   Response& operator=(Response&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
@@ -47,6 +48,9 @@ struct Response {
     checksum = std::move(other.checksum);
     return *this;
   }
+
+  Response(const Response&) = delete;
+  Response& operator=(const Response&) = delete;
 
   void operator()() {
 

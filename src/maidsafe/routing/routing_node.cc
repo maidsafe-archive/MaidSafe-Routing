@@ -38,21 +38,8 @@ namespace {
 std::pair<MessageHeader, MessageTypeTag> ParseHeaderAndTypeEnum(
     InputVectorStream& binary_input_stream) {
   auto result = std::make_pair(MessageHeader{}, MessageTypeTag{});
-  {
-    BinaryInputArchive binary_input_archive(binary_input_stream);
-    binary_input_archive(result.first, result.second);
-  }
+  Parse(binary_input_stream, result.first, result.second);
   return result;
-}
-
-template <typename MessageType>
-MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) {
-  MessageType parsed_message(std::move(header));
-  {
-    BinaryInputArchive binary_input_archive(binary_input_stream);
-    binary_input_archive(parsed_message);
-  }
-  return parsed_message;
 }
 
 }  // unnamed namespace
@@ -81,6 +68,21 @@ void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, 
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+
+    if (!header_and_type_enum.first.source->IsValid()) {
+      LOG(kError) << "Invalid header.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+
+    {
+      auto raw_bytes = binary_input_stream.vector();
+      if (crypto::Hash<crypto::SHA1>(std::string(std::begin(raw_bytes), std::end(raw_bytes))) !=
+          header_and_type_enum.first.checksums.at(header_and_type_enum.first.checksum_index)) {
+        LOG(kError) << "Checksum failure.";
+        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+      }
+    }
+
     if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
       return;  // already seen
                // add to filter as soon as posible
@@ -118,36 +120,72 @@ void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, 
 
     switch (header_and_type_enum.second) {
       case MessageTypeTag::Connect:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
+        break;
+      case MessageTypeTag::ConnectResponse:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::ForwardConnect:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(binary_input_stream));
         break;
       case MessageTypeTag::FindGroup:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(binary_input_stream));
         break;
       case MessageTypeTag::FindGroupResponse:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::GetData:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream));
         break;
       case MessageTypeTag::GetDataResponse:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::PutData:
-        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(
-            std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(binary_input_stream));
         break;
+      case MessageTypeTag::PutDataResponse:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
+        break;
+      case MessageTypeTag::ForwardPutData:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ForwardPutData>>(binary_input_stream));
+        break;
+//      case MessageTypeTag::PutKey:
+//        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
+//                                         std::move(header_and_type_enum.first), binary_input_stream));
+//        break;
       case MessageTypeTag::Post:
         message_handler_.HandleMessage(
-            Parse<routing::Post>(std::move(header_and_type_enum.first), binary_input_stream));
+              Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
+        break;
+      case MessageTypeTag::ForwardPost:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ForwardPost>>(binary_input_stream));
+        break;
+      case MessageTypeTag::ForwardRequest:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ForwardRequest>>(binary_input_stream));
+        break;
+      case MessageTypeTag::ForwardResponse:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::ForwardResponse>>(binary_input_stream));
+        break;
+      case MessageTypeTag::Request:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
+        break;
+      case MessageTypeTag::Response:
+        message_handler_.HandleMessage(
+              Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
         break;
       default:
         LOG(kWarning) << "Received message of unknown type.";
@@ -158,6 +196,7 @@ void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, 
                   << boost::diagnostic_information(e);
   }
 }
+
 void RoutingNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
   node_ptr_->OnMessageReceived(std::move(message), peer_id);
 }

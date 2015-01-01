@@ -34,56 +34,49 @@ namespace routing {
 
 struct FindGroup {
   FindGroup() = default;
-
-  FindGroup(const FindGroup&) = delete;
-
-  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)) ,
-        requester_endpoints(std::move(other.requester_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)) {}
-
-  FindGroup(DestinationAddress destination, SourceAddress source ,
-          rudp::EndpointPair requester_endpoints, Address requester_id_in, Address receiver_id_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())) ,
-        requester_endpoints(std::move(requester_endpoints)),
-        requester_id(std::move(requester_id_in)),
-        receiver_id(std::move(receiver_id_in)) {}
-
-  explicit FindGroup(MessageHeader header_in)
-      : header(std::move(header_in)) , requester_endpoints(), requester_id(), receiver_id() {}
-
   ~FindGroup() = default;
 
-  FindGroup& operator=(const FindGroup&) = delete;
+  FindGroup(rudp::EndpointPair requester_endpoints, Address requester_id_in,
+            Address receiver_id_in)
+      : requester_endpoints{std::move(requester_endpoints)},
+        requester_id{std::move(requester_id_in)},
+        receiver_id{std::move(receiver_id_in)} {}
+
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+
+//  template<typename T, typename U, typename V>
+//  FindGroup(T&& requester_endpoints_in, U&& requester_id_in, V&& receiver_id_in)
+//      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+//        requester_id{std::forward<V>(requester_id_in)},
+//        receiver_id{std::forward<W>(receiver_id_in)} {}
+
+
+  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT
+      : requester_endpoints{std::move(other.requester_endpoints)},
+        requester_id{std::move(other.requester_id)},
+        receiver_id{std::move(other.receiver_id)} {}
 
   FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
     return *this;
   }
 
+  FindGroup(const FindGroup&) = delete;
+  FindGroup& operator=(const FindGroup&) = delete;
+
   void operator()() {
 
   }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, requester_endpoints, requester_id, receiver_id);
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
+  template<typename Archive>
+  void serialize(Archive& archive) {
     archive(requester_endpoints, requester_id, receiver_id);
   }
 
-  MessageHeader header;
   rudp::EndpointPair requester_endpoints;
   Address requester_id, receiver_id;
 };

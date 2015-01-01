@@ -29,22 +29,25 @@ namespace routing {
 
 struct ForwardPost {
   ForwardPost() = default;
-
-  ForwardPost(const ForwardPost&) = delete;
-
-  ForwardPost(ForwardPost&& other) MAIDSAFE_NOEXCEPT
-      : data(std::move(other.data)),
-        part(std::move(other.part)) {}
-
   ~ForwardPost() = default;
 
-  ForwardPost& operator=(const ForwardPost&) = delete;
+  template<typename T, typename U>
+  ForwardPost(T&& data_in, U&& part_in)
+      : data{std::forward<T>(data_in)},
+        part{std::forward<U>(part_in)} {}
+
+  ForwardPost(ForwardPost&& other) MAIDSAFE_NOEXCEPT
+      : data{std::move(other.data)},
+        part{std::move(other.part)} {}
 
   ForwardPost& operator=(ForwardPost&& other) MAIDSAFE_NOEXCEPT {
     data = std::move(other.data);
     part = std::move(other.part);
     return *this;
   }
+
+  ForwardPost(const ForwardPost&) = delete;
+  ForwardPost& operator=(const ForwardPost&) = delete;
 
   void operator()() {
 

@@ -29,18 +29,20 @@ namespace routing {
 
 struct ForwardRequest {
   ForwardRequest() = default;
-
-  ForwardRequest(const ForwardRequest&) = delete;
-
-  ForwardRequest(ForwardRequest&& other) MAIDSAFE_NOEXCEPT
-      : key(std::move(other.key)),
-        data(std::move(other.data)),
-        checksum(std::move(other.checksum)),
-        requesters_public_key(std::move(other.requesters_public_key)) {}
-
   ~ForwardRequest() = default;
 
-  ForwardRequest& operator=(const ForwardRequest&) = delete;
+  template<typename T, typename U, typename V, typename W>
+  ForwardRequest(T&& key_in, U&& data_in, V&& checksum_in, W&& requesters_public_key_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        checksum{std::forward<V>(checksum_in)},
+        requesters_public_key{std::forward<W>(requesters_public_key_in)} {}
+
+  ForwardRequest(ForwardRequest&& other) MAIDSAFE_NOEXCEPT
+      : key{std::move(other.key)},
+        data{std::move(other.data)},
+        checksum{std::move(other.checksum)},
+        requesters_public_key{std::move(other.requesters_public_key)} {}
 
   ForwardRequest& operator=(ForwardRequest&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
@@ -49,6 +51,9 @@ struct ForwardRequest {
     requesters_public_key = std::move(other.requesters_public_key);
     return *this;
   }
+
+  ForwardRequest(const ForwardRequest&) = delete;
+  ForwardRequest& operator=(const ForwardRequest&) = delete;
 
   void operator()() {
 

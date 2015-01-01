@@ -29,24 +29,25 @@ namespace routing {
 
 struct ForwardPutData {
   ForwardPutData() = default;
-
-  ForwardPutData(const ForwardPutData&) = delete;
-
-  ForwardPutData(ForwardPutData&& other) MAIDSAFE_NOEXCEPT
-      : data(std::move(other.data)),
-        part(std::move(other.part)),
-        requester_public_key(std::move(other.requester_public_key)) {}
+  ~ForwardPutData() = default;
 
   ForwardPutData(SerialisedMessage new_data,
                  std::vector<crypto::SHA1Hash> new_part,
                  asymm::PublicKey new_requester_public_key)
-    : data {std::move(new_data)},
-      part {std::move(new_part)},
-      requester_public_key {std::move(new_requester_public_key)} {}
+    : data{std::move(new_data)},
+      part{std::move(new_part)},
+      requester_public_key{std::move(new_requester_public_key)} {}
 
-  ~ForwardPutData() = default;
+//  template<typename T, typename U, typename V>
+//  ForwardPutData(T&& data_in, U&& part_in, V&& requester_public_key_in)
+//      : data{std::forward<T>(data_in)},
+//        part{std::forward<U>(part_in)},
+//        requester_public_key{std::forward<V>(requester_public_key_in)} {}
 
-  ForwardPutData& operator=(const ForwardPutData&) = delete;
+  ForwardPutData(ForwardPutData&& other) MAIDSAFE_NOEXCEPT
+      : data{std::move(other.data)},
+        part{std::move(other.part)},
+        requester_public_key{std::move(other.requester_public_key)} {}
 
   ForwardPutData& operator=(ForwardPutData&& other) MAIDSAFE_NOEXCEPT {
     data = std::move(other.data);
@@ -54,6 +55,9 @@ struct ForwardPutData {
     requester_public_key = std::move(other.requester_public_key);
     return *this;
   }
+
+  ForwardPutData(const ForwardPutData&) = delete;
+  ForwardPutData& operator=(const ForwardPutData&) = delete;
 
   void operator()() {
 

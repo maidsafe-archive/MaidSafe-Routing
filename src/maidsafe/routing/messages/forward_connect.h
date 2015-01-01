@@ -36,51 +36,31 @@ namespace routing {
 
 struct ForwardConnect {
   ForwardConnect() = default;
-
-  ForwardConnect(const ForwardConnect&) = delete;
-
-  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                                             requester(std::move(other.requester)) {
-  }
-
-  ForwardConnect(Connect originator, SourceAddress source, asymm::PublicKey requester_public_key)
-      : header(DestinationAddress(std::move(originator.receiver_id)), std::move(source),
-               originator.header.message_id),
-        requester(std::move(originator.header.source.data),
-                  std::move(originator.requester_endpoints), std::move(requester_public_key)) {}
-
-  explicit ForwardConnect(MessageHeader header_in) : header(std::move(header_in)), requester() {}
-
   ~ForwardConnect() = default;
 
-  ForwardConnect& operator=(const ForwardConnect&) = delete;
+  template<typename T>
+  ForwardConnect(T&& requester_in) : requester{std::forward<T>(requester_in)} {}
+
+  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
+      : requester{std::move(other.requester)} {}
 
   ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
     requester = std::move(other.requester);
     return *this;
   }
+
+  ForwardConnect(const ForwardConnect&) = delete;
+  ForwardConnect& operator=(const ForwardConnect&) = delete;
 
   void operator()() {
 
   }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, requester);
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
+  template<typename Archive>
+  void serialize(Archive& archive) {
     archive(requester);
   }
 
-  MessageHeader header;
   rudp::Contact requester;
 };
 

@@ -58,7 +58,7 @@ class MessageHandler {
   void HandleMessage(ConnectResponse connect_response);
   // like forwardconnect adding targets public key (recieved by targets close group) (recieveing needs a Quorum)
 
-  void HandleMessage(ForwardConnectResponse forward_connect_response);
+//  void HandleMessage(ForwardConnectResponse forward_connect_response);
   // sent by routing nodes to a network Address
   void HandleMessage(FindGroup find_group);
   // each member of the group close to network Address fills in their node_info and replies
@@ -69,6 +69,7 @@ class MessageHandler {
   void HandleMessage(GetDataResponse get_data_response);
   // sent by a client to store data, client does information dispersal and sends a part to each of its close group
   void HandleMessage(PutData put_data);
+  void HandleMessage(PutDataResponse put_data);
   // each member of a group needs to send this to the network address (recieveing needs a Quorum) filling in public key again.
   void HandleMessage(ForwardPutData forward_put_data);
   // any node can put a key on the network (it may be refused though), there is no callback and the key requres to be read after writing in this case

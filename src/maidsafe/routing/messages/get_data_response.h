@@ -34,55 +34,39 @@ namespace routing {
 
 struct GetDataResponse {
   GetDataResponse() = default;
-
-  GetDataResponse(const GetDataResponse&) = delete;
-
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        data(std::move(other.data)) {}
-
-  GetDataResponse(GetData request, SerialisedData data_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        data(std::move(data_in)) {}
-
-  explicit GetDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), data() {}
-
   ~GetDataResponse() = default;
 
-  GetDataResponse& operator=(const GetDataResponse&) = delete;
+  GetDataResponse(Address data_name_in, SerialisedData data_in)
+      : data_name{std::move(data_name_in)},
+        data{std::move(data_in)} {}
+
+//  template<typename T, typename U>
+//  GetDataResponse(T&& data_name_in, U&& data_in)
+//      : data_name{std::forward<T>(data_name_in)},
+//        data{std::forward<U>(data_in)} {}
+
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : data_name{std::move(other.data_name)},
+        data{std::move(other.data)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
     data_name = std::move(other.data_name);
     data = std::move(other.data);
     return *this;
   }
 
+  GetDataResponse(const GetDataResponse&) = delete;
+  GetDataResponse& operator=(const GetDataResponse&) = delete;
+
   void operator()() {
 
   }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, data_name, data);
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
+  template<typename Archive>
+  void serialize(Archive& archive) {
     archive(data_name, data);
   }
 
-  MessageHeader header;
   Address data_name;
   SerialisedData data;
 };

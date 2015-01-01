@@ -36,64 +36,43 @@ namespace routing {
 
 struct Connect {
   Connect() = default;
-
-  Connect(const Connect&) = delete;
-
-  Connect(Connect&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_id(std::move(other.receiver_id)) {}
-
-  Connect(DestinationAddress destination, SourceAddress source,
-          rudp::EndpointPair requester_endpoints, Address receiver_id_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        requester_endpoints(std::move(requester_endpoints)),
-        receiver_id(std::move(receiver_id_in)) {}
-
-  explicit Connect(MessageHeader header_in)
-      : header(std::move(header_in)), requester_endpoints(), receiver_id() {}
-
   ~Connect() = default;
 
-  Connect& operator=(const Connect&) = delete;
+  Connect(rudp::EndpointPair requester_endpoints, Address receiver_id_in)
+      : requester_endpoints{std::move(requester_endpoints)},
+        receiver_id{std::move(receiver_id_in)} {}
+
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+
+//  template<typename T, typename U>
+//  Connect(T&& requester_endpoints_in, U&& receiver_id_in)
+//      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+//        receiver_id{std::forward<U>(receiver_id_in)} {}
+
+  Connect(Connect&& other) MAIDSAFE_NOEXCEPT
+      : requester_endpoints{std::move(other.requester_endpoints)},
+        receiver_id{std::move(other.receiver_id)} {}
 
   Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_id = std::move(other.receiver_id);
     return *this;
   }
 
+  Connect(const Connect&) = delete;
+  Connect& operator=(const Connect&) = delete;
+
   void operator()() {
 
   }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    auto payload = Serialise(requester_endpoints, receiver_id);
-    header.checksums.front() =
-        crypto::Hash<crypto::SHA1>(std::string(std::begin(payload), std::end(payload)));
-    archive(header, payload);
+  template<typename Archive>
+  void serialize(Archive& archive) {
+    archive(requester_endpoints, receiver_id);
   }
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    SerialisedData payload;
-    archive(payload);
-    if (crypto::Hash<crypto::SHA1>(std::string(std::begin(payload), std::end(payload))) !=
-        header.checksums.at(header.checksum_index)) {
-      LOG(kError) << "Checksum failure.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    Parse(payload, requester_endpoints, receiver_id);
-  }
-
-  mutable MessageHeader header;
   rudp::EndpointPair requester_endpoints;
   Address receiver_id;
 };

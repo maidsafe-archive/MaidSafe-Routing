@@ -37,32 +37,28 @@ namespace routing {
 
 struct PutData {
   PutData() = default;
+  ~PutData() = default;
 
-  PutData(const PutData&) = delete;
+  template<typename T, typename U, typename V, typename W>
+  PutData(T&& data_name_in, U&& signature_in, V&& data_in, W&& part_in)
+      : data_name{std::forward<T>(data_name_in)},
+        signature{std::forward<U>(signature_in)},
+        data{std::forward<V>(data_in)},
+        part{std::forward<W>(part_in)} {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                               data_name(std::move(other.data_name)),
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : data_name(std::move(other.data_name)),
                                                signature(std::move(other.signature)),
                                                data(std::move(other.data)),
                                                part(std::move(other.part)) {}
 
-  PutData(DestinationAddress destination, SourceAddress source, Address data_name_in,
-          asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        data_name(std::move(data_name_in)),
+  PutData(Address data_name_in, asymm::Signature signature_in,
+          std::vector<byte> data_in, uint8_t part_in)
+      : data_name(std::move(data_name_in)),
         signature(std::move(signature_in)),
         data(std::move(data_in)),
         part(std::move(part_in)) {}
 
-  explicit PutData(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
-
-  ~PutData() = default;
-
-  PutData& operator=(const PutData&) = delete;
-
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
     data_name = std::move(other.data_name);
     signature = std::move(other.signature);
     data = std::move(other.data);
@@ -70,26 +66,18 @@ struct PutData {
     return *this;
   }
 
+  PutData(const PutData&) = delete;
+  PutData& operator=(const PutData&) = delete;
+
   void operator()() {
 
   }
 
   template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, data_name, signature, data, part);
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
+  void serialize(Archive& archive) {
     archive(data_name, signature, data, part);
   }
 
-  MessageHeader header;
   Address data_name;
   asymm::Signature signature;
   std::vector<byte> data;

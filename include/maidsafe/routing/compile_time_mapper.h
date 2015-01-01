@@ -90,18 +90,20 @@ private:
   // ****************************************************************
   using RootNode = CompileTimeMap<
   Pair<MessageTypeTag::Connect, Connect>,
+  Pair<MessageTypeTag::ConnectResponse, ConnectResponse>,
   Pair<MessageTypeTag::ForwardConnect, ForwardConnect>,
   Pair<MessageTypeTag::FindGroup, FindGroup>,
   Pair<MessageTypeTag::FindGroupResponse, FindGroupResponse>,
   Pair<MessageTypeTag::GetData, GetData>,
   Pair<MessageTypeTag::GetDataResponse, GetDataResponse>,
   Pair<MessageTypeTag::PutData, PutData>,
-  Pair<MessageTypeTag::PutKey, PutKey>,
-  Pair<MessageTypeTag::ForwardPutData, ForwardPutData>,
   Pair<MessageTypeTag::PutDataResponse, PutDataResponse>,
-  Pair<MessageTypeTag::ForwardPost, ForwardPost>,
+  Pair<MessageTypeTag::ForwardPutData, ForwardPutData>,
+  Pair<MessageTypeTag::PutKey, PutKey>,
   Pair<MessageTypeTag::Post, Post>,
+  Pair<MessageTypeTag::ForwardPost, ForwardPost>,
   Pair<MessageTypeTag::ForwardRequest, ForwardRequest>,
+  Pair<MessageTypeTag::ForwardResponse, ForwardResponse>,
   Pair<MessageTypeTag::Request, Request>,
   Pair<MessageTypeTag::Response, Response>
   >::Map;

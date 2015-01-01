@@ -30,8 +30,16 @@ namespace routing {
 
 struct ConnectResponse {
   ConnectResponse() = default;
+  ~ConnectResponse() = default;
 
-  ConnectResponse(const ConnectResponse&) = delete;
+  template<typename T, typename U, typename V, typename W, typename X>
+  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in,
+                  V&& requester_id_in, W&& receiver_id_in, X&& receiver_public_key_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
+        requester_id{std::forward<V>(requester_id_in)},
+        receiver_id{std::forward<W>(receiver_id_in)},
+        receiver_public_key{std::forward<X>(receiver_public_key_in)} {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
@@ -39,10 +47,6 @@ struct ConnectResponse {
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)),
         receiver_public_key(std::move(other.receiver_public_key)) {}
-
-  ~ConnectResponse() = default;
-
-  ConnectResponse& operator=(const ConnectResponse&) = delete;
 
   ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
@@ -52,6 +56,9 @@ struct ConnectResponse {
     receiver_public_key = std::move(other.receiver_public_key);
     return *this;
   }
+
+  ConnectResponse(const ConnectResponse&) = delete;
+  ConnectResponse& operator=(const ConnectResponse&) = delete;
 
   void operator()() {
 

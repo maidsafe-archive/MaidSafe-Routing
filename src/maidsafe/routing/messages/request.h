@@ -29,17 +29,18 @@ namespace routing {
 
 struct Request {
   Request() = default;
-
-  Request(const Request&) = delete;
-
-  Request(Request&& other) MAIDSAFE_NOEXCEPT
-      : key(std::move(other.key)),
-        data(std::move(other.data)),
-        checksum(std::move(other.checksum)) {}
-
   ~Request() = default;
 
-  Request& operator=(const Request&) = delete;
+  template<typename T, typename U, typename V>
+  Request(T&& key_in, U&& data_in, V&& checksum_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        checksum{std::forward<V>(checksum_in)} {}
+
+  Request(Request&& other) MAIDSAFE_NOEXCEPT
+      : key{std::move(other.key)},
+        data{std::move(other.data)},
+        checksum{std::move(other.checksum)} {}
 
   Request& operator=(Request&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
@@ -47,6 +48,9 @@ struct Request {
     checksum = std::move(other.checksum);
     return *this;
   }
+
+  Request(const Request&) = delete;
+  Request& operator=(const Request&) = delete;
 
   void operator()() {
 
