@@ -108,7 +108,7 @@ void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
 void MessageHandler::HandleMessage(ForwardPutData /* forward_put_data */) {}
 
-void MessageHandler::HandleMessage(PutKey /* put_key */) {}
+// void MessageHandler::HandleMessage(PutKey /* put_key */) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
 

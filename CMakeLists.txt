@@ -43,7 +43,7 @@ set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/vault_node.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing_node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/serialisation.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/compile_time_mapper.h
     )
@@ -94,7 +94,7 @@ set(RoutingLibSources
 #    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
-    ${RoutingSourcesDir}/vault_node.cc
+    ${RoutingSourcesDir}/routing_node.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
 set(RoutingMessagesSources

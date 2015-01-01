@@ -43,7 +43,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class VaultNode : std::enable_shared_from_this<VaultNode> {
+class RoutingNode : std::enable_shared_from_this<RoutingNode> {
  public:  // key      value
   using Filter = LruCache<std::pair<SourceAddress, MessageId>, void>;
 
@@ -66,13 +66,13 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
     virtual void CloseGroupDifference(CloseGroupDifference) {}
   };
 
-  VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
+  RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
             const passport::Pmid& pmid, std::shared_ptr<Listener> listen_ptr);
-  VaultNode(const VaultNode&) = delete;
-  VaultNode(VaultNode&&) = delete;
-  VaultNode& operator=(const VaultNode&) = delete;
-  VaultNode& operator=(VaultNode&&) = delete;
-  ~VaultNode();
+  RoutingNode(const RoutingNode&) = delete;
+  RoutingNode(RoutingNode&&) = delete;
+  RoutingNode& operator=(const RoutingNode&) = delete;
+  RoutingNode& operator=(RoutingNode&&) = delete;
+  ~RoutingNode();
 
   // normal bootstrap mechanism
   template <typename CompletionToken>
@@ -97,17 +97,17 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
   Address OurId() const { return our_id_; }
 
  private:
-  std::shared_ptr<VaultNode> node_ptr_;
+  std::shared_ptr<RoutingNode> node_ptr_;
   class RudpListener : public rudp::ManagedConnections::Listener,
                        public std::enable_shared_from_this<RudpListener> {
    public:
-    RudpListener(std::shared_ptr<VaultNode> node_ptr_) : node_ptr_(node_ptr_) {}
+    RudpListener(std::shared_ptr<RoutingNode> node_ptr_) : node_ptr_(node_ptr_) {}
     virtual void MessageReceived(NodeId /*peer_id*/,
                                  rudp::ReceivedMessage /*message*/) override final;
     virtual void ConnectionLost(NodeId peer) override final;
 
    private:
-    std::shared_ptr<VaultNode> node_ptr_;
+    std::shared_ptr<RoutingNode> node_ptr_;
   };
 
   void GetDataResponseReceived(GetData get_data);
@@ -131,7 +131,7 @@ class VaultNode : std::enable_shared_from_this<VaultNode> {
 };
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> VaultNode::Bootstrap(CompletionToken token) {
+BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
@@ -142,7 +142,7 @@ BootstrapReturn<CompletionToken> VaultNode::Bootstrap(CompletionToken token) {
 }
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> VaultNode::Bootstrap(Endpoint local_endpoint,
+BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
                                                       CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
@@ -154,7 +154,7 @@ BootstrapReturn<CompletionToken> VaultNode::Bootstrap(Endpoint local_endpoint,
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> VaultNode::Get(DataKey data_key, CompletionToken token) {
+GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] { DoGet(data_key, handler); });
@@ -162,7 +162,7 @@ GetReturn<CompletionToken> VaultNode::Get(DataKey data_key, CompletionToken toke
 }
 
 template <typename CompletionToken>
-PutReturn<CompletionToken> VaultNode::Put(Address key, SerialisedMessage message,
+PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage message,
                                           CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
@@ -171,7 +171,7 @@ PutReturn<CompletionToken> VaultNode::Put(Address key, SerialisedMessage message
 }
 
 template <typename CompletionToken>
-PostReturn<CompletionToken> VaultNode::Post(Address key, SerialisedMessage message,
+PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage message,
                                             CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);

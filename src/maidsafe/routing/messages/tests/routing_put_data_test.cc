@@ -39,31 +39,26 @@ namespace {
 PutData GenerateInstance() {
   const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
   const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto address {Address{RandomString(Address::kSize)}};
+  const auto address(Address{RandomString(Address::kSize)});
 
-  const auto serialised_data {RandomString(Address::kSize)};
+  const auto serialised_data{RandomString(Address::kSize)};
 
-  return PutData {
-    destination_id,
-        source_id,
-        address,
-        asymm::Signature {},
-        SerialisedData(serialised_data.begin(), serialised_data.end()),
-        3
-  };
+  return PutData{destination_id,                                                 source_id,
+                 address,                                                        asymm::Signature{},
+                 SerialisedData(serialised_data.begin(), serialised_data.end()), 3};
 }
 
 }  // anonymous namespace
 
 TEST(PutDataTest, BEH_SerialiseParse) {
   // Serialise
-  PutData put_data_before {GenerateInstance()};
+  PutData put_data_before{GenerateInstance()};
   auto tag_before = GivenTypeFindTag_v<PutData>::value;
 
   auto serialised_put_data = Serialise(tag_before, put_data_before);
 
   // Parse
-  PutData put_data_after {GenerateInstance()};
+  PutData put_data_after{GenerateInstance()};
   auto tag_after = MessageTypeTag{};
 
   InputVectorStream binary_input_stream{serialised_put_data};

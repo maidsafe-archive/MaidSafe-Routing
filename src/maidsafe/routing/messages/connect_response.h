@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -36,7 +37,8 @@ struct ConnectResponse {
       : requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)) {}
+        receiver_id(std::move(other.receiver_id)),
+        receiver_public_key(std::move(other.receiver_public_key)) {}
 
   ~ConnectResponse() = default;
 
@@ -47,6 +49,7 @@ struct ConnectResponse {
     receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
+    receiver_public_key = std::move(other.receiver_public_key);
     return *this;
   }
 
@@ -63,6 +66,7 @@ struct ConnectResponse {
   rudp::EndpointPair receiver_endpoints;
   Address requester_id;
   Address receiver_id;
+  asymm::PublicKey receiver_public_key;
 };
 
 }  // namespace routing

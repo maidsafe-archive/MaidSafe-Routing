@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/vault_node.h"
+#include "maidsafe/routing/routing_node.h"
 
 #include <utility>
 #include "asio/use_future.hpp"
@@ -57,8 +57,8 @@ MessageType Parse(MessageHeader header, InputVectorStream& binary_input_stream) 
 
 }  // unnamed namespace
 
-VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_location,
-                     const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
+RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
+                         const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
     : node_ptr_(shared_from_this()),
       io_service_(io_service),
       our_id_(pmid.name().value.string()),
@@ -77,7 +77,7 @@ VaultNode::VaultNode(asio::io_service& io_service, boost::filesystem::path db_lo
       filter_(std::chrono::minutes(20)),
       accumulator_(std::chrono::minutes(10)) {}
 
-void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
+void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
@@ -118,44 +118,32 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
 
     switch (header_and_type_enum.second) {
       case MessageTypeTag::Connect:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::ForwardConnect:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::FindGroup:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::FindGroupResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::GetData:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::GetDataResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::PutData:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
-        break;
-      case MessageTypeTag::PutDataResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(
-                std::move(header_and_type_enum.first), binary_input_stream));
+        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(
+            std::move(header_and_type_enum.first), binary_input_stream));
         break;
       case MessageTypeTag::Post:
         message_handler_.HandleMessage(
@@ -170,11 +158,11 @@ void VaultNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, No
                   << boost::diagnostic_information(e);
   }
 }
-void VaultNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
+void RoutingNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
   node_ptr_->OnMessageReceived(std::move(message), peer_id);
 }
 
-void VaultNode::RudpListener::ConnectionLost(NodeId peer) {
+void RoutingNode::RudpListener::ConnectionLost(NodeId peer) {
   node_ptr_->connection_manager_.LostNetworkConnection(peer);
 }
 

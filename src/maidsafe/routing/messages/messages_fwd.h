@@ -25,6 +25,8 @@ namespace routing {
 
 enum class MessageTypeTag : uint16_t {
   Connect,
+  ConnectResponse,
+  ForwardConnectResponse,
   ForwardConnect,
   FindGroup,
   FindGroupResponse,
@@ -38,6 +40,7 @@ enum class MessageTypeTag : uint16_t {
   Post,
   ForwardRequest,
   Request,
+  ForwardResponse,
   Response
 };
 
