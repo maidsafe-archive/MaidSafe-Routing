@@ -16,88 +16,77 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
+#include "maidsafe/routing/messages/connect_response.h"
 
-#include <cstdint>
-#include <vector>
-
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/error.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/routing/compile_time_mapper.h"
+#include "maidsafe/common/serialisation/serialisation.h"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/rudp/contact.h"
 
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/messages/put_data.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct PutDataResponse {
-  PutDataResponse() = default;
+namespace test {
 
-  PutDataResponse(const PutDataResponse&) = delete;
+namespace {
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        part(std::move(other.part)),
-        result(std::move(other.result)) {}
+ConnectResponse GenerateInstance() {
+  return {
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    Address{RandomString(Address::kSize)},
+    Address{RandomString(Address::kSize)},
+    asymm::GenerateKeyPair().public_key
+  };
+}
 
-  PutDataResponse(PutData request, maidsafe_error result_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        part(std::move(request.part)),
-        result(std::move(result_in)) {}
+}  // anonymous namespace
 
-  explicit PutDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), part(0), result() {}
+TEST(ConnectResponseTest, BEH_SerialiseParse) {
+  // Serialise
+  auto connect_resp_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<ConnectResponse>::value);
 
-  ~PutDataResponse() = default;
+  auto serialised_connect_rsp(Serialise(header_before, tag_before, connect_resp_before));
 
-  PutDataResponse& operator=(const PutDataResponse&) = delete;
+  // Parse
+  auto connect_resp_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
-  PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    data_name = std::move(other.data_name);
-    part = std::move(other.part);
-    result = std::move(other.result);
-    return *this;
-  }
+  InputVectorStream binary_input_stream{serialised_connect_rsp};
 
-  void operator()() {
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
-  }
+  EXPECT_EQ(header_before, header_after);
+  EXPECT_EQ(tag_before, tag_after);
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, data_name, result);
-  }
+  // Parse the rest
+  Parse(binary_input_stream, connect_resp_after);
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    archive(header);
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    archive(data_name, result);
-  }
+  EXPECT_EQ(connect_resp_before.requester_endpoints,
+            connect_resp_after.requester_endpoints);
+  EXPECT_EQ(connect_resp_before.receiver_endpoints,
+            connect_resp_after.receiver_endpoints);
 
-  MessageHeader header;
-  Address data_name;
-  uint8_t part;
-  maidsafe_error result;
-};
+  EXPECT_EQ(connect_resp_before.requester_id, connect_resp_after.requester_id);
+  EXPECT_EQ(connect_resp_before.receiver_id, connect_resp_after.receiver_id);
+
+  EXPECT_EQ(rsa::EncodeKey(connect_resp_before.receiver_public_key),
+            rsa::EncodeKey(connect_resp_after.receiver_public_key));
+}
+
+}  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_

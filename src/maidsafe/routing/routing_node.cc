@@ -74,19 +74,20 @@ void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, 
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
 
-    {
-      auto raw_bytes = binary_input_stream.vector();
-      if (crypto::Hash<crypto::SHA1>(std::string(std::begin(raw_bytes), std::end(raw_bytes))) !=
-          header_and_type_enum.first.checksums.at(header_and_type_enum.first.checksum_index)) {
-        LOG(kError) << "Checksum failure.";
-        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-      }
-    }
+//    {
+//      auto raw_bytes = binary_input_stream.vector();
+//      if (crypto::Hash<crypto::SHA1>(std::string(std::begin(raw_bytes), std::end(raw_bytes))) !=
+//          header_and_type_enum.first.checksums.at(header_and_type_enum.first.checksum_index)) {
+//        LOG(kError) << "Checksum failure.";
+//        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+//      }
+//    }
 
-    if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
-      return;  // already seen
-               // add to filter as soon as posible
-    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
+//    if (filter_.Check({header_and_type_enum.first.source, header_and_type_enum.first.message_id}))
+//      return;  // already seen
+//               // add to filter as soon as posible
+//    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
+
     std::vector<NodeInfo> targets;
     // Here we try and handle all generic message routes for now. Most of this work should actually
     // be in

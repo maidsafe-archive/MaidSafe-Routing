@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,40 +38,41 @@ namespace test {
 namespace {
 
 Connect GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto endpoints = rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()};
-  const auto receiver_id = Address{RandomString(Address::kSize)};
-
-  return Connect {destination_id, source_id, endpoints, receiver_id};
+  return {
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    Address{RandomString(Address::kSize)},
+    Address{RandomString(Address::kSize)}
+  };
 }
 
 }  // anonymous namespace
 
 TEST(ConnectTest, BEH_SerialiseParse) {
   // Serialise
-  Connect connect_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<Connect>::value;
+  auto connect_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<Connect>::value);
 
-  auto serialised_connect = Serialise(tag_before, connect_before);
+  auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 
   // Parse
-  Connect connect_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto connect_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_connect};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, connect_after);
 
-  EXPECT_EQ(connect_before.header, connect_after.header);
-  EXPECT_EQ(connect_before.requester_endpoints.local, connect_after.requester_endpoints.local);
-  EXPECT_EQ(connect_before.requester_endpoints.external, connect_after.requester_endpoints.external);
+  EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
+  EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
   EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
 }
 

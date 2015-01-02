@@ -66,7 +66,8 @@ struct ConnectResponse {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
+    archive(requester_endpoints, receiver_endpoints, requester_id,
+            receiver_id, receiver_public_key);
   }
 
   rudp::EndpointPair requester_endpoints;

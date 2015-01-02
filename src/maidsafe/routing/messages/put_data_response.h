@@ -41,18 +41,19 @@ struct PutDataResponse {
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  PutDataResponse(PutData request, maidsafe_error result_in)
-      : data_name(std::move(request.data_name)),
-        part(std::move(request.part)),
-        result(std::move(result_in)) {}
+  template<typename T, typename U, typename V>
+  PutDataResponse(T&& key_in, U&& part_in, V&& result_in)
+      : key{std::forward<T>(key_in)},
+        part{std::forward<U>(part_in)},
+        result{std::forward<V>(result_in)} {}
 
   PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : data_name(std::move(other.data_name)),
-        part(std::move(other.part)),
-        result(std::move(other.result)) {}
+      : key{std::move(other.key)},
+        part{std::move(other.part)},
+        result{std::move(other.result)} {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    data_name = std::move(other.data_name);
+    key = std::move(other.key);
     part = std::move(other.part);
     result = std::move(other.result);
     return *this;
@@ -67,11 +68,11 @@ struct PutDataResponse {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(data_name, part, result);
+    archive(key, part, result);
   }
 
-  Address data_name;
-  uint8_t part;
+  Address key;
+  std::vector<crypto::SHA1Hash> part;
   maidsafe_error result;
 };
 

@@ -36,21 +36,27 @@ struct GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  GetDataResponse(Address data_name_in, SerialisedData data_in)
-      : data_name{std::move(data_name_in)},
-        data{std::move(data_in)} {}
+//  GetDataResponse(Address data_name_in, SerialisedData data_in)
+//      : key{std::move(data_name_in)},
+//        data{std::move(data_in)} {}
 
-//  template<typename T, typename U>
-//  GetDataResponse(T&& data_name_in, U&& data_in)
-//      : data_name{std::forward<T>(data_name_in)},
-//        data{std::forward<U>(data_in)} {}
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
+
+  template<typename T, typename U>
+  GetDataResponse(T&& key_in, U&& data_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)} {}
 
   GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : data_name{std::move(other.data_name)},
+      : key{std::move(other.key)},
         data{std::move(other.data)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    data_name = std::move(other.data_name);
+    key = std::move(other.key);
     data = std::move(other.data);
     return *this;
   }
@@ -64,10 +70,10 @@ struct GetDataResponse {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(data_name, data);
+    archive(key, data);
   }
 
-  Address data_name;
+  Address key;
   SerialisedData data;
 };
 

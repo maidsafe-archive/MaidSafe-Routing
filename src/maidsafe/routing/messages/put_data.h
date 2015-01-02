@@ -39,28 +39,29 @@ struct PutData {
   PutData() = default;
   ~PutData() = default;
 
-  template<typename T, typename U, typename V, typename W>
-  PutData(T&& data_name_in, U&& signature_in, V&& data_in, W&& part_in)
-      : data_name{std::forward<T>(data_name_in)},
-        signature{std::forward<U>(signature_in)},
-        data{std::forward<V>(data_in)},
-        part{std::forward<W>(part_in)} {}
+//  PutData(Address key_in, SerialisedData data_in, std::vector<crypto::SHA1Hash> part_in)
+//      : key{std::move(key_in)},
+//        data{std::move(data_in)},
+//        part{std::move(part_in)} {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : data_name(std::move(other.data_name)),
-                                               signature(std::move(other.signature)),
-                                               data(std::move(other.data)),
-                                               part(std::move(other.part)) {}
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
 
-  PutData(Address data_name_in, asymm::Signature signature_in,
-          std::vector<byte> data_in, uint8_t part_in)
-      : data_name(std::move(data_name_in)),
-        signature(std::move(signature_in)),
-        data(std::move(data_in)),
-        part(std::move(part_in)) {}
+  template<typename T, typename U, typename V>
+  PutData(T&& key_in, U&& data_in, V&& part_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        part{std::forward<V>(part_in)} {}
+
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                               data{std::move(other.data)},
+                                               part{std::move(other.part)} {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    data_name = std::move(other.data_name);
-    signature = std::move(other.signature);
+    key = std::move(other.key);
     data = std::move(other.data);
     part = std::move(other.part);
     return *this;
@@ -75,13 +76,12 @@ struct PutData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(data_name, signature, data, part);
+    archive(key, data, part);
   }
 
-  Address data_name;
-  asymm::Signature signature;
-  std::vector<byte> data;
-  uint8_t part;
+  Address key;
+  SerialisedData data;
+  std::vector<crypto::SHA1Hash> part;
 };
 
 }  // namespace routing

@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,19 +38,12 @@ namespace test {
 namespace {
 
 Post GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto address {Address{RandomString(Address::kSize)}};
+  const auto serialised_data(RandomString(Address::kSize));
 
-  const auto serialised_data {RandomString(Address::kSize)};
-
-  return Post {
-    destination_id,
-        source_id,
-        address,
-        asymm::Signature {},
-        SerialisedData(serialised_data.begin(), serialised_data.end()),
-        3
+  return {
+    Address{RandomString(Address::kSize)},
+    SerialisedData(serialised_data.begin(), serialised_data.end()),
+    GenerateSHA1HashVector()
   };
 }
 
@@ -57,32 +51,37 @@ Post GenerateInstance() {
 
 TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
-  Post post_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<Post>::value;
+  auto post_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<Post>::value);
 
-  auto serialised_post = Serialise(tag_before, post_before);
+  auto serialised_post(Serialise(header_before, tag_before, post_before));
 
   // Parse
-  Post post_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto post_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_post};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, post_after);
 
-  EXPECT_EQ(post_before.header, post_after.header);
-  EXPECT_EQ(post_before.data_name, post_after.data_name);
-  EXPECT_EQ(post_before.signature, post_after.signature);
+  EXPECT_EQ(post_before.key, post_after.key);
+
   EXPECT_EQ(post_before.data.size(), post_after.data.size());
   EXPECT_TRUE(std::equal(post_before.data.begin(), post_before.data.end(),
                          post_before.data.begin()));
-  EXPECT_EQ(post_before.part, post_after.part);
+
+  EXPECT_EQ(post_before.part.size(), post_after.part.size());
+  EXPECT_TRUE(std::equal(post_before.part.begin(), post_before.part.end(),
+                         post_before.part.begin()));
 }
 
 }  // namespace test

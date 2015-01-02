@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,15 +38,11 @@ namespace test {
 namespace {
 
 FindGroupResponse GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto endpoints = rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()};
-  const auto receiver_id = Address{RandomString(Address::kSize)};
-  const auto requester_id = Address{RandomString(Address::kSize)};
-
-  return FindGroupResponse {
-    FindGroup {destination_id, source_id, endpoints, receiver_id, requester_id},
-    endpoints
+  return {
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    Address{RandomString(Address::kSize)},
+    Address{RandomString(Address::kSize)}
   };
 }
 
@@ -53,32 +50,32 @@ FindGroupResponse GenerateInstance() {
 
 TEST(FindGroupResponseTest, BEH_SerialiseParse) {
   // Serialise
-  FindGroupResponse find_grp_resp_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<FindGroupResponse>::value;
+  auto find_grp_resp_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<FindGroupResponse>::value);
 
-  auto serialised_find_grp_rsp = Serialise(tag_before, std::move(find_grp_resp_before));
+  auto serialised_find_grp_rsp(Serialise(header_before, tag_before, find_grp_resp_before));
 
   // Parse
-  FindGroupResponse find_grp_rsp_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto find_grp_rsp_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_find_grp_rsp};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, find_grp_rsp_after);
 
-  EXPECT_EQ(find_grp_resp_before.header, find_grp_rsp_after.header);
-  EXPECT_EQ(find_grp_resp_before.requester_endpoints.local, find_grp_rsp_after.requester_endpoints.local);
-  EXPECT_EQ(find_grp_resp_before.requester_endpoints.external, find_grp_rsp_after.requester_endpoints.external);
-  EXPECT_EQ(find_grp_resp_before.receiver_endpoints.local, find_grp_rsp_after.receiver_endpoints.local);
-  EXPECT_EQ(find_grp_resp_before.receiver_endpoints.external, find_grp_rsp_after.receiver_endpoints.external);
-  EXPECT_EQ(find_grp_resp_before.receiver_id, find_grp_rsp_after.receiver_id);
+  EXPECT_EQ(find_grp_resp_before.requester_endpoints, find_grp_rsp_after.requester_endpoints);
+  EXPECT_EQ(find_grp_resp_before.receiver_endpoints, find_grp_rsp_after.receiver_endpoints);
   EXPECT_EQ(find_grp_resp_before.requester_id, find_grp_rsp_after.requester_id);
+  EXPECT_EQ(find_grp_resp_before.receiver_id, find_grp_rsp_after.receiver_id);
 }
 
 }  // namespace test

@@ -38,14 +38,25 @@ struct ForwardConnect {
   ForwardConnect() = default;
   ~ForwardConnect() = default;
 
-  template<typename T>
-  ForwardConnect(T&& requester_in) : requester{std::forward<T>(requester_in)} {}
+  template<typename T, typename U, typename V, typename W>
+  ForwardConnect(T&& requester_endpoints_in, U&& requester_id_in,
+                 V&& receiver_id_in, W&& receiver_public_key_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        requester_id{std::forward<U>(requester_id_in)},
+        receiver_id{std::forward<V>(receiver_id_in)},
+        receiver_public_key{std::forward<W>(receiver_public_key_in)} {}
 
   ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
-      : requester{std::move(other.requester)} {}
+      : requester_endpoints(std::move(other.requester_endpoints)),
+        requester_id(std::move(other.requester_id)),
+        receiver_id(std::move(other.receiver_id)),
+        receiver_public_key(std::move(other.receiver_public_key)) {}
 
   ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
-    requester = std::move(other.requester);
+    requester_endpoints = std::move(other.requester_endpoints);
+    requester_id = std::move(other.requester_id);
+    receiver_id = std::move(other.receiver_id);
+    receiver_public_key = std::move(other.receiver_public_key);
     return *this;
   }
 
@@ -58,10 +69,13 @@ struct ForwardConnect {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(requester);
+    archive(requester_endpoints, requester_id, receiver_id, receiver_public_key);
   }
 
-  rudp::Contact requester;
+  rudp::EndpointPair requester_endpoints;
+  Address requester_id;
+  Address receiver_id;
+  asymm::PublicKey receiver_public_key;
 };
 
 }  // namespace routing

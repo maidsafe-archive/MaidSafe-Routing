@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,38 +38,38 @@ namespace test {
 namespace {
 
 GetData GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto address {Address{RandomString(Address::kSize)}};
-
-  return GetData {destination_id, source_id, address};
+  return {
+    Address{RandomString(Address::kSize)}
+  };
 }
 
 }  // anonymous namespace
 
 TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
-  GetData get_data_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<GetData>::value;
+  auto get_data_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<GetData>::value);
 
-  auto serialised_get_data = Serialise(tag_before, get_data_before);
+  auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
   // Parse
-  GetData get_data_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto get_data_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_get_data};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, get_data_after);
 
-  EXPECT_EQ(get_data_before.header, get_data_after.header);
-  EXPECT_EQ(get_data_before.data_name, get_data_after.data_name);
+  EXPECT_EQ(get_data_before.key, get_data_after.key);
 }
 
 }  // namespace test

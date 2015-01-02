@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,14 +38,10 @@ namespace test {
 namespace {
 
 GetDataResponse GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto address {Address{RandomString(Address::kSize)}};
-
-  const auto serialised_data {RandomString(Address::kSize)};
+  const auto serialised_data(RandomString(Address::kSize));
 
   return GetDataResponse {
-    GetData {destination_id, source_id, address},
+    Address{RandomString(Address::kSize)},
     SerialisedData(serialised_data.begin(), serialised_data.end())
   };
 }
@@ -53,27 +50,29 @@ GetDataResponse GenerateInstance() {
 
 TEST(GetDataResponseTest, BEH_SerialiseParse) {
   // Serialise
-  GetDataResponse get_data_rsp_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<GetDataResponse>::value;
+  auto get_data_rsp_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<GetDataResponse>::value);
 
-  auto serialised_get_data_rsp = Serialise(tag_before, get_data_rsp_before);
+  auto serialised_get_data_rsp(Serialise(header_before, tag_before, get_data_rsp_before));
 
   // Parse
-  GetDataResponse get_data_rsp_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto get_data_rsp_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_get_data_rsp};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, get_data_rsp_after);
 
-  EXPECT_EQ(get_data_rsp_before.header, get_data_rsp_after.header);
-  EXPECT_EQ(get_data_rsp_before.data_name, get_data_rsp_after.data_name);
+  EXPECT_EQ(get_data_rsp_before.key, get_data_rsp_after.key);
   EXPECT_EQ(get_data_rsp_before.data.size(), get_data_rsp_after.data.size());
   EXPECT_TRUE(std::equal(get_data_rsp_before.data.begin(), get_data_rsp_before.data.end(),
                          get_data_rsp_after.data.begin()));

@@ -36,22 +36,23 @@ struct FindGroup {
   FindGroup() = default;
   ~FindGroup() = default;
 
-  FindGroup(rudp::EndpointPair requester_endpoints, Address requester_id_in,
-            Address receiver_id_in)
-      : requester_endpoints{std::move(requester_endpoints)},
-        requester_id{std::move(requester_id_in)},
-        receiver_id{std::move(receiver_id_in)} {}
+//  FindGroup(rudp::EndpointPair requester_endpoints, Address requester_id_in,
+//            Address receiver_id_in)
+//      : requester_endpoints{std::move(requester_endpoints)},
+//        requester_id{std::move(requester_id_in)},
+//        receiver_id{std::move(receiver_id_in)} {}
 
   // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
   // does not have a move ctor) depending on invocation site.
   // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
 
-//  template<typename T, typename U, typename V>
-//  FindGroup(T&& requester_endpoints_in, U&& requester_id_in, V&& receiver_id_in)
-//      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-//        requester_id{std::forward<V>(requester_id_in)},
-//        receiver_id{std::forward<W>(receiver_id_in)} {}
-
+  template<typename T, typename U, typename V>
+  FindGroup(T&& requester_endpoints_in, U&& requester_id_in, V&& receiver_id_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        requester_id{std::forward<U>(requester_id_in)},
+        receiver_id{std::forward<V>(receiver_id_in)} {}
 
   FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints{std::move(other.requester_endpoints)},

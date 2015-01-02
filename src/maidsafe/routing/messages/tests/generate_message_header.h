@@ -28,26 +28,25 @@ namespace routing {
 
 namespace test {
 
-inline MessageHeader GenerateMessageHeader() {
-  const uint32_t max = RandomUint32() % 10 + 1;
+inline std::vector<crypto::SHA1Hash> GenerateSHA1HashVector() {
+  const auto max(RandomUint32() % 10u + 1u);
 
-  const auto checksum_index = RandomUint32();
-  const auto destination_id = DestinationAddress {Address {RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress {Address {RandomString(Address::kSize)}};
-  MessageId message_id {RandomUint32()};
+  std::vector<crypto::SHA1Hash> message_id;
+  message_id.reserve(max);
 
-  std::vector<crypto::SHA1Hash> checksums;
-  checksums.reserve(max);
-  for(uint32_t i {}; i < max; ++i) {
-    checksums.emplace_back(RandomString(crypto::SHA1::DIGESTSIZE));
+  for(std::uint32_t i{}; i < max; ++i) {
+    message_id.emplace_back(RandomString(crypto::SHA1::DIGESTSIZE));
   }
 
+  return message_id;
+}
+
+inline MessageHeader GenerateMessageHeader() {
   return {
-    std::move(destination_id),
-    std::move(source_id),
-    std::move(message_id),
-    std::move(checksum_index),
-    std::move(checksums)
+    DestinationAddress{Address{RandomString(Address::kSize)}},
+    SourceAddress{Address{RandomString(Address::kSize)}},
+    GenerateSHA1HashVector(),
+    rsa::Sign(rsa::PlainText{RandomString(Address::kSize)}, asymm::GenerateKeyPair().private_key)
   };
 }
 

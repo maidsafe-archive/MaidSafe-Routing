@@ -31,18 +31,24 @@ struct ForwardPutData {
   ForwardPutData() = default;
   ~ForwardPutData() = default;
 
-  ForwardPutData(SerialisedMessage new_data,
-                 std::vector<crypto::SHA1Hash> new_part,
-                 asymm::PublicKey new_requester_public_key)
-    : data{std::move(new_data)},
-      part{std::move(new_part)},
-      requester_public_key{std::move(new_requester_public_key)} {}
+//  ForwardPutData(SerialisedMessage new_data,
+//                 std::vector<crypto::SHA1Hash> new_part,
+//                 asymm::PublicKey new_requester_public_key)
+//    : data{std::move(new_data)},
+//      part{std::move(new_part)},
+//      requester_public_key{std::move(new_requester_public_key)} {}
 
-//  template<typename T, typename U, typename V>
-//  ForwardPutData(T&& data_in, U&& part_in, V&& requester_public_key_in)
-//      : data{std::forward<T>(data_in)},
-//        part{std::forward<U>(part_in)},
-//        requester_public_key{std::forward<V>(requester_public_key_in)} {}
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
+
+  template<typename T, typename U, typename V>
+  ForwardPutData(T&& data_in, U&& part_in, V&& requester_public_key_in)
+      : data{std::forward<T>(data_in)},
+        part{std::forward<U>(part_in)},
+        requester_public_key{std::forward<V>(requester_public_key_in)} {}
 
   ForwardPutData(ForwardPutData&& other) MAIDSAFE_NOEXCEPT
       : data{std::move(other.data)},

@@ -37,11 +37,13 @@ struct FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-  FindGroupResponse(FindGroup originator, rudp::EndpointPair receiver_endpoints_in)
-      : requester_endpoints{std::move(originator.requester_endpoints)},
-        receiver_endpoints{std::move(receiver_endpoints_in)},
-        requester_id{std::move(originator.requester_id)},
-        receiver_id{std::move(originator.receiver_id)} {}
+  template<typename T, typename U, typename V, typename W>
+  FindGroupResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in,
+                    V&& requester_id_in, W&& receiver_id_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
+        requester_id{std::forward<V>(requester_id_in)},
+        receiver_id{std::forward<W>(receiver_id_in)} {}
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints{std::move(other.requester_endpoints)},
@@ -66,7 +68,7 @@ struct FindGroupResponse {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
   }
 
   rudp::EndpointPair requester_endpoints, receiver_endpoints;

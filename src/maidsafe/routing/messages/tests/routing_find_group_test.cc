@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,43 +38,40 @@ namespace test {
 namespace {
 
 FindGroup GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto endpoints = rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()};
-  const auto receiver_id = Address{RandomString(Address::kSize)};
-  const auto requester_id = Address{RandomString(Address::kSize)};
-
-  return FindGroup {destination_id, source_id, endpoints, receiver_id, requester_id};
+  return {
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    Address{RandomString(Address::kSize)},
+    Address{RandomString(Address::kSize)}
+  };
 }
 
 }  // anonymous namespace
 
 TEST(FindGroupTest, BEH_SerialiseParse) {
   // Serialise
-  FindGroup find_group_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<FindGroup>::value;
+  auto find_group_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<FindGroup>::value);
 
-  auto serialised_find_group = Serialise(tag_before, find_group_before);
+  auto serialised_find_grp(Serialise(header_before, tag_before, find_group_before));
 
   // Parse
-  FindGroup find_group_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto find_group_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
-  InputVectorStream binary_input_stream{serialised_find_group};
+  InputVectorStream binary_input_stream{serialised_find_grp};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, find_group_after);
 
-  EXPECT_EQ(find_group_before.header, find_group_after.header);
-  EXPECT_EQ(find_group_before.requester_endpoints.local,
-            find_group_after.requester_endpoints.local);
-  EXPECT_EQ(find_group_before.requester_endpoints.external,
-            find_group_after.requester_endpoints.external);
+  EXPECT_EQ(find_group_before.requester_endpoints, find_group_after.requester_endpoints);
   EXPECT_EQ(find_group_before.receiver_id, find_group_after.receiver_id);
   EXPECT_EQ(find_group_before.requester_id, find_group_after.requester_id);
 }

@@ -27,6 +27,7 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
+#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,15 +38,11 @@ namespace test {
 namespace {
 
 ForwardConnect GenerateInstance() {
-  const auto destination_id = DestinationAddress{Address{RandomString(Address::kSize)}};
-  const auto source_id = SourceAddress{Address{RandomString(Address::kSize)}};
-  const auto endpoints = rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()};
-  const auto receiver_id = Address{RandomString(Address::kSize)};
-  const auto requester_id = Address{RandomString(Address::kSize)};
-
-  return ForwardConnect {
-    Connect {destination_id, source_id, endpoints, receiver_id},
-    source_id
+  return {
+    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+    Address{RandomString(Address::kSize)},
+    Address{RandomString(Address::kSize)},
+    asymm::GenerateKeyPair().public_key
   };
 }
 
@@ -53,32 +50,34 @@ ForwardConnect GenerateInstance() {
 
 TEST(ForwardConnectTest, BEH_SerialiseParse) {
   // Serialise
-  ForwardConnect fwd_connct_before {GenerateInstance()};
-  auto tag_before = GivenTypeFindTag_v<ForwardConnect>::value;
+  auto fwd_connct_before(GenerateInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<ForwardConnect>::value);
 
-  auto serialised_fwd_cnnct = Serialise(tag_before, fwd_connct_before);
+  auto serialised_fwd_connect(Serialise(header_before, tag_before, fwd_connct_before));
 
   // Parse
-  ForwardConnect fwd_connct_after {GenerateInstance()};
-  auto tag_after = MessageTypeTag{};
+  auto fwd_connct_after(GenerateInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
 
-  InputVectorStream binary_input_stream{serialised_fwd_cnnct};
+  InputVectorStream binary_input_stream{serialised_fwd_connect};
 
-  // Parse Tag
-  Parse(binary_input_stream, tag_after);
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
 
+  EXPECT_EQ(header_before, header_after);
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
   Parse(binary_input_stream, fwd_connct_after);
 
-  EXPECT_EQ(fwd_connct_before.header, fwd_connct_after.header);
-  EXPECT_EQ(fwd_connct_before.requester.endpoint_pair.local,
-            fwd_connct_after.requester.endpoint_pair.local);
-  EXPECT_EQ(fwd_connct_before.requester.endpoint_pair.external,
-            fwd_connct_after.requester.endpoint_pair.external);
-  EXPECT_EQ(fwd_connct_before.requester.id, fwd_connct_after.requester.id);
-  EXPECT_EQ(fwd_connct_before.requester.public_key, fwd_connct_after.requester.public_key);
+  EXPECT_EQ(fwd_connct_before.requester_endpoints, fwd_connct_after.requester_endpoints);
+  EXPECT_EQ(fwd_connct_before.requester_id, fwd_connct_after.requester_id);
+  EXPECT_EQ(fwd_connct_before.receiver_id, fwd_connct_after.receiver_id);
+
+  EXPECT_EQ(rsa::EncodeKey(fwd_connct_before.receiver_public_key),
+            rsa::EncodeKey(fwd_connct_before.receiver_public_key));
 }
 
 }  // namespace test
