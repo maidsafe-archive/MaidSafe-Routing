@@ -32,6 +32,7 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/rudp/managed_connections.h"
 
 namespace maidsafe {
 
@@ -44,57 +45,49 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)) {
-  (void)rudp_;
-  (void)connection_manager_;
-  (void)io_service_;
-  (void)cache_;
-  (void)accumulator_;
+      accumulator_(std::chrono::minutes(10)) {}
+
+void MessageHandler::HandleMessage(Connect connect) {
+  rudp_.GetNextAvailableEndpoint(connect.header.source,
+                                 [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
+    if (!error)
+      auto targets(connection_mgr_.get_target(connect_msg.header.source));
+    for (const auto& target : targets)
+      // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
+      rudp_.Send(target.id, Serialise(forward_connect()));
+  });
 }
 
-void MessageHandler::HandleMessage(Connect /*connect*/) {
-//  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
-//    ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
-//    // rudp_.
-//  }
+void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
+  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
+    ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
+    // rudp_.
+  }
+  auto& source_id = forward_connect.header.source.data;
+  if (source_id == forward_connect.requester.id) {
+    LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
+    return;
+  }
 
-  //    rudp_.GetNextAvailableEndpoint(
-  //        connect_msg.header.source,
-  //        [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
-  //          if (!error)
-  //            auto targets(connection_mgr_.get_target(connect_msg.header.source));
-  //          for (const auto& target : targets)
-  //            // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
-  //        rudp_.Send(target.id, Serialise(forward_connect());
-  //        });
-}
+  if (!connection_manager_.SuggestNodeToAdd(source_id))
+    return;
 
-void MessageHandler::HandleMessage(ForwardConnect /*forward_connect*/) {
-//  auto& source_id = forward_connect.header.source.data;
-//  if (source_id == forward_connect.requester.id) {
-//    LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
-//    return;
-//  }
-
-//  if (!connection_manager_.SuggestNodeToAdd(source_id))
-//    return;
-
-//  asio::spawn(io_service_, [&](asio::yield_context yield) {
-//    std::error_code error;
-//    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
-//    if (error) {
-//      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
-//      return;
-//    }
-//    (void)endpoints;
-//    // if this is a response to our own connect request, we just need to add them to rudp_
-//    // otherwise we send our own connect request to them and then add them to rudp_.
-//  });
+  asio::spawn(io_service_, [&](asio::yield_context yield) {
+    std::error_code error;
+    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
+    if (error) {
+      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
+      return;
+    }
+    (void)endpoints;
+    // if this is a response to our own connect request, we just need to add them to rudp_
+    // otherwise we send our own connect request to them and then add them to rudp_.
+  });
 }
 
 void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
 
-//void MessageHandler::HandleMessage(ForwardConnectResponse /* forward_connect_response */) {}
+// void MessageHandler::HandleMessage(ForwardConnectResponse /* forward_connect_response */) {}
 
 void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 

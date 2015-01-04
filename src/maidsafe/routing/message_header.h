@@ -36,29 +36,34 @@ struct MessageHeader {
   MessageHeader() = default;
   ~MessageHeader() = default;
 
-  template<typename T, typename U, typename V, typename W>
-  MessageHeader(T&& destination_in, U&& source_in, V&& message_id_in, W&& signature_in)
+  template <typename T, typename U, typename V, typename W, typename X>
+  MessageHeader(T&& destination_in, U&& source_in, V&& checksums_in, W&& message_id_in,
+                X&& signature_in)
       : destination{std::forward<T>(destination_in)},
         source{std::forward<U>(source_in)},
+        checksums{std::forward<V>(checksums_in)},
         message_id{std::forward<V>(message_id_in)},
         signature{std::forward<W>(signature_in)} {}
 
-  template<typename T, typename U, typename V>
-  MessageHeader(T&& destination_in, U&& source_in, V&& message_id_in)
+  template <typename T, typename U, typename V, typename W, typename X>
+  MessageHeader(T&& destination_in, U&& source_in, V&& checksums_in, X&& message_id_in)
       : destination{std::forward<T>(destination_in)},
         source{std::forward<U>(source_in)},
+        checksums{std::forward<U>(checksums_in)},
         message_id{std::forward<V>(message_id_in)},
         signature{} {}
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
+        checksums(std::move(other.checksums)),
         message_id(std::move(other.message_id)),
         signature(std::move(other.signature)) {}
 
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination = std::move(other.destination);
     source = std::move(other.source);
+    checksums = std::move(other.checksums);
     message_id = std::move(other.message_id);
     signature = std::move(other.signature);
     return *this;
@@ -88,14 +93,15 @@ struct MessageHeader {
   bool operator<=(const MessageHeader& other) const { return !operator>(other); }
   bool operator>=(const MessageHeader& other) const { return !operator<(other); }
 
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination.data, source.data, message_id, signature);
+    archive(destination.data, source.data, checksums, message_id, signature);
   }
 
   DestinationAddress destination;
   SourceAddress source;
-  std::vector<crypto::SHA1Hash> message_id;
+  std::vector<crypto::SHA1Hash> checksums;
+  uint32_t message_id;
   boost::optional<asymm::Signature> signature;
 };
 

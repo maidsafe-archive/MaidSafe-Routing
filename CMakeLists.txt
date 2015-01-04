@@ -84,17 +84,13 @@ set(RoutingMessagesHeaders
     )
 source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
-#    ${RoutingSourcesDir}/acknowledgement.cc
-#    ${RoutingSourcesDir}/bootstrap_file_operations.cc
     ${RoutingSourcesDir}/bootstrap_handler.cc
-#    ${RoutingSourcesDir}/bootstrap_utils.cc
-#    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/message_handler.cc
-#    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     ${RoutingSourcesDir}/routing_node.cc
+    ${RoutingSourcesDir}/client.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
 set(RoutingMessagesSources
@@ -126,9 +122,8 @@ if(INCLUDE_TESTS)
   file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
   file(GLOB MessagesTestFiles ${RoutingSourcesDir}/messages/tests/*.cc)
   file(GLOB MessagesTestFileHeaders ${RoutingSourcesDir}/messages/tests/*.h)
-  foreach(TestFile ${TestFiles} ${MessagesTestFileHeaders} ${MessagesTestFiles})
+  foreach(TestFile ${TestFiles}  ${MessagesTestFiles})
     get_filename_component(TestName ${TestFile} NAME_WE)
-    # string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
     ms_add_executable(${TestName} "Tests/Routing" ${TestFile})
     target_link_libraries(${TestName} maidsafe_test_routing)
     list(APPEND RoutingTests ${TestName})
