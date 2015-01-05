@@ -22,7 +22,10 @@
 #include <vector>
 
 #include "asio/spawn.hpp"
+#include "asio/use_future.hpp"
 
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
@@ -40,22 +43,42 @@ namespace routing {
 
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
-                               ConnectionManager& connection_manager)
+                               ConnectionManager& connection_manager, asymm::Keys& keys)
     : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)) {}
-
+      accumulator_(std::chrono::minutes(10)),
+      keys_(keys) {}
+// reply with details, require to check incoming ID (GetKey)
 void MessageHandler::HandleMessage(Connect connect) {
-  rudp_.GetNextAvailableEndpoint(connect.header.source,
-                                 [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
-    if (!error)
-      auto targets(connection_mgr_.get_target(connect_msg.header.source));
-    for (const auto& target : targets)
-      // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
-      rudp_.Send(target.id, Serialise(forward_connect()));
-  });
+  if (!connection_manager_.SuggestNodeToAdd(connect.requester_id))
+    return;
+  // TODO(dirvine) check public key (co-routine)  :05/01/2015
+  rudp_.GetAvailableEndpoints(
+      connect.receiver_id,
+      [this, &connect](asio::error_code error, rudp::EndpointPair endpoint_pair) {
+        if (error)
+          return;
+        auto targets(connection_manager_.GetTarget(connect.requester_id));
+        ConnectResponse respond;
+        respond.requester_id = connect.requester_id;
+        respond.requester_endpoints = connect.requester_endpoints;
+        respond.receiver_id = connect.receiver_id;
+        assert(connect.receiver_id == connection_manager_.OurId());
+        respond.receiver_endpoints = endpoint_pair;
+        respond.receiver_public_key = keys_.public_key;
+        auto data(Serialise(respond));
+        auto data_signature(asymm::Sign(data, keys_.private_key));
+        MessageHeader header;
+        header.message_id = RandomUint32();
+        header.signature = data_signature;
+        header.source = SourceAddress(connection_manager_.OurId());
+        header.destination = DestinationAddress(connect.requester_id);
+        header.checksums.push_back(crypto::Hash<crypto::SHA1>(data));
+        auto tag = GivenTypeFindTag_v<ConnectResponse>::value;
+        rudp_.Send(connect.receiver_id, Serialise(header, tag, respond), asio::use_future).get();
+      });
 }
 
 void MessageHandler::HandleMessage(ForwardConnect forward_connect) {

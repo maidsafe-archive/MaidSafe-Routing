@@ -22,7 +22,7 @@
 #include "maidsafe/routing/messages/connect.h"
 #include "maidsafe/routing/messages/connect_response.h"
 #include "maidsafe/routing/messages/forward_connect.h"
-//#include "maidsafe/routing/messages/forward_connect_response.h"
+#include "maidsafe/routing/messages/forward_connect_response.h"
 #include "maidsafe/routing/messages/find_group.h"
 #include "maidsafe/routing/messages/find_group_response.h"
 #include "maidsafe/routing/messages/get_data.h"
