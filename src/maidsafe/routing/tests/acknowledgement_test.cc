@@ -49,9 +49,11 @@ class AcknowledgementTest : public testing::Test {
         asio_service_(2),
         acknowledgement_(local_node_id_, asio_service_),
         call_functor_(),
-        message_() {
+        message_(),
+        mutex_() {
     call_functor_ = [=](const boost::system::error_code& error) {
                       if (error.value() == boost::system::errc::success) {
+                        std::lock_guard<std::mutex> lock(mutex_);
                         message_.set_id(message_.id() + 1);
                         acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
                       }
@@ -72,6 +74,7 @@ class AcknowledgementTest : public testing::Test {
   Acknowledgement acknowledgement_;
   Handler call_functor_;
   protobuf::Message message_;
+  std::mutex mutex_;
 };
 
 TEST_F(AcknowledgementTest, BEH_CallOnce) {
@@ -91,7 +94,9 @@ TEST_F(AcknowledgementTest, BEH_CallTwice) {
 TEST_F(AcknowledgementTest, BEH_CallRemove) {
   acknowledgement_.Add(message_, call_functor_, Parameters::ack_timeout);
   Sleep(std::chrono::seconds(Parameters::ack_timeout * 2 + 1));
+  std::lock_guard<std::mutex> lock(this->mutex_);
   EXPECT_EQ(2, message_.id());
+  acknowledgement_.RemoveAll();
 }
 
 }  // namespace test

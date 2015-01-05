@@ -58,7 +58,7 @@ AckId Acknowledgement::GetId() {
   return ++ack_id_;
 }
 
-void Acknowledgement::Add(const protobuf::Message& message, Handler handler, int timeout) {
+void Acknowledgement::Add(protobuf::Message message, Handler handler, int timeout) {
   std::lock_guard<std::mutex> lock(mutex_);
   assert(message.has_ack_id() && "non-existing ack id");
   assert((message.ack_id() != 0) && "invalid ack id");
