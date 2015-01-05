@@ -43,7 +43,8 @@ namespace maidsafe {
 
 namespace routing {
 
-class RoutingNode : std::enable_shared_from_this<RoutingNode> {
+class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
+                    public rudp::ManagedConnections::Listener {
  public:  // key      value
   using Filter = LruCache<std::pair<SourceAddress, MessageId>, void>;
 
@@ -53,7 +54,14 @@ class RoutingNode : std::enable_shared_from_this<RoutingNode> {
     virtual ~Listener() {}
     // default no post allowed unless implemented in upper layers
     virtual bool Post(const MessageHeader&, const SerialisedMessage&) { return false; }
-    virtual boost::expected<DataValue, CommonErrors> Get(DataKey) {
+    template <typename DataName>
+    virtual boost::expected<typename DataName::data_type, CommonErrors> Get(const DataName&) {
+      return boost::make_unexpected(CommonErrors::no_such_element);
+    }
+    virtual boost::expected<typename DataName::data_type, CommonErrors> GetKey(const DataName& data) {
+      if (cache_.Get(data))
+        return data;
+      else
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
     // default no request allowed unless implemented in upper layers
@@ -62,7 +70,8 @@ class RoutingNode : std::enable_shared_from_this<RoutingNode> {
       return boost::make_unexpected(CommonErrors::no_such_element);
     }
     // default put is allowed unless prevented by upper layers
-    virtual bool Put(DataKey, DataValue) { return true; }
+    template <typename Data>
+    virtual bool Put(Data) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference) {}
   };
 
@@ -97,24 +106,13 @@ class RoutingNode : std::enable_shared_from_this<RoutingNode> {
   Address OurId() const { return our_id_; }
 
  private:
-  std::shared_ptr<RoutingNode> node_ptr_;
-  class RudpListener : public rudp::ManagedConnections::Listener,
-                       public std::enable_shared_from_this<RudpListener> {
-   public:
-    RudpListener(std::shared_ptr<RoutingNode> node_ptr_) : node_ptr_(node_ptr_) {}
-    virtual void MessageReceived(NodeId /*peer_id*/,
-                                 rudp::ReceivedMessage /*message*/) override final;
-    virtual void ConnectionLost(NodeId peer) override final;
-
-   private:
-    std::shared_ptr<RoutingNode> node_ptr_;
-  };
-
   void GetDataResponseReceived(GetData get_data);
   void PutDataResponseReceived(PutData put_data);
   void ResponseReceived(Response response);
 
-  void OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id);
+  virtual void MessageReceived(NodeId peer_id,
+                               rudp::ReceivedMessage serialised_message) override final;
+  virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
   asio::io_service& io_service_;
@@ -123,7 +121,6 @@ class RoutingNode : std::enable_shared_from_this<RoutingNode> {
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
-  std::shared_ptr<RudpListener> rudp_listener_;
   std::shared_ptr<Listener> listener_ptr_;
   MessageHandler message_handler_;
   Filter filter_;
@@ -135,7 +132,7 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), rudp_listener_, our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
                     handler);
   });
   return result.get();
@@ -147,7 +144,7 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), rudp_listener_, our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
                     handler, local_endpoint);
   });
   return result.get();

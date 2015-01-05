@@ -46,8 +46,7 @@ std::pair<MessageHeader, MessageTypeTag> ParseHeaderAndTypeEnum(
 
 RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
                          const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
-    : node_ptr_(shared_from_this()),
-      io_service_(io_service),
+    : io_service_(io_service),
       our_id_(pmid.name().value.string()),
       keys_([&pmid]() -> asymm::Keys {
         asymm::Keys keys;
@@ -58,13 +57,12 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, our_id_),
-      rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, keys_),
       filter_(std::chrono::minutes(20)),
       accumulator_(std::chrono::minutes(10)) {}
 
-void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
+void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
@@ -202,12 +200,8 @@ void RoutingNode::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, 
   }
 }
 
-void RoutingNode::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
-  node_ptr_->OnMessageReceived(std::move(message), peer_id);
-}
-
-void RoutingNode::RudpListener::ConnectionLost(NodeId peer) {
-  node_ptr_->connection_manager_.LostNetworkConnection(peer);
+void RoutingNode::ConnectionLost(NodeId peer) {
+  connection_manager_.LostNetworkConnection(peer);
 }
 
 }  // namespace routing
