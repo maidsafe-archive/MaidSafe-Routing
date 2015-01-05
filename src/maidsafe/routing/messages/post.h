@@ -39,58 +39,51 @@ namespace routing {
 
 struct Post {
   Post() = default;
-
-  Post(const Post&) = delete;
-
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : header(std::move(other.header)),
-                                         data_name(std::move(other.data_name)),
-                                         signature(std::move(other.signature)),
-                                         data(std::move(other.data)),
-                                         part(std::move(other.part)) {}
-
-  Post(DestinationAddress destination, SourceAddress source, Address data_name_in,
-       asymm::Signature signature_in, std::vector<byte> data_in, uint8_t part_in)
-      : header(std::move(destination), std::move(source), MessageId(RandomUint32())),
-        data_name(std::move(data_name_in)),
-        signature(std::move(signature_in)),
-        data(std::move(data_in)),
-        part(std::move(part_in)) {}
-
-  explicit Post(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), signature(), data(), part(0) {}
-
   ~Post() = default;
 
-  Post& operator=(const Post&) = delete;
+//  Post(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
+//      : key{std::move(data_name_in)},
+//        data{std::move(data_in)},
+//        part{std::move(part_in)} {}
+
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
+
+  template<typename T, typename U, typename V>
+  Post(T&& key_in, U&& data_in, V&& part_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        part{std::forward<V>(part_in)} {}
+
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                         data{std::move(other.data)},
+                                         part{std::move(other.part)} {}
 
   Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    data_name = std::move(other.data_name);
-    signature = std::move(other.signature);
+    key = std::move(other.key);
     data = std::move(other.data);
     part = std::move(other.part);
     return *this;
-  };
-
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<Post>::value, data_name, signature, data, part);
   }
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    archive(data_name, signature, data, part);
+  Post(const Post&) = delete;
+  Post& operator=(const Post&) = delete;
+
+  void operator()() {
+
   }
 
-  MessageHeader header;
-  Address data_name;
-  asymm::Signature signature;
+  template<typename Archive>
+  void serialize(Archive& archive) {
+    archive(key, data, part);
+  }
+
+  Address key;
   SerialisedData data;
-  uint8_t part;
+  std::vector<crypto::SHA1Hash> part;
 };
 
 }  // namespace routing

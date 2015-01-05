@@ -39,55 +39,40 @@ namespace routing {
 
 struct PutDataResponse {
   PutDataResponse() = default;
-
-  PutDataResponse(const PutDataResponse&) = delete;
-
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        part(std::move(other.part)),
-        result(std::move(other.result)) {}
-
-  PutDataResponse(PutData request, maidsafe_error result_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        part(std::move(request.part)),
-        result(std::move(result_in)) {}
-
-  explicit PutDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), part(0), result() {}
-
   ~PutDataResponse() = default;
 
-  PutDataResponse& operator=(const PutDataResponse&) = delete;
+  template<typename T, typename U, typename V>
+  PutDataResponse(T&& key_in, U&& part_in, V&& result_in)
+      : key{std::forward<T>(key_in)},
+        part{std::forward<U>(part_in)},
+        result{std::forward<V>(result_in)} {}
+
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : key{std::move(other.key)},
+        part{std::move(other.part)},
+        result{std::move(other.result)} {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    data_name = std::move(other.data_name);
+    key = std::move(other.key);
     part = std::move(other.part);
     result = std::move(other.result);
     return *this;
-  };
-
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<PutDataResponse>::value, data_name, result);
   }
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    archive(data_name, result);
+  PutDataResponse(const PutDataResponse&) = delete;
+  PutDataResponse& operator=(const PutDataResponse&) = delete;
+
+  void operator()() {
+
   }
 
-  MessageHeader header;
-  Address data_name;
-  uint8_t part;
+  template<typename Archive>
+  void serialize(Archive& archive) {
+    archive(key, part, result);
+  }
+
+  Address key;
+  std::vector<crypto::SHA1Hash> part;
   maidsafe_error result;
 };
 

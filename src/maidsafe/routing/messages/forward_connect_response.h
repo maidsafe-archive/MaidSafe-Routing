@@ -16,70 +16,55 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
-#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_RESPONSE_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
-#include "maidsafe/rudp/contact.h"
+#include <vector>
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/messages/connect.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct ForwardConnect {
-  ForwardConnect() = default;
-  ~ForwardConnect() = default;
+struct ForwardConnectResponse {
+  ForwardConnectResponse() = default;
 
-  template<typename T, typename U, typename V, typename W>
-  ForwardConnect(T&& requester_endpoints_in, U&& requester_id_in,
-                 V&& receiver_id_in, W&& receiver_public_key_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        requester_id{std::forward<U>(requester_id_in)},
-        receiver_id{std::forward<V>(receiver_id_in)},
-        receiver_public_key{std::forward<W>(receiver_public_key_in)} {}
+  ForwardConnectResponse(const ForwardConnectResponse&) = delete;
 
-  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
+  ForwardConnectResponse(ForwardConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
+        receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)),
-        receiver_public_key(std::move(other.receiver_public_key)) {}
+        receiver_id(std::move(other.receiver_id)) {}
 
-  ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
+  ~ForwardConnectResponse() = default;
+
+  ForwardConnectResponse& operator=(const ForwardConnectResponse&) = delete;
+
+  ForwardConnectResponse& operator=(ForwardConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
+    receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
-    receiver_public_key = std::move(other.receiver_public_key);
     return *this;
   }
 
-  ForwardConnect(const ForwardConnect&) = delete;
-  ForwardConnect& operator=(const ForwardConnect&) = delete;
+  void operator()() {}
 
-  void operator()() {
-
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id, receiver_public_key);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
   }
 
   rudp::EndpointPair requester_endpoints;
+  rudp::EndpointPair receiver_endpoints;
   Address requester_id;
   Address receiver_id;
-  asymm::PublicKey receiver_public_key;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_CONNECT_RESPONSE_H_

@@ -16,45 +16,38 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_H_
-#define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
+#include <vector>
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct GetData {
-  GetData() = default;
-  ~GetData() = default;
+struct ForwardPost {
+  ForwardPost() = default;
+  ~ForwardPost() = default;
 
-//  GetData(Address data_name_in) : key{std::move(data_name_in)} {}
+  template<typename T, typename U>
+  ForwardPost(T&& data_in, U&& part_in)
+      : data{std::forward<T>(data_in)},
+        part{std::forward<U>(part_in)} {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
+  ForwardPost(ForwardPost&& other) MAIDSAFE_NOEXCEPT
+      : data{std::move(other.data)},
+        part{std::move(other.part)} {}
 
-  template<typename T>
-  GetData(T&& key_in) : key{std::forward<T>(key_in)} {}
-
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)} {}
-
-  GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
+  ForwardPost& operator=(ForwardPost&& other) MAIDSAFE_NOEXCEPT {
+    data = std::move(other.data);
+    part = std::move(other.part);
     return *this;
   }
 
-  GetData(const GetData&) = delete;
-  GetData& operator=(const GetData&) = delete;
+  ForwardPost(const ForwardPost&) = delete;
+  ForwardPost& operator=(const ForwardPost&) = delete;
 
   void operator()() {
 
@@ -62,14 +55,15 @@ struct GetData {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(key);
+    archive(data, part);
   }
 
-  Address key;
+  SerialisedMessage data;
+  std::vector<crypto::SHA1Hash> part;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_DATA_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_

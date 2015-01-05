@@ -22,7 +22,10 @@
 #include <vector>
 
 #include "asio/spawn.hpp"
+#include "asio/use_future.hpp"
 
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
@@ -32,51 +35,57 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/rudp/managed_connections.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace {
-
-//using MessageMap =
-//    GetMap<Connect, ForwardConnect, FindGroup, FindGroupResponse, GetData, PutData, Post>::Map;
-
-}  // unnamed namespace
-
 MessageHandler::MessageHandler(asio::io_service& io_service,
                                rudp::ManagedConnections& managed_connections,
-                               ConnectionManager& connection_manager)
+                               ConnectionManager& connection_manager, asymm::Keys& keys)
     : io_service_(io_service),
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)) {
-  (void)rudp_;
-  (void)connection_manager_;
-  (void)io_service_;
-  (void)cache_;
-  (void)accumulator_;
+      accumulator_(std::chrono::minutes(10)),
+      keys_(keys) {}
+// reply with details, require to check incoming ID (GetKey)
+void MessageHandler::HandleMessage(Connect connect) {
+  if (!connection_manager_.SuggestNodeToAdd(connect.requester_id))
+    return;
+  // TODO(dirvine) check public key (co-routine)  :05/01/2015
+  rudp_.GetAvailableEndpoints(
+      connect.receiver_id,
+      [this, &connect](asio::error_code error, rudp::EndpointPair endpoint_pair) {
+        if (error)
+          return;
+        auto targets(connection_manager_.GetTarget(connect.requester_id));
+        ConnectResponse respond;
+        respond.requester_id = connect.requester_id;
+        respond.requester_endpoints = connect.requester_endpoints;
+        respond.receiver_id = connect.receiver_id;
+        assert(connect.receiver_id == connection_manager_.OurId());
+        respond.receiver_endpoints = endpoint_pair;
+        respond.receiver_public_key = keys_.public_key;
+        auto data(Serialise(respond));
+        auto data_signature(asymm::Sign(data, keys_.private_key));
+        MessageHeader header;
+        header.message_id = RandomUint32();
+        header.signature = data_signature;
+        header.source = SourceAddress(connection_manager_.OurId());
+        header.destination = DestinationAddress(connect.requester_id);
+        header.checksums.push_back(crypto::Hash<crypto::SHA1>(data));
+        auto tag = GivenTypeFindTag_v<ConnectResponse>::value;
+        rudp_.Send(connect.receiver_id, Serialise(header, tag, respond), asio::use_future).get();
+      });
 }
 
-void MessageHandler::HandleMessage(Connect connect) {
+void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
     ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
     // rudp_.
   }
-
-  //    rudp_.GetNextAvailableEndpoint(
-  //        connect_msg.header.source,
-  //        [this](maidsafe_error error, rudp::endpoint_pair endpoint_pair) {
-  //          if (!error)
-  //            auto targets(connection_mgr_.get_target(connect_msg.header.source));
-  //          for (const auto& target : targets)
-  //            // FIXME (dirvine) Check connect parameters and why no response type 19/11/2014
-  //        rudp_.Send(target.id, Serialise(forward_connect());
-  //        });
-}
-
-void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   auto& source_id = forward_connect.header.source.data;
   if (source_id == forward_connect.requester.id) {
     LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
@@ -99,17 +108,34 @@ void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
   });
 }
 
+void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
+
+// void MessageHandler::HandleMessage(ForwardConnectResponse /* forward_connect_response */) {}
+
 void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
 void MessageHandler::HandleMessage(FindGroupResponse /*find_group_reponse*/) {}
 
 void MessageHandler::HandleMessage(GetData /*get_data*/) {}
 
+void MessageHandler::HandleMessage(GetDataResponse /* get_data_response */) {}
+
 void MessageHandler::HandleMessage(PutData /*put_data*/) {}
+
+void MessageHandler::HandleMessage(PutDataResponse /*put_data_response*/) {}
+
+void MessageHandler::HandleMessage(ForwardPutData /* forward_put_data */) {}
+
+// void MessageHandler::HandleMessage(PutKey /* put_key */) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
 
-void MessageHandler::HandleMessage(PutDataResponse /*response*/) {}
+void MessageHandler::HandleMessage(ForwardPost /* forward_post */) {}
+
+void MessageHandler::HandleMessage(Request /* request */) {}
+void MessageHandler::HandleMessage(ForwardRequest /* forward_request */) {}
+void MessageHandler::HandleMessage(Response /* response */) {}
+
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return SourceAddress{connection_manager_.OurId()};

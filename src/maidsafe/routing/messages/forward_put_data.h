@@ -16,31 +16,27 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
-#define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_PUT_DATA_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_PUT_DATA_RESPONSE_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
-#include "maidsafe/rudp/contact.h"
+#include <vector>
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct FindGroup {
-  FindGroup() = default;
-  ~FindGroup() = default;
+struct ForwardPutData {
+  ForwardPutData() = default;
+  ~ForwardPutData() = default;
 
-//  FindGroup(rudp::EndpointPair requester_endpoints, Address requester_id_in,
-//            Address receiver_id_in)
-//      : requester_endpoints{std::move(requester_endpoints)},
-//        requester_id{std::move(requester_id_in)},
-//        receiver_id{std::move(receiver_id_in)} {}
+//  ForwardPutData(SerialisedMessage new_data,
+//                 std::vector<crypto::SHA1Hash> new_part,
+//                 asymm::PublicKey new_requester_public_key)
+//    : data{std::move(new_data)},
+//      part{std::move(new_part)},
+//      requester_public_key{std::move(new_requester_public_key)} {}
 
   // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
   // does not have a move ctor) depending on invocation site.
@@ -49,25 +45,25 @@ struct FindGroup {
   // there will be no change in the signature of the one below.
 
   template<typename T, typename U, typename V>
-  FindGroup(T&& requester_endpoints_in, U&& requester_id_in, V&& receiver_id_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        requester_id{std::forward<U>(requester_id_in)},
-        receiver_id{std::forward<V>(receiver_id_in)} {}
+  ForwardPutData(T&& data_in, U&& part_in, V&& requester_public_key_in)
+      : data{std::forward<T>(data_in)},
+        part{std::forward<U>(part_in)},
+        requester_public_key{std::forward<V>(requester_public_key_in)} {}
 
-  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT
-      : requester_endpoints{std::move(other.requester_endpoints)},
-        requester_id{std::move(other.requester_id)},
-        receiver_id{std::move(other.receiver_id)} {}
+  ForwardPutData(ForwardPutData&& other) MAIDSAFE_NOEXCEPT
+      : data{std::move(other.data)},
+        part{std::move(other.part)},
+        requester_public_key{std::move(other.requester_public_key)} {}
 
-  FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
-    requester_endpoints = std::move(other.requester_endpoints);
-    requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
+  ForwardPutData& operator=(ForwardPutData&& other) MAIDSAFE_NOEXCEPT {
+    data = std::move(other.data);
+    part = std::move(other.part);
+    requester_public_key = std::move(other.requester_public_key);
     return *this;
   }
 
-  FindGroup(const FindGroup&) = delete;
-  FindGroup& operator=(const FindGroup&) = delete;
+  ForwardPutData(const ForwardPutData&) = delete;
+  ForwardPutData& operator=(const ForwardPutData&) = delete;
 
   void operator()() {
 
@@ -75,15 +71,16 @@ struct FindGroup {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id);
+    archive(data, part, requester_public_key);
   }
 
-  rudp::EndpointPair requester_endpoints;
-  Address requester_id, receiver_id;
+  SerialisedMessage data;
+  std::vector<crypto::SHA1Hash> part;
+  asymm::PublicKey requester_public_key;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_PUT_DATA_RESPONSE_H_

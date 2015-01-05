@@ -25,6 +25,8 @@ namespace routing {
 
 enum class MessageTypeTag : uint16_t {
   Connect,
+  ConnectResponse,
+  ForwardConnectResponse,
   ForwardConnect,
   FindGroup,
   FindGroupResponse,
@@ -38,24 +40,28 @@ enum class MessageTypeTag : uint16_t {
   Post,
   ForwardRequest,
   Request,
+  ForwardResponse,
   Response
 };
 
 struct Connect;
+struct ConnectResponse;
+struct ForwardConnectResponse;
 struct ForwardConnect;
 struct FindGroup;
 struct FindGroupResponse;
 struct GetData;
 struct GetDataResponse;
+struct ForwardPutData;
 struct PutData;
 struct PutKey;
-struct ForwardPutData;
 struct PutDataResponse;
 struct ForwardPost;
 struct Post;
 struct ForwardRequest;
 struct Request;
 struct Response;
+struct ForwardResponse;
 
 }  // namespace routing
 

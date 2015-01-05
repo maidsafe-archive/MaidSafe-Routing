@@ -28,26 +28,29 @@ namespace maidsafe {
 namespace routing {
 
 struct CompileTimeMapper {
-private:
-  template<typename T>
+ private:
+  template <typename T>
   using remove_ref_cv_t = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
   // ****************************************************************
   //                        Map Segment
   // ****************************************************************
-  template<typename Data, typename NextNode> struct Node;
+  template <typename Data, typename NextNode>
+  struct Node;
   struct ERROR_Entry_Not_Found_In_Map;
 
-  template<MessageTypeTag, typename> struct Pair;
+  template <MessageTypeTag, typename>
+  struct Pair;
 
-  template<typename...> struct CompileTimeMap;
+  template <typename...>
+  struct CompileTimeMap;
 
-  template<MessageTypeTag tag, typename Type, typename... Pairs>
+  template <MessageTypeTag tag, typename Type, typename... Pairs>
   struct CompileTimeMap<Pair<tag, Type>, Pairs...> {
     using Map = Node<Pair<tag, Type>, typename CompileTimeMap<Pairs...>::Map>;
   };
 
-  template<MessageTypeTag tag, typename Type>
+  template <MessageTypeTag tag, typename Type>
   struct CompileTimeMap<Pair<tag, Type>> {
     using Map = Node<Pair<tag, Type>, ERROR_Entry_Not_Found_In_Map>;
   };
@@ -55,76 +58,77 @@ private:
   // ****************************************************************
   //                        Search Segment
   // ****************************************************************
-  template<MessageTypeTag, typename> struct GivenTagFindType;
+  template <MessageTypeTag, typename>
+  struct GivenTagFindType;
 
-  template<MessageTypeTag GivenTag, MessageTypeTag tag, typename Type, typename NextNode>
+  template <MessageTypeTag GivenTag, MessageTypeTag tag, typename Type, typename NextNode>
   struct GivenTagFindType<GivenTag, Node<Pair<tag, Type>, NextNode>>
       : GivenTagFindType<GivenTag, NextNode> {};
 
-  template<MessageTypeTag GivenTag, typename Type, typename NextNode>
+  template <MessageTypeTag GivenTag, typename Type, typename NextNode>
   struct GivenTagFindType<GivenTag, Node<Pair<GivenTag, Type>, NextNode>> {
     using type = Type;
   };
 
-  template<MessageTypeTag GivenTag>
+  template <MessageTypeTag GivenTag>
   struct GivenTagFindType<GivenTag, ERROR_Entry_Not_Found_In_Map> {};
 
   // ----------------------------------------------------------------
 
-  template<typename, typename> struct GivenTypeFindTag;
+  template <typename, typename>
+  struct GivenTypeFindTag;
 
-  template<typename GivenType, MessageTypeTag tag, typename Type, typename NextNode>
+  template <typename GivenType, MessageTypeTag tag, typename Type, typename NextNode>
   struct GivenTypeFindTag<GivenType, Node<Pair<tag, Type>, NextNode>>
       : GivenTypeFindTag<GivenType, NextNode> {};
 
-  template<typename GivenType, MessageTypeTag tag, typename NextNode>
+  template <typename GivenType, MessageTypeTag tag, typename NextNode>
   struct GivenTypeFindTag<GivenType, Node<Pair<tag, GivenType>, NextNode>> {
-    static const MessageTypeTag value {tag};
+    static const MessageTypeTag value{tag};
   };
 
-  template<typename GivenType>
+  template <typename GivenType>
   struct GivenTypeFindTag<GivenType, ERROR_Entry_Not_Found_In_Map> {};
 
   // ****************************************************************
   //                        Populate Segment
   // ****************************************************************
   using RootNode = CompileTimeMap<
-  Pair<MessageTypeTag::Connect, Connect>,
-  Pair<MessageTypeTag::ForwardConnect, ForwardConnect>,
-  Pair<MessageTypeTag::FindGroup, FindGroup>,
-  Pair<MessageTypeTag::FindGroupResponse, FindGroupResponse>,
-  Pair<MessageTypeTag::GetData, GetData>,
-  Pair<MessageTypeTag::GetDataResponse, GetDataResponse>,
-  Pair<MessageTypeTag::PutData, PutData>,
-  Pair<MessageTypeTag::PutKey, PutKey>,
-  Pair<MessageTypeTag::ForwardPutData, ForwardPutData>,
-  Pair<MessageTypeTag::PutDataResponse, PutDataResponse>,
-  Pair<MessageTypeTag::ForwardPost, ForwardPost>,
-  Pair<MessageTypeTag::Post, Post>,
-  Pair<MessageTypeTag::ForwardRequest, ForwardRequest>,
-  Pair<MessageTypeTag::Request, Request>,
-  Pair<MessageTypeTag::Response, Response>
-  >::Map;
+      Pair<MessageTypeTag::Connect, Connect>,
+      Pair<MessageTypeTag::ConnectResponse, ConnectResponse>,
+      Pair<MessageTypeTag::ForwardConnect, ForwardConnect>,
+      Pair<MessageTypeTag::ForwardConnectResponse, ForwardConnectResponse>,
+      Pair<MessageTypeTag::FindGroup, FindGroup>,
+      Pair<MessageTypeTag::FindGroupResponse, FindGroupResponse>,
+      Pair<MessageTypeTag::GetData, GetData>,
+      Pair<MessageTypeTag::GetDataResponse, GetDataResponse>,
+      Pair<MessageTypeTag::PutData, PutData>,
+      Pair<MessageTypeTag::PutDataResponse, PutDataResponse>,
+      Pair<MessageTypeTag::ForwardPutData, ForwardPutData>, Pair<MessageTypeTag::PutKey, PutKey>,
+      Pair<MessageTypeTag::Post, Post>, Pair<MessageTypeTag::ForwardPost, ForwardPost>,
+      Pair<MessageTypeTag::ForwardRequest, ForwardRequest>,
+      Pair<MessageTypeTag::ForwardResponse, ForwardResponse>,
+      Pair<MessageTypeTag::Request, Request>, Pair<MessageTypeTag::Response, Response>>::Map;
 
-public:
+ public:
   CompileTimeMapper() = delete;
 
   // ****************************************************************
   //                        Convenience Segment
   // ****************************************************************
-  template<MessageTypeTag tag>
+  template <MessageTypeTag tag>
   using GivenTagFindType_t = typename GivenTagFindType<tag, RootNode>::type;
 
-  template<typename Type>
+  template <typename Type>
   struct GivenTypeFindTag_v : GivenTypeFindTag<remove_ref_cv_t<Type>, RootNode> {};
 };
 
 
 // Following are not necessary - Just for convenience to avoid typing CompileTimeMapper.
-template<MessageTypeTag tag>
+template <MessageTypeTag tag>
 using GivenTagFindType_t = CompileTimeMapper::GivenTagFindType_t<tag>;
 
-template<typename Type>
+template <typename Type>
 using GivenTypeFindTag_v = CompileTimeMapper::GivenTypeFindTag_v<Type>;
 
 }  // namespace routing

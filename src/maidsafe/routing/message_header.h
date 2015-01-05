@@ -34,70 +34,76 @@ namespace routing {
 
 struct MessageHeader {
   MessageHeader() = default;
+  ~MessageHeader() = default;
 
-  MessageHeader(const MessageHeader&) = delete;
+  template <typename T, typename U, typename V, typename W, typename X>
+  MessageHeader(T&& destination_in, U&& source_in, V&& checksums_in, W&& message_id_in,
+                X&& signature_in)
+      : destination{std::forward<T>(destination_in)},
+        source{std::forward<U>(source_in)},
+        checksums{std::forward<V>(checksums_in)},
+        message_id{std::forward<V>(message_id_in)},
+        signature{std::forward<W>(signature_in)} {}
+
+  template <typename T, typename U, typename V, typename W, typename X>
+  MessageHeader(T&& destination_in, U&& source_in, V&& checksums_in, X&& message_id_in)
+      : destination{std::forward<T>(destination_in)},
+        source{std::forward<U>(source_in)},
+        checksums{std::forward<U>(checksums_in)},
+        message_id{std::forward<V>(message_id_in)},
+        signature{} {}
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
       : destination(std::move(other.destination)),
         source(std::move(other.source)),
+        checksums(std::move(other.checksums)),
         message_id(std::move(other.message_id)),
-        checksum_index(std::move(other.checksum_index)),
-        checksums(std::move(other.checksums)) {}
-
-  MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in,
-                uint8_t checksum_index_in, std::vector<crypto::SHA1Hash> checksums_in)
-      : destination(std::move(destination_in)),
-        source(std::move(source_in)),
-        message_id(std::move(message_id_in)),
-        checksum_index(std::move(checksum_index_in)),
-        checksums(std::move(checksums_in)) {}
-
-  MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in)
-      : destination(std::move(destination_in)),
-        source(std::move(source_in)),
-        message_id(std::move(message_id_in)),
-        checksum_index(0),
-        checksums() {}
-
-  ~MessageHeader() = default;
-
-  MessageHeader& operator=(const MessageHeader&) = delete;
+        signature(std::move(other.signature)) {}
 
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination = std::move(other.destination);
     source = std::move(other.source);
-    message_id = std::move(other.message_id);
-    checksum_index = std::move(other.checksum_index);
     checksums = std::move(other.checksums);
+    message_id = std::move(other.message_id);
+    signature = std::move(other.signature);
     return *this;
   }
+
+  MessageHeader(const MessageHeader&) = delete;
+  MessageHeader& operator=(const MessageHeader&) = delete;
+
   // regular
-  bool operator==(const MessageHeader& other) {
+  bool operator==(const MessageHeader& other) const {
     return std::tie(message_id, destination, source) ==
            std::tie(other.message_id, other.destination, other.source);
   }
-  bool operator!=(const MessageHeader& other) { return !operator==(other); }
+
+  bool operator!=(const MessageHeader& other) const { return !operator==(other); }
+
   // fully ordered
-  bool operator<(const MessageHeader& other) {
+  bool operator<(const MessageHeader& other) const {
     return std::tie(message_id, destination, source) <
            std::tie(other.message_id, other.destination, other.source);
   }
-  bool operator>(const MessageHeader& other) { return operator<(other); }
-  bool operator<=(const MessageHeader& other) { return !operator>(other); }
-  bool operator>=(const MessageHeader& other) { return !operator<(other); }
+
+  bool operator>(const MessageHeader& other) const {
+    return !(operator<(other) || operator==(other));
+  }
+
+  bool operator<=(const MessageHeader& other) const { return !operator>(other); }
+  bool operator>=(const MessageHeader& other) const { return !operator<(other); }
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination.data, source.data, message_id.data, checksum_index, checksums);
+    archive(destination.data, source.data, checksums, message_id, signature);
   }
 
   DestinationAddress destination;
   SourceAddress source;
-  MessageId message_id;
-  uint8_t checksum_index;
   std::vector<crypto::SHA1Hash> checksums;
+  uint32_t message_id;
+  boost::optional<asymm::Signature> signature;
 };
-
 
 }  // namespace routing
 

@@ -34,51 +34,46 @@ namespace routing {
 
 struct GetDataResponse {
   GetDataResponse() = default;
-
-  GetDataResponse(const GetDataResponse&) = delete;
-
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)),
-        data_name(std::move(other.data_name)),
-        data(std::move(other.data)) {}
-
-  GetDataResponse(GetData request, SerialisedData data_in)
-      : header(DestinationAddress(std::move(request.header.source.data)),
-               SourceAddress(std::move(request.header.destination.data)),
-               request.header.message_id),
-        data_name(std::move(request.data_name)),
-        data(std::move(data_in)) {}
-
-  explicit GetDataResponse(MessageHeader header_in)
-      : header(std::move(header_in)), data_name(), data() {}
-
   ~GetDataResponse() = default;
 
-  GetDataResponse& operator=(const GetDataResponse&) = delete;
+//  GetDataResponse(Address data_name_in, SerialisedData data_in)
+//      : key{std::move(data_name_in)},
+//        data{std::move(data_in)} {}
+
+  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
+  // does not have a move ctor) depending on invocation site.
+  // The one below will always have single move or single copy depending on invocation site.
+  // Also if the type of the member var is changed we will have to revisit the one above, while
+  // there will be no change in the signature of the one below.
+
+  template<typename T, typename U>
+  GetDataResponse(T&& key_in, U&& data_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)} {}
+
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : key{std::move(other.key)},
+        data{std::move(other.data)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    data_name = std::move(other.data_name);
+    key = std::move(other.key);
     data = std::move(other.data);
     return *this;
   }
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<GetDataResponse>::value, data_name, data);
+  GetDataResponse(const GetDataResponse&) = delete;
+  GetDataResponse& operator=(const GetDataResponse&) = delete;
+
+  void operator()() {
+
   }
 
-  template <typename Archive>
-  void load(Archive& archive) {
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    archive(data_name, data);
+  template<typename Archive>
+  void serialize(Archive& archive) {
+    archive(key, data);
   }
 
-  MessageHeader header;
-  Address data_name;
+  Address key;
   SerialisedData data;
 };
 

@@ -35,60 +35,44 @@ namespace routing {
 
 struct FindGroupResponse {
   FindGroupResponse() = default;
-
-  FindGroupResponse(const FindGroupResponse&) = delete;
-
-  FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : header(std::move(other.header)) /*,
-        requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_endpoints(std::move(other.receiver_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id))*/ {}
-
-  FindGroupResponse(FindGroup originator /*, rudp::EndpointPair receiver_endpoints*/)
-      : header(DestinationAddress(std::move(originator.header.source.data)),
-               SourceAddress(std::move(originator.header.destination.data)),
-               originator.header.message_id) /*,
-        requester_endpoints(std::move(originator.requester_endpoints)),
-        receiver_endpoints(std::move(receiver_endpoints)),
-        requester_id(std::move(originator.requester_id)),
-        receiver_id(std::move(originator.receiver_id))*/ {}
-
-  explicit FindGroupResponse(MessageHeader header_in)
-      : header(std::move(header_in)) /*, requester_endpoints(), requester_id(), receiver_id()*/ {}
-
   ~FindGroupResponse() = default;
 
-  FindGroupResponse& operator=(const FindGroupResponse&) = delete;
+  template<typename T, typename U, typename V, typename W>
+  FindGroupResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in,
+                    V&& requester_id_in, W&& receiver_id_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
+        requester_id{std::forward<V>(requester_id_in)},
+        receiver_id{std::forward<W>(receiver_id_in)} {}
+
+  FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
+      : requester_endpoints{std::move(other.requester_endpoints)},
+        receiver_endpoints{std::move(other.receiver_endpoints)},
+        requester_id{std::move(other.requester_id)},
+        receiver_id{std::move(other.receiver_id)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
-    header = std::move(other.header);
-    // requester_endpoints = std::move(other.requester_endpoints);
-    // receiver_endpoints = std::move(other.receiver_endpoints);
-    // requester_id = std::move(other.requester_id);
-    // receiver_id = std::move(other.receiver_id);
+    requester_endpoints = std::move(other.requester_endpoints);
+    receiver_endpoints = std::move(other.receiver_endpoints);
+    requester_id = std::move(other.requester_id);
+    receiver_id = std::move(other.receiver_id);
     return *this;
   }
 
+  FindGroupResponse(const FindGroupResponse&) = delete;
+  FindGroupResponse& operator=(const FindGroupResponse&) = delete;
 
-  template <typename Archive>
-  void save(Archive& archive) const {
-    archive(header, GivenTypeFindTag_v<FindGroupResponse>::value
-            /*, requester_endpoints, requester_id, receiver_id*/);
+  void operator()() {
+
   }
 
-  template <typename Archive>
-  void load(Archive& /*archive*/) {
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
-    // archive(/*requester_endpoints, requester_id, receiver_id*/);
+  template<typename Archive>
+  void serialize(Archive& archive) {
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
   }
 
-  MessageHeader header;
-  // rudp::EndpointPair requester_endpoints, receiver_endpoints;
-  // Address requester_id, receiver_id;
+  rudp::EndpointPair requester_endpoints, receiver_endpoints;
+  Address requester_id, receiver_id;
 };
 
 }  // namespace routing

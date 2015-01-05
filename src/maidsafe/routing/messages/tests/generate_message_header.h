@@ -16,26 +16,44 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
-#define MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_
+#define MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_
 
-#include "maidsafe/routing/messages/connect.h"
-#include "maidsafe/routing/messages/connect_response.h"
-#include "maidsafe/routing/messages/forward_connect.h"
-#include "maidsafe/routing/messages/forward_connect_response.h"
-#include "maidsafe/routing/messages/find_group.h"
-#include "maidsafe/routing/messages/find_group_response.h"
-#include "maidsafe/routing/messages/get_data.h"
-#include "maidsafe/routing/messages/get_data_response.h"
-#include "maidsafe/routing/messages/post.h"
-#include "maidsafe/routing/messages/forward_post.h"
-#include "maidsafe/routing/messages/put_data.h"
-#include "maidsafe/routing/messages/put_data_response.h"
-#include "maidsafe/routing/messages/forward_put_data.h"
-#include "maidsafe/routing/messages/request.h"
-#include "maidsafe/routing/messages/forward_request.h"
-#include "maidsafe/routing/messages/response.h"
-#include "maidsafe/routing/messages/forward_response.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/routing/message_header.h"
 
+namespace maidsafe {
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
+namespace routing {
+
+namespace test {
+
+inline std::vector<crypto::SHA1Hash> GenerateSHA1HashVector() {
+  const auto max(RandomUint32() % 10u + 1u);
+
+  std::vector<crypto::SHA1Hash> message_id;
+  message_id.reserve(max);
+
+  for(std::uint32_t i{}; i < max; ++i) {
+    message_id.emplace_back(RandomString(crypto::SHA1::DIGESTSIZE));
+  }
+
+  return message_id;
+}
+
+inline MessageHeader GenerateMessageHeader() {
+  return {
+    DestinationAddress{Address{RandomString(Address::kSize)}},
+    SourceAddress{Address{RandomString(Address::kSize)}},
+    GenerateSHA1HashVector(),
+    rsa::Sign(rsa::PlainText{RandomString(Address::kSize)}, asymm::GenerateKeyPair().private_key)
+  };
+}
+
+}  // namespace test
+
+}  // namespace routing
+
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_
