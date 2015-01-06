@@ -53,14 +53,14 @@ class MessageHandler {
 
   // Send ourAddress, targetAddress and endpointpair to our close group
   void HandleMessage(Connect connect);
-  // recieve connect from node and add nodes publicKey forwards request to targetAddress
-  void HandleMessage(ForwardConnect forward_connect);
+  // recieve connect from node and add nodes publicKey clients request to targetAddress
+  void HandleMessage(ClientConnect client_connect);
   // like connect but add targets endpoint
   void HandleMessage(ConnectResponse connect_response);
-  // like forwardconnect adding targets public key (recieved by targets close group) (recieveing
+  // like clientconnect adding targets public key (recieved by targets close group) (recieveing
   // needs a Quorum)
 
-  //  void HandleMessage(ForwardConnectResponse forward_connect_response);
+  //  void HandleMessage(ClientConnectResponse client_connect_response);
   // sent by routing nodes to a network Address
   void HandleMessage(FindGroup find_group);
   // each member of the group close to network Address fills in their node_info and replies
@@ -75,12 +75,12 @@ class MessageHandler {
   void HandleMessage(PutDataResponse put_data);
   // each member of a group needs to send this to the network address (recieveing needs a Quorum)
   // filling in public key again.
-  void HandleMessage(ForwardPutData forward_put_data);
+  void HandleMessage(ClientPutData client_put_data);
   // any node can put a key on the network (it may be refused though), there is no callback and the
   // key requres to be read after writing in this case
   void HandleMessage(PutKey put_key);
   // a node can send this, the target needs to be it's close group
-  void HandleMessage(ForwardPost forward_post);
+  void HandleMessage(ClientPost client_post);
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
   void HandleMessage(Post post);
@@ -88,11 +88,11 @@ class MessageHandler {
   void HandleMessage(Request request);
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
-  void HandleMessage(ForwardRequest forward_request);
+  void HandleMessage(ClientRequest client_request);
   // a node can send this, the target needs to be it's close group
   void HandleMessage(Response response);
   // close group receives this and sends to the target filling in public key again.
-  void HandleMessage(ForwardResponse forward_response);
+  void HandleMessage(ClientResponse client_response);
 
  private:
   SourceAddress OurSourceAddress() const;

@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
 #define MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
 
+#include <cstdint>
+
 namespace maidsafe {
 
 namespace routing {
@@ -26,42 +28,42 @@ namespace routing {
 enum class MessageTypeTag : uint16_t {
   Connect,
   ConnectResponse,
-  ForwardConnectResponse,
-  ForwardConnect,
+  ClientConnectResponse,
+  ClientConnect,
   FindGroup,
   FindGroupResponse,
   GetData,
   GetDataResponse,
   PutData,
   PutKey,
-  ForwardPutData,
+  ClientPutData,
   PutDataResponse,
-  ForwardPost,
+  ClientPost,
   Post,
-  ForwardRequest,
+  ClientRequest,
   Request,
-  ForwardResponse,
+  ClientResponse,
   Response
 };
 
 struct Connect;
 struct ConnectResponse;
-struct ForwardConnectResponse;
-struct ForwardConnect;
+struct ClientConnectResponse;
+struct ClientConnect;
 struct FindGroup;
 struct FindGroupResponse;
 struct GetData;
 struct GetDataResponse;
-struct ForwardPutData;
+struct ClientPutData;
 struct PutData;
 struct PutKey;
 struct PutDataResponse;
-struct ForwardPost;
+struct ClientPost;
 struct Post;
-struct ForwardRequest;
+struct ClientRequest;
 struct Request;
 struct Response;
-struct ForwardResponse;
+struct ClientResponse;
 
 }  // namespace routing
 

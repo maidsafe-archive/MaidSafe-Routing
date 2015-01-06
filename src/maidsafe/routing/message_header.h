@@ -42,15 +42,15 @@ struct MessageHeader {
       : destination{std::forward<T>(destination_in)},
         source{std::forward<U>(source_in)},
         checksums{std::forward<V>(checksums_in)},
-        message_id{std::forward<V>(message_id_in)},
-        signature{std::forward<W>(signature_in)} {}
+        message_id{std::forward<W>(message_id_in)},
+        signature{std::forward<X>(signature_in)} {}
 
   template <typename T, typename U, typename V, typename W, typename X>
   MessageHeader(T&& destination_in, U&& source_in, V&& checksums_in, X&& message_id_in)
       : destination{std::forward<T>(destination_in)},
         source{std::forward<U>(source_in)},
-        checksums{std::forward<U>(checksums_in)},
-        message_id{std::forward<V>(message_id_in)},
+        checksums{std::forward<V>(checksums_in)},
+        message_id{std::forward<W>(message_id_in)},
         signature{} {}
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT

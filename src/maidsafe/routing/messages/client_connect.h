@@ -34,25 +34,25 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ForwardConnect {
-  ForwardConnect() = default;
-  ~ForwardConnect() = default;
+struct ClientConnect {
+  ClientConnect() = default;
+  ~ClientConnect() = default;
 
   template<typename T, typename U, typename V, typename W>
-  ForwardConnect(T&& requester_endpoints_in, U&& requester_id_in,
+  ClientConnect(T&& requester_endpoints_in, U&& requester_id_in,
                  V&& receiver_id_in, W&& receiver_public_key_in)
       : requester_endpoints{std::forward<T>(requester_endpoints_in)},
         requester_id{std::forward<U>(requester_id_in)},
         receiver_id{std::forward<V>(receiver_id_in)},
         receiver_public_key{std::forward<W>(receiver_public_key_in)} {}
 
-  ForwardConnect(ForwardConnect&& other) MAIDSAFE_NOEXCEPT
+  ClientConnect(ClientConnect&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)),
         receiver_public_key(std::move(other.receiver_public_key)) {}
 
-  ForwardConnect& operator=(ForwardConnect&& other) MAIDSAFE_NOEXCEPT {
+  ClientConnect& operator=(ClientConnect&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
@@ -60,8 +60,8 @@ struct ForwardConnect {
     return *this;
   }
 
-  ForwardConnect(const ForwardConnect&) = delete;
-  ForwardConnect& operator=(const ForwardConnect&) = delete;
+  ClientConnect(const ClientConnect&) = delete;
+  ClientConnect& operator=(const ClientConnect&) = delete;
 
   void operator()() {
 

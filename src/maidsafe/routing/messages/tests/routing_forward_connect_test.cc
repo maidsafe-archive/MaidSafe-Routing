@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/messages/forward_connect.h"
+#include "maidsafe/routing/messages/client_connect.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/routing/compile_time_mapper.h"
@@ -37,7 +37,7 @@ namespace test {
 
 namespace {
 
-ForwardConnect GenerateInstance() {
+ClientConnect GenerateInstance() {
   return {
     rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
     Address{RandomString(Address::kSize)},
@@ -48,11 +48,11 @@ ForwardConnect GenerateInstance() {
 
 }  // anonymous namespace
 
-TEST(ForwardConnectTest, BEH_SerialiseParse) {
+TEST(ClientConnectTest, BEH_SerialiseParse) {
   // Serialise
   auto fwd_connct_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<ForwardConnect>::value);
+  auto tag_before(GivenTypeFindTag_v<ClientConnect>::value);
 
   auto serialised_fwd_connect(Serialise(header_before, tag_before, fwd_connct_before));
 

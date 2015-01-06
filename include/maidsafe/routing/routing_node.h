@@ -45,38 +45,38 @@ namespace routing {
 
 class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                     public rudp::ManagedConnections::Listener {
- public:  // key      value
-  using Filter = LruCache<std::pair<SourceAddress, MessageId>, void>;
-
  public:
   class Listener {
    public:
+    explicit Listener(LruCache<Identity, SerialisedMessage>& cache) : cache_(cache) {}
     virtual ~Listener() {}
     // default no post allowed unless implemented in upper layers
-    virtual bool Post(const MessageHeader&, const SerialisedMessage&) { return false; }
-    template <typename DataName>
-    virtual boost::expected<typename DataName::data_type, CommonErrors> Get(const DataName&) {
-      return boost::make_unexpected(CommonErrors::no_such_element);
+    virtual bool Post(const SerialisedMessage&) { return false; }
+    virtual boost::expected<DataValue, maidsafe_error> Get(DataKey) {
+      return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
-    virtual boost::expected<typename DataName::data_type, CommonErrors> GetKey(const DataName& data) {
-      if (cache_.Get(data))
-        return data;
+    virtual boost::expected<std::vector<byte>, maidsafe_error> GetKey(DataKey data) {
+      auto cache_data = cache_.Get(data);
+      if (cache_data)
+        return cache_data;
       else
-      return boost::make_unexpected(CommonErrors::no_such_element);
+        return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
     // default no request allowed unless implemented in upper layers
-    virtual boost::expected<SerialisedMessage, CommonErrors> Request(MessageHeader,
-                                                                     SerialisedMessage) {
-      return boost::make_unexpected(CommonErrors::no_such_element);
+    virtual boost::expected<SerialisedMessage, maidsafe_error> Request(MessageHeader,
+                                                                       SerialisedMessage) {
+      return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
     // default put is allowed unless prevented by upper layers
-    template <typename Data>
-    virtual bool Put(Data) { return true; }
+    virtual bool Put(DataKey, DataValue) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference) {}
+
+   private:
+    LruCache<Identity, SerialisedMessage>& cache_;
   };
 
   RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
-            const passport::Pmid& pmid, std::shared_ptr<Listener> listen_ptr);
+              const passport::Pmid& pmid, std::shared_ptr<Listener> listen_ptr);
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
@@ -115,6 +115,8 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
+  using unique_identifier =
+      std::pair<decltype(MessageHeader::source), decltype(MessageHeader::message_id)>;
   asio::io_service& io_service_;
   Address our_id_;
   asymm::Keys keys_;
@@ -123,8 +125,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   ConnectionManager connection_manager_;
   std::shared_ptr<Listener> listener_ptr_;
   MessageHandler message_handler_;
-  Filter filter_;
-  Accumulator<Identity, SerialisedMessage> accumulator_;
+  LruCache<unique_identifier, void> filter_;
+  Accumulator<unique_identifier, SerialisedMessage> accumulator_;
+  LruCache<Identity, SerialisedMessage> cache_;
 };
 
 template <typename CompletionToken>
@@ -140,7 +143,7 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
 
 template <typename CompletionToken>
 BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
-                                                      CompletionToken token) {
+                                                        CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
@@ -160,7 +163,7 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
 
 template <typename CompletionToken>
 PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage message,
-                                          CompletionToken token) {
+                                            CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] { DoPut(key, message, handler); });
@@ -169,7 +172,7 @@ PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage messa
 
 template <typename CompletionToken>
 PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage message,
-                                            CompletionToken token) {
+                                              CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] { DoPost(key, message, handler); });

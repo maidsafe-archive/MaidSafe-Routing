@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/messages/forward_post.h"
+#include "maidsafe/routing/messages/client_response.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/routing/compile_time_mapper.h"
@@ -37,31 +37,33 @@ namespace test {
 
 namespace {
 
-ForwardPost GenerateInstance() {
+ClientResponse GenerateInstance() {
   const auto serialised_message(RandomString(Address::kSize));
 
   return {
+    Address{RandomString(Address::kSize)},
     SerialisedData(serialised_message.begin(), serialised_message.end()),
-    GenerateSHA1HashVector()
+    GenerateSHA1HashVector(),
+    asymm::GenerateKeyPair().public_key
   };
 }
 
 }  // anonymous namespace
 
-TEST(ForwardPostTest, BEH_SerialiseParse) {
+TEST(ClientResponseTest, BEH_SerialiseParse) {
   // Serialise
-  auto fwd_post_before(GenerateInstance());
+  auto fwd_resp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<ForwardPost>::value);
+  auto tag_before(GivenTypeFindTag_v<ClientResponse>::value);
 
-  auto serialised_fwd_post(Serialise(header_before, tag_before, fwd_post_before));
+  auto serialised_fwd_resp(Serialise(header_before, tag_before, fwd_resp_before));
 
   // Parse
-  auto fwd_post_after(GenerateInstance());
+  auto fwd_resp_after(GenerateInstance());
   auto header_after(GenerateMessageHeader());
   auto tag_after(MessageTypeTag{});
 
-  InputVectorStream binary_input_stream{serialised_fwd_post};
+  InputVectorStream binary_input_stream{serialised_fwd_resp};
 
   // Parse Header, Tag
   Parse(binary_input_stream, header_after, tag_after);
@@ -70,15 +72,20 @@ TEST(ForwardPostTest, BEH_SerialiseParse) {
   EXPECT_EQ(tag_before, tag_after);
 
   // Parse the rest
-  Parse(binary_input_stream, fwd_post_after);
+  Parse(binary_input_stream, fwd_resp_after);
 
-  EXPECT_EQ(fwd_post_before.data.size(), fwd_post_after.data.size());
-  EXPECT_TRUE(std::equal(fwd_post_before.data.begin(), fwd_post_before.data.end(),
-                         fwd_post_after.data.begin()));
+  EXPECT_EQ(fwd_resp_before.key, fwd_resp_after.key);
 
-  EXPECT_EQ(fwd_post_before.part.size(), fwd_post_after.part.size());
-  EXPECT_TRUE(std::equal(fwd_post_before.part.begin(), fwd_post_before.part.end(),
-                         fwd_post_after.part.begin()));
+  EXPECT_EQ(fwd_resp_before.data.size(), fwd_resp_after.data.size());
+  EXPECT_TRUE(std::equal(fwd_resp_before.data.begin(), fwd_resp_before.data.end(),
+                         fwd_resp_after.data.begin()));
+
+  EXPECT_EQ(fwd_resp_before.checksum.size(), fwd_resp_after.checksum.size());
+  EXPECT_TRUE(std::equal(fwd_resp_before.checksum.begin(), fwd_resp_before.checksum.end(),
+                         fwd_resp_after.checksum.begin()));
+
+  EXPECT_EQ(rsa::EncodeKey(fwd_resp_before.requesters_public_key),
+            rsa::EncodeKey(fwd_resp_after.requesters_public_key));
 }
 
 }  // namespace test

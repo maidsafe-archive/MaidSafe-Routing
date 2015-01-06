@@ -27,22 +27,22 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ForwardConnectResponse {
-  ForwardConnectResponse() = default;
+struct ClientConnectResponse {
+  ClientConnectResponse() = default;
 
-  ForwardConnectResponse(const ForwardConnectResponse&) = delete;
+  ClientConnectResponse(const ClientConnectResponse&) = delete;
 
-  ForwardConnectResponse(ForwardConnectResponse&& other) MAIDSAFE_NOEXCEPT
+  ClientConnectResponse(ClientConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)) {}
 
-  ~ForwardConnectResponse() = default;
+  ~ClientConnectResponse() = default;
 
-  ForwardConnectResponse& operator=(const ForwardConnectResponse&) = delete;
+  ClientConnectResponse& operator=(const ClientConnectResponse&) = delete;
 
-  ForwardConnectResponse& operator=(ForwardConnectResponse&& other) MAIDSAFE_NOEXCEPT {
+  ClientConnectResponse& operator=(ClientConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);

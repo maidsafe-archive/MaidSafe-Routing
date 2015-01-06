@@ -96,18 +96,18 @@ struct CompileTimeMapper {
   using RootNode = CompileTimeMap<
       Pair<MessageTypeTag::Connect, Connect>,
       Pair<MessageTypeTag::ConnectResponse, ConnectResponse>,
-      Pair<MessageTypeTag::ForwardConnect, ForwardConnect>,
-      Pair<MessageTypeTag::ForwardConnectResponse, ForwardConnectResponse>,
+      Pair<MessageTypeTag::ClientConnect, ClientConnect>,
+      Pair<MessageTypeTag::ClientConnectResponse, ClientConnectResponse>,
       Pair<MessageTypeTag::FindGroup, FindGroup>,
       Pair<MessageTypeTag::FindGroupResponse, FindGroupResponse>,
       Pair<MessageTypeTag::GetData, GetData>,
       Pair<MessageTypeTag::GetDataResponse, GetDataResponse>,
       Pair<MessageTypeTag::PutData, PutData>,
       Pair<MessageTypeTag::PutDataResponse, PutDataResponse>,
-      Pair<MessageTypeTag::ForwardPutData, ForwardPutData>, Pair<MessageTypeTag::PutKey, PutKey>,
-      Pair<MessageTypeTag::Post, Post>, Pair<MessageTypeTag::ForwardPost, ForwardPost>,
-      Pair<MessageTypeTag::ForwardRequest, ForwardRequest>,
-      Pair<MessageTypeTag::ForwardResponse, ForwardResponse>,
+      Pair<MessageTypeTag::ClientPutData, ClientPutData>, Pair<MessageTypeTag::PutKey, PutKey>,
+      Pair<MessageTypeTag::Post, Post>, Pair<MessageTypeTag::ClientPost, ClientPost>,
+      Pair<MessageTypeTag::ClientRequest, ClientRequest>,
+      Pair<MessageTypeTag::ClientResponse, ClientResponse>,
       Pair<MessageTypeTag::Request, Request>, Pair<MessageTypeTag::Response, Response>>::Map;
 
  public:

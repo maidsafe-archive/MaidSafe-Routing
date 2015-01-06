@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_
-#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_
 
 #include <vector>
 
@@ -27,27 +27,33 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ForwardPost {
-  ForwardPost() = default;
-  ~ForwardPost() = default;
+struct ClientResponse {
+  ClientResponse() = default;
+  ~ClientResponse() = default;
 
-  template<typename T, typename U>
-  ForwardPost(T&& data_in, U&& part_in)
-      : data{std::forward<T>(data_in)},
-        part{std::forward<U>(part_in)} {}
+  template<typename T, typename U, typename V, typename W>
+  ClientResponse(T&& key_in, U&& data_in, V&& checksum_in, W&& requesters_public_key_in)
+      : key{std::forward<T>(key_in)},
+        data{std::forward<U>(data_in)},
+        checksum{std::forward<V>(checksum_in)},
+        requesters_public_key{std::forward<W>(requesters_public_key_in)} {}
 
-  ForwardPost(ForwardPost&& other) MAIDSAFE_NOEXCEPT
-      : data{std::move(other.data)},
-        part{std::move(other.part)} {}
+  ClientResponse(ClientResponse&& other) MAIDSAFE_NOEXCEPT
+      : key{std::move(other.key)},
+        data{std::move(other.data)},
+        checksum{std::move(other.checksum)},
+        requesters_public_key{std::move(other.requesters_public_key)} {}
 
-  ForwardPost& operator=(ForwardPost&& other) MAIDSAFE_NOEXCEPT {
+  ClientResponse& operator=(ClientResponse&& other) MAIDSAFE_NOEXCEPT {
+    key = std::move(other.key);
     data = std::move(other.data);
-    part = std::move(other.part);
+    checksum = std::move(other.checksum);
+    requesters_public_key = std::move(other.requesters_public_key);
     return *this;
   }
 
-  ForwardPost(const ForwardPost&) = delete;
-  ForwardPost& operator=(const ForwardPost&) = delete;
+  ClientResponse(const ClientResponse&) = delete;
+  ClientResponse& operator=(const ClientResponse&) = delete;
 
   void operator()() {
 
@@ -55,15 +61,17 @@ struct ForwardPost {
 
   template<typename Archive>
   void serialize(Archive& archive) {
-    archive(data, part);
+    archive(key, data, checksum, requesters_public_key);
   }
 
+  Address key;
   SerialisedMessage data;
-  std::vector<crypto::SHA1Hash> part;
+  std::vector<crypto::SHA1Hash> checksum;
+  asymm::PublicKey requesters_public_key;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_POST_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_

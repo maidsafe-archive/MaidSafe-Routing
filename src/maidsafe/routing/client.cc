@@ -30,6 +30,7 @@
 
 #include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/utils.h"
 
@@ -40,26 +41,22 @@ namespace routing {
 
 Client::Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
                const asymm::Keys& keys, std::shared_ptr<Listener> listener_ptr)
-    : node_ptr_(shared_from_this()),
-      io_service_(io_service),
+    : io_service_(io_service),
       our_id_(our_id),
       keys_(keys),
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
-      connection_manager_(io_service, rudp_, our_id_),
-      rudp_listener_(std::make_shared<RudpListener>(node_ptr_)),
       listener_ptr_(listener_ptr),
-      message_handler_(io_service, rudp_, connection_manager_),
       filter_(std::chrono::minutes(20)),
       accumulator_(std::chrono::minutes(10)) {}
 
-void Client::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeId peer_id) {
+void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
     MessageHeader header;
     MessageTypeTag tag;
     Parse(binary_input_stream, header, tag);
-    if (!header.source->IsValid()) {
+    if (!header.source->IsValid() || header.source->string() != peer_id.string()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
@@ -80,33 +77,29 @@ void Client::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeI
 
     switch (tag) {
       case MessageTypeTag::Connect:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
+        HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
         break;
       case MessageTypeTag::ConnectResponse:
-        message_handler_.HandleMessage(
+        HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::GetDataResponse:
-        message_handler_.HandleMessage(
+        HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::PutDataResponse:
-        message_handler_.HandleMessage(
+        HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
         break;
-      case MessageTypeTag::Post:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
-        break;
-      case MessageTypeTag::Request:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
-        break;
-      case MessageTypeTag::Response:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
-        break;
+      // case MessageTypeTag::Post:
+      //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
+      //   break;
+      // case MessageTypeTag::Request:
+      //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
+      //   break;
+      // case MessageTypeTag::Response:
+      //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
+      //   break;
       default:
         LOG(kWarning) << "Received message of unknown type.";
         break;
@@ -117,18 +110,17 @@ void Client::OnMessageReceived(rudp::ReceivedMessage&& serialised_message, NodeI
   }
 }
 
-void HandleMessage(GetDataResponse /* get_data_response */) {}
-void HandleMessage(PutDataResponse /* put_data */) {}
-void HandleMessage(Post /* post */) {}
-void HandleMessage(Request /* request */) {}
-void HandleMessage(Response /* response */) {}
+void Client::HandleMessage(GetDataResponse /* get_data_response */) {}
+void Client::HandleMessage(PutDataResponse /* put_data */) {}
+void Client::HandleMessage(Post /* post */) {}
+void Client::HandleMessage(Request /* request */) {}
+void Client::HandleMessage(Response /* response */) {}
 
-void Client::RudpListener::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
-  node_ptr_->OnMessageReceived(std::move(message), peer_id);
+void Client::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
+  OnMessageReceived(peer_id, std::move(message));
 }
 
-void Client::RudpListener::ConnectionLost(NodeId peer) {
-  node_ptr_->connection_manager_.LostNetworkConnection(peer);
+void ConnectionLost(NodeId /* peer */) { /*LostNetworkConnection(peer);*/
 }
 
 }  // namespace routing

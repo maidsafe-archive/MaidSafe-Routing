@@ -34,7 +34,7 @@ inline std::vector<crypto::SHA1Hash> GenerateSHA1HashVector() {
   std::vector<crypto::SHA1Hash> message_id;
   message_id.reserve(max);
 
-  for(std::uint32_t i{}; i < max; ++i) {
+  for (std::uint32_t i{}; i < max; ++i) {
     message_id.emplace_back(RandomString(crypto::SHA1::DIGESTSIZE));
   }
 
@@ -42,12 +42,10 @@ inline std::vector<crypto::SHA1Hash> GenerateSHA1HashVector() {
 }
 
 inline MessageHeader GenerateMessageHeader() {
-  return {
-    DestinationAddress{Address{RandomString(Address::kSize)}},
-    SourceAddress{Address{RandomString(Address::kSize)}},
-    GenerateSHA1HashVector(),
-    rsa::Sign(rsa::PlainText{RandomString(Address::kSize)}, asymm::GenerateKeyPair().private_key)
-  };
+  return {DestinationAddress{Address{RandomString(Address::kSize)}},
+          SourceAddress{Address{RandomString(Address::kSize)}}, GenerateSHA1HashVector(),
+          uint32_t{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
+                                              asymm::GenerateKeyPair().private_key)};
 }
 
 }  // namespace test

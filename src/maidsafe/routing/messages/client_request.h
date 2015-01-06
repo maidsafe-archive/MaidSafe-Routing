@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_FORWARD_REQUEST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_FORWARD_REQUEST_H_
 
 #include <vector>
 
@@ -27,24 +27,24 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ForwardResponse {
-  ForwardResponse() = default;
-  ~ForwardResponse() = default;
+struct ClientRequest {
+  ClientRequest() = default;
+  ~ClientRequest() = default;
 
   template<typename T, typename U, typename V, typename W>
-  ForwardResponse(T&& key_in, U&& data_in, V&& checksum_in, W&& requesters_public_key_in)
+  ClientRequest(T&& key_in, U&& data_in, V&& checksum_in, W&& requesters_public_key_in)
       : key{std::forward<T>(key_in)},
         data{std::forward<U>(data_in)},
         checksum{std::forward<V>(checksum_in)},
         requesters_public_key{std::forward<W>(requesters_public_key_in)} {}
 
-  ForwardResponse(ForwardResponse&& other) MAIDSAFE_NOEXCEPT
+  ClientRequest(ClientRequest&& other) MAIDSAFE_NOEXCEPT
       : key{std::move(other.key)},
         data{std::move(other.data)},
         checksum{std::move(other.checksum)},
         requesters_public_key{std::move(other.requesters_public_key)} {}
 
-  ForwardResponse& operator=(ForwardResponse&& other) MAIDSAFE_NOEXCEPT {
+  ClientRequest& operator=(ClientRequest&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
     data = std::move(other.data);
     checksum = std::move(other.checksum);
@@ -52,8 +52,8 @@ struct ForwardResponse {
     return *this;
   }
 
-  ForwardResponse(const ForwardResponse&) = delete;
-  ForwardResponse& operator=(const ForwardResponse&) = delete;
+  ClientRequest(const ClientRequest&) = delete;
+  ClientRequest& operator=(const ClientRequest&) = delete;
 
   void operator()() {
 
@@ -74,4 +74,4 @@ struct ForwardResponse {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_FORWARD_REQUEST_H_

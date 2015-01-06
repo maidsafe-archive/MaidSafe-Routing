@@ -23,7 +23,7 @@
 
 #include "asio/spawn.hpp"
 #include "asio/use_future.hpp"
-
+#include "boost/optional.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/log.h"
@@ -72,7 +72,7 @@ void MessageHandler::HandleMessage(Connect connect) {
         auto data_signature(asymm::Sign(data, keys_.private_key));
         MessageHeader header;
         header.message_id = RandomUint32();
-        header.signature = data_signature;
+        header.signature = boost::optional<rsa::Signature>(data_signature);
         header.source = SourceAddress(connection_manager_.OurId());
         header.destination = DestinationAddress(connect.requester_id);
         header.checksums.push_back(crypto::Hash<crypto::SHA1>(data));
@@ -81,14 +81,15 @@ void MessageHandler::HandleMessage(Connect connect) {
       });
 }
 
-void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
-  if (auto requester_public_key = connection_manager_.GetPublicKey(connect.header.source.data)) {
-    ForwardConnect forward_connect{std::move(connect), OurSourceAddress(), *requester_public_key};
-    // rudp_.
-  }
-  auto& source_id = forward_connect.header.source.data;
-  if (source_id == forward_connect.requester.id) {
-    LOG(kWarning) << "A peer can't send his own ForwardConnect - potential attack attempt.";
+void MessageHandler::HandleMessage(ClientConnect client_connect) {
+  // if (auto requester_public_key = connection_manager_.GetPublicKey(connect.requestor_id)) {
+  //   ClientConnect client_connect{std::move(connect), OurSourceAddress(),
+  //   *requester_public_key};
+  //   // rudp_.
+  // }
+  auto& source_id = client_connect.requester_id;
+  if (source_id == client_connect.requester_id) {
+    LOG(kWarning) << "A peer can't send his own ClientConnect - potential attack attempt.";
     return;
   }
 
@@ -110,7 +111,7 @@ void MessageHandler::HandleMessage(ForwardConnect forward_connect) {
 
 void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
 
-// void MessageHandler::HandleMessage(ForwardConnectResponse /* forward_connect_response */) {}
+// void MessageHandler::HandleMessage(ClientConnectResponse /* client_connect_response */) {}
 
 void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
@@ -124,16 +125,16 @@ void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
 void MessageHandler::HandleMessage(PutDataResponse /*put_data_response*/) {}
 
-void MessageHandler::HandleMessage(ForwardPutData /* forward_put_data */) {}
+void MessageHandler::HandleMessage(ClientPutData /* client_put_data */) {}
 
 // void MessageHandler::HandleMessage(PutKey /* put_key */) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
 
-void MessageHandler::HandleMessage(ForwardPost /* forward_post */) {}
+void MessageHandler::HandleMessage(ClientPost /* client_post */) {}
 
 void MessageHandler::HandleMessage(Request /* request */) {}
-void MessageHandler::HandleMessage(ForwardRequest /* forward_request */) {}
+void MessageHandler::HandleMessage(ClientRequest /* client_request */) {}
 void MessageHandler::HandleMessage(Response /* response */) {}
 
 

@@ -33,16 +33,6 @@ namespace maidsafe {
 
 namespace routing {
 
-namespace {
-
-std::pair<MessageHeader, MessageTypeTag> ParseHeaderAndTypeEnum(
-    InputVectorStream& binary_input_stream) {
-  auto result = std::make_pair(MessageHeader{}, MessageTypeTag{});
-  Parse(binary_input_stream, result.first, result.second);
-  return result;
-}
-
-}  // unnamed namespace
 
 RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
                          const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
@@ -60,67 +50,34 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, keys_),
       filter_(std::chrono::minutes(20)),
-      accumulator_(std::chrono::minutes(10)) {}
+      accumulator_(std::chrono::minutes(10)),
+      cache_(std::chrono::minutes(10)) {}
 
-void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
+void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
   try {
     InputVectorStream binary_input_stream{std::move(serialised_message)};
-    auto header_and_type_enum(ParseHeaderAndTypeEnum(binary_input_stream));
+    MessageHeader header;
+    MessageTypeTag tag;
+    Parse(binary_input_stream, header, tag);
 
-    if (!header_and_type_enum.first.source->IsValid()) {
+    if (!header.source->IsValid()) {
       LOG(kError) << "Invalid header.";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
 
-    //    {
-    //      auto raw_bytes = binary_input_stream.vector();
-    //      if (crypto::Hash<crypto::SHA1>(std::string(std::begin(raw_bytes), std::end(raw_bytes)))
-    //      !=
-    //          header_and_type_enum.first.checksums.at(header_and_type_enum.first.checksum_index))
-    //          {
-    //        LOG(kError) << "Checksum failure.";
-    //        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    //      }
-    //    }
 
-    //    if (filter_.Check({header_and_type_enum.first.source,
-    //    header_and_type_enum.first.message_id}))
-    //      return;  // already seen
-    //               // add to filter as soon as posible
-    //    filter_.Add({header_and_type_enum.first.source, header_and_type_enum.first.message_id});
-
-    std::vector<NodeInfo> targets;
-    // Here we try and handle all generic message routes for now. Most of this work should actually
-    // be in
-    // each message type itself, it will likely move there in template specialisations.
-    // not for us - send on
-    bool client_call(connection_manager_.InCloseGroup(header_and_type_enum.first.destination) ||
-                     connection_manager_.InCloseGroup(peer_id));
-    // if (client_call && header_and_type_enum.second == PutData::kSerialisableTypeTag &&
-    //     !listener_ptr_->Put(header_and_type_enum.first, serialised_message))
-    //   return;  // not allowed by upper layer
-    // if (client_call && header_and_type_enum.second == Post::kSerialisableTypeTag &&
-    //     !listener_ptr_->Post(header_and_type_enum.first, serialised_message))
-    //   return;  // not allowed by upper layer
-    if (!connection_manager_.InCloseGroup(header_and_type_enum.first.destination) && !client_call) {
-      targets = connection_manager_.GetTarget(header_and_type_enum.first.destination);
-      for (const auto& target : targets)
-        rudp_.Send(target.id, serialised_message, asio::use_future).get();
-      return;  // finished
-    } else {
-      // swarm
-      targets = connection_manager_.OurCloseGroup();
-      for (const auto& target : targets)
-        // FIXME(dirvine) do we need to check return type ?? :24/12/2014
-        // FIXME(dirvine) make sure to sedn to nodes even unreacheable :25/12/2014
-        rudp_.Send(target.id, serialised_message, asio::use_future).get();
+    if (crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.checksums.front()) {
+      LOG(kError) << "Checksum failure.";
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
-    // here we let the message_handler handle all message types. It may be we want to handle any
-    // more common parts here (like signatures, but not all messages are signed so may be false to
-    // do so. There
-    // is a case for more generic code and specialisations though.
 
-    switch (header_and_type_enum.second) {
+    if (filter_.Check({header.source, header.message_id}))
+      return;  // already seen
+               // add to filter as soon as posible
+    filter_.Add({header.source, header.message_id});
+
+
+    switch (tag) {
       case MessageTypeTag::Connect:
         message_handler_.HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
@@ -129,9 +86,9 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
         message_handler_.HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
         break;
-      case MessageTypeTag::ForwardConnect:
+      case MessageTypeTag::ClientConnect:
         message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardConnect>>(binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ClientConnect>>(binary_input_stream));
         break;
       case MessageTypeTag::FindGroup:
         message_handler_.HandleMessage(
@@ -157,9 +114,9 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
         message_handler_.HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
         break;
-      case MessageTypeTag::ForwardPutData:
+      case MessageTypeTag::ClientPutData:
         message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardPutData>>(binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ClientPutData>>(binary_input_stream));
         break;
       //      case MessageTypeTag::PutKey:
       //        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
@@ -170,17 +127,17 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
         message_handler_.HandleMessage(
             Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
         break;
-      case MessageTypeTag::ForwardPost:
+      case MessageTypeTag::ClientPost:
         message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardPost>>(binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ClientPost>>(binary_input_stream));
         break;
-      case MessageTypeTag::ForwardRequest:
+      case MessageTypeTag::ClientRequest:
         message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardRequest>>(binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ClientRequest>>(binary_input_stream));
         break;
-      case MessageTypeTag::ForwardResponse:
+      case MessageTypeTag::ClientResponse:
         message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ForwardResponse>>(binary_input_stream));
+            Parse<GivenTagFindType_t<MessageTypeTag::ClientResponse>>(binary_input_stream));
         break;
       case MessageTypeTag::Request:
         message_handler_.HandleMessage(
@@ -200,9 +157,7 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
   }
 }
 
-void RoutingNode::ConnectionLost(NodeId peer) {
-  connection_manager_.LostNetworkConnection(peer);
-}
+void RoutingNode::ConnectionLost(NodeId peer) { connection_manager_.LostNetworkConnection(peer); }
 
 }  // namespace routing
 
