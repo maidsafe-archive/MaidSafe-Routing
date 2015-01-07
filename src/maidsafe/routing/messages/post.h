@@ -27,11 +27,8 @@
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/compile_time_mapper.h"
-#include "maidsafe/routing/serialisation.h"
-
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -41,10 +38,10 @@ struct Post {
   Post() = default;
   ~Post() = default;
 
-//  Post(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
-//      : key{std::move(data_name_in)},
-//        data{std::move(data_in)},
-//        part{std::move(part_in)} {}
+  //  Post(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
+  //      : key{std::move(data_name_in)},
+  //        data{std::move(data_in)},
+  //        part{std::move(part_in)} {}
 
   // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
   // does not have a move ctor) depending on invocation site.
@@ -52,7 +49,7 @@ struct Post {
   // Also if the type of the member var is changed we will have to revisit the one above, while
   // there will be no change in the signature of the one below.
 
-  template<typename T, typename U, typename V>
+  template <typename T, typename U, typename V>
   Post(T&& key_in, U&& data_in, V&& part_in)
       : key{std::forward<T>(key_in)},
         data{std::forward<U>(data_in)},
@@ -72,11 +69,9 @@ struct Post {
   Post(const Post&) = delete;
   Post& operator=(const Post&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
     archive(key, data, part);
   }
