@@ -67,7 +67,7 @@ void MessageHandler::HandleMessage(Connect connect) {
         respond.receiver_id = connect.receiver_id;
         assert(connect.receiver_id == connection_manager_.OurId());
         respond.receiver_endpoints = endpoint_pair;
-        respond.receiver_public_key = keys_.public_key;
+        // respond.receiver_public_key = keys_.public_key;
         auto data(Serialise(respond));
         auto data_signature(asymm::Sign(data, keys_.private_key));
         MessageHeader header;

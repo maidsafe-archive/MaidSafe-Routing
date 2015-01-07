@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_RESPONSE_H_
 
 #include <vector>
+#include "boost/optional.hpp"
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
@@ -32,49 +33,46 @@ struct ConnectResponse {
   ConnectResponse() = default;
   ~ConnectResponse() = default;
 
-  template<typename T, typename U, typename V, typename W, typename X>
-  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in,
-                  V&& requester_id_in, W&& receiver_id_in, X&& receiver_public_key_in)
+  template <typename T, typename U, typename V, typename W, typename X>
+  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
+                  W&& receiver_id_in, X&& relay_node_id_in)
       : requester_endpoints{std::forward<T>(requester_endpoints_in)},
         receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
         requester_id{std::forward<V>(requester_id_in)},
         receiver_id{std::forward<W>(receiver_id_in)},
-        receiver_public_key{std::forward<X>(receiver_public_key_in)} {}
+        relay_node_id{std::forward<X>(relay_node_id_in)} {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)),
-        receiver_public_key(std::move(other.receiver_public_key)) {}
+        relay_node_id(std::move(other.relay_node_id)) {}
 
   ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
-    receiver_public_key = std::move(other.receiver_public_key);
+    relay_node_id = std::move(other.relay_node_id);
     return *this;
   }
 
   ConnectResponse(const ConnectResponse&) = delete;
   ConnectResponse& operator=(const ConnectResponse&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id,
-            receiver_id, receiver_public_key);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, relay_node_id);
   }
 
   rudp::EndpointPair requester_endpoints;
   rudp::EndpointPair receiver_endpoints;
   Address requester_id;
   Address receiver_id;
-  asymm::PublicKey receiver_public_key;
+  boost::optional<Address> relay_node_id;
 };
 
 }  // namespace routing

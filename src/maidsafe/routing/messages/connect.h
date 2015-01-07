@@ -19,16 +19,12 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/crypto.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
+#include <vector>
+#include "boost/optional.hpp"
 
-#include "maidsafe/routing/message_header.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/compile_time_mapper.h"
+
 
 namespace maidsafe {
 
@@ -38,21 +34,13 @@ struct Connect {
   Connect() = default;
   ~Connect() = default;
 
-//  Connect(rudp::EndpointPair requester_endpoints, Address receiver_id_in)
-//      : requester_endpoints{std::move(requester_endpoints)},
-//        receiver_id{std::move(receiver_id_in)} {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
-
-  template<typename T, typename U, typename V>
-  Connect(T&& requester_endpoints_in, U&& requester_id_in, V&& receiver_id_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        requester_id{std::forward<U>(requester_id_in)},
-        receiver_id{std::forward<V>(receiver_id_in)} {}
+  template <typename T, typename U, typename V, typename W>
+  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& relay_node_id)
+      : requester_endpoints{std::forward<T>(requester_endpoints)},
+        requester_id{std::forward<U>(requester_id)},
+        receiver_id{std::forward<V>(receiver_id)},
+        relay_node_id{std::forward<W>(relay_node_id)} {}
 
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints{std::move(other.requester_endpoints)},
@@ -69,11 +57,9 @@ struct Connect {
   Connect(const Connect&) = delete;
   Connect& operator=(const Connect&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
     archive(requester_endpoints, requester_id, receiver_id);
   }
@@ -81,6 +67,7 @@ struct Connect {
   rudp::EndpointPair requester_endpoints;
   Address requester_id;
   Address receiver_id;
+  boost::optional<Address> relay_node_id;
 };
 
 }  // namespace routing

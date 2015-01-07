@@ -38,11 +38,9 @@ namespace test {
 namespace {
 
 Connect GenerateInstance() {
-  return {
-    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-    Address{RandomString(Address::kSize)},
-    Address{RandomString(Address::kSize)}
-  };
+  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+          Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
+          Address{RandomString(Address::kSize)}};
 }
 
 }  // anonymous namespace
