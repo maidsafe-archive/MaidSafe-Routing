@@ -19,15 +19,10 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
-#include "maidsafe/rudp/contact.h"
+#include "boost/optional.hpp"
 
-#include "maidsafe/routing/message_header.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/find_group.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -37,42 +32,38 @@ struct FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-  template<typename T, typename U, typename V, typename W>
-  FindGroupResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in,
-                    V&& requester_id_in, W&& receiver_id_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
-        requester_id{std::forward<V>(requester_id_in)},
-        receiver_id{std::forward<W>(receiver_id_in)} {}
+
+  template <typename T, typename U, typename V>
+  FindGroupResponse(T&& requester_id, U&& close_node_id, V&& relay_node_id)
+      : requester_id{std::forward<T>(requester_id)},
+        close_node_id{std::forward<U>(close_node_id)},
+        relay_node_id{std::forward<V>(relay_node_id)} {}
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_endpoints{std::move(other.requester_endpoints)},
-        receiver_endpoints{std::move(other.receiver_endpoints)},
-        requester_id{std::move(other.requester_id)},
-        receiver_id{std::move(other.receiver_id)} {}
+      : requester_id{std::move(other.requester_id)},
+        close_node_id{std::move(other.close_node_id)},
+        relay_node_id{std::move(other.relay_node_id)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_endpoints = std::move(other.requester_endpoints);
-    receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
+    close_node_id = std::move(other.close_node_id);
+    relay_node_id = std::move(other.relay_node_id);
     return *this;
   }
 
   FindGroupResponse(const FindGroupResponse&) = delete;
   FindGroupResponse& operator=(const FindGroupResponse&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id);
+    archive(requester_id, close_node_id, relay_node_id);
   }
 
-  rudp::EndpointPair requester_endpoints, receiver_endpoints;
-  Address requester_id, receiver_id;
+  Address requester_id;
+  Address close_node_id;
+  boost::optional<Address> relay_node_id;
 };
 
 }  // namespace routing

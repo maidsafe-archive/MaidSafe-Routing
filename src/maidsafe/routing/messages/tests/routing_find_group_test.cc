@@ -38,11 +38,8 @@ namespace test {
 namespace {
 
 FindGroup GenerateInstance() {
-  return {
-    rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-    Address{RandomString(Address::kSize)},
-    Address{RandomString(Address::kSize)}
-  };
+  return {Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
+          Address{RandomString(Address::kSize)}};
 }
 
 }  // anonymous namespace
@@ -71,8 +68,7 @@ TEST(FindGroupTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, find_group_after);
 
-  EXPECT_EQ(find_group_before.requester_endpoints, find_group_after.requester_endpoints);
-  EXPECT_EQ(find_group_before.receiver_id, find_group_after.receiver_id);
+  EXPECT_EQ(find_group_before.target_id, find_group_after.target_id);
   EXPECT_EQ(find_group_before.requester_id, find_group_after.requester_id);
 }
 
