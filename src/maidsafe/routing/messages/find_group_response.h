@@ -39,6 +39,11 @@ struct FindGroupResponse {
         close_node_id{std::forward<U>(close_node_id)},
         relay_node_id{std::forward<V>(relay_node_id)} {}
 
+  template <typename T, typename U>
+  FindGroupResponse(T&& requester_id, U&& close_node_id)
+      : requester_id{std::forward<T>(requester_id)},
+        close_node_id{std::forward<U>(close_node_id)} {}
+
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_id{std::move(other.requester_id)},
         close_node_id{std::move(other.close_node_id)},

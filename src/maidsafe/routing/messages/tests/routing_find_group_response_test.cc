@@ -44,7 +44,7 @@ FindGroupResponse GenerateInstance() {
 
 }  // anonymous namespace
 
-TEST(FindGroupResponseTest, BEH_SerialiseParse) {
+TEST(FindGroupResponseTest, BEH_SerialiseParseRelay) {
   // Serialise
   auto find_grp_resp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
@@ -72,6 +72,36 @@ TEST(FindGroupResponseTest, BEH_SerialiseParse) {
   EXPECT_EQ(find_grp_resp_before.close_node_id, find_grp_rsp_after.close_node_id);
 }
 
+TEST(FindGroupResponseTest, BEH_SerialiseParseNoRelay) {
+  // Serialise
+  auto find_grp_resp_before(FindGroupResponse{Address{RandomString(Address::kSize)},
+                                              Address{RandomString(Address::kSize)}});
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<FindGroupResponse>::value);
+
+  auto serialised_find_grp_rsp(Serialise(header_before, tag_before, find_grp_resp_before));
+
+  // Parse
+  auto find_grp_rsp_after(FindGroupResponse{Address{RandomString(Address::kSize)},
+                                            Address{RandomString(Address::kSize)}});
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
+
+  InputVectorStream binary_input_stream{serialised_find_grp_rsp};
+
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
+
+  EXPECT_EQ(header_before, header_after);
+  EXPECT_EQ(tag_before, tag_after);
+
+  // Parse the rest
+  Parse(binary_input_stream, find_grp_rsp_after);
+
+  EXPECT_EQ(find_grp_resp_before.requester_id, find_grp_rsp_after.requester_id);
+  EXPECT_EQ(find_grp_resp_before.close_node_id, find_grp_rsp_after.close_node_id);
+  EXPECT_EQ(*find_grp_resp_before.relay_node_id, *find_grp_rsp_after.relay_node_id);
+}
 }  // namespace test
 
 }  // namespace routing

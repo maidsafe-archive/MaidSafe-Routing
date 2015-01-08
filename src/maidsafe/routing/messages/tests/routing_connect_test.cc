@@ -43,9 +43,14 @@ Connect GenerateInstance() {
           Address{RandomString(Address::kSize)}};
 }
 
+Connect GenerateNoRelayInstance() {
+  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+          Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}};
+}
+
 }  // anonymous namespace
 
-TEST(ConnectTest, BEH_SerialiseParse) {
+TEST(ConnectTest, BEH_SerialiseParseRelay) {
   // Serialise
   auto connect_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
@@ -72,6 +77,36 @@ TEST(ConnectTest, BEH_SerialiseParse) {
   EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
   EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
   EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
+}
+
+TEST(ConnectTest, BEH_SerialiseParseiNoRelay) {
+  // Serialise
+  auto connect_before(GenerateNoRelayInstance());
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<Connect>::value);
+
+  auto serialised_connect(Serialise(header_before, tag_before, connect_before));
+
+  // Parse
+  auto connect_after(GenerateNoRelayInstance());
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
+
+  InputVectorStream binary_input_stream{serialised_connect};
+
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
+
+  EXPECT_EQ(header_before, header_after);
+  EXPECT_EQ(tag_before, tag_after);
+
+  // Parse the rest
+  Parse(binary_input_stream, connect_after);
+
+  EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
+  EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
+  EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
+  EXPECT_EQ(*connect_before.relay_node_id, *connect_after.relay_node_id);
 }
 
 }  // namespace test

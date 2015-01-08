@@ -40,6 +40,10 @@ struct FindGroup {
         target_id{std::forward<U>(target_id)},
         relay_node_id{std::forward<V>(relay_node_id)} {}
 
+  template <typename T, typename U>
+  FindGroup(T&& requester_id, U&& target_id)
+      : requester_id{std::forward<T>(requester_id)}, target_id{std::forward<U>(target_id)} {}
+
   FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : requester_id{std::move(other.requester_id)},
                                                    target_id{std::move(other.target_id)},
                                                    relay_node_id{std::move(other.relay_node_id)} {}

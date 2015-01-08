@@ -42,6 +42,14 @@ struct ConnectResponse {
         receiver_id{std::forward<W>(receiver_id_in)},
         relay_node_id{std::forward<X>(relay_node_id_in)} {}
 
+  template <typename T, typename U, typename V, typename W>
+  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
+                  W&& receiver_id_in)
+      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
+        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
+        requester_id{std::forward<V>(requester_id_in)},
+        receiver_id{std::forward<W>(receiver_id_in)} {}
+
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
