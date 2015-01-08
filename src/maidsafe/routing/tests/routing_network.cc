@@ -388,15 +388,16 @@ GenericNetwork::~GenericNetwork() {
 }
 
 void GenericNetwork::SetUp() {
-  NodePtr node1(new GenericNode(passport::CreatePmidAndSigner().first)),
-      node2(new GenericNode(passport::CreatePmidAndSigner().first));
+  zero_states_pmids_.emplace_back(passport::CreatePmidAndSigner().first);
+  zero_states_pmids_.emplace_back(passport::CreatePmidAndSigner().first);
+  NodePtr node1(new GenericNode(zero_states_pmids_.at(0))),
+          node2(new GenericNode(zero_states_pmids_.at(1)));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   bootstrap_file_.reset();
   bootstrap_file_ =
       maidsafe::make_unique<ScopedBootstrapFile>(BootstrapContacts{ node1->endpoint(),
                                                                     node2->endpoint() });
-
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
   public_keys_.insert(std::make_pair(node2->node_id(), node2->public_key()));

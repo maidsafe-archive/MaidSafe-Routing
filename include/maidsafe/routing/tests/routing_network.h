@@ -247,6 +247,9 @@ class GenericNetwork {
                                       const NodeId& destination_node_id,
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
   void AddPublicKey(const NodeId& node_id, const asymm::PublicKey& public_key);
+  std::vector<passport::Pmid> zero_states_pmids() {
+    return zero_states_pmids_;
+  }
 
   friend class NodesEnvironment;
 
@@ -260,6 +263,7 @@ class GenericNetwork {
   unsigned int client_index_;
   bool nat_info_available_;
   std::unique_ptr<ScopedBootstrapFile> bootstrap_file_;
+  std::vector<passport::Pmid> zero_states_pmids_;
 
  public:
   std::vector<NodePtr> nodes_;
