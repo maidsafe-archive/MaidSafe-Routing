@@ -55,21 +55,21 @@ void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_
   MessageTypeTag tag;
   Parse(binary_input_stream, header, tag);
 
-  if (!header.source->IsValid() || header.source != peer_id) {
+  if (!header.GetSource()->IsValid() || header.GetSource() != peer_id) {
     LOG(kError) << "Invalid header.";
     return;
   }
 
-  if (filter_.Check({header.source, header.message_id}))
+  if (filter_.Check({header.GetSource(), header.GetMessageId()}))
     return;  // already seen
   // add to filter as soon as posible
-  filter_.Add({header.source, header.message_id});
+  filter_.Add({header.GetSource(), header.GetMessageId()});
 
-  if (header.checksum &&
-      crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.checksum) {
+  if (header.GetChecksum() &&
+      crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.GetChecksum()) {
     LOG(kError) << "Checksum failure.";
     return;
-  } else if (header.signature) {
+  } else if (header.GetSignature()) {
     // TODO(dirvine) get public key and check signature   :08/01/2015
     LOG(kError) << "Signature failure.";
     return;
@@ -77,6 +77,8 @@ void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_
     LOG(kError) << "No checksum or signature - receive aborted.";
     return;
   }
+
+
   switch (tag) {
     case MessageTypeTag::Connect:
       HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));

@@ -96,8 +96,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   void HandleMessage(Request request);
   void HandleMessage(Response response);
 
-  using unique_identifier =
-      std::pair<decltype(MessageHeader::source), decltype(MessageHeader::message_id)>;
+  using unique_identifier = std::pair<SourceAddress, uint32_t>;
 
   asio::io_service& io_service_;
   Address our_id_;

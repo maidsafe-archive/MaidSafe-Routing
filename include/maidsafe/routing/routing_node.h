@@ -117,8 +117,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
-  using unique_identifier =
-      std::pair<decltype(MessageHeader::source), decltype(MessageHeader::message_id)>;
+  using unique_identifier = std::pair<SourceAddress, uint32_t>;
   asio::io_service& io_service_;
   Address our_id_;
   asymm::Keys keys_;

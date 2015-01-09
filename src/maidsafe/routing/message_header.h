@@ -32,7 +32,8 @@ namespace maidsafe {
 
 namespace routing {
 
-struct MessageHeader {
+class MessageHeader {
+ public:
   MessageHeader() = default;
   ~MessageHeader() = default;
 
@@ -96,7 +97,13 @@ struct MessageHeader {
   void serialize(Archive& archive) {
     archive(destination.data, source.data, message_id, checksum, signature);
   }
+  DestinationAddress Destination() { return destination; }
+  SourceAddress GetSource() { return source; }
+  uint32_t GetMessageId() { return message_id; }
+  boost::optional<Checksum> GetChecksum() { return checksum; }
+  boost::optional<asymm::Signature> GetSignature() { return signature; }
 
+ private:
   DestinationAddress destination;
   SourceAddress source;
   uint32_t message_id;
