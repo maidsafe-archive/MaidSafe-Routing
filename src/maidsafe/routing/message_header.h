@@ -97,7 +97,7 @@ class MessageHeader {
   void serialize(Archive& archive) {
     archive(destination.data, source.data, message_id, checksum, signature);
   }
-  DestinationAddress Destination() { return destination; }
+  DestinationAddress GetDestination() { return destination; }
   SourceAddress GetSource() { return source; }
   uint32_t GetMessageId() { return message_id; }
   boost::optional<Checksum> GetChecksum() { return checksum; }
