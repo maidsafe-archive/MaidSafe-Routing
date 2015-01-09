@@ -40,10 +40,8 @@ namespace {
 ClientPost GenerateInstance() {
   const auto serialised_message(RandomString(Address::kSize));
 
-  return {
-    SerialisedData(serialised_message.begin(), serialised_message.end()),
-    GenerateSHA1HashVector()
-  };
+  return {SerialisedData(serialised_message.begin(), serialised_message.end()),
+          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE))};
 }
 
 }  // anonymous namespace

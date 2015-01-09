@@ -35,26 +35,45 @@ namespace routing {
 
 namespace test {
 
-namespace {
-
-GetData GenerateInstance() {
-  return {
-    Address{RandomString(Address::kSize)}
-  };
-}
-
-}  // anonymous namespace
-
-TEST(GetDataTest, BEH_SerialiseParse) {
+TEST(GetDataTest, BEH_SerialiseParseRelay) {
   // Serialise
-  auto get_data_before(GenerateInstance());
+  auto get_data_before(
+      GetData{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}});
   auto header_before(GenerateMessageHeader());
   auto tag_before(GivenTypeFindTag_v<GetData>::value);
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
   // Parse
-  auto get_data_after(GenerateInstance());
+  auto get_data_after(
+      GetData{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}});
+  auto header_after(GenerateMessageHeader());
+  auto tag_after(MessageTypeTag{});
+
+  InputVectorStream binary_input_stream{serialised_get_data};
+
+  // Parse Header, Tag
+  Parse(binary_input_stream, header_after, tag_after);
+
+  EXPECT_EQ(header_before, header_after);
+  EXPECT_EQ(tag_before, tag_after);
+
+  // Parse the rest
+  Parse(binary_input_stream, get_data_after);
+
+  EXPECT_EQ(get_data_before.key, get_data_after.key);
+}
+
+TEST(GetDataTest, BEH_SerialiseParseNoRelay) {
+  // Serialise
+  auto get_data_before(GetData{Address{RandomString(Address::kSize)}});
+  auto header_before(GenerateMessageHeader());
+  auto tag_before(GivenTypeFindTag_v<GetData>::value);
+
+  auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
+
+  // Parse
+  auto get_data_after(GetData{Address{RandomString(Address::kSize)}});
   auto header_after(GenerateMessageHeader());
   auto tag_after(MessageTypeTag{});
 

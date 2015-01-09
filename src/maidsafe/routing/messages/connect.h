@@ -19,10 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
-#include <vector>
 #include "boost/optional.hpp"
 
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
 
 
@@ -36,11 +34,11 @@ struct Connect {
 
 
   template <typename T, typename U, typename V, typename W>
-  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& relay_node_id)
+  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& relay_node)
       : requester_endpoints{std::forward<T>(requester_endpoints)},
         requester_id{std::forward<U>(requester_id)},
         receiver_id{std::forward<V>(receiver_id)},
-        relay_node_id{std::forward<W>(relay_node_id)} {}
+        relay_node{std::forward<W>(relay_node)} {}
 
   template <typename T, typename U, typename V>
   Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id)
@@ -67,13 +65,13 @@ struct Connect {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id);
+    archive(requester_endpoints, requester_id, receiver_id, relay_node);
   }
 
   rudp::EndpointPair requester_endpoints;
   Address requester_id;
   Address receiver_id;
-  boost::optional<Address> relay_node_id;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing

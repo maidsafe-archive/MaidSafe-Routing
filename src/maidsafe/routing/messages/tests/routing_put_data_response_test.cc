@@ -36,11 +36,9 @@ namespace routing {
 namespace test {
 
 PutDataResponse GenerateInstance() {
-  return {
-    Address{RandomString(Address::kSize)},
-    GenerateSHA1HashVector(),
-    MakeError(CommonErrors::unknown)
-  };
+  return {Address{RandomString(Address::kSize)},
+          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE)),
+          MakeError(CommonErrors::unknown)};
 }
 
 TEST(PutDataResponseTest, BEH_SerialiseParse) {

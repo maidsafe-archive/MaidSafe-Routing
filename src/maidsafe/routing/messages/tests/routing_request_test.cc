@@ -40,11 +40,9 @@ namespace {
 Request GenerateInstance() {
   const auto serialised_message(RandomString(Address::kSize));
 
-  return {
-    Address{RandomString(Address::kSize)},
-    SerialisedData(serialised_message.begin(), serialised_message.end()),
-    GenerateSHA1HashVector()
-  };
+  return {Address{RandomString(Address::kSize)},
+          SerialisedData(serialised_message.begin(), serialised_message.end()),
+          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE))};
 }
 
 }  // anonymous namespace
@@ -76,8 +74,7 @@ TEST(RequestTest, BEH_SerialiseParse) {
   EXPECT_EQ(req_before.key, req_after.key);
 
   EXPECT_EQ(req_before.data.size(), req_after.data.size());
-  EXPECT_TRUE(std::equal(req_before.data.begin(), req_before.data.end(),
-                         req_after.data.begin()));
+  EXPECT_TRUE(std::equal(req_before.data.begin(), req_before.data.end(), req_after.data.begin()));
 
   EXPECT_EQ(req_before.checksum.size(), req_after.checksum.size());
   EXPECT_TRUE(std::equal(req_before.checksum.begin(), req_before.checksum.end(),

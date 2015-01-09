@@ -40,11 +40,9 @@ namespace {
 PutData GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return {
-    Address{RandomString(Address::kSize)},
-    SerialisedData(serialised_data.begin(), serialised_data.end()),
-    GenerateSHA1HashVector()
-  };
+  return {Address{RandomString(Address::kSize)},
+          SerialisedData(serialised_data.begin(), serialised_data.end()),
+          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE))};
 }
 
 }  // anonymous namespace

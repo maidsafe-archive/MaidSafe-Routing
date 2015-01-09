@@ -40,12 +40,10 @@ namespace {
 ClientRequest GenerateInstance() {
   const auto serialised_message(RandomString(Address::kSize));
 
-  return {
-    Address{RandomString(Address::kSize)},
-    SerialisedData(serialised_message.begin(), serialised_message.end()),
-    GenerateSHA1HashVector(),
-    asymm::GenerateKeyPair().public_key
-  };
+  return {Address{RandomString(Address::kSize)},
+          SerialisedData(serialised_message.begin(), serialised_message.end()),
+          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE)),
+          asymm::GenerateKeyPair().public_key};
 }
 
 }  // anonymous namespace

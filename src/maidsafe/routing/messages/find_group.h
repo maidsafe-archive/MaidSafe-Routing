@@ -35,10 +35,10 @@ struct FindGroup {
 
 
   template <typename T, typename U, typename V>
-  FindGroup(T&& requester_id, U&& target_id, V&& relay_node_id)
+  FindGroup(T&& requester_id, U&& target_id, V&& relay_node)
       : requester_id{std::forward<T>(requester_id)},
         target_id{std::forward<U>(target_id)},
-        relay_node_id{std::forward<V>(relay_node_id)} {}
+        relay_node{std::forward<V>(relay_node)} {}
 
   template <typename T, typename U>
   FindGroup(T&& requester_id, U&& target_id)
@@ -46,12 +46,12 @@ struct FindGroup {
 
   FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : requester_id{std::move(other.requester_id)},
                                                    target_id{std::move(other.target_id)},
-                                                   relay_node_id{std::move(other.relay_node_id)} {}
+                                                   relay_node{std::move(other.relay_node)} {}
 
   FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
     requester_id = std::move(other.requester_id);
     target_id = std::move(other.target_id);
-    relay_node_id = std::move(other.relay_node_id);
+    relay_node = std::move(other.relay_node);
     return *this;
   }
 
@@ -62,13 +62,13 @@ struct FindGroup {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_id, target_id, relay_node_id);
+    archive(requester_id, target_id, relay_node);
   }
 
   rudp::EndpointPair requester_endpoints;
   Address requester_id;
   Address target_id;
-  boost::optional<Address> relay_node_id;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing

@@ -37,6 +37,7 @@
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -45,20 +46,8 @@ namespace routing {
 
 class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnections::Listener {
  public:
-  class Listener {
-   public:
-    virtual ~Listener();
-    // default no post allowed unless implemented in upper layers
-    // virtual bool Post(const SerialisedMessage&) { return false; }
-    // default no request allowed unless implemented in upper layers
-    virtual boost::expected<SerialisedMessage, maidsafe_error> Request(MessageHeader,
-                                                                       SerialisedMessage) {
-      return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
-    }
-  };
-
   Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
-         const asymm::Keys& keys, std::shared_ptr<Listener> listen_ptr);
+         const asymm::Keys& keys);
   Client(const Client&) = delete;
   Client(Client&&) = delete;
   Client& operator=(const Client&) = delete;
@@ -86,7 +75,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   // template <typename CompletionToken>
   // RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
   //                                        CompletionToken token);
-
+  //
   Address OurId() const { return our_id_; }
 
  private:
@@ -103,7 +92,6 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   void HandleMessage(Connect connect);
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
-  void HandleMessage(PutDataResponse put_data);
   void HandleMessage(Post post);
   void HandleMessage(Request request);
   void HandleMessage(Response response);
@@ -116,7 +104,6 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   asymm::Keys keys_;
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
-  std::shared_ptr<Listener> listener_ptr_;
   LruCache<unique_identifier, void> filter_;
   Accumulator<unique_identifier, SerialisedMessage> accumulator_;
 };

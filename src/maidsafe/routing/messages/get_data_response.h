@@ -19,14 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
+#include "boost/optional.hpp"
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/get_data.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -36,24 +31,18 @@ struct GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-//  GetDataResponse(Address data_name_in, SerialisedData data_in)
-//      : key{std::move(data_name_in)},
-//        data{std::move(data_in)} {}
+  template <typename T, typename U, typename V>
+  GetDataResponse(T&& key, U&& data, V&& relay_node)
+      : key{std::forward<T>(key)},
+        data{std::forward<U>(data)},
+        relay_node{std::forward<U>(relay_node)} {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
+  template <typename T, typename U>
+  GetDataResponse(T&& key, U&& data)
+      : key{std::forward<T>(key)}, data{std::forward<U>(data)} {}
 
-  template<typename T, typename U>
-  GetDataResponse(T&& key_in, U&& data_in)
-      : key{std::forward<T>(key_in)},
-        data{std::forward<U>(data_in)} {}
-
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : key{std::move(other.key)},
-        data{std::move(other.data)} {}
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                                               data{std::move(other.data)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
@@ -64,17 +53,16 @@ struct GetDataResponse {
   GetDataResponse(const GetDataResponse&) = delete;
   GetDataResponse& operator=(const GetDataResponse&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data);
+    archive(key, data, relay_node);
   }
 
   Address key;
-  SerialisedData data;
+  std::vector<byte> data;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing

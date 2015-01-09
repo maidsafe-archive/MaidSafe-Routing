@@ -100,7 +100,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParseNoRelay) {
 
   EXPECT_EQ(find_grp_resp_before.requester_id, find_grp_rsp_after.requester_id);
   EXPECT_EQ(find_grp_resp_before.close_node_id, find_grp_rsp_after.close_node_id);
-  EXPECT_EQ(*find_grp_resp_before.relay_node_id, *find_grp_rsp_after.relay_node_id);
+  EXPECT_EQ(*find_grp_resp_before.relay_node, *find_grp_rsp_after.relay_node);
 }
 }  // namespace test
 

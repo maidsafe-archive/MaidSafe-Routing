@@ -31,7 +31,7 @@ struct ClientResponse {
   ClientResponse() = default;
   ~ClientResponse() = default;
 
-  template<typename T, typename U, typename V, typename W>
+  template <typename T, typename U, typename V, typename W>
   ClientResponse(T&& key_in, U&& data_in, V&& checksum_in, W&& requesters_public_key_in)
       : key{std::forward<T>(key_in)},
         data{std::forward<U>(data_in)},
@@ -55,18 +55,16 @@ struct ClientResponse {
   ClientResponse(const ClientResponse&) = delete;
   ClientResponse& operator=(const ClientResponse&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
     archive(key, data, checksum, requesters_public_key);
   }
 
   Address key;
   SerialisedMessage data;
-  std::vector<crypto::SHA1Hash> checksum;
+  crypto::SHA1Hash checksum;
   asymm::PublicKey requesters_public_key;
 };
 

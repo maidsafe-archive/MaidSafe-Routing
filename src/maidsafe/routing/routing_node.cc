@@ -53,109 +53,123 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       accumulator_(std::chrono::minutes(10)),
       cache_(std::chrono::minutes(10)) {}
 
-void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
-  try {
-    InputVectorStream binary_input_stream{std::move(serialised_message)};
-    MessageHeader header;
-    MessageTypeTag tag;
-    Parse(binary_input_stream, header, tag);
+void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
+  InputVectorStream binary_input_stream{std::move(serialised_message)};
+  MessageHeader header;
+  MessageTypeTag tag;
+  Parse(binary_input_stream, header, tag);
 
-    if (!header.source->IsValid()) {
-      LOG(kError) << "Invalid header.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
+  if (!header.source->IsValid() || header.source != peer_id) {
+    LOG(kError) << "Invalid header.";
+    return;
+  }
+
+  if (filter_.Check({header.source, header.message_id}))
+    return;  // already seen
+  // add to filter as soon as posible
+  filter_.Add({header.source, header.message_id});
+
+  if (header.checksum &&
+      crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.checksum) {
+    LOG(kError) << "Checksum failure.";
+    return;
+  } else if (header.signature) {
+    // TODO(dirvine) get public key and check signature   :08/01/2015
+    LOG(kError) << "Signature failure.";
+    return;
+  } else {
+    LOG(kError) << "No checksum or signature - receive aborted.";
+    return;
+  }
 
 
-    if (crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.checksums.front()) {
-      LOG(kError) << "Checksum failure.";
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    }
 
-    if (filter_.Check({header.source, header.message_id}))
-      return;  // already seen
-               // add to filter as soon as posible
-    filter_.Add({header.source, header.message_id});
-
-
-    switch (tag) {
-      case MessageTypeTag::Connect:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ConnectResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ClientConnect:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ClientConnect>>(binary_input_stream));
-        break;
-      case MessageTypeTag::FindGroup:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(binary_input_stream));
-        break;
-      case MessageTypeTag::FindGroupResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(binary_input_stream));
-        break;
-      case MessageTypeTag::GetData:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream));
-        break;
-      case MessageTypeTag::GetDataResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
-        break;
-      case MessageTypeTag::PutData:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(binary_input_stream));
-        break;
-      case MessageTypeTag::PutDataResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ClientPutData:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ClientPutData>>(binary_input_stream));
-        break;
-      //      case MessageTypeTag::PutKey:
-      //        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
-      //                                         std::move(header_and_type_enum.first),
-      //                                         binary_input_stream));
-      //        break;
-      case MessageTypeTag::Post:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ClientPost:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ClientPost>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ClientRequest:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ClientRequest>>(binary_input_stream));
-        break;
-      case MessageTypeTag::ClientResponse:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::ClientResponse>>(binary_input_stream));
-        break;
-      case MessageTypeTag::Request:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
-        break;
-      case MessageTypeTag::Response:
-        message_handler_.HandleMessage(
-            Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
-        break;
-      default:
-        LOG(kWarning) << "Received message of unknown type.";
-        break;
-    }
-  } catch (const std::exception& e) {
-    LOG(kWarning) << "Exception while handling incoming message: "
-                  << boost::diagnostic_information(e);
+  switch (tag) {
+    case MessageTypeTag::Connect:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ConnectResponse:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ClientConnect:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ClientConnect>>(binary_input_stream));
+      break;
+    case MessageTypeTag::FindGroup:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(binary_input_stream));
+      break;
+    case MessageTypeTag::FindGroupResponse:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(binary_input_stream));
+      break;
+    case MessageTypeTag::GetData:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream));
+      break;
+    case MessageTypeTag::GetDataResponse:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
+      break;
+    case MessageTypeTag::PutData:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(binary_input_stream));
+      break;
+    case MessageTypeTag::PutDataResponse:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ClientPutData:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ClientPutData>>(binary_input_stream));
+      break;
+    //      case MessageTypeTag::PutKey:
+    //        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
+    //                                         std::move(header_and_type_enum.first),
+    //                                         binary_input_stream));
+    //        break;
+    case MessageTypeTag::Post:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ClientPost:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ClientPost>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ClientRequest:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ClientRequest>>(binary_input_stream));
+      break;
+    case MessageTypeTag::ClientResponse:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::ClientResponse>>(binary_input_stream));
+      break;
+    case MessageTypeTag::Request:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
+      break;
+    case MessageTypeTag::Response:
+      message_handler_.HandleMessage(
+          Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
+      break;
+    default:
+      LOG(kWarning) << "Received message of unknown type.";
+      break;
   }
 }
+
+std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, Checksum checksum) {
+  auto targets(connection_manager_.GetTarget(target));
+  std::vector<MessageHeader> headers;
+  for (const auto& target : targets) {
+    headers.emplace_back(MessageHeader{DestinationAddress(target.id), SourceAddress(our_id_),
+                                       uint32_t{RandomUint32()}, Checksum{checksum}});
+  }
+  return headers;
+}
+
 
 void RoutingNode::ConnectionLost(NodeId peer) { connection_manager_.LostNetworkConnection(peer); }
 

@@ -40,12 +40,9 @@ namespace {
 ClientResponse GenerateInstance() {
   const auto serialised_message(RandomString(Address::kSize));
 
-  return {
-    Address{RandomString(Address::kSize)},
-    SerialisedData(serialised_message.begin(), serialised_message.end()),
-    GenerateSHA1HashVector(),
-    asymm::GenerateKeyPair().public_key
-  };
+  return {Address{RandomString(Address::kSize)},
+          SerialisedData(serialised_message.begin(), serialised_message.end()),
+          RandomString(crypto::SHA1::DIGESTSIZE), asymm::GenerateKeyPair().public_key};
 }
 
 }  // anonymous namespace
@@ -80,9 +77,7 @@ TEST(ClientResponseTest, BEH_SerialiseParse) {
   EXPECT_TRUE(std::equal(fwd_resp_before.data.begin(), fwd_resp_before.data.end(),
                          fwd_resp_after.data.begin()));
 
-  EXPECT_EQ(fwd_resp_before.checksum.size(), fwd_resp_after.checksum.size());
-  EXPECT_TRUE(std::equal(fwd_resp_before.checksum.begin(), fwd_resp_before.checksum.end(),
-                         fwd_resp_after.checksum.begin()));
+  EXPECT_EQ(fwd_resp_before.checksum, fwd_resp_after.checksum);
 
   EXPECT_EQ(rsa::EncodeKey(fwd_resp_before.requesters_public_key),
             rsa::EncodeKey(fwd_resp_after.requesters_public_key));

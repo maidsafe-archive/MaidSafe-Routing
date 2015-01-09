@@ -34,10 +34,10 @@ struct FindGroupResponse {
 
 
   template <typename T, typename U, typename V>
-  FindGroupResponse(T&& requester_id, U&& close_node_id, V&& relay_node_id)
+  FindGroupResponse(T&& requester_id, U&& close_node_id, V&& relay_node)
       : requester_id{std::forward<T>(requester_id)},
         close_node_id{std::forward<U>(close_node_id)},
-        relay_node_id{std::forward<V>(relay_node_id)} {}
+        relay_node{std::forward<V>(relay_node)} {}
 
   template <typename T, typename U>
   FindGroupResponse(T&& requester_id, U&& close_node_id)
@@ -47,12 +47,12 @@ struct FindGroupResponse {
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_id{std::move(other.requester_id)},
         close_node_id{std::move(other.close_node_id)},
-        relay_node_id{std::move(other.relay_node_id)} {}
+        relay_node{std::move(other.relay_node)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_id = std::move(other.requester_id);
     close_node_id = std::move(other.close_node_id);
-    relay_node_id = std::move(other.relay_node_id);
+    relay_node = std::move(other.relay_node);
     return *this;
   }
 
@@ -63,12 +63,12 @@ struct FindGroupResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_id, close_node_id, relay_node_id);
+    archive(requester_id, close_node_id, relay_node);
   }
 
   Address requester_id;
   Address close_node_id;
-  boost::optional<Address> relay_node_id;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing

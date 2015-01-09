@@ -106,6 +106,8 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   Address OurId() const { return our_id_; }
 
  private:
+  std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature);
+  std::vector<MessageHeader> CreateHeaders(Address target, Checksum checksum);
   void GetDataResponseReceived(GetData get_data);
   void PutDataResponseReceived(PutData put_data);
   void ResponseReceived(Response response);
@@ -157,7 +159,13 @@ template <typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoGet(data_key, handler); });
+  io_service_.post([=] {
+    for (const auto& header : CreateHeaders(Address(data_key->string()),
+                                            crypto::Hash<crypto::SHA1>(data_key->string()))) {
+      rudp_.Send(Address(data_key), Serialise(header, GivenTypeFindTag_v<GetData>::value, data_key),
+                 handler);
+    }
+  });
   return result.get();
 }
 

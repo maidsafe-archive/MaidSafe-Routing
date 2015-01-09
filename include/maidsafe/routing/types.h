@@ -49,6 +49,7 @@ using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
+using Checksum = crypto::SHA1Hash;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 template <typename CompletionToken>

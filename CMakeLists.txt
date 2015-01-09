@@ -45,20 +45,15 @@ set(RoutingLibApiFiles
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/compile_time_mapper.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing_node.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/serialisation.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
     )
 source_group("Routing API Files" FILES ${RoutingLibApiFiles})
 set(RoutingLibHeaders
     ${RoutingSourcesDir}/accumulator.h
-#    ${RoutingSourcesDir}/acknowledgement.h
-#    ${RoutingSourcesDir}/bootstrap_file_operations.h
     ${RoutingSourcesDir}/bootstrap_handler.h
-#    ${RoutingSourcesDir}/bootstrap_utils.h
     ${RoutingSourcesDir}/connection_manager.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
-#    ${RoutingSourcesDir}/network.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )

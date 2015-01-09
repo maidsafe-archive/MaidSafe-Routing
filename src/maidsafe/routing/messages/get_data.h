@@ -19,13 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_H_
 
-#include "maidsafe/common/config.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
+#include "boost/optional.hpp"
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -35,37 +31,35 @@ struct GetData {
   GetData() = default;
   ~GetData() = default;
 
-//  GetData(Address data_name_in) : key{std::move(data_name_in)} {}
+  template <typename T, typename U>
+  GetData(T&& key, U&& relay_node)
+      : key{std::forward<T>(key)}, relay_node{std::forward<T>(relay_node)} {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
+  template <typename T>
+  GetData(T&& key)
+      : key{std::forward<T>(key)} {}
 
-  template<typename T>
-  GetData(T&& key_in) : key{std::forward<T>(key_in)} {}
-
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)} {}
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                               relay_node{std::move(other.relay_node)} {}
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
+    relay_node = std::move(other.relay_node);
     return *this;
   }
 
   GetData(const GetData&) = delete;
   GetData& operator=(const GetData&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key);
+    archive(key, relay_node);
   }
 
   Address key;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing

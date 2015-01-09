@@ -35,12 +35,12 @@ struct ConnectResponse {
 
   template <typename T, typename U, typename V, typename W, typename X>
   ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
-                  W&& receiver_id_in, X&& relay_node_id_in)
+                  W&& receiver_id_in, X&& relay_node_in)
       : requester_endpoints{std::forward<T>(requester_endpoints_in)},
         receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
         requester_id{std::forward<V>(requester_id_in)},
         receiver_id{std::forward<W>(receiver_id_in)},
-        relay_node_id{std::forward<X>(relay_node_id_in)} {}
+        relay_node{std::forward<X>(relay_node_in)} {}
 
   template <typename T, typename U, typename V, typename W>
   ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
@@ -55,14 +55,14 @@ struct ConnectResponse {
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)),
-        relay_node_id(std::move(other.relay_node_id)) {}
+        relay_node(std::move(other.relay_node)) {}
 
   ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
-    relay_node_id = std::move(other.relay_node_id);
+    relay_node = std::move(other.relay_node);
     return *this;
   }
 
@@ -73,14 +73,14 @@ struct ConnectResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, relay_node_id);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, relay_node);
   }
 
   rudp::EndpointPair requester_endpoints;
   rudp::EndpointPair receiver_endpoints;
   Address requester_id;
   Address receiver_id;
-  boost::optional<Address> relay_node_id;
+  boost::optional<Address> relay_node;
 };
 
 }  // namespace routing
