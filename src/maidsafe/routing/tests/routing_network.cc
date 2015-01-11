@@ -68,6 +68,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
+NodeId CloseRandomId(const NodeId& holder, unsigned int pos) {
+  return GenerateUniqueRandomId(holder, pos);
+}
+
 size_t GenericNode::next_node_id_(1);
 
 GenericNode::GenericNode(bool has_symmetric_nat)
@@ -196,6 +200,14 @@ void GenericNode::SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor) 
   functors_.message_and_caching.have_cache_data = get_from_functor;
   routing_->pimpl_->message_handler_->cache_manager_->InitialiseFunctors(
       functors_.message_and_caching);
+}
+
+void GenericNode::SetFunctors(Functors functors) {
+  routing_->pimpl_->functors_ = functors;
+}
+
+Functors GenericNode::GetFunctors() {
+  return routing_->pimpl_->functors_;
 }
 
 int GenericNode::GetStatus() const { return routing_->network_status(); }
