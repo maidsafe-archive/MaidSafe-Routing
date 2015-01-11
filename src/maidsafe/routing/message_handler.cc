@@ -74,13 +74,14 @@ void MessageHandler::HandleMessage(Connect connect, MessageId message_id) {
                              SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()),
                                                           boost::optional<GroupAddress>())),
                              message_id, asymm::Sign(Serialise(respond), keys_.private_key));
+        auto dave = Serialise(header);
         rudp_.Send(connect.receiver_id,
                    Serialise(header, GivenTypeFindTag_v<ConnectResponse>::value, respond),
                    asio::use_future).get();
       });
 }
-
-void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
+//
+// void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
 
 // void MessageHandler::HandleMessage(ClientConnectResponse /* client_connect_response */) {}
 

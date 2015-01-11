@@ -113,13 +113,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   void GetDataResponseReceived(GetData get_data);
   void PutDataResponseReceived(PutData put_data);
   void ResponseReceived(Response response);
-
+  bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   virtual void MessageReceived(NodeId peer_id,
                                rudp::ReceivedMessage serialised_message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
 
-  using unique_identifier = std::pair<SourceAddress, uint32_t>;
+  using unique_identifier = std::pair<Address, uint32_t>;
   asio::io_service& io_service_;
   Address our_id_;
   std::atomic<unsigned long> message_id_{RandomUint32()};

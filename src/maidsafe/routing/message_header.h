@@ -24,6 +24,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/error.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
@@ -39,37 +40,46 @@ class MessageHeader {
 
   template <typename T, typename U>
   MessageHeader(T&& destination, U&& source, MessageId message_id, asymm::Signature&& signature)
-      : destination{std::forward<T>(destination)},
-        source{std::forward<U>(source)},
-        message_id(message_id),
-        signature{std::forward<asymm::Signature>(signature)} {}
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_(message_id),
+        signature_{std::forward<asymm::Signature>(signature)} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
 
   template <typename T, typename U>
   MessageHeader(T&& destination, U&& source, MessageId message_id, Checksum&& checksum)
-      : destination{std::forward<T>(destination)},
-        source{std::forward<U>(source)},
-        message_id(message_id),
-        checksum{std::forward<Checksum>(checksum)} {}
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_(message_id),
+        checksum_{std::forward<Checksum>(checksum)} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
 
   template <typename T, typename U>
   MessageHeader(T&& destination, U&& source, MessageId message_id)
-      : destination{std::forward<T>(destination)},
-        source{std::forward<U>(source)},
-        message_id{message_id} {}
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_{message_id} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
-      : destination(std::move(other.destination)),
-        source(std::move(other.source)),
-        message_id(std::move(other.message_id)),
-        checksum(std::move(other.checksum)),
-        signature(std::move(other.signature)) {}
+      : destination_(std::move(other.destination_)),
+        source_(std::move(other.source_)),
+        message_id_(std::move(other.message_id_)),
+        checksum_(std::move(other.checksum_)),
+        signature_(std::move(other.signature_)) {}
 
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
-    destination = std::move(other.destination);
-    source = std::move(other.source);
-    message_id = std::move(other.message_id);
-    checksum = std::move(other.checksum);
-    signature = std::move(other.signature);
+    destination_ = std::move(other.destination_);
+    source_ = std::move(other.source_);
+    message_id_ = std::move(other.message_id_);
+    checksum_ = std::move(other.checksum_);
+    signature_ = std::move(other.signature_);
     return *this;
   }
 
@@ -78,16 +88,16 @@ class MessageHeader {
 
   // regular
   bool operator==(const MessageHeader& other) const {
-    return std::tie(message_id, destination, source) ==
-           std::tie(other.message_id, other.destination, other.source);
+    return std::tie(message_id_, destination_, source_) ==
+           std::tie(other.message_id_, other.destination_, other.source_);
   }
 
   bool operator!=(const MessageHeader& other) const { return !operator==(other); }
 
   // fully ordered
   bool operator<(const MessageHeader& other) const {
-    return std::tie(message_id, destination, source) <
-           std::tie(other.message_id, other.destination, other.source);
+    return std::tie(message_id_, destination_, source_) <
+           std::tie(other.message_id_, other.destination_, other.source_);
   }
 
   bool operator>(const MessageHeader& other) const {
@@ -99,20 +109,28 @@ class MessageHeader {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination.data, source.first.data, message_id, checksum, signature);
+    // FIXME(dirvine) This is a hack we cannot serialise a pair of TaggedValue<BoundedStrings> due
+    // to our use of cereal :11/01/2015
+    archive(source_);
+    // archive(destination_, source_, message_id_, checksum_, signature_);
   }
-  DestinationAddress GetDestination() { return destination; }
-  SourceAddress GetSource() { return source; }
-  uint32_t GetMessageId() { return message_id; }
-  boost::optional<Checksum> GetChecksum() { return checksum; }
-  boost::optional<asymm::Signature> GetSignature() { return signature; }
+  DestinationAddress GetDestination() { return destination_; }
+  SourceAddress GetSource() { return source_; }
+  uint32_t GetMessageId() { return message_id_; }
+  boost::optional<Checksum> GetChecksum() { return checksum_; }
+  boost::optional<asymm::Signature> GetSignature() { return signature_; }
+  bool IsDirect() { return source_.second ? true : false; }
+  Address NetworkAddressablElement() {
+    return IsDirect() ? source_.first.data : source_.second->data;
+  }
 
  private:
-  DestinationAddress destination;
-  SourceAddress source;
-  uint32_t message_id;
-  boost::optional<crypto::SHA1Hash> checksum;
-  boost::optional<asymm::Signature> signature;
+  DestinationAddress destination_;
+  SourceAddress source_;
+  // GroupAddress group_;
+  uint32_t message_id_;
+  boost::optional<crypto::SHA1Hash> checksum_;
+  boost::optional<asymm::Signature> signature_;
 };
 
 }  // namespace routing

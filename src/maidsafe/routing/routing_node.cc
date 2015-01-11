@@ -20,7 +20,7 @@
 
 #include <utility>
 #include "asio/use_future.hpp"
-
+#include "boost/exception/diagnostic_information.hpp"
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
@@ -57,24 +57,24 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   InputVectorStream binary_input_stream{std::move(serialised_message)};
   MessageHeader header;
   MessageTypeTag tag;
-  Parse(binary_input_stream, header, tag);
-
-  if (!header.GetSource().first->IsValid()) {
-    LOG(kError) << "Invalid header.";
+  try {
+    Parse(binary_input_stream, header, tag);
+  } catch (std::exception& e) {
+    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
     return;
   }
 
-  if (filter_.Check({header.GetSource(), header.GetMessageId()}))
+  if (filter_.Check({header.NetworkAddressablElement(), header.GetMessageId()}))
     return;  // already seen
   // add to filter as soon as posible
-  filter_.Add({header.GetSource(), header.GetMessageId()});
+  filter_.Add({header.NetworkAddressablElement(), header.GetMessageId()});
 
-
+  // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
     auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream);
     cache_.Add(data.key, data.data);
   }
-
+  // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
     auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream);
     auto test = cache_.Get(data.key);

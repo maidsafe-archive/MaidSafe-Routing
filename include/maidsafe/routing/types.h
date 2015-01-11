@@ -53,6 +53,11 @@ using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
 
 using SourceAddress = std::pair<NodeAddress, boost::optional<GroupAddress>>;
+template <class Archive>
+void serialize(Archive& archive, SourceAddress& source_address) {
+  archive(source_address.first.data, source_address.second->data);
+}
+
 using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
