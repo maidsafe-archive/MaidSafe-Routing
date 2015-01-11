@@ -99,7 +99,7 @@ class MessageHeader {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination.data, source.data, message_id, checksum, signature);
+    archive(destination.data, source.first.data, message_id, checksum, signature);
   }
   DestinationAddress GetDestination() { return destination; }
   SourceAddress GetSource() { return source; }

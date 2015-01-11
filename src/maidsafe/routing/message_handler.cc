@@ -71,8 +71,9 @@ void MessageHandler::HandleMessage(Connect connect, MessageId message_id) {
 
 
         MessageHeader header(DestinationAddress(connect.requester_id),
-                             SourceAddress(connection_manager_.OurId()), message_id,
-                             asymm::Sign(Serialise(respond), keys_.private_key));
+                             SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()),
+                                                          boost::optional<GroupAddress>())),
+                             message_id, asymm::Sign(Serialise(respond), keys_.private_key));
         rudp_.Send(connect.receiver_id,
                    Serialise(header, GivenTypeFindTag_v<ConnectResponse>::value, respond),
                    asio::use_future).get();
@@ -109,7 +110,7 @@ void MessageHandler::HandleMessage(Response /* response */) {}
 
 
 SourceAddress MessageHandler::OurSourceAddress() const {
-  return SourceAddress{connection_manager_.OurId()};
+  return std::make_pair(NodeAddress(connection_manager_.OurId()), boost::optional<GroupAddress>());
 }
 
 }  // namespace routing

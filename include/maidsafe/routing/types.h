@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "boost/optional/optional.hpp"
 #include "asio/async_result.hpp"
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
@@ -38,13 +39,20 @@ namespace maidsafe {
 namespace routing {
 
 static const size_t GroupSize = 32;
+#ifdef ZERO_STATE_NODE
+static const size_t QuorumSize = 1;
+#else
 static const size_t QuorumSize = 29;
+#endif
 using Address = NodeId;
 using DataKey = TaggedValue<Identity, struct DataKeyTag>;
 using DataValue = TaggedValue<std::vector<byte>, struct DataValueTag>;
 using MessageId = uint32_t;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
-using SourceAddress = TaggedValue<Address, struct SourceTag>;
+using NodeAddress = TaggedValue<Address, struct NodeTag>;
+using GroupAddress = TaggedValue<Address, struct GroupTag>;
+
+using SourceAddress = std::pair<NodeAddress, boost::optional<GroupAddress>>;
 using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;

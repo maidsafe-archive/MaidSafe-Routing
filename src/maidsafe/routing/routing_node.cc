@@ -59,7 +59,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   MessageTypeTag tag;
   Parse(binary_input_stream, header, tag);
 
-  if (!header.GetSource()->IsValid()) {
+  if (!header.GetSource().first->IsValid()) {
     LOG(kError) << "Invalid header.";
     return;
   }
@@ -189,8 +189,10 @@ std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, Checksum c
   auto targets(connection_manager_.GetTarget(target));
   std::vector<MessageHeader> headers;
   for (const auto& target : targets) {
-    headers.emplace_back(MessageHeader{DestinationAddress(target.id), SourceAddress(our_id_),
-                                       message_id, Checksum{checksum}});
+    headers.emplace_back(
+        MessageHeader{DestinationAddress(target.id),
+                      SourceAddress{NodeAddress(our_id_), boost::optional<GroupAddress>()},
+                      message_id, Checksum{checksum}});
   }
   return headers;
 }
@@ -199,8 +201,9 @@ std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, MessageId 
   auto targets(connection_manager_.GetTarget(target));
   std::vector<MessageHeader> headers;
   for (const auto& target : targets) {
-    headers.emplace_back(
-        MessageHeader{DestinationAddress(target.id), SourceAddress(our_id_), message_id});
+    headers.emplace_back(MessageHeader{
+        DestinationAddress(target.id),
+        SourceAddress{NodeAddress(our_id_), boost::optional<GroupAddress>()}, message_id});
   }
   return headers;
 }

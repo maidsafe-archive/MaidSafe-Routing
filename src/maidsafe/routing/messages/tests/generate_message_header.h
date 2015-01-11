@@ -31,9 +31,10 @@ namespace test {
 
 inline MessageHeader GenerateMessageHeader() {
   return {DestinationAddress{Address{RandomString(Address::kSize)}},
-          SourceAddress{Address{RandomString(Address::kSize)}}, uint32_t{RandomUint32()},
-          rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
-                    asymm::GenerateKeyPair().private_key)};
+          SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}),
+                        boost::optional<GroupAddress>()},
+          uint32_t{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
+                                              asymm::GenerateKeyPair().private_key)};
 }
 
 }  // namespace test

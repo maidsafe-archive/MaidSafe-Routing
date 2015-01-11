@@ -55,7 +55,7 @@ void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_
   MessageTypeTag tag;
   Parse(binary_input_stream, header, tag);
 
-  if (!header.GetSource()->IsValid() || header.GetSource() != peer_id) {
+  if (!header.GetSource().first->IsValid() || header.GetSource().first.data != peer_id) {
     LOG(kError) << "Invalid header.";
     return;
   }
