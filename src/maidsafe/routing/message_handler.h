@@ -33,6 +33,7 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/accumulator.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
 
@@ -52,9 +53,9 @@ class MessageHandler {
   MessageHandler& operator=(MessageHandler&&) = delete;
 
   // Send ourAddress, targetAddress and endpointpair to our close group
-  void HandleMessage(Connect connect);
+  void HandleMessage(Connect connect, MessageId message_id);
   // recieve connect from node and add nodes publicKey clients request to targetAddress
-  void HandleMessage(ClientConnect client_connect);
+  void HandleMessage(ClientConnect client_connect, const MessageHeader& header);
   // like connect but add targets endpoint
   void HandleMessage(ConnectResponse connect_response);
   // like clientconnect adding targets public key (recieved by targets close group) (recieveing

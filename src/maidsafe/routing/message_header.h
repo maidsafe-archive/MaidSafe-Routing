@@ -37,21 +37,25 @@ class MessageHeader {
   MessageHeader() = default;
   ~MessageHeader() = default;
 
-  template <typename T, typename U, typename V>
-  MessageHeader(T&& destination_in, U&& source_in, V&& message_id_in,
-                asymm::Signature&& signature_in)
-      : destination{std::forward<T>(destination_in)},
-        source{std::forward<U>(source_in)},
-        message_id{std::forward<V>(message_id_in)},
-        signature{std::forward<asymm::Signature>(signature_in)} {}
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id, asymm::Signature&& signature)
+      : destination{std::forward<T>(destination)},
+        source{std::forward<U>(source)},
+        message_id(message_id),
+        signature{std::forward<asymm::Signature>(signature)} {}
 
-  template <typename T, typename U, typename V>
-  MessageHeader(T&& destination_in, U&& source_in, V&& message_id_in, Checksum&& checksum_in)
-      : destination{std::forward<T>(destination_in)},
-        source{std::forward<U>(source_in)},
-        message_id{std::forward<V>(message_id_in)},
-        checksum{std::forward<Checksum>(checksum_in)} {}
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id, Checksum&& checksum)
+      : destination{std::forward<T>(destination)},
+        source{std::forward<U>(source)},
+        message_id(message_id),
+        checksum{std::forward<Checksum>(checksum)} {}
 
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id)
+      : destination{std::forward<T>(destination)},
+        source{std::forward<U>(source)},
+        message_id{message_id} {}
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
       : destination(std::move(other.destination)),

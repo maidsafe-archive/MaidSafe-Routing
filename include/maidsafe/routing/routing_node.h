@@ -106,8 +106,10 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   Address OurId() const { return our_id_; }
 
  private:
-  std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature);
-  std::vector<MessageHeader> CreateHeaders(Address target, Checksum checksum);
+  std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature,
+                                           MessageId message_id);
+  std::vector<MessageHeader> CreateHeaders(Address target, Checksum checksum, MessageId message_id);
+  std::vector<MessageHeader> CreateHeaders(Address target, MessageId message_id);
   void GetDataResponseReceived(GetData get_data);
   void PutDataResponseReceived(PutData put_data);
   void ResponseReceived(Response response);
@@ -120,6 +122,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   using unique_identifier = std::pair<SourceAddress, uint32_t>;
   asio::io_service& io_service_;
   Address our_id_;
+  std::atomic<unsigned long> message_id_{RandomUint32()};
   asymm::Keys keys_;
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
@@ -128,7 +131,8 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   MessageHandler message_handler_;
   LruCache<unique_identifier, void> filter_;
   Accumulator<unique_identifier, SerialisedMessage> accumulator_;
-  LruCache<Identity, SerialisedMessage> cache_;
+  LruCache<Address, SerialisedMessage> cache_;
+  std::map<MessageId, std::function<void(SerialisedMessage)>> responder_;
 };
 
 template <typename CompletionToken>
@@ -159,8 +163,7 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    for (const auto& header : CreateHeaders(Address(data_key->string()),
-                                            crypto::Hash<crypto::SHA1>(data_key->string()))) {
+    for (const auto& header : CreateHeaders(Address(data_key->string()), ++message_id_)) {
       rudp_.Send(Address(data_key), Serialise(header, GivenTypeFindTag_v<GetData>::value, data_key),
                  handler);
     }

@@ -107,8 +107,8 @@ struct CompileTimeMapper {
       Pair<MessageTypeTag::ClientPutData, ClientPutData>, Pair<MessageTypeTag::PutKey, PutKey>,
       Pair<MessageTypeTag::Post, Post>, Pair<MessageTypeTag::ClientPost, ClientPost>,
       Pair<MessageTypeTag::ClientRequest, ClientRequest>,
-      Pair<MessageTypeTag::ClientResponse, ClientResponse>,
-      Pair<MessageTypeTag::Request, Request>, Pair<MessageTypeTag::Response, Response>>::Map;
+      Pair<MessageTypeTag::ClientResponse, ClientResponse>, Pair<MessageTypeTag::Request, Request>,
+      Pair<MessageTypeTag::Response, Response>>::Map;
 
  public:
   CompileTimeMapper() = delete;

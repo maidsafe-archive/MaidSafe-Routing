@@ -42,10 +42,9 @@ static const size_t QuorumSize = 29;
 using Address = NodeId;
 using DataKey = TaggedValue<Identity, struct DataKeyTag>;
 using DataValue = TaggedValue<std::vector<byte>, struct DataValueTag>;
-
+using MessageId = uint32_t;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using SourceAddress = TaggedValue<Address, struct SourceTag>;
-using MessageId = TaggedValue<uint32_t, struct MessageIdTag>;
 using Endpoint = rudp::Endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;

@@ -50,14 +50,15 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
       cache_(std::chrono::hours(1)),
       accumulator_(std::chrono::minutes(10)),
       keys_(keys) {}
+
 // reply with details, require to check incoming ID (GetKey)
-void MessageHandler::HandleMessage(Connect connect) {
+void MessageHandler::HandleMessage(Connect connect, MessageId message_id) {
   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id))
     return;
   // TODO(dirvine) check public key (co-routine)  :05/01/2015
   rudp_.GetAvailableEndpoints(
       connect.receiver_id,
-      [this, &connect](asio::error_code error, rudp::EndpointPair endpoint_pair) {
+      [this, &connect, &message_id](asio::error_code error, rudp::EndpointPair endpoint_pair) {
         if (error)
           return;
         auto targets(connection_manager_.GetTarget(connect.requester_id));
@@ -70,40 +71,12 @@ void MessageHandler::HandleMessage(Connect connect) {
 
 
         MessageHeader header(DestinationAddress(connect.requester_id),
-                             SourceAddress(connection_manager_.OurId()), RandomUint32(),
+                             SourceAddress(connection_manager_.OurId()), message_id,
                              asymm::Sign(Serialise(respond), keys_.private_key));
         rudp_.Send(connect.receiver_id,
                    Serialise(header, GivenTypeFindTag_v<ConnectResponse>::value, respond),
                    asio::use_future).get();
       });
-}
-
-void MessageHandler::HandleMessage(ClientConnect client_connect) {
-  // if (auto requester_public_key = connection_manager_.GetPublicKey(connect.requestor_id)) {
-  //   ClientConnect client_connect{std::move(connect), OurSourceAddress(),
-  //   *requester_public_key};
-  //   // rudp_.
-  // }
-  auto& source_id = client_connect.requester_id;
-  if (source_id == client_connect.requester_id) {
-    LOG(kWarning) << "A peer can't send his own ClientConnect - potential attack attempt.";
-    return;
-  }
-
-  if (!connection_manager_.SuggestNodeToAdd(source_id))
-    return;
-
-  asio::spawn(io_service_, [&](asio::yield_context yield) {
-    std::error_code error;
-    auto endpoints = rudp_.GetAvailableEndpoints(source_id, yield[error]);
-    if (error) {
-      LOG(kError) << "Failed to get available endpoints from RUDP: " << error.message();
-      return;
-    }
-    (void)endpoints;
-    // if this is a response to our own connect request, we just need to add them to rudp_
-    // otherwise we send our own connect request to them and then add them to rudp_.
-  });
 }
 
 void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}

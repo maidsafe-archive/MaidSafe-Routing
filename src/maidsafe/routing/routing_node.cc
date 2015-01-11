@@ -53,13 +53,13 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       accumulator_(std::chrono::minutes(10)),
       cache_(std::chrono::minutes(10)) {}
 
-void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
+void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{std::move(serialised_message)};
   MessageHeader header;
   MessageTypeTag tag;
   Parse(binary_input_stream, header, tag);
 
-  if (!header.GetSource()->IsValid() || header.GetSource() != peer_id) {
+  if (!header.GetSource()->IsValid()) {
     LOG(kError) << "Invalid header.";
     return;
   }
@@ -69,33 +69,57 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
   // add to filter as soon as posible
   filter_.Add({header.GetSource(), header.GetMessageId()});
 
+
+  if (tag == MessageTypeTag::GetDataResponse) {
+    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream);
+    cache_.Add(data.key, data.data);
+  }
+
+  if (tag == MessageTypeTag::GetData) {
+    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream);
+    auto test = cache_.Get(data.key);
+    if (test) {
+      GetDataResponse response(data.key, test.value());
+      if (data.relay_node)
+        response.relay_node = data.relay_node;
+      for (auto& header : CreateHeaders(data.key, crypto::Hash<crypto::SHA1>(data.key.string()),
+                                        header.GetMessageId())) {
+        for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
+          rudp_.Send(target.id, Serialise(header, MessageTypeTag::GetDataResponse, response),
+                     asio::use_future).get();
+      }
+      return;
+    }
+  }
+
+  // send to next node(s) even our close group (swarm mode)
+  for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
+    rudp_.Send(target.id, serialised_message, asio::use_future).get();
+
+  if (!connection_manager_.InCloseGroup(header.GetDestination()))
+    return;  // not for us
+
   if (header.GetChecksum() &&
       crypto::Hash<crypto::SHA1>(binary_input_stream.vector()) != header.GetChecksum()) {
     LOG(kError) << "Checksum failure.";
     return;
-  } else if (header.GetSignature()) {
+  }
+
+  if (header.GetSignature()) {
     // TODO(dirvine) get public key and check signature   :08/01/2015
     LOG(kError) << "Signature failure.";
     return;
-  } else {
-    LOG(kError) << "No checksum or signature - receive aborted.";
-    return;
   }
-
-
 
   switch (tag) {
     case MessageTypeTag::Connect:
       message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
+          Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream),
+          header.GetMessageId());
       break;
     case MessageTypeTag::ConnectResponse:
       message_handler_.HandleMessage(
           Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
-      break;
-    case MessageTypeTag::ClientConnect:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ClientConnect>>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroup:
       message_handler_.HandleMessage(
@@ -160,16 +184,26 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
   }
 }
 
-std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, Checksum checksum) {
+std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, Checksum checksum,
+                                                      MessageId message_id) {
   auto targets(connection_manager_.GetTarget(target));
   std::vector<MessageHeader> headers;
   for (const auto& target : targets) {
     headers.emplace_back(MessageHeader{DestinationAddress(target.id), SourceAddress(our_id_),
-                                       uint32_t{RandomUint32()}, Checksum{checksum}});
+                                       message_id, Checksum{checksum}});
   }
   return headers;
 }
 
+std::vector<MessageHeader> RoutingNode::CreateHeaders(Address target, MessageId message_id) {
+  auto targets(connection_manager_.GetTarget(target));
+  std::vector<MessageHeader> headers;
+  for (const auto& target : targets) {
+    headers.emplace_back(
+        MessageHeader{DestinationAddress(target.id), SourceAddress(our_id_), message_id});
+  }
+  return headers;
+}
 
 void RoutingNode::ConnectionLost(NodeId peer) { connection_manager_.LostNetworkConnection(peer); }
 

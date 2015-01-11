@@ -94,6 +94,8 @@ class RoutingTable {
 
   size_t Size() const;
 
+  int32_t BucketIndex(const Address& node_id) const;
+
  private:
   class Comparison {
    public:
@@ -109,7 +111,6 @@ class RoutingTable {
    private:
     const Address our_id_;
   };
-  int32_t BucketIndex(const Address& node_id) const;
   bool HaveNode(const NodeInfo& their_info) const;
   bool NewNodeIsBetterThanExisting(const Address& their_id,
                                    std::vector<NodeInfo>::const_iterator removal_candidate) const;
