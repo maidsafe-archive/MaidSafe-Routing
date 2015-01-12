@@ -69,6 +69,8 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
     }
     // default put is allowed unless prevented by upper layers
     virtual bool Put(DataKey, DataValue) { return true; }
+    // if the implementation allows any put of data in unauthenticated mode
+    virtual bool UnauthenticatedPut(DataKey, DataValue) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference) {}
 
    private:

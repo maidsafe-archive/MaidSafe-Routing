@@ -39,10 +39,10 @@ struct PutData {
   PutData() = default;
   ~PutData() = default;
 
-//  PutData(Address key_in, SerialisedData data_in, std::vector<crypto::SHA1Hash> part_in)
-//      : key{std::move(key_in)},
-//        data{std::move(data_in)},
-//        part{std::move(part_in)} {}
+  //  PutData(Address key_in, SerialisedData data_in, std::vector<crypto::SHA1Hash> relay_node_in)
+  //      : key{std::move(key_in)},
+  //        data{std::move(data_in)},
+  //        relay_node{std::move(relay_node_in)} {}
 
   // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
   // does not have a move ctor) depending on invocation site.
@@ -50,38 +50,40 @@ struct PutData {
   // Also if the type of the member var is changed we will have to revisit the one above, while
   // there will be no change in the signature of the one below.
 
-  template<typename T, typename U, typename V>
-  PutData(T&& key_in, U&& data_in, V&& part_in)
+  template <typename T, typename U, typename V>
+  PutData(T&& key_in, U&& data_in, V&& relay_node_in)
       : key{std::forward<T>(key_in)},
         data{std::forward<U>(data_in)},
-        part{std::forward<V>(part_in)} {}
+        relay_node{std::forward<V>(relay_node_in)} {}
+
+  template <typename T, typename U>
+  PutData(T&& key_in, U&& data_in)
+      : key{std::forward<T>(key_in)}, data{std::forward<U>(data_in)} {}
 
   PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
                                                data{std::move(other.data)},
-                                               part{std::move(other.part)} {}
+                                               relay_node{std::move(other.relay_node)} {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
     data = std::move(other.data);
-    part = std::move(other.part);
+    relay_node = std::move(other.relay_node);
     return *this;
   }
 
   PutData(const PutData&) = delete;
   PutData& operator=(const PutData&) = delete;
 
-  void operator()() {
-
-  }
+  void operator()() {}
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data, part);
+    archive(key, data, relay_node);
   }
 
   Address key;
   SerialisedData data;
-  std::vector<crypto::SHA1Hash> part;
+  Address relay_node;
 };
 
 }  // namespace routing

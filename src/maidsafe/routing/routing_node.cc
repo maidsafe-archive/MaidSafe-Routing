@@ -53,7 +53,7 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       accumulator_(std::chrono::minutes(10)),
       cache_(std::chrono::minutes(10)) {}
 
-void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
+void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{std::move(serialised_message)};
   MessageHeader header;
   MessageTypeTag tag;
@@ -61,6 +61,10 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
     Parse(binary_input_stream, header, tag);
   } catch (std::exception& e) {
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
+    return;
+  }
+  if (header.IsDirect() && peer_id != header.GetSource().first.data) {
+    LOG(kError) << "header failure.";
     return;
   }
 
@@ -95,8 +99,8 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // send to next node(s) even our close group (swarm mode)
   for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
     rudp_.Send(target.id, serialised_message, asio::use_future).get();
-
-  if (!connection_manager_.InCloseGroup(header.GetDestination()))
+  // FIXME(dirvine this could be an unauthenticated put or get `12/01/2015
+  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination()))
     return;  // not for us
 
   if (header.GetChecksum() &&

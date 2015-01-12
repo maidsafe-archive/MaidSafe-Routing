@@ -79,16 +79,20 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
                                                 rudp::EndpointPair their_endpoint_pair);
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
-  size_t CloseGorupBucketdistance() {
+  size_t CloseGroupBucketDistance() const {
     return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
+  bool AddressInCloseGroupRange(const Address& address) {
+    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id, routing_table_.OurId());
+  }
+
   const Address& OurId() const { return routing_table_.OurId(); }
 
   boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
     return routing_table_.GetPublicKey(node);
   }
 
-  bool InCloseGroup(const Address& their_id);
+  bool CloseGroupMember(const Address& their_id);
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();

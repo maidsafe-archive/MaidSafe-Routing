@@ -20,8 +20,7 @@
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 
 #include <cstdint>
-#include <vector>
-
+#include "boost/optional/optional.hpp"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
 #include "maidsafe/common/rsa.h"
@@ -41,20 +40,24 @@ struct PutDataResponse {
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  template<typename T, typename U, typename V>
-  PutDataResponse(T&& key_in, U&& part_in, V&& result_in)
+  template <typename T, typename U, typename V>
+  PutDataResponse(T&& key_in, U&& relay_node_in, V&& result_in)
       : key{std::forward<T>(key_in)},
-        part{std::forward<U>(part_in)},
+        relay_node{std::forward<U>(relay_node_in)},
         result{std::forward<V>(result_in)} {}
+
+  template <typename T, typename U>
+  PutDataResponse(T&& key_in, U&& result_in)
+      : key{std::forward<T>(key_in)}, result{std::forward<U>(result_in)} {}
 
   PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
       : key{std::move(other.key)},
-        part{std::move(other.part)},
+        relay_node{std::move(other.relay_node)},
         result{std::move(other.result)} {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
-    part = std::move(other.part);
+    relay_node = std::move(other.relay_node);
     result = std::move(other.result);
     return *this;
   }
@@ -62,17 +65,15 @@ struct PutDataResponse {
   PutDataResponse(const PutDataResponse&) = delete;
   PutDataResponse& operator=(const PutDataResponse&) = delete;
 
-  void operator()() {
+  void operator()() {}
 
-  }
-
-  template<typename Archive>
+  template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, part, result);
+    archive(key, relay_node, result);
   }
 
   Address key;
-  std::vector<crypto::SHA1Hash> part;
+  boost::optional<Address> relay_node;
   maidsafe_error result;
 };
 

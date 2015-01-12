@@ -36,9 +36,7 @@ namespace routing {
 namespace test {
 
 PutDataResponse GenerateInstance() {
-  return {Address{RandomString(Address::kSize)},
-          crypto::SHA1Hash(RandomString(CryptoPP::SHA1::DIGESTSIZE)),
-          MakeError(CommonErrors::unknown)};
+  return {Address{RandomString(Address::kSize)}, MakeError(CommonErrors::unknown)};
 }
 
 TEST(PutDataResponseTest, BEH_SerialiseParse) {
@@ -66,10 +64,8 @@ TEST(PutDataResponseTest, BEH_SerialiseParse) {
   Parse(binary_input_stream, put_data_rsp_after);
 
   EXPECT_EQ(put_data_rsp_before.key, put_data_rsp_after.key);
+  // EXPECT_EQ(put_data_rsp_before.relay_node, put_data_rsp_after.relay_node);
 
-  EXPECT_EQ(put_data_rsp_before.part.size(), put_data_rsp_after.part.size());
-  EXPECT_TRUE(std::equal(put_data_rsp_before.part.begin(), put_data_rsp_before.part.end(),
-                         put_data_rsp_after.part.begin()));
 
   EXPECT_EQ(ErrorToInt(put_data_rsp_before.result), ErrorToInt(put_data_rsp_after.result));
 }

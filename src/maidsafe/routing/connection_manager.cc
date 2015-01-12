@@ -80,7 +80,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
   return GroupChanged();
 }
 
-bool ConnectionManager::InCloseGroup(const Address& their_id) {
+bool ConnectionManager::CloseGroupMember(const Address& their_id) {
   auto close_group(routing_table_.OurCloseGroup());
   return std::any_of(std::begin(close_group), std::end(close_group),
                      [&their_id](const NodeInfo& node) { return node.id == their_id; });

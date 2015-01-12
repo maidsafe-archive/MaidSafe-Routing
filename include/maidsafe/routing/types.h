@@ -38,11 +38,11 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t GroupSize = 32;
+static const size_t GroupSize = 16;
 #ifdef ZERO_STATE_NODE
 static const size_t QuorumSize = 1;
 #else
-static const size_t QuorumSize = 29;
+static const size_t QuorumSize = 12;
 #endif
 using Address = NodeId;
 using DataKey = TaggedValue<Identity, struct DataKeyTag>;
