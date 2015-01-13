@@ -149,10 +149,6 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
       message_handler_.HandleMessage(
           Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
       break;
-    case MessageTypeTag::ClientPutData:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ClientPutData>>(binary_input_stream));
-      break;
     //      case MessageTypeTag::PutKey:
     //        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
     //                                         std::move(header_and_type_enum.first),
@@ -161,18 +157,6 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
     case MessageTypeTag::Post:
       message_handler_.HandleMessage(
           Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
-      break;
-    case MessageTypeTag::ClientPost:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ClientPost>>(binary_input_stream));
-      break;
-    case MessageTypeTag::ClientRequest:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ClientRequest>>(binary_input_stream));
-      break;
-    case MessageTypeTag::ClientResponse:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ClientResponse>>(binary_input_stream));
       break;
     case MessageTypeTag::Request:
       message_handler_.HandleMessage(

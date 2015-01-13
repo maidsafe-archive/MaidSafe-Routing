@@ -77,9 +77,10 @@ TEST(ConnectTest, BEH_SerialiseParseRelay) {
   EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
   EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
   EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
+  EXPECT_EQ(*connect_before.relay_node, *connect_after.relay_node);
 }
 
-TEST(ConnectTest, BEH_SerialiseParseiNoRelay) {
+TEST(ConnectTest, BEH_SerialiseParseNoRelay) {
   // Serialise
   auto connect_before(GenerateNoRelayInstance());
   auto header_before(GenerateMessageHeader());
@@ -106,7 +107,6 @@ TEST(ConnectTest, BEH_SerialiseParseiNoRelay) {
   EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
   EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
   EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
-  EXPECT_EQ(*connect_before.relay_node, *connect_after.relay_node);
 }
 
 }  // namespace test

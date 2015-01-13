@@ -84,7 +84,7 @@ struct CompileTimeMapper {
 
   template <typename GivenType, MessageTypeTag tag, typename NextNode>
   struct GivenTypeFindTag<GivenType, Node<Pair<tag, GivenType>, NextNode>> {
-    static const MessageTypeTag value{tag};
+    static MAIDSAFE_CONSTEXPR MessageTypeTag value{tag};
   };
 
   template <typename GivenType>

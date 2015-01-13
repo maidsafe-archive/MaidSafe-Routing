@@ -109,10 +109,7 @@ class MessageHeader {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    // FIXME(dirvine) This is a hack we cannot serialise a pair of TaggedValue<BoundedStrings> due
-    // to our use of cereal :11/01/2015
-    archive(source_);
-    // archive(destination_, source_, message_id_, checksum_, signature_);
+    archive(destination_, source_, message_id_, checksum_, signature_);
   }
   DestinationAddress GetDestination() { return destination_; }
   SourceAddress GetSource() { return source_; }

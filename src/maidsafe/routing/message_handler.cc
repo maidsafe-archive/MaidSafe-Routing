@@ -97,16 +97,13 @@ void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
 void MessageHandler::HandleMessage(PutDataResponse /*put_data_response*/) {}
 
-void MessageHandler::HandleMessage(ClientPutData /* client_put_data */) {}
 
 // void MessageHandler::HandleMessage(PutKey /* put_key */) {}
 
 void MessageHandler::HandleMessage(Post /*post*/) {}
 
-void MessageHandler::HandleMessage(ClientPost /* client_post */) {}
 
 void MessageHandler::HandleMessage(Request /* request */) {}
-void MessageHandler::HandleMessage(ClientRequest /* client_request */) {}
 void MessageHandler::HandleMessage(Response /* response */) {}
 
 

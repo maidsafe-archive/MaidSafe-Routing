@@ -76,8 +76,9 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   EXPECT_EQ(connect_resp_before.requester_id, connect_resp_after.requester_id);
   EXPECT_EQ(connect_resp_before.receiver_id, connect_resp_after.receiver_id);
 
-  EXPECT_FALSE(connect_resp_before.relay_node);
-  EXPECT_FALSE(connect_resp_after.relay_node);
+  EXPECT_TRUE(!!connect_resp_before.relay_node);
+  EXPECT_TRUE(!!connect_resp_after.relay_node);
+  EXPECT_EQ(*connect_resp_before.relay_node, *connect_resp_after.relay_node);
 }
 
 }  // namespace test

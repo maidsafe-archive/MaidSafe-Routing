@@ -41,7 +41,7 @@ PutData GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
   return {Address{RandomString(Address::kSize)},
-          SerialisedData(serialised_data.begin(), serialised_data.end())};
+          std::vector<byte>(serialised_data.begin(), serialised_data.end())};
 }
 
 }  // anonymous namespace
@@ -71,12 +71,9 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   Parse(binary_input_stream, put_data_after);
 
   EXPECT_EQ(put_data_before.key, put_data_after.key);
-  EXPECT_EQ(put_data_before.relay_node, put_data_after.relay_node);
 
   EXPECT_EQ(put_data_before.data.size(), put_data_after.data.size());
-  EXPECT_TRUE(std::equal(put_data_before.data.begin(), put_data_before.data.end(),
-                         put_data_before.data.begin()));
-
+  EXPECT_EQ(put_data_before.data, put_data_after.data);
 }
 
 }  // namespace test

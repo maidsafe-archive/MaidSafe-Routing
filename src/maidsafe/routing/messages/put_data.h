@@ -39,17 +39,6 @@ struct PutData {
   PutData() = default;
   ~PutData() = default;
 
-  //  PutData(Address key_in, SerialisedData data_in, std::vector<crypto::SHA1Hash> relay_node_in)
-  //      : key{std::move(key_in)},
-  //        data{std::move(data_in)},
-  //        relay_node{std::move(relay_node_in)} {}
-
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
-
   template <typename T, typename U, typename V>
   PutData(T&& key_in, U&& data_in, V&& relay_node_in)
       : key{std::forward<T>(key_in)},

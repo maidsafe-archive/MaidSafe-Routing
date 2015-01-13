@@ -55,7 +55,7 @@ using GroupAddress = TaggedValue<Address, struct GroupTag>;
 using SourceAddress = std::pair<NodeAddress, boost::optional<GroupAddress>>;
 template <class Archive>
 void serialize(Archive& archive, SourceAddress& source_address) {
-  archive(source_address.first.data, source_address.second->data);
+  archive(source_address.first, source_address.second);
 }
 
 using Endpoint = rudp::Endpoint;
