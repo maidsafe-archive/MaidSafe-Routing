@@ -83,7 +83,7 @@ class MessageHandler {
  public:
   MessageHandler(RoutingTable& routing_table, ClientRoutingTable& client_routing_table,
                  Network& network, Timer<std::string>& timer,
-                 NetworkUtils& network_utils, AsioService& asio_service);
+                 NetworkUtils& network_utils, BoostAsioService& asio_service);
   void HandleMessage(protobuf::Message& message);
   void set_typed_message_and_caching_functor(TypedMessageAndCachingFunctor functors);
   void set_message_and_caching_functor(MessageAndCachingFunctors functors);

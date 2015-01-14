@@ -28,7 +28,7 @@ namespace maidsafe {
 namespace routing {
 
 struct NetworkUtils {
-  NetworkUtils(const NodeId& local_node_id, AsioService& asio_service);
+  NetworkUtils(const NodeId& local_node_id, BoostAsioService& asio_service);
   NetworkUtils& operator=(const NetworkUtils&) = delete;
   NetworkUtils(const NetworkUtils&) = delete;
   NetworkUtils(const NetworkUtils&&) = delete;

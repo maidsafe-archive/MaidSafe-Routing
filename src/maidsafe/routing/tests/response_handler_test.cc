@@ -196,7 +196,7 @@ class ResponseHandlerTest : public testing::Test {
   }
 
   NodeId node_id_;
-  AsioService asio_service_;
+  BoostAsioService asio_service_;
   NetworkUtils network_utils_;
   RoutingTable routing_table_;
   ClientRoutingTable client_routing_table_;

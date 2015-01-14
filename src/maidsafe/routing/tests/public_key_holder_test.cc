@@ -34,7 +34,7 @@ namespace routing {
 namespace test {
 
 TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
-  AsioService asio_service(1);
+  BoostAsioService asio_service(1);
   auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
   RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
   ClientRoutingTable client_routing_table(node_details.node_info.id);
@@ -59,7 +59,7 @@ TEST(PublicKeyHolderTest, BEH_AddFindRemoveTimeout) {
 }
 
 TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
   RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
   ClientRoutingTable client_routing_table(node_details.node_info.id);
@@ -134,7 +134,7 @@ TEST(PublicKeyHolderTest, BEH_MultipleAddFindRemove) {
 }
 
 TEST(PublicKeyHolderTest, BEH_MultipleAddFindTimeout) {
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   auto node_details(MakeNodeInfoAndKeysWithPmid(passport::CreatePmidAndSigner().first));
   RoutingTable routing_table(false, node_details.node_info.id, asymm::Keys());
   ClientRoutingTable client_routing_table(node_details.node_info.id);

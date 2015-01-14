@@ -50,7 +50,7 @@ struct PublicKeyInfo {
 
 class PublicKeyHolder {
  public:
-  explicit PublicKeyHolder(AsioService& asio_service, Network& network);
+  explicit PublicKeyHolder(BoostAsioService& asio_service, Network& network);
   PublicKeyHolder(const PublicKeyHolder&) = delete;
   PublicKeyHolder& operator=(const PublicKeyHolder&) = delete;
   PublicKeyHolder(const PublicKeyHolder&&) = delete;
@@ -62,7 +62,7 @@ class PublicKeyHolder {
 
  private:
   mutable std::mutex mutex_;
-  AsioService& io_service_;
+  BoostAsioService& io_service_;
   Network& network_;
   std::vector<PublicKeyInfo> elements_;
 };

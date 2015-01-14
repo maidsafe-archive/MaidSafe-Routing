@@ -70,7 +70,7 @@ class AcknowledgementTest : public testing::Test {
 
  protected:
   NodeId local_node_id_;
-  AsioService asio_service_;
+  BoostAsioService asio_service_;
   Acknowledgement acknowledgement_;
   Handler call_functor_;
   protobuf::Message message_;

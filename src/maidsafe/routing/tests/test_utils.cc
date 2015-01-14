@@ -35,8 +35,7 @@
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/parameters.h"
 
-namespace asio = boost::asio;
-namespace ip = asio::ip;
+namespace ip = boost::asio::ip;
 
 namespace maidsafe {
 

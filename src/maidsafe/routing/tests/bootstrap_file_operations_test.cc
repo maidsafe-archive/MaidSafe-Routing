@@ -44,8 +44,8 @@ TEST(BootstrapFileOperationsTest, FUNC_FileExists) {
   EXPECT_TRUE(fs::exists(bootstrap_file_path)) << bootstrap_file_path.string() << "should exist";
   BootstrapContacts bootstrap_contacts;
   for (int i(0); i < 100; ++i)
-    bootstrap_contacts.push_back(
-        BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                                                  maidsafe::test::GetRandomPort()));
 
   EXPECT_THROW(WriteBootstrapContacts(bootstrap_contacts, bootstrap_file_path), std::exception)
       << "file exists, should throw";
@@ -67,7 +67,8 @@ TEST(BootstrapFileOperationsTest, BEH_ReadWrite) {
     auto itr(bootstrap_contacts.end());
     BootstrapContact contact;
     do {
-      contact = BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+      contact = BootstrapContact(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                                 maidsafe::test::GetRandomPort());
       itr = std::find(std::begin(bootstrap_contacts), std::end(bootstrap_contacts), contact);
     } while (itr != bootstrap_contacts.end());
     bootstrap_contacts.push_back(contact);
@@ -95,8 +96,8 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Unique_Update) {
         // which is not thread safe. A local mutex is required here, but shall not put the
         // insertioin of bootstrap_contact under mutex lock
         std::lock_guard<std::mutex> lock{ mutex };
-        bootstrap_contacts.push_back(
-            BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+        bootstrap_contacts.push_back(BootstrapContact(
+            maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort()));
       }
 
       EXPECT_NO_THROW(
@@ -119,8 +120,8 @@ TEST(BootstrapFileOperationsTest, FUNC_Parallel_Duplicate_Update) {
   // set up vector of all same contacts
   BootstrapContacts bootstrap_contacts;
   for (int i(0); i < 20; ++i) {
-    bootstrap_contacts.push_back(
-        BootstrapContact(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()));
+    bootstrap_contacts.push_back(BootstrapContact(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                                                  maidsafe::test::GetRandomPort()));
   }
 
   ::maidsafe::test::RunInParallel(20, [&] {

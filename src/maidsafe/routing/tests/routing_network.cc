@@ -36,8 +36,7 @@
 #include "maidsafe/routing/utils.h"
 #include "maidsafe/routing/tests/test_utils.h"
 
-namespace asio = boost::asio;
-namespace ip = asio::ip;
+namespace ip = boost::asio::ip;
 namespace bs = boost::system;
 
 namespace maidsafe {
@@ -47,8 +46,8 @@ namespace routing {
 namespace test {
 
 bool IsPortAvailable(ip::udp::endpoint endpoint) {
-  asio::io_service asio_service;
-  asio::ip::udp::socket socket(asio_service);
+  boost::asio::io_service asio_service;
+  boost::asio::ip::udp::socket socket(asio_service);
   bs::error_code ec;
   socket.open(endpoint.protocol(), ec);
   if (ec) {
@@ -87,7 +86,7 @@ GenericNode::GenericNode(bool has_symmetric_nat)
   node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeys()));
   routing_.reset(new Routing());  // FIXME Prakash
   node_info_plus_->node_info.id = routing_->kNodeId();
-  endpoint_.address(GetLocalIp());
+  endpoint_.address(AsioToBoostAsio(GetLocalIp()));
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
   std::lock_guard<std::mutex> lock(mutex_);
@@ -117,7 +116,7 @@ GenericNode::GenericNode(bool client_mode, const rudp::NatType& nat_type)
     node_info_plus_.reset(new NodeInfoAndPrivateKey(MakeNodeInfoAndKeysWithPmid(pmid)));
     routing_.reset(new Routing(pmid));  // FIXME prakash
   }
-  endpoint_.address(GetLocalIp());
+  endpoint_.address(AsioToBoostAsio(GetLocalIp()));
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
   routing_->pimpl_->network_->nat_type_ = nat_type_;
@@ -140,7 +139,7 @@ GenericNode::GenericNode(const passport::Pmid& pmid, bool has_symmetric_nat)
       messages_(),
       routing_(),
       health_(0) {
-  endpoint_.address(GetLocalIp());
+  endpoint_.address(AsioToBoostAsio(GetLocalIp()));
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
   routing_.reset(new Routing(pmid));
@@ -163,7 +162,7 @@ GenericNode::GenericNode(const passport::Maid& maid, bool has_symmetric_nat)
       messages_(),
       routing_(),
       health_(0) {
-  endpoint_.address(GetLocalIp());
+  endpoint_.address(AsioToBoostAsio(GetLocalIp()));
   endpoint_.port(maidsafe::test::GetRandomPort());
   InitialiseFunctors();
   routing_.reset(new Routing(maid));

@@ -91,7 +91,7 @@ class MessageHandlerTest : public testing::Test {
   void ClearMessage(protobuf::Message& message) { message.Clear(); }
 
  protected:
-  AsioService asio_service_;
+  BoostAsioService asio_service_;
   Timer<std::string> timer_;
   MessageAndCachingFunctors message_and_caching_functor_;
   protobuf::Message message_;

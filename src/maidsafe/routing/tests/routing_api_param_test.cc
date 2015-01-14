@@ -103,8 +103,9 @@ TEST_P(RoutingApi, FUNC_API_SendGroup) {
     return GTEST_SUCCEED();
 #endif
 
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 

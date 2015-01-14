@@ -46,8 +46,9 @@ void WriteZeroStateBootstrapFile(const boost::asio::ip::udp::endpoint& contact0,
 
 void WriteLocalNetworkBootstrapFile() {
   fs::remove(LocalNetworkBootstrapFile());
-  WriteBootstrapContacts(BootstrapContacts{ 1, BootstrapContact{ GetLocalIp(), kLivePort } },
-                         LocalNetworkBootstrapFile());
+  WriteBootstrapContacts(
+      BootstrapContacts(1, BootstrapContact(AsioToBoostAsio(GetLocalIp()), kLivePort)),
+      LocalNetworkBootstrapFile());
 }
 
 }  // namespace test

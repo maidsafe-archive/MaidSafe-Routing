@@ -52,7 +52,7 @@ TEST(ServicesTest, BEH_Ping) {
   NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  AsioService asio_service(1);
+  BoostAsioService asio_service(1);
   Acknowledgement acknowledgement(node_id, asio_service);
   Network network(routing_table, client_routing_table, acknowledgement);
   PublicKeyHolder public_key_holder(asio_service, network);
@@ -84,7 +84,7 @@ TEST(ServicesTest, BEH_FindNodes) {
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId this_node_id(routing_table.kNodeId());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  AsioService asio_service(1);
+  BoostAsioService asio_service(1);
   Acknowledgement acknowledgement(node_id, asio_service);
   Network network(routing_table, client_routing_table, acknowledgement);
   PublicKeyHolder public_key_holder(asio_service, network);
@@ -117,7 +117,7 @@ TEST(ServicesTest, BEH_FindNodes) {
 //   keys.identity = RandomString(64);
 //   RoutingTable routing_table(keys, false);
 //   ClientRoutingTable client_routing_table(keys);
-//   AsioService asio_service(0);
+//   BoostAsioService asio_service(0);
 //   Timer timer(asio_service);
 //   NodeInfo node;
 //   Network network(routing_table, client_routing_table, timer);
