@@ -72,6 +72,10 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid) {
   return MakeNodeInfoAndKeysWithFob(pmid);
 }
 
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMpid(passport::Mpid mpid) {
+  return MakeNodeInfoAndKeysWithFob(mpid);
+}
+
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid) {
   return MakeNodeInfoAndKeysWithFob(maid);
 }
