@@ -73,6 +73,7 @@ NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithFob(FobType fob) {
 
 NodeInfoAndPrivateKey MakeNodeInfoAndKeys();
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithPmid(passport::Pmid pmid);
+NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMpid(passport::Mpid mpid);
 NodeInfoAndPrivateKey MakeNodeInfoAndKeysWithMaid(passport::Maid maid);
 
 NodeInfo MakeNode();
