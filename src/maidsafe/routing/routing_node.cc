@@ -51,6 +51,7 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       message_handler_(io_service, rudp_, connection_manager_, keys_),
       filter_(std::chrono::minutes(20)),
       accumulator_(std::chrono::minutes(10)),
+      key_accumulator_(std::chrono::minutes(10)),
       cache_(std::chrono::minutes(10)) {}
 
 void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {

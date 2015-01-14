@@ -133,6 +133,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   MessageHandler message_handler_;
   LruCache<unique_identifier, void> filter_;
   Accumulator<unique_identifier, SerialisedMessage> accumulator_;
+  Accumulator<Address, std::vector<asymm::PublicKey>> key_accumulator_;
   LruCache<Address, SerialisedMessage> cache_;
   std::map<MessageId, std::function<void(SerialisedMessage)>> responder_;
 };
