@@ -430,8 +430,9 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_MpidClientNode) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
