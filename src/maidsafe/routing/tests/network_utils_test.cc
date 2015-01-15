@@ -154,10 +154,14 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   };
 
   auto pmid1(passport::CreatePmidAndSigner().first);
-  NodeId node_id1(pmid1.name()->string());
+  auto pmid2(passport::CreatePmidAndSigner().first);
+  NodeId node_id1(pmid1.name()->string()), node_id2(pmid2.name()->string());
   auto private_key1(std::make_shared<asymm::PrivateKey>(pmid1.private_key()));
   auto public_key1(std::make_shared<asymm::PublicKey>(pmid1.public_key()));
+  auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
+  auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
   rudp::NatType nat_type;
+
   auto a1 = std::async(std::launch::async, [&, this ]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint2);
     NodeId chosen_bootstrap_peer;
@@ -168,11 +172,6 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
     }
     return chosen_bootstrap_peer;
   });
-
-  auto pmid2(passport::CreatePmidAndSigner().first);
-  NodeId node_id2(pmid2.name()->string());
-  auto private_key2(std::make_shared<asymm::PrivateKey>(pmid2.private_key()));
-  auto public_key2(std::make_shared<asymm::PublicKey>(pmid2.public_key()));
   auto a2 = std::async(std::launch::async, [&, this ]()->NodeId {
     std::vector<Endpoint> bootstrap_endpoint(1, endpoint1);
     NodeId chosen_bootstrap_peer;
@@ -214,10 +213,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   ScopedBootstrapFile bootstrap_file({endpoint2});
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor));
   rudp::NatType this_nat_type;
-  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
-  // bootstrap node endpoints before returning from Bootstrap() and so some times this
-  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
-  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
+  // sleep here will let the test pass. the issue is discussed in tasks MAID-143 and MAID-311
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(
       rudp::kBootstrapConnectionAlreadyExists,
@@ -368,10 +364,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   EXPECT_EQ(kSuccess, network.Bootstrap(message_received_functor3, connection_lost_functor3));
   rudp::EndpointPair endpoint_pair2, endpoint_pair3;
   rudp::NatType this_nat_type;
-  // RUDP NOTE: sleep here will let the test pass. Seems like rudp doesn't updates info about
-  // bootstrap node endpoints before returning from Bootstrap() and so some times this
-  // update happens after GetAvailableEndpoint called by test code and so it doesn't return
-  // kBootstrapConnectionAlreadyExists even though it has bootstrapped off the same node
+  // sleep here will let the test pass. the issue is discussed in tasks MAID-143 and MAID-311
   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   EXPECT_EQ(rudp::kBootstrapConnectionAlreadyExists,
             network.GetAvailableEndpoint(node_id2, endpoint_pair_2, endpoint_pair3, this_nat_type));
