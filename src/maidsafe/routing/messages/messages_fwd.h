@@ -34,6 +34,8 @@ enum class MessageTypeTag : uint16_t {
   FindGroupResponse,
   GetData,
   GetDataResponse,
+  GetKey,
+  GetKeyResponse,
   PutData,
   PutKey,
   ClientPutData,
@@ -54,6 +56,8 @@ struct FindGroup;
 struct FindGroupResponse;
 struct GetData;
 struct GetDataResponse;
+struct GetKey;
+struct GetKeyResponse;
 struct ClientPutData;
 struct PutData;
 struct PutKey;

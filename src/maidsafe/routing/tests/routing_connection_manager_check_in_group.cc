@@ -48,10 +48,9 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   std::vector<Address> addresses;
   addresses.reserve(RoutingTable::OptimalSize());
   // iterate and filll oruting table
+  passport::Pmid dht_fob{passport::Pmid(passport::Anpmid())};
   for (auto& node : addresses) {
-    NodeInfo nodeinfo_to_add;
-    nodeinfo_to_add.id = node;
-    nodeinfo_to_add.public_key = key.public_key;
+    NodeInfo nodeinfo_to_add(node, dht_fob);
     EXPECT_TRUE(connection_manager.SuggestNodeToAdd(nodeinfo_to_add.id));
     rudp::EndpointPair endpoint_pair;
     endpoint_pair.local = (GetRandomEndpoint());

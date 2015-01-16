@@ -46,12 +46,14 @@ namespace routing {
 class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                     public rudp::ManagedConnections::Listener {
  public:
+  using PutToCache = bool;
   class Listener {
    public:
     explicit Listener(LruCache<Identity, SerialisedMessage>& cache) : cache_(cache) {}
     virtual ~Listener() {}
     // default no post allowed unless implemented in upper layers
     virtual bool Post(const SerialisedMessage&) { return false; }
+    // not in local cache do upper layers have it (called when we are in target group)
     virtual boost::expected<DataValue, maidsafe_error> Get(DataKey) {
       return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
@@ -59,16 +61,11 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
       auto cache_data = cache_.Get(data);
       if (cache_data)
         return cache_data;
-      else
+      else  // actually in this case get the close group keys and send back
         return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
-    // default no request allowed unless implemented in upper layers
-    virtual boost::expected<SerialisedMessage, maidsafe_error> Request(MessageHeader,
-                                                                       SerialisedMessage) {
-      return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
-    }
     // default put is allowed unless prevented by upper layers
-    virtual bool Put(DataKey, DataValue) { return true; }
+    virtual PutToCache Put(DataKey, DataValue) { return true; }
     // if the implementation allows any put of data in unauthenticated mode
     virtual bool UnauthenticatedPut(DataKey, DataValue) { return true; }
     virtual void CloseGroupDifference(CloseGroupDifference) {}
@@ -100,10 +97,6 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
-  // will return with response message
-  template <typename CompletionToken>
-  RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
-                                         CompletionToken token);
 
   Address OurId() const { return our_id_; }
 

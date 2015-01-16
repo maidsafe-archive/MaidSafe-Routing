@@ -44,7 +44,7 @@ RoutingTable::RoutingTable(Address our_id)
 
 std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
   Validate(their_info.id);
-  if (their_info.id == our_id_ || !asymm::ValidateKey(their_info.public_key))
+  if (their_info.id == our_id_ || their_info.dht_fob)
     return {false, boost::optional<NodeInfo>()};
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -95,8 +95,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
     return false;
 
   // check for duplicates
-  static NodeInfo their_info;
-  their_info.id = their_id;
+  static NodeInfo their_info(their_id);
   if (HaveNode(their_info))
     return false;
 
@@ -171,15 +170,14 @@ std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {
 
 boost::optional<asymm::PublicKey> RoutingTable::GetPublicKey(const Address& their_id) const {
   Validate(their_id);
-  NodeInfo their_info;
-  their_info.id = their_id;
+  NodeInfo their_info(their_id);
   std::lock_guard<std::mutex> lock(mutex_);
   assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison_));
   auto itrs = std::equal_range(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
   if (itrs.first == itrs.second)
     return boost::none;
   assert(std::distance(itrs.first, itrs.second) == 1);
-  return itrs.first->public_key;
+  return itrs.first->dht_fob->public_key();
 }
 
 size_t RoutingTable::Size() const {

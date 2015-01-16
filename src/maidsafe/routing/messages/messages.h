@@ -28,8 +28,6 @@
 #include "maidsafe/routing/messages/post.h"
 #include "maidsafe/routing/messages/put_data.h"
 #include "maidsafe/routing/messages/put_data_response.h"
-#include "maidsafe/routing/messages/request.h"
-#include "maidsafe/routing/messages/response.h"
 
 
 #endif  // MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_

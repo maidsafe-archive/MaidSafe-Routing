@@ -21,6 +21,8 @@
 #include <bitset>
 #include <string>
 
+#include "maidsafe/passport/detail/fob.h"
+#include "maidsafe/passport/types.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
@@ -66,7 +68,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
     : our_id_(RandomString(Address::kSize)),
       table_(our_id_),
       buckets_(InitialiseBuckets()),
-      info_(),
+      info_(our_id_, passport::Pmid(passport::Anpmid())),
       initial_count_((RandomUint32() % (GroupSize - 1)) + 1),
       added_ids_() {
   for (int i = 0; i < 99; ++i) {
@@ -86,7 +88,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
                                       table_.OurId()));
 
   const asymm::Keys keys(asymm::GenerateKeyPair());
-  info_.public_key = keys.public_key;
+  info_.dht_fob->public_key() = keys.public_key;
 }
 
 void RoutingTableUnitTest::PartiallyFillTable() {

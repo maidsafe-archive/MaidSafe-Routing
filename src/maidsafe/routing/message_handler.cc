@@ -48,7 +48,7 @@ MessageHandler::MessageHandler(asio::io_service& io_service,
       rudp_(managed_connections),
       connection_manager_(connection_manager),
       cache_(std::chrono::hours(1)),
-      accumulator_(std::chrono::minutes(10)),
+      accumulator_(std::chrono::minutes(10), QuorumSize),
       keys_(keys) {}
 
 // reply with details, require to check incoming ID (GetKey)
@@ -80,10 +80,8 @@ void MessageHandler::HandleMessage(Connect connect, MessageId message_id) {
                    asio::use_future).get();
       });
 }
-//
-// void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
 
-// void MessageHandler::HandleMessage(ClientConnectResponse /* client_connect_response */) {}
+void MessageHandler::HandleMessage(ConnectResponse /* connect_response */) {}
 
 void MessageHandler::HandleMessage(FindGroup /*find_group*/) {}
 
@@ -97,15 +95,7 @@ void MessageHandler::HandleMessage(PutData /*put_data*/) {}
 
 void MessageHandler::HandleMessage(PutDataResponse /*put_data_response*/) {}
 
-
-// void MessageHandler::HandleMessage(PutKey /* put_key */) {}
-
 void MessageHandler::HandleMessage(Post /*post*/) {}
-
-
-void MessageHandler::HandleMessage(Request /* request */) {}
-void MessageHandler::HandleMessage(Response /* response */) {}
-
 
 SourceAddress MessageHandler::OurSourceAddress() const {
   return std::make_pair(NodeAddress(connection_manager_.OurId()), boost::optional<GroupAddress>());

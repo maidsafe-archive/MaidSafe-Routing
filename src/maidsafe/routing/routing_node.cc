@@ -50,8 +50,8 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, keys_),
       filter_(std::chrono::minutes(20)),
-      accumulator_(std::chrono::minutes(10)),
-      key_accumulator_(std::chrono::minutes(10)),
+      accumulator_(std::chrono::minutes(10), QuorumSize),
+      key_accumulator_(std::chrono::minutes(10), 1U),
       cache_(std::chrono::minutes(10)) {}
 
 void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
@@ -150,22 +150,9 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
       message_handler_.HandleMessage(
           Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
       break;
-    //      case MessageTypeTag::PutKey:
-    //        message_handler_.HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutKey>>(
-    //                                         std::move(header_and_type_enum.first),
-    //                                         binary_input_stream));
-    //        break;
     case MessageTypeTag::Post:
       message_handler_.HandleMessage(
           Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
-      break;
-    case MessageTypeTag::Request:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
-      break;
-    case MessageTypeTag::Response:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
       break;
     default:
       LOG(kWarning) << "Received message of unknown type.";

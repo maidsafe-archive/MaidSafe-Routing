@@ -37,8 +37,6 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
 
   // Try with invalid public key (should fail)
   info_.id = buckets_[0].far_contact;
-  auto public_key = info_.public_key;
-  info_.public_key = asymm::PublicKey();
   auto result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
@@ -46,7 +44,6 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
 
   // Try with our ID (should fail)
   info_.id = table_.OurId();
-  info_.public_key = public_key;
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());

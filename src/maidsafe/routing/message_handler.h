@@ -76,24 +76,9 @@ class MessageHandler {
   void HandleMessage(PutDataResponse put_data);
   // each member of a group needs to send this to the network address (recieveing needs a Quorum)
   // filling in public key again.
-  void HandleMessage(ClientPutData client_put_data);
-  // any node can put a key on the network (it may be refused though), there is no callback and the
-  // key requres to be read after writing in this case
-  void HandleMessage(PutKey put_key);
-  // a node can send this, the target needs to be it's close group
-  void HandleMessage(ClientPost client_post);
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
   void HandleMessage(Post post);
-  // A node can request it close group to send a Post by sending thios to each member fo the group
-  void HandleMessage(Request request);
-  // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
-  // filling in public key again.
-  void HandleMessage(ClientRequest client_request);
-  // a node can send this, the target needs to be it's close group
-  void HandleMessage(Response response);
-  // close group receives this and sends to the target filling in public key again.
-  void HandleMessage(ClientResponse client_response);
 
  private:
   SourceAddress OurSourceAddress() const;

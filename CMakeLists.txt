@@ -60,6 +60,7 @@ set(RoutingLibHeaders
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
 set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/connect.h
+    ${RoutingSourcesDir}/messages/connect_response.h
     ${RoutingSourcesDir}/messages/find_group.h
     ${RoutingSourcesDir}/messages/find_group_response.h
     ${RoutingSourcesDir}/messages/get_data.h
@@ -69,9 +70,6 @@ set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/post.h
     ${RoutingSourcesDir}/messages/put_data.h
     ${RoutingSourcesDir}/messages/put_data_response.h
-    ${RoutingSourcesDir}/messages/connect_response.h
-    ${RoutingSourcesDir}/messages/request.h
-    ${RoutingSourcesDir}/messages/response.h
     )
 source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources

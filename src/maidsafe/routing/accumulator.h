@@ -40,8 +40,8 @@ namespace routing {
 template <typename KeyType, typename ValueType>
 class Accumulator {
  public:
-  explicit Accumulator(std::chrono::steady_clock::duration time_to_live)
-      : time_to_live_(time_to_live) {}
+  explicit Accumulator(std::chrono::steady_clock::duration time_to_live, uint32_t quorum)
+      : time_to_live_(time_to_live), quorum_(quorum) {}
 
   ~Accumulator() = default;
   Accumulator(const Accumulator&) = delete;
@@ -49,11 +49,14 @@ class Accumulator {
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
   using Map = std::map<NodeId, ValueType>;
+
+  bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
+
   bool CheckQuorumReached(KeyType key) {
     auto it = storage_.find(key);
     if (it == std::end(storage_))
       return false;
-    return (std::get<0>(it->second).size() >= QuorumSize);
+    return (std::get<0>(it->second).size() > quorum_);
   }
 
   std::pair<bool, Map> Add(KeyType key, ValueType value, NodeId sender) {
@@ -65,7 +68,7 @@ class Accumulator {
 
     std::get<0>(it->second).insert(std::make_pair(sender, value));
     ReOrder(key);
-    if (std::get<0>(it->second).size() >= QuorumSize) {
+    if (std::get<0>(it->second).size() > quorum_) {
       return {true, std::get<0>(it->second)};
     }
     return {false, Map()};
@@ -126,6 +129,7 @@ class Accumulator {
   }
 
   std::chrono::steady_clock::duration time_to_live_;
+  uint32_t quorum_;
   std::list<KeyType> key_order_;
   std::map<KeyType, std::tuple<std::map<NodeId, ValueType>, typename std::list<KeyType>::iterator,
                                std::chrono::steady_clock::time_point>> storage_;
