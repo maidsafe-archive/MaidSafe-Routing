@@ -51,7 +51,7 @@ template <typename Response>
 class Timer {
  public:
   typedef std::function<void(Response)> ResponseFunctor;
-  explicit Timer(AsioService& asio_service);
+  explicit Timer(BoostAsioService& asio_service);
   // Cancels all tasks and blocks until all functors have been executed and all tasks removed.
   ~Timer();
   // Adds a task with a deadline, and returns a unique ID for the task.  'response_functor' will be
@@ -107,7 +107,7 @@ class Timer {
 
   void FinishTask(TaskId task_id, const boost::system::error_code& error);
 
-  AsioService& asio_service_;
+  BoostAsioService& asio_service_;
   TaskId new_task_id_;
   std::mutex mutex_;
   std::condition_variable cond_var_;
@@ -138,7 +138,7 @@ typename Timer<Response>::Task& Timer<Response>::Task::operator=(Task&& other) {
 }
 
 template <typename Response>
-Timer<Response>::Timer(AsioService& asio_service)
+Timer<Response>::Timer(BoostAsioService& asio_service)
     : asio_service_(asio_service), new_task_id_(RandomInt32()), mutex_(), cond_var_(), tasks_() {}
 
 template <typename Response>

@@ -79,7 +79,7 @@ class TimerTest : public testing::Test {
 
  protected:
   typedef Timer<std::string>::ResponseFunctor TaskResponseFunctor;
-  AsioService asio_service_;
+  BoostAsioService asio_service_;
   Timer<std::string> timer_;
   std::condition_variable cond_var_;
   std::mutex mutex_;

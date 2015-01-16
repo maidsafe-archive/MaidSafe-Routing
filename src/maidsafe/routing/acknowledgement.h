@@ -37,8 +37,6 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/utils.h"
 
-namespace asio = boost::asio;
-
 namespace maidsafe {
 
 namespace routing {
@@ -50,7 +48,7 @@ namespace test {
   class GenericNode;
 }
 
-typedef std::shared_ptr<asio::deadline_timer> TimerPointer;
+typedef std::shared_ptr<boost::asio::deadline_timer> TimerPointer;
 typedef std::function<void(const boost::system::error_code& error)> Handler;
 
 enum class GroupMessageAckStatus {
@@ -71,7 +69,7 @@ struct AckTimer {
 
 class Acknowledgement {
  public:
-  Acknowledgement(const NodeId& local_node_id, AsioService& io_service);
+  Acknowledgement(const NodeId& local_node_id, BoostAsioService& io_service);
   Acknowledgement& operator=(const Acknowledgement&) = delete;
   Acknowledgement& operator=(const Acknowledgement&&) = delete;
   Acknowledgement(const Acknowledgement&) = delete;
@@ -95,7 +93,7 @@ class Acknowledgement {
   AckId ack_id_;
   std::mutex mutex_;
   bool stop_handling_;
-  AsioService& io_service_;
+  BoostAsioService& io_service_;
   std::vector<AckTimer> queue_;
 };
 

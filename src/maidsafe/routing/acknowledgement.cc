@@ -31,7 +31,7 @@ namespace maidsafe {
 
 namespace routing {
 
-Acknowledgement::Acknowledgement(const NodeId& local_node_id, AsioService& io_service)
+Acknowledgement::Acknowledgement(const NodeId& local_node_id, BoostAsioService& io_service)
     : kNodeId_(local_node_id), ack_id_(RandomInt32()), mutex_(), stop_handling_(false),
       io_service_(io_service), queue_() {}
 
@@ -70,7 +70,7 @@ void Acknowledgement::Add(protobuf::Message message, Handler handler, int timeou
                                return ack_id == timer.ack_id;
                              }));
   if (it == std::end(queue_)) {
-    TimerPointer timer(new asio::deadline_timer(io_service_.service(),
+    TimerPointer timer(new boost::asio::deadline_timer(io_service_.service(),
                                                 boost::posix_time::seconds(timeout)));
     timer->async_wait(handler);
     queue_.emplace_back(AckTimer(ack_id, message, timer, 0));

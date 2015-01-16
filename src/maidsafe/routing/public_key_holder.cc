@@ -24,7 +24,7 @@ namespace maidsafe {
 
 namespace routing {
 
-PublicKeyHolder::PublicKeyHolder(AsioService& io_service, Network &network)
+PublicKeyHolder::PublicKeyHolder(BoostAsioService& io_service, Network &network)
     : mutex_(), io_service_(io_service), network_(network), elements_() {}
 
 PublicKeyHolder::~PublicKeyHolder() {

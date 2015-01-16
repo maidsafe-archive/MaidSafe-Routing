@@ -39,7 +39,7 @@ namespace routing {
 MessageHandler::MessageHandler(RoutingTable& routing_table,
                                ClientRoutingTable& client_routing_table, Network& network,
                                Timer<std::string>& timer, NetworkUtils& network_utils,
-                               AsioService& asio_service)
+                               BoostAsioService& asio_service)
     : routing_table_(routing_table),
       client_routing_table_(client_routing_table),
       network_utils_(network_utils),

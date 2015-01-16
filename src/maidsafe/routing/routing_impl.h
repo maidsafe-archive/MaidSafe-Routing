@@ -193,7 +193,7 @@ class Routing::Impl : public std::enable_shared_from_this<Routing::Impl> {
   // in the order: message_handler_, asio_service_, network_, all timers.  This is important for the
   // proper destruction of the routing library, i.e. to avoid segmentation faults.
   std::unique_ptr<MessageHandler> message_handler_;
-  AsioService asio_service_;
+  BoostAsioService asio_service_;
   NetworkUtils network_utils_;
   std::unique_ptr<Network> network_;
   Timer<std::string> timer_;

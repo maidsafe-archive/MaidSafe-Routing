@@ -74,8 +74,9 @@ MessageReceivedFunctor no_ops_message_received_functor = [](const std::string&,
 }  // anonymous namespace
 
 TEST(APITest, BEH_API_ZeroState) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-    endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({ endpoint1, endpoint2 });
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -132,8 +133,9 @@ TEST(APITest, BEH_API_ZeroState) {
 }
 
 TEST(APITest, BEH_API_GetPublicKeyFailure) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-    endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({ endpoint1, endpoint2 });
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -205,8 +207,9 @@ TEST(APITest, BEH_API_GetPublicKeyFailure) {
 
 TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
   rudp::Parameters::bootstrap_connection_lifespan = boost::posix_time::seconds(5);
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -269,8 +272,9 @@ TEST(APITest, DISABLED_BEH_API_ZeroStateWithDuplicateNode) {
 }
 
 TEST(APITest, BEH_API_SendToSelf) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
@@ -349,8 +353,9 @@ TEST(APITest, BEH_API_SendToSelf) {
 }
 
 TEST(APITest, BEH_API_ClientNode) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
@@ -425,8 +430,9 @@ TEST(APITest, BEH_API_ClientNode) {
 }
 
 TEST(APITest, BEH_API_MpidClientNode) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
@@ -501,8 +507,9 @@ TEST(APITest, BEH_API_MpidClientNode) {
 }
 
 TEST(APITest, BEH_API_NonMutatingClientNode) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
@@ -576,8 +583,9 @@ TEST(APITest, BEH_API_NonMutatingClientNode) {
 }
 
 TEST(APITest, BEH_API_ClientNodeSameId) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
@@ -686,8 +694,9 @@ TEST(APITest, BEH_API_ClientNodeSameId) {
 }
 
 TEST(APITest, BEH_API_NodeNetwork) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   int min_join_status(8);  // TODO(Prakash): To decide
@@ -745,8 +754,9 @@ TEST(APITest, BEH_API_NodeNetwork) {
 }
 
 TEST(APITest, BEH_API_NodeNetworkWithClient) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
 
@@ -843,8 +853,9 @@ TEST(APITest, BEH_API_NodeNetworkWithClient) {
 }
 
 TEST(APITest, BEH_API_PartiallyJoinedSend) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -923,8 +934,9 @@ TEST(APITest, BEH_API_PartiallyJoinedSend) {
 }
 
 TEST(APITest, BEH_API_TypedMessageSend) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first),
@@ -1088,8 +1100,9 @@ TEST(APITest, BEH_API_TypedMessageSend) {
 
 
 TEST(APITest, BEH_API_TypedMessagePartiallyJoinedSendReceive) {
-  Endpoint endpoint1(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort()),
-      endpoint2(maidsafe::GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()),
+                     maidsafe::test::GetRandomPort()),
+      endpoint2(maidsafe::AsioToBoostAsio(maidsafe::GetLocalIp()), maidsafe::test::GetRandomPort());
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   const int kMessageCount = 10;

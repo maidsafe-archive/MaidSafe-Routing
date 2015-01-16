@@ -69,7 +69,7 @@ TEST(NetworkTest, BEH_ProcessSendDirectInvalidEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(RandomString(NodeId::kSize));
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
@@ -87,11 +87,11 @@ TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
   message.set_type(10);
   message.set_hops_to_live(Parameters::hops_to_live);
   NodeId node_id(RandomString(NodeId::kSize));
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
-  Endpoint endpoint(GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint(AsioToBoostAsio(GetLocalIp()), maidsafe::test::GetRandomPort());
   Network network(routing_table, client_routing_table, acknowledgement);
   network.SendToDirect(message, NodeId(RandomString(NodeId::kSize)),
                        NodeId(RandomString(NodeId::kSize)));
@@ -100,8 +100,8 @@ TEST(NetworkTest, BEH_ProcessSendUnavailableDirectEndpoint) {
 TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   const int kMessageCount(10);
   rudp::ManagedConnections rudp1, rudp2;
-  Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
-  Endpoint endpoint2(GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(AsioToBoostAsio(GetLocalIp()), maidsafe::test::GetRandomPort());
+  Endpoint endpoint2(AsioToBoostAsio(GetLocalIp()), maidsafe::test::GetRandomPort());
 
   std::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
@@ -206,7 +206,7 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
   NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Network network(routing_table, client_routing_table, acknowledgement);
@@ -246,8 +246,8 @@ TEST(NetworkTest, FUNC_ProcessSendDirectEndpoint) {
 TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   const int kMessageCount(1);
   rudp::ManagedConnections rudp1, rudp2;
-  Endpoint endpoint1(GetLocalIp(), maidsafe::test::GetRandomPort());
-  Endpoint endpoint2(GetLocalIp(), maidsafe::test::GetRandomPort());
+  Endpoint endpoint1(AsioToBoostAsio(GetLocalIp()), maidsafe::test::GetRandomPort());
+  Endpoint endpoint2(AsioToBoostAsio(GetLocalIp()), maidsafe::test::GetRandomPort());
 
   std::promise<bool> test_completion_promise;
   auto test_completion_future = test_completion_promise.get_future();
@@ -271,7 +271,7 @@ TEST(NetworkTest, FUNC_ProcessSendRecursiveSendOn) {
   NodeId node_id(RandomString(NodeId::kSize));
   RoutingTable routing_table(false, node_id, asymm::GenerateKeyPair());
   NodeId node_id3(routing_table.kNodeId());
-  AsioService asio_service(2);
+  BoostAsioService asio_service(2);
   Acknowledgement acknowledgement(node_id, asio_service);
   ClientRoutingTable client_routing_table(routing_table.kNodeId());
   Network network(routing_table, client_routing_table, acknowledgement);
