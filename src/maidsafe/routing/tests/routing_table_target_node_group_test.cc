@@ -40,11 +40,12 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses;
   addresses.reserve(network_size);
-  passport::Pmid dht_fob{passport::Pmid(passport::Anpmid())};
+  auto fob(PublicFob());
+  // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add(node_to_add->OurId(), dht_fob);
+      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob);
       node->AddNode(nodeinfo_to_add);
     }
   }

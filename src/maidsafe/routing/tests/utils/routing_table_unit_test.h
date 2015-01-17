@@ -25,6 +25,8 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
@@ -54,6 +56,8 @@ class RoutingTableUnitTest : public testing::Test {
   void CompleteFillingTable();
 
   const Address our_id_;
+  const passport::Pmid fob_;
+  const passport::PublicPmid public_fob_;
   RoutingTable table_;
   const Buckets buckets_;
   NodeInfo info_;

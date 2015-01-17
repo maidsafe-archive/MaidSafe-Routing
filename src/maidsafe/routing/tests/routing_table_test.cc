@@ -38,15 +38,16 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   const auto keys = asymm::GenerateKeyPair();
   RoutingTable routing_table(address);
   // check the node is useful when false is set
-  passport::Pmid dht_fob{passport::Pmid(passport::Anpmid())};
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    NodeInfo node(Address(RandomString(Address::kSize)), dht_fob);
+    NodeInfo node{Address(RandomString(Address::kSize))};
     EXPECT_TRUE(routing_table.CheckNode(node.id));
+    EXPECT_FALSE(routing_table.CheckNode(node.id));
   }
   EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now
+  auto fob(PublicFob());
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    NodeInfo node(Address(RandomString(Address::kSize)), dht_fob);
+    NodeInfo node{Address(RandomString(Address::kSize)), fob};
     EXPECT_TRUE(routing_table.AddNode(node).first);
   }
   EXPECT_EQ(GroupSize, routing_table.Size());

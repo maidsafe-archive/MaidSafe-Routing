@@ -44,19 +44,19 @@ RoutingTable::RoutingTable(Address our_id)
 
 std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
   Validate(their_info.id);
-  if (their_info.id == our_id_ || their_info.dht_fob)
-    return {false, boost::optional<NodeInfo>()};
+  if (their_info.id == our_id_ || !their_info.dht_fob)
+    return {false, boost::none};
 
   std::lock_guard<std::mutex> lock(mutex_);
 
   // check not duplicate
   if (HaveNode(their_info))
-    return {false, boost::optional<NodeInfo>()};
+    return {false, boost::none};
 
   // routing table small, just grab this node
   if (nodes_.size() < OptimalSize()) {
-    PushBackThenSort(std::move(their_info));
-    return {true, boost::optional<NodeInfo>()};
+    PushBackThenSort(their_info);
+    return {true, their_info};
   }
 
   // new close group member
@@ -202,7 +202,7 @@ bool RoutingTable::NewNodeIsBetterThanExisting(
          BucketIndex(their_id) > BucketIndex(removal_candidate->id);
 }
 
-void RoutingTable::PushBackThenSort(NodeInfo&& their_info) {
+void RoutingTable::PushBackThenSort(NodeInfo their_info) {
   nodes_.push_back(std::move(their_info));
   std::sort(std::begin(nodes_), std::end(nodes_), comparison_);
 }

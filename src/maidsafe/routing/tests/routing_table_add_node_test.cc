@@ -35,16 +35,11 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   EXPECT_EQ(0, table_.Size());
 #endif
 
-  // Try with invalid public key (should fail)
-  info_.id = buckets_[0].far_contact;
-  auto result_of_add = table_.AddNode(info_);
-  EXPECT_FALSE(result_of_add.first);
-  EXPECT_FALSE(result_of_add.second.is_initialized());
-  EXPECT_EQ(0, table_.Size());
 
   // Try with our ID (should fail)
   info_.id = table_.OurId();
-  result_of_add = table_.AddNode(info_);
+  info_.dht_fob = public_fob_;
+  auto result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
   EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(0, table_.Size());

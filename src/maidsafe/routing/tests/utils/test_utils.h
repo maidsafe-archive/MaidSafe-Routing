@@ -28,6 +28,7 @@
 #include "boost/asio/ip/udp.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/types.h"
 #include "maidsafe/rudp/contact.h"
 
@@ -45,6 +46,9 @@ using address_v6 = asio::ip::address_v6;
 using address_v4 = asio::ip::address_v4;
 using address = asio::ip::address;
 
+inline passport::PublicPmid PublicFob() {
+  return passport::PublicPmid{passport::Pmid(passport::Anpmid())};
+}
 BootstrapHandler::BootstrapContact CreateBootstrapContact(
     asymm::PublicKey public_key = asymm::PublicKey());
 

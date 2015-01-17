@@ -26,6 +26,8 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/types.h"
 
+#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 
@@ -40,8 +42,8 @@ BootstrapHandler::BootstrapContact CreateBootstrapContact(asymm::PublicKey publi
     auto keys(asymm::GenerateKeyPair());
     public_key = keys.public_key;
   }
-  return BootstrapHandler::BootstrapContact{ NodeId(RandomString(NodeId::kSize)),
-                                             GetRandomEndpoint(), public_key };
+  return BootstrapHandler::BootstrapContact{NodeId(RandomString(NodeId::kSize)),
+                                            GetRandomEndpoint(), public_key};
 }
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number) {
@@ -53,7 +55,7 @@ std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t n
 }
 
 std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {
-  asymm::Keys keys(asymm::GenerateKeyPair());
+  // passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
   std::vector<std::unique_ptr<RoutingTable>> routing_tables;
   routing_tables.reserve(size);
   for (size_t i = 0; i < size; ++i) {

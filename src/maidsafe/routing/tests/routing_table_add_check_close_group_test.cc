@@ -40,12 +40,12 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckCloseGroups) {
   auto routing_tables(RoutingTableNetwork(network_size));
   std::vector<Address> addresses;
   addresses.reserve(network_size);
-  passport::Pmid dht_fob{passport::Pmid(passport::Anpmid())};
+  passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add(node_to_add->OurId(), dht_fob);
+      NodeInfo nodeinfo_to_add{node_to_add->OurId(), fob};
       node->AddNode(nodeinfo_to_add);
     }
   }
