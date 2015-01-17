@@ -48,7 +48,7 @@ class Accumulator {
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
-  using Map = std::map<NodeId, ValueType>;
+  using Map = std::map<KeyType, ValueType>;
 
   bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
 
@@ -58,7 +58,8 @@ class Accumulator {
       return false;
     return (std::get<0>(it->second).size() > quorum_);
   }
-
+// returns true when the quorum has been reached. This will return Quorum times
+  // a tuple of of valuetype which should be Source Address signature tag tpye and value
   std::pair<bool, Map> Add(KeyType key, ValueType value, NodeId sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
