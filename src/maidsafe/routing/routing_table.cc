@@ -60,33 +60,30 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
   }
 
   // new close group member
-  auto result = std::make_pair(true, boost::optional<NodeInfo>());
   if (Address::CloserToTarget(their_info.id, nodes_.at(GroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     PushBackThenSort(std::move(their_info));
     auto removal_candidate(FindCandidateForRemoval());
     if (removal_candidate != std::end(nodes_)) {
-      result.second = *removal_candidate;
       auto iter = nodes_.begin();
       std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+      auto candidate = *removal_candidate;
       nodes_.erase(iter);
+      return {true, candidate};
     }
-    return result;
   }
 
   // is there a node we can remove
   auto removal_candidate(FindCandidateForRemoval());
   if (NewNodeIsBetterThanExisting(their_info.id, removal_candidate)) {
-    result.second = *removal_candidate;
     auto iter = nodes_.begin();
     std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
     nodes_.erase(iter);
     PushBackThenSort(std::move(their_info));
-  } else {
-    result.first = false;
+    return {true, *removal_candidate};
   }
-  return result;
+  return {false, boost::none};
 }
 
 bool RoutingTable::CheckNode(const Address& their_id) const {
@@ -95,8 +92,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
     return false;
 
   // check for duplicates
-  static NodeInfo their_info(their_id);
-  if (HaveNode(their_info))
+  if (HaveNode(NodeInfo(their_id)))
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);

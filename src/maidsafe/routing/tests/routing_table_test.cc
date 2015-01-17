@@ -35,13 +35,11 @@ namespace test {
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
   Address address(RandomString(Address::kSize));
-  const auto keys = asymm::GenerateKeyPair();
   RoutingTable routing_table(address);
   // check the node is useful when false is set
   for (unsigned int i = 0; i < GroupSize; ++i) {
     NodeInfo node{Address(RandomString(Address::kSize))};
     EXPECT_TRUE(routing_table.CheckNode(node.id));
-    EXPECT_FALSE(routing_table.CheckNode(node.id));
   }
   EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now
