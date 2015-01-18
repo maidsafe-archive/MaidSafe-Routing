@@ -28,6 +28,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "boost/optional/optional.hpp"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/routing/types.h"
 
@@ -48,7 +49,7 @@ class Accumulator {
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
-  using Map = std::map<KeyType, ValueType>;
+  using Map = std::map<NodeId, ValueType>;
 
   bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
 
@@ -56,11 +57,11 @@ class Accumulator {
     auto it = storage_.find(key);
     if (it == std::end(storage_))
       return false;
-    return (std::get<0>(it->second).size() > quorum_);
+    return (std::get<0>(it->second).size() >= quorum_);
   }
-// returns true when the quorum has been reached. This will return Quorum times
+  // returns true when the quorum has been reached. This will return Quorum times
   // a tuple of of valuetype which should be Source Address signature tag tpye and value
-  std::pair<bool, Map> Add(KeyType key, ValueType value, NodeId sender) {
+  boost::optional<std::pair<KeyType, Map>> Add(KeyType key, ValueType value, NodeId sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       AddNew(key, value, sender);
@@ -69,21 +70,21 @@ class Accumulator {
 
     std::get<0>(it->second).insert(std::make_pair(sender, value));
     ReOrder(key);
-    if (std::get<0>(it->second).size() > quorum_) {
-      return {true, std::get<0>(it->second)};
+    if (std::get<0>(it->second).size() >= quorum_) {
+      return std::make_pair(it->first, std::get<0>(it->second));
     }
-    return {false, Map()};
+    return {boost::none};
   }
 
   // this is called when the return from Add returns a type that is incorrect
   // this means a node sent bad data, this method allows all parts to be collected
   // and we can attempt to identify the bad node.
-  std::pair<bool, Map> GetAll(const KeyType& key) const {
+  boost::optional<std::pair<KeyType, Map>> GetAll(const KeyType& key) const {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
-      return {false, Map()};
+      return {boost::none};
     }
-    return {true, std::get<0>(it->second)};
+    return std::make_pair(it->first, std::get<0>(it->second));
   }
 
   size_t size() const { return storage_.size(); }
@@ -132,7 +133,7 @@ class Accumulator {
   std::chrono::steady_clock::duration time_to_live_;
   uint32_t quorum_;
   std::list<KeyType> key_order_;
-  std::map<KeyType, std::tuple<std::map<NodeId, ValueType>, typename std::list<KeyType>::iterator,
+  std::map<KeyType, std::tuple<Map, typename std::list<KeyType>::iterator,
                                std::chrono::steady_clock::time_point>> storage_;
 };
 
