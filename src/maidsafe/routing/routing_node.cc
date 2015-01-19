@@ -82,10 +82,10 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
       GetDataResponse response(data.key, test.value());
       if (data.relay_node)
         response.relay_node = data.relay_node;
-      for (auto& header : CreateHeaders(data.key, crypto::Hash<crypto::SHA1>(data.key.string()),
+      for (auto& hdr : CreateHeaders(data.key, crypto::Hash<crypto::SHA1>(data.key.string()),
                                         header.GetMessageId())) {
-        for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
-          rudp_.Send(target.id, Serialise(header, MessageTypeTag::GetDataResponse, response),
+        for (const auto& target : connection_manager_.GetTarget(hdr.GetDestination()))
+          rudp_.Send(target.id, Serialise(hdr, MessageTypeTag::GetDataResponse, response),
                      asio::use_future).get();
       }
       return;
