@@ -16,65 +16,54 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
-#define MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_H_
 
-#include <cstdint>
+#include "boost/optional.hpp"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-enum class MessageTypeTag : uint16_t {
-  Connect,
-  ConnectResponse,
-  ClientConnectResponse,
-  ClientConnect,
-  FindGroup,
-  FindGroupResponse,
-  GetData,
-  GetDataResponse,
-  GetKey,
-  GetKeyResponse,
-  GetGroupKey,
-  GetGroupKeyResponse,
-  PutData,
-  PutKey,
-  ClientPutData,
-  PutDataResponse,
-  ClientPost,
-  Post,
-  ClientRequest,
-  Request,
-  ClientResponse,
-  Response
-};
+struct GetGroupKey {
+  GetKey() = default;
+  ~GetKey() = default;
 
-struct Connect;
-struct ConnectResponse;
-struct ClientConnectResponse;
-struct ClientConnect;
-struct FindGroup;
-struct FindGroupResponse;
-struct GetData;
-struct GetDataResponse;
-struct GetKey;
-struct GetKeyResponse;
-struct GetGroupKey;
-struct GetGroupKeyResponse;
-struct ClientPutData;
-struct PutData;
-struct PutKey;
-struct PutDataResponse;
-struct ClientPost;
-struct Post;
-struct ClientRequest;
-struct Request;
-struct Response;
-struct ClientResponse;
+  template <typename T, typename U>
+  GetGroupKey(T&& key, U&& relay_node)
+      : key{std::forward<T>(key)}, relay_node{std::forward<T>(relay_node)} {}
+
+  template <typename T>
+  GetGroupKey(T&& key)
+      : key{std::forward<T>(key)} {}
+
+  GetGroupKey(GetKey&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                             relay_node{std::move(other.relay_node)} {}
+
+  GetGroupKey& operator=(GetKey&& other) MAIDSAFE_NOEXCEPT {
+    key = std::move(other.key);
+    relay_node = std::move(other.relay_node);
+    return *this;
+  }
+
+  GetGroupKey(const GetKey&) = delete;
+  GetGroupKey& operator=(const GetKey&) = delete;
+
+  void operator()() {}
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(key, relay_node);
+  }
+
+  GroupAddress key_requested;
+  boost::optional<Address> relay_node;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_MESSAGES_FWD_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_H_

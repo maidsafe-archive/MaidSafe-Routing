@@ -37,6 +37,7 @@
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -58,6 +59,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
       return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
     virtual boost::expected<std::vector<byte>, maidsafe_error> GetKey(DataKey data) {
+      auto cache_data = cache_.Get(data);
+      if (cache_data)
+        return cache_data;
+      else  // actually in this case get the close group keys and send back
+        return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
+    }
+    virtual boost::expected<std::vector<byte>, maidsafe_error> GetGroupKey(DataKey data) {
       auto cache_data = cache_.Get(data);
       if (cache_data)
         return cache_data;
@@ -125,8 +133,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   std::shared_ptr<Listener> listener_ptr_;
   MessageHandler message_handler_;
   LruCache<unique_identifier, void> filter_;
-  Accumulator<unique_identifier, SerialisedMessage> accumulator_;
-  Accumulator<Address, std::vector<asymm::PublicKey>> key_accumulator_;
+  Sentinel sentinel_;
   LruCache<Address, SerialisedMessage> cache_;
   std::map<MessageId, std::function<void(SerialisedMessage)>> responder_;
 };

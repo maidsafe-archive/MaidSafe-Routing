@@ -49,7 +49,7 @@ class Accumulator {
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
-  using Map = std::map<NodeId, ValueType>;
+  using Map = std::map<NodeAddress, ValueType>;
 
   bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
 
@@ -61,7 +61,7 @@ class Accumulator {
   }
   // returns true when the quorum has been reached. This will return Quorum times
   // a tuple of of valuetype which should be Source Address signature tag tpye and value
-  boost::optional<std::pair<KeyType, Map>> Add(KeyType key, ValueType value, NodeId sender) {
+  boost::optional<std::pair<KeyType, Map>> Add(KeyType key, ValueType value, NodeAddress sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       AddNew(key, value, sender);
@@ -90,7 +90,7 @@ class Accumulator {
   size_t size() const { return storage_.size(); }
 
  private:
-  void AddNew(KeyType key, ValueType value, NodeId sender) {
+  void AddNew(KeyType key, ValueType value, NodeAddress sender) {
     // check if we have entries with time expired
     while (CheckTimeExpired())  // any old entries at beginning of the list
       RemoveOldestElement();

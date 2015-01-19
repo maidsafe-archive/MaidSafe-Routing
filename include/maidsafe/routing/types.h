@@ -29,6 +29,8 @@
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
 
+#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/rudp/contact.h"
@@ -51,8 +53,8 @@ using MessageId = uint32_t;
 using DestinationAddress = TaggedValue<Address, struct DestinationTag>;
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
-
 using SourceAddress = std::pair<NodeAddress, boost::optional<GroupAddress>>;
+
 template <class Archive>
 void serialize(Archive& archive, SourceAddress& source_address) {
   archive(source_address.first, source_address.second);

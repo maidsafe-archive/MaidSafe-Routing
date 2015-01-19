@@ -27,6 +27,7 @@
 #include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
@@ -50,8 +51,7 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       listener_ptr_(listener_ptr),
       message_handler_(io_service, rudp_, connection_manager_, keys_),
       filter_(std::chrono::minutes(20)),
-      accumulator_(std::chrono::minutes(10), QuorumSize),
-      key_accumulator_(std::chrono::minutes(10), 1U),
+      sentinel_(io_service_),
       cache_(std::chrono::minutes(10)) {}
 
 void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {

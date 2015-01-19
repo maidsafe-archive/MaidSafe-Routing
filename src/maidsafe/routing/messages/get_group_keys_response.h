@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_KEY_H_
-#define MAIDSAFE_ROUTING_MESSAGES_GET_KEY_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_RESPONSE_H_
 
 #include "boost/optional.hpp"
 
@@ -27,38 +27,42 @@ namespace maidsafe {
 
 namespace routing {
 
-struct GetKey {
-  GetKey() = default;
-  ~GetKey() = default;
+struct GetGroupKeyResponse {
+  GetGroupKeyResponse() = default;
+  ~GetGroupKeyResponse() = default;
+
+  template <typename T, typename U, typename V>
+  GetGroupKeyResponse(T&& key, U&& data, V&& relay_node)
+      : key{std::forward<T>(key)},
+        data{std::forward<U>(data)},
+        relay_node{std::forward<U>(relay_node)} {}
 
   template <typename T, typename U>
-  GetKey(T&& key, U&& relay_node)
-      : key{std::forward<T>(key)}, relay_node{std::forward<T>(relay_node)} {}
+  GetGroupKeyResponse(T&& key, U&& data)
+      : key{std::forward<T>(key)}, data{std::forward<U>(data)} {}
 
-  template <typename T>
-  GetKey(T&& key)
-      : key{std::forward<T>(key)} {}
+  GetGroupKeyResponse(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                                                       data{std::move(other.data)} {
+  }
 
-  GetKey(GetKey&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                             relay_node{std::move(other.relay_node)} {}
-
-  GetKey& operator=(GetKey&& other) MAIDSAFE_NOEXCEPT {
+  GetGroupKeyResponse& operator=(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
-    relay_node = std::move(other.relay_node);
+    data = std::move(other.data);
     return *this;
   }
 
-  GetKey(const GetKey&) = delete;
-  GetKey& operator=(const GetKey&) = delete;
+  GetGroupKeyResponse(const GetGroupKeyResponse&) = delete;
+  GetGroupKeyResponse& operator=(const GetGroupKeyResponse&) = delete;
 
   void operator()() {}
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, relay_node);
+    archive(key, data, relay_node);
   }
 
-  KeyType key_requested;
+  GroupAddress key;
+  std::vector<PublicPmid> data;
   boost::optional<Address> relay_node;
 };
 
@@ -66,4 +70,4 @@ struct GetKey {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_KEY_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_GROUPKEY_RESPONSE_H_
