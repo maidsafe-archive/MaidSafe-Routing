@@ -51,7 +51,6 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/accumulator.h
     ${RoutingSourcesDir}/bootstrap_handler.h
     ${RoutingSourcesDir}/connection_manager.h
-    ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
@@ -74,7 +73,6 @@ source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
     ${RoutingSourcesDir}/bootstrap_handler.cc
     ${RoutingSourcesDir}/connection_manager.cc
-    ${RoutingSourcesDir}/message_handler.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
     ${RoutingSourcesDir}/routing_node.cc
