@@ -48,24 +48,26 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                     public rudp::ManagedConnections::Listener {
  public:
   using PutToCache = bool;
+  // The purpose of this object is to allow this API to allow upper layers to override default
+  // behavour of the calls to a routing node where applicable.
   class Listener {
    public:
     explicit Listener(LruCache<Identity, SerialisedMessage>& cache) : cache_(cache) {}
     virtual ~Listener() {}
     // default no post allowed unless implemented in upper layers
-    virtual bool Post(const SerialisedMessage&) { return false; }
+    virtual bool HandlePost(const SerialisedMessage&) { return false; }
     // not in local cache do upper layers have it (called when we are in target group)
-    virtual boost::expected<DataValue, maidsafe_error> Get(DataKey) {
+    virtual boost::expected<DataValue, maidsafe_error> HandleGet(DataKey) {
       return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
-    virtual boost::expected<std::vector<byte>, maidsafe_error> GetKey(DataKey data) {
+    virtual boost::expected<std::vector<byte>, maidsafe_error> HandleGetKey(DataKey data) {
       auto cache_data = cache_.Get(data);
       if (cache_data)
         return cache_data;
       else  // actually in this case get the close group keys and send back
         return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
-    virtual boost::expected<std::vector<byte>, maidsafe_error> GetGroupKey(DataKey data) {
+    virtual boost::expected<std::vector<byte>, maidsafe_error> HandleGetGroupKey(DataKey data) {
       auto cache_data = cache_.Get(data);
       if (cache_data)
         return cache_data;
@@ -73,10 +75,10 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
         return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
     }
     // default put is allowed unless prevented by upper layers
-    virtual PutToCache Put(DataKey, DataValue) { return true; }
+    virtual PutToCache HandlePut(DataKey, DataValue) { return true; }
     // if the implementation allows any put of data in unauthenticated mode
-    virtual bool UnauthenticatedPut(DataKey, DataValue) { return true; }
-    virtual void CloseGroupDifference(CloseGroupDifference) {}
+    virtual bool HandleUnauthenticatedPut(DataKey, DataValue) { return true; }
+    virtual void HandleCloseGroupDifference(CloseGroupDifference) {}
 
    private:
     LruCache<Identity, SerialisedMessage>& cache_;
