@@ -64,7 +64,6 @@ TEST(PutDataResponseTest, BEH_SerialiseParse) {
   Parse(binary_input_stream, put_data_rsp_after);
 
   EXPECT_EQ(put_data_rsp_before.key, put_data_rsp_after.key);
-  // EXPECT_EQ(put_data_rsp_before.relay_node, put_data_rsp_after.relay_node);
 
 
   EXPECT_EQ(ErrorToInt(put_data_rsp_before.result), ErrorToInt(put_data_rsp_after.result));
