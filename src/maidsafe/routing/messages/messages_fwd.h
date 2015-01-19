@@ -73,6 +73,30 @@ struct Request;
 struct Response;
 struct ClientResponse;
 
+template<class T> struct MessageToTag;
+template<> struct MessageToTag<Connect> { static MessageTypeTag value() { return MessageTypeTag::Connect; } };
+template<> struct MessageToTag<ConnectResponse> { static MessageTypeTag value() { return MessageTypeTag::ConnectResponse; } };
+template<> struct MessageToTag<ClientConnectResponse> { static MessageTypeTag value() { return MessageTypeTag::ClientConnectResponse; } };
+template<> struct MessageToTag<ClientConnect> { static MessageTypeTag value() { return MessageTypeTag::ClientConnect; } };
+template<> struct MessageToTag<FindGroup> { static MessageTypeTag value() { return MessageTypeTag::FindGroup; } };
+template<> struct MessageToTag<FindGroupResponse> { static MessageTypeTag value() { return MessageTypeTag::FindGroupResponse; } };
+template<> struct MessageToTag<GetData> { static MessageTypeTag value() { return MessageTypeTag::GetData; } };
+template<> struct MessageToTag<GetDataResponse> { static MessageTypeTag value() { return MessageTypeTag::GetDataResponse; } };
+template<> struct MessageToTag<GetKey> { static MessageTypeTag value() { return MessageTypeTag::GetKey; } };
+template<> struct MessageToTag<GetKeyResponse> { static MessageTypeTag value() { return MessageTypeTag::GetKeyResponse; } };
+template<> struct MessageToTag<GetGroupKey> { static MessageTypeTag value() { return MessageTypeTag::GetGroupKey; } };
+template<> struct MessageToTag<GetGroupKeyResponse> { static MessageTypeTag value() { return MessageTypeTag::GetGroupKeyResponse; } };
+template<> struct MessageToTag<ClientPutData> { static MessageTypeTag value() { return MessageTypeTag::ClientPutData; } };
+template<> struct MessageToTag<PutData> { static MessageTypeTag value() { return MessageTypeTag::PutData; } };
+template<> struct MessageToTag<PutKey> { static MessageTypeTag value() { return MessageTypeTag::PutKey; } };
+template<> struct MessageToTag<PutDataResponse> { static MessageTypeTag value() { return MessageTypeTag::PutDataResponse; } };
+template<> struct MessageToTag<ClientPost> { static MessageTypeTag value() { return MessageTypeTag::ClientPost; } };
+template<> struct MessageToTag<Post> { static MessageTypeTag value() { return MessageTypeTag::Post; } };
+template<> struct MessageToTag<ClientRequest> { static MessageTypeTag value() { return MessageTypeTag::ClientRequest; } };
+template<> struct MessageToTag<Request> { static MessageTypeTag value() { return MessageTypeTag::Request; } };
+template<> struct MessageToTag<Response> { static MessageTypeTag value() { return MessageTypeTag::Response; } };
+template<> struct MessageToTag<ClientResponse> { static MessageTypeTag value() { return MessageTypeTag::ClientResponse; } };
+
 }  // namespace routing
 
 }  // namespace maidsafe

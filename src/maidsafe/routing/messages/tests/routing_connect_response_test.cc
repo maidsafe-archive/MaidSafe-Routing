@@ -50,7 +50,7 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_resp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<ConnectResponse>::value);
+  auto tag_before(MessageToTag<ConnectResponse>::value());
 
   auto serialised_connect_rsp(Serialise(header_before, tag_before, connect_resp_before));
 

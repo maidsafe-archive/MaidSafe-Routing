@@ -81,28 +81,28 @@ void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_
 
   switch (tag) {
     case MessageTypeTag::Connect:
-      HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream));
+      HandleMessage(Parse<Connect>(binary_input_stream));
       break;
     case MessageTypeTag::ConnectResponse:
       HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
+          Parse<ConnectResponse>(binary_input_stream));
       break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
+          Parse<GetDataResponse>(binary_input_stream));
       break;
     // case MessageTypeTag::PutDataResponse:
     //   HandleMessage(
-    //       Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
+    //       Parse<PutDataResponse>(binary_input_stream));
     //   break;
     // case MessageTypeTag::Post:
-    //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
+    //   HandleMessage(Parse<Post>(binary_input_stream));
     //   break;
     // case MessageTypeTag::Request:
-    //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Request>>(binary_input_stream));
+    //   HandleMessage(Parse<Request>(binary_input_stream));
     //   break;
     // case MessageTypeTag::Response:
-    //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Response>>(binary_input_stream));
+    //   HandleMessage(Parse<MessageTypeTag::Response>(binary_input_stream));
     //   break;
     default:
       LOG(kWarning) << "Received message of unknown type.";

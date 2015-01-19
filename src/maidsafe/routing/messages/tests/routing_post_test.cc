@@ -51,7 +51,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Post>::value);
+  auto tag_before(MessageToTag<Post>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 

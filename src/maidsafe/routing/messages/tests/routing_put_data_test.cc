@@ -50,7 +50,7 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   // Serialise
   auto put_data_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<PutData>::value);
+  auto tag_before(MessageToTag<PutData>::value());
 
   auto serialised_put_data(Serialise(header_before, tag_before, put_data_before));
 

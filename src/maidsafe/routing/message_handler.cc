@@ -82,7 +82,7 @@ void MessageHandler::HandleMessage(Connect connect, MessageId message_id) {
         auto dave = Serialise(header);
         // FIXME: Don't block inside handlers, it will block everything with it.
         rudp_.Send(connect.receiver_id,
-                   Serialise(header, GivenTypeFindTag_v<ConnectResponse>::value, respond),
+                   Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
                    asio::use_future).get();
       });
 }

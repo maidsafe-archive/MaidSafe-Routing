@@ -54,6 +54,8 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       sentinel_(io_service_),
       cache_(std::chrono::minutes(10)) {}
 
+RoutingNode::~RoutingNode() {}
+
 void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{std::move(serialised_message)};
   MessageHeader header;
@@ -76,12 +78,12 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
 
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
-    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream);
+    auto data = Parse<GetDataResponse>(binary_input_stream);
     cache_.Add(data.key, data.data);
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
-    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream);
+    auto data = Parse<GetData>(binary_input_stream);
     auto test = cache_.Get(data.key);
     if (test) {
       GetDataResponse response(data.key, test.value());
@@ -118,41 +120,31 @@ void RoutingNode::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialis
 
   switch (tag) {
     case MessageTypeTag::Connect:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream),
-          header.GetMessageId());
+      message_handler_.HandleMessage(Parse<Connect>(binary_input_stream), header.GetMessageId());
       break;
     case MessageTypeTag::ConnectResponse:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<ConnectResponse>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroup:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<FindGroup>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroupResponse:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<FindGroupResponse>(binary_input_stream));
       break;
     case MessageTypeTag::GetData:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<GetData>(binary_input_stream));
       break;
     case MessageTypeTag::GetDataResponse:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<GetDataResponse>(binary_input_stream));
       break;
     case MessageTypeTag::PutData:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<PutData>(binary_input_stream));
       break;
     case MessageTypeTag::PutDataResponse:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<PutDataResponse>(binary_input_stream));
       break;
     case MessageTypeTag::Post:
-      message_handler_.HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
+      message_handler_.HandleMessage(Parse<routing::Post>(binary_input_stream));
       break;
     default:
       LOG(kWarning) << "Received message of unknown type.";

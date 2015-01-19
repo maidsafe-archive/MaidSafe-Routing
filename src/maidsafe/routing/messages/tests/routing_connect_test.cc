@@ -54,7 +54,7 @@ TEST(ConnectTest, BEH_SerialiseParseRelay) {
   // Serialise
   auto connect_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Connect>::value);
+  auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 
@@ -84,7 +84,7 @@ TEST(ConnectTest, BEH_SerialiseParseNoRelay) {
   // Serialise
   auto connect_before(GenerateNoRelayInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Connect>::value);
+  auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 

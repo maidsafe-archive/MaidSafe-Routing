@@ -128,8 +128,8 @@ struct CompileTimeMapper {
 template <MessageTypeTag tag>
 using GivenTagFindType_t = CompileTimeMapper::GivenTagFindType_t<tag>;
 
-template <typename Type>
-using GivenTypeFindTag_v = CompileTimeMapper::GivenTypeFindTag_v<Type>;
+//template <typename Type>
+//using GivenTypeFindTag_v = CompileTimeMapper::GivenTypeFindTag_v<Type>;
 
 }  // namespace routing
 

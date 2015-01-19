@@ -52,7 +52,7 @@ TEST(GetDataResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto get_data_rsp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<GetDataResponse>::value);
+  auto tag_before(MessageToTag<GetDataResponse>::value());
 
   auto serialised_get_data_rsp(Serialise(header_before, tag_before, get_data_rsp_before));
 

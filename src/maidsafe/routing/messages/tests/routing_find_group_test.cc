@@ -48,7 +48,7 @@ TEST(FindGroupTest, BEH_SerialiseParse) {
   // Serialise
   auto find_group_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<FindGroup>::value);
+  auto tag_before(MessageToTag<FindGroup>::value());
 
   auto serialised_find_grp(Serialise(header_before, tag_before, find_group_before));
 
