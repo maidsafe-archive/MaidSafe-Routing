@@ -35,7 +35,6 @@
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/connection_manager.h"
-#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
@@ -115,15 +114,38 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                                            MessageId message_id);
   std::vector<MessageHeader> CreateHeaders(Address target, Checksum checksum, MessageId message_id);
   std::vector<MessageHeader> CreateHeaders(Address target, MessageId message_id);
-  void GetDataResponseReceived(GetData get_data);
-  void PutDataResponseReceived(PutData put_data);
-  void ResponseReceived(Response response);
+  void HandleMessage(Connect connect, MessageId message_id);
+  // recieve connect from node and add nodes publicKey clients request to targetAddress
+  void HandleMessage(ClientConnect client_connect, const MessageHeader& header);
+  // like connect but add targets endpoint
+  void HandleMessage(ConnectResponse connect_response);
+  // like clientconnect adding targets public key (recieved by targets close group) (recieveing
+  // needs a Quorum)
+
+  //  void HandleMessage(ClientConnectResponse client_connect_response);
+  // sent by routing nodes to a network Address
+  void HandleMessage(FindGroup find_group);
+  // each member of the group close to network Address fills in their node_info and replies
+  void HandleMessage(FindGroupResponse find_group_reponse);
+  // may be directly sent to a network Address
+  void HandleMessage(GetData get_data);
+  // Each node wiht the data sends it back to the originator
+  void HandleMessage(GetDataResponse get_data_response);
+  // sent by a client to store data, client does information dispersal and sends a part to each of
+  // its close group
+  void HandleMessage(PutData put_data);
+  void HandleMessage(PutDataResponse put_data);
+  // each member of a group needs to send this to the network address (recieveing needs a Quorum)
+  // filling in public key again.
+  // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
+  // filling in public key again.
+  // void HandleMessage(Post post);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   virtual void MessageReceived(NodeId peer_id,
                                rudp::ReceivedMessage serialised_message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
-
+  SourceAddress OurSourceAddress() const;
   using unique_identifier = std::pair<Address, uint32_t>;
   asio::io_service& io_service_;
   Address our_id_;
@@ -133,7 +155,6 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   std::shared_ptr<Listener> listener_ptr_;
-  MessageHandler message_handler_;
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
   LruCache<Address, SerialisedMessage> cache_;
