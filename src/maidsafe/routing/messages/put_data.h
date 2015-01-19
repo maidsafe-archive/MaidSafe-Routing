@@ -25,7 +25,6 @@
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"

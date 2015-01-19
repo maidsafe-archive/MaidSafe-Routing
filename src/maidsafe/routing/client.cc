@@ -28,7 +28,6 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/types.h"
 
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/message_header.h"

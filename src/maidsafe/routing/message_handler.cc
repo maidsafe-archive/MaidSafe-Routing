@@ -29,7 +29,6 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_header.h"

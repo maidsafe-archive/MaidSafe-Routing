@@ -31,7 +31,6 @@
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 
 namespace maidsafe {
 

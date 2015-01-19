@@ -42,7 +42,6 @@ include(../../cmake_modules/standard_setup.cmake)
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/client.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/compile_time_mapper.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing_node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h

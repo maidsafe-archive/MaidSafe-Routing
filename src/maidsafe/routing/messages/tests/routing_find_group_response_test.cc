@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/find_group_response.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
