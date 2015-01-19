@@ -36,7 +36,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
   auto target_nodes = table_.TargetNodes(Address{RandomString(Address::kSize)});
   EXPECT_TRUE(target_nodes.empty());
 
-  // Partially fill the table with < kGroupSize contacts
+  // Partially fill the table with < GroupSize contacts
   PartiallyFillTable();
 
   // Check we get all contacts returned
@@ -66,66 +66,44 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
                     [&](const NodeInfo& node) { return node.id == buckets_[i].mid_contact; }));
   }
 
-  // Try with nodes far from us *not* in table (should return 'RoutingTable::Parallelism()' contacts
-  // closest to target)
-  for (size_t i = 0; i < RoutingTable::OptimalSize() - GroupSize; ++i) {
-    target_nodes = table_.TargetNodes(buckets_[i].far_contact);
-    EXPECT_EQ(RoutingTable::Parallelism(), target_nodes.size());
-    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + RoutingTable::Parallelism(),
-                      std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, buckets_[i].far_contact);
-    });
-    for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_),
-                              std::begin(added_ids_) + RoutingTable::Parallelism(),
-                              [&](const Address& added_id) { return added_id == target_node.id; }));
+  // Try with nodes far from us, first time *not* in table and second time *in* table (should return
+  // 'RoutingTable::Parallelism()' contacts closest to target)
+  Address target;
+  for (int count = 0; count < 2; ++count) {
+    for (size_t i = 0; i < RoutingTable::OptimalSize() - GroupSize; ++i) {
+      target = (count == 0) ? buckets_[i].far_contact : buckets_[i].mid_contact;
+      target_nodes = table_.TargetNodes(target);
+      EXPECT_EQ(RoutingTable::Parallelism(), target_nodes.size());
+      std::partial_sort(std::begin(added_ids_),
+                        std::begin(added_ids_) + RoutingTable::Parallelism(), std::end(added_ids_),
+                        [&](const Address& lhs, const Address& rhs) {
+        return Address::CloserToTarget(lhs, rhs, target);
+      });
+      for (const auto& target_node : target_nodes) {
+        EXPECT_TRUE(std::any_of(
+            std::begin(added_ids_), std::begin(added_ids_) + RoutingTable::Parallelism(),
+            [&](const Address& added_id) { return added_id == target_node.id; }));
+      }
     }
   }
 
-  // Try with node far from us, but *in* table (should return 'RoutingTable::Parallelism()' contacts
-  // closest to target excluding target itself)
-  for (size_t i = 0; i < RoutingTable::OptimalSize() - GroupSize - 1; ++i) {
-    target_nodes = table_.TargetNodes(buckets_[i].mid_contact);
-    EXPECT_EQ(RoutingTable::Parallelism(), target_nodes.size());
-    std::partial_sort(std::begin(added_ids_),
-                      std::begin(added_ids_) + RoutingTable::Parallelism() + 1,
-                      std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, buckets_[i].mid_contact);
-    });
-    for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_) + 1,
-                              std::begin(added_ids_) + RoutingTable::Parallelism() + 1,
-                              [&](const Address& added_id) { return added_id == target_node.id; }));
-    }
-  }
+  // Try with nodes close to us, first time *not* in table and second time *in* table (should return
+  // GroupSize closest to target)
+  for (int count = 0; count < 2; ++count) {
+    for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
+      target = (count == 0) ? buckets_[i].far_contact : buckets_[i].mid_contact;
+      target_nodes = table_.TargetNodes(target);
+      EXPECT_EQ(GroupSize, target_nodes.size());
+      std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
+                        std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
+        return Address::CloserToTarget(lhs, rhs, target);
+      });
 
-  // Try with node close to us *not* in table (should return kGroupSize closest to target)
-  for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
-    target_nodes = table_.TargetNodes(buckets_[i].far_contact);
-    EXPECT_EQ(GroupSize, target_nodes.size());
-    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
-                      std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, buckets_[i].far_contact);
-    });
-
-    for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
-                              [&](const Address& added_id) { return added_id == target_node.id; }));
-    }
-  }
-
-  // Try with node close to us, but *in* table (should return kGroupSize closest to target excluding
-  // target itself)
-  for (size_t i = RoutingTable::OptimalSize() - GroupSize; i < RoutingTable::OptimalSize(); ++i) {
-    target_nodes = table_.TargetNodes(buckets_[i].mid_contact);
-    EXPECT_EQ(GroupSize - 1, target_nodes.size());
-    std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize + 1,
-                      std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, buckets_[i].mid_contact);
-    });
-    for (const auto& target_node : target_nodes) {
-      EXPECT_TRUE(std::any_of(std::begin(added_ids_) + 1, std::begin(added_ids_) + GroupSize + 1,
-                              [&](const Address& added_id) { return added_id == target_node.id; }));
+      for (const auto& target_node : target_nodes) {
+        EXPECT_TRUE(
+            std::any_of(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
+                        [&](const Address& added_id) { return added_id == target_node.id; }));
+      }
     }
   }
 }

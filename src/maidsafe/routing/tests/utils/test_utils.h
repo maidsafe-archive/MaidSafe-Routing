@@ -20,34 +20,47 @@
 #define MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
 
 #include <cstdint>
-#include <vector>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "boost/asio/ip/address.hpp"
 #include "boost/asio/ip/udp.hpp"
-#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/rsa.h"
-
-#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
+#include "maidsafe/rudp/types.h"
+#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/utils.h"
-
 
 namespace maidsafe {
 
 namespace routing {
 
+class RoutingTable;
+
 namespace test {
 
-BootstrapHandler::BootstrapContact CreateBootstrapContact();
+using address_v6 = asio::ip::address_v6;
+using address_v4 = asio::ip::address_v4;
+using address = asio::ip::address;
+
+inline passport::PublicPmid PublicFob() {
+  return passport::PublicPmid{passport::Pmid(passport::Anpmid())};
+}
+BootstrapHandler::BootstrapContact CreateBootstrapContact(
+    asymm::PublicKey public_key = asymm::PublicKey());
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number);
 
 std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size);
+
+address_v4 GetRandomIPv4Address();
+
+address_v6 GetRandomIPv6Address();
+
+rudp::Endpoint GetRandomEndpoint();
 
 }  // namespace test
 

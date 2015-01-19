@@ -42,7 +42,7 @@ namespace test {
 
 namespace fs = boost::filesystem;
 
-TEST(BootstrapHandlerUnitTest, BEH_CreateBoostrapDataBase) {
+TEST(BootstrapHandlerUnitTest, BEH_CreateBoostrapDatabase) {
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
   fs::path bootstrap_file_path(*test_path / "bootstrap");
   EXPECT_NO_THROW(BootstrapHandler tmp(bootstrap_file_path));

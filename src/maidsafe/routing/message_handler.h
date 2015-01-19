@@ -20,39 +20,31 @@
 #define MAIDSAFE_ROUTING_MESSAGE_HANDLER_H_
 
 #include <chrono>
+#include <memory>
 #include <utility>
 
 #include "asio/io_service.hpp"
 
 #include "maidsafe/common/types.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/rudp/managed_connections.h"
 
-#include "maidsafe/routing/messages.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/accumulator.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 class ConnectionManager;
-struct Ping;
-struct PingResponse;
-struct FindGroup;
-struct FindGroupResponse;
-struct Connect;
-struct ConnectResponse;
-struct GetData;
-struct GetDataResponse;
-struct PutData;
-struct PutDataResponse;
-struct Post;
 
 class MessageHandler {
  public:
   MessageHandler(asio::io_service& io_service, rudp::ManagedConnections& managed_connections,
-                 ConnectionManager& connection_manager);
+                 ConnectionManager& connection_manager, asymm::Keys& keys);
   MessageHandler() = delete;
   ~MessageHandler() = default;
   MessageHandler(const MessageHandler&) = delete;
@@ -60,24 +52,43 @@ class MessageHandler {
   MessageHandler& operator=(const MessageHandler&) = delete;
   MessageHandler& operator=(MessageHandler&&) = delete;
 
-  void HandleMessage(Ping&& ping);
-  void HandleMessage(PingResponse&& ping_response);
-  void HandleMessage(FindGroup&& find_group);
-  void HandleMessage(FindGroupResponse&& find_group_reponse);
-  void HandleMessage(Connect&& connect);
-  void HandleMessage(ConnectResponse&& connect_response);
-  void HandleMessage(GetData&& get_data);
-  void HandleMessage(GetDataResponse&& get_data_response);
-  void HandleMessage(PutData&& put_data);
-  void HandleMessage(PutDataResponse&& put_data_response);
-  void HandleMessage(Post&& post);
+  // Send ourAddress, targetAddress and endpointpair to our close group
+  void HandleMessage(Connect connect, MessageId message_id);
+  // recieve connect from node and add nodes publicKey clients request to targetAddress
+  void HandleMessage(ClientConnect client_connect, const MessageHeader& header);
+  // like connect but add targets endpoint
+  void HandleMessage(ConnectResponse connect_response);
+  // like clientconnect adding targets public key (recieved by targets close group) (recieveing
+  // needs a Quorum)
+
+  //  void HandleMessage(ClientConnectResponse client_connect_response);
+  // sent by routing nodes to a network Address
+  void HandleMessage(FindGroup find_group);
+  // each member of the group close to network Address fills in their node_info and replies
+  void HandleMessage(FindGroupResponse find_group_reponse);
+  // may be directly sent to a network Address
+  void HandleMessage(GetData get_data);
+  // Each node wiht the data sends it back to the originator
+  void HandleMessage(GetDataResponse get_data_response);
+  // sent by a client to store data, client does information dispersal and sends a part to each of
+  // its close group
+  void HandleMessage(PutData put_data);
+  void HandleMessage(PutDataResponse put_data);
+  // each member of a group needs to send this to the network address (recieveing needs a Quorum)
+  // filling in public key again.
+  // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
+  // filling in public key again.
+  void HandleMessage(Post post);
 
  private:
+  SourceAddress OurSourceAddress() const;
+
   asio::io_service& io_service_;
   rudp::ManagedConnections& rudp_;
   ConnectionManager& connection_manager_;
   LruCache<Identity, SerialisedMessage> cache_;
   Accumulator<Identity, SerialisedMessage> accumulator_;
+  asymm::Keys keys_;
 };
 
 }  // namespace routing

@@ -41,11 +41,11 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-namespace fs = boost::filesystem;
-TEST(BootstrapHandlerUnitTest, BEH_RefreshDataBase) {
+
+TEST(BootstrapHandlerUnitTest, BEH_RefreshDatabase) {
   const size_t size(10);
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
-  fs::path bootstrap_file_path(*test_path / "bootstrap");
+  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap.sqlite");
   BootstrapHandler test_handler(bootstrap_file_path);
   std::vector<BootstrapHandler::BootstrapContact> write_first(CreateBootstrapContacts(size));
   std::vector<BootstrapHandler::BootstrapContact> write_second(CreateBootstrapContacts(size));
@@ -55,17 +55,19 @@ TEST(BootstrapHandlerUnitTest, BEH_RefreshDataBase) {
 
   auto read_from(test_handler.ReadBootstrapContacts());
 
-  EXPECT_EQ(read_from.size(), write_first.size());
+  ASSERT_EQ(read_from.size(), write_first.size());
   for (size_t i(0); i < size; ++i) {
-    EXPECT_EQ(std::get<0>(read_from[i]), std::get<0>(write_first[i]));
-    EXPECT_EQ(std::get<2>(read_from[i]), std::get<2>(write_first[i]));
+    EXPECT_EQ(read_from[i].id, write_first[i].id);
+    EXPECT_EQ(read_from[i].endpoint_pair, write_first[i].endpoint_pair);
+    EXPECT_TRUE(rsa::MatchingKeys(read_from[i].public_key, write_first[i].public_key));
   }
   test_handler.ReplaceBootstrapContacts(write_second);
   auto read_from_second(test_handler.ReadBootstrapContacts());
   EXPECT_EQ(read_from_second.size(), write_second.size());
   for (size_t i(0); i < size; ++i) {
-    EXPECT_EQ(std::get<0>(read_from_second[i]), std::get<0>(write_second[i]));
-    EXPECT_EQ(std::get<2>(read_from_second[i]), std::get<2>(write_second[i]));
+    EXPECT_EQ(read_from_second[i].id, write_second[i].id);
+    EXPECT_EQ(read_from_second[i].endpoint_pair, write_second[i].endpoint_pair);
+    EXPECT_TRUE(rsa::MatchingKeys(read_from_second[i].public_key, write_second[i].public_key));
   }
 }
 

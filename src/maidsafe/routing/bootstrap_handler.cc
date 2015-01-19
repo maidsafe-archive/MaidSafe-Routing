@@ -19,9 +19,11 @@
 #include "maidsafe/routing/bootstrap_handler.h"
 
 #include <cstdint>
-#include <string>
 
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/serialisation/serialisation.h"
+
+#include "maidsafe/routing/utils.h"
 
 namespace maidsafe {
 
@@ -38,10 +40,9 @@ BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
       bootstrap_contacts_(),
       last_updated_(std::chrono::steady_clock::now()) {
   sqlite::Statement statement{database_,
-                              "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID TEXT PRIMARY "
-                              "KEY NOT NULL, PUBLIC_KEY TEXT, ENDPOINT TEXT);"};
+                              "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID BLOB PRIMARY "
+                              "KEY NOT NULL, PUBLIC_KEY BLOB, ENDPOINT BLOB)"};
   statement.Step();
-  statement.Reset();
 }
 
 void BootstrapHandler::AddBootstrapContacts(BootstrapContacts bootstrap_contacts) {
@@ -55,12 +56,13 @@ void BootstrapHandler::AddBootstrapContacts(BootstrapContacts bootstrap_contacts
 std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapContacts() {
   BootstrapContacts bootstrap_contacts;
   sqlite::Statement statement{database_,
-                              "SELECT NODEID, PUBLIC_KEY, ENDPOINT from BOOTSTRAP_CONTACTS"};
-  while (statement.Step() == sqlite::StepResult::kSqliteRow)
-    bootstrap_contacts.push_back(
-        std::make_tuple(NodeId(statement.ColumnText(0)),
-                        asymm::DecodeKey(asymm::EncodedPublicKey(statement.ColumnText(1))),
-                        GetEndpoint(statement.ColumnText(2))));
+                              "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
+  while (statement.Step() == sqlite::StepResult::kSqliteRow) {
+    bootstrap_contacts.push_back(BootstrapContact {
+                                     Parse<NodeId>(statement.ColumnBlob(0)),
+                                     Parse<Endpoint>(statement.ColumnBlob(2)),
+                                     Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
+  }
   return bootstrap_contacts;
 }
 
@@ -69,37 +71,39 @@ void BootstrapHandler::ReplaceBootstrapContacts(BootstrapContacts bootstrap_cont
     bootstrap_contacts.resize(MaxListSize);
   sqlite::Transaction transaction(database_);
   RemoveBootstrapContacts();
-  InsertBootstrapContacts(bootstrap_contacts);
+  InsertBootstrapContacts(std::move(bootstrap_contacts));
   transaction.Commit();
 }
 
 void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_contacts) {
-  sqlite::Statement statement{
-      database_,
-      "INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS (NODEID, PUBLIC_KEY, ENDPOINT) VALUES (?, ?, ?)"};
-  for (auto& bootstrap_contact : bootstrap_contacts) {
-    statement.BindText(3, boost::lexical_cast<std::string>((std::get<2>(bootstrap_contact))));
-    statement.BindText(2, asymm::EncodeKey(std::get<1>(bootstrap_contact)).string());
-    statement.BindText(1, (std::get<0>(bootstrap_contact)).string());
-    statement.Step();
-    statement.Reset();
-  }
-}
+  if (bootstrap_contacts.empty())
+    return;
+  std::string query = {
+      "INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS(NODEID, PUBLIC_KEY, ENDPOINT) VALUES(?, ?, ?)"};
+  for (std::size_t i = 1; i != bootstrap_contacts.size(); ++i)
+    query += ",(?, ?, ?)";
+  sqlite::Statement statement{database_, query};
 
-void BootstrapHandler::RemoveBootstrapContacts() {
-  sqlite::Statement statement{database_, "DEL * from BOOTSTRAP_CONTACTS;"};
+  int index = 1;
+  for (const auto& bootstrap_contact : bootstrap_contacts) {
+    statement.BindBlob(index++, Serialise(bootstrap_contact.id));
+    statement.BindBlob(index++, Serialise(bootstrap_contact.public_key));
+    statement.BindBlob(index++, Serialise(bootstrap_contact.endpoint_pair.external));
+    assert(bootstrap_contact.endpoint_pair.external ==
+           bootstrap_contact.endpoint_pair.local);
+  }
+
   statement.Step();
   statement.Reset();
 }
-void BootstrapHandler::CheckBootstrapContacts() {}
 
-BootstrapHandler::Endpoint BootstrapHandler::GetEndpoint(const std::string& endpoint) const {
-  size_t delim = endpoint.rfind(':');
-  Endpoint ep;
-  ep.port(boost::lexical_cast<uint16_t>(endpoint.substr(delim + 1)));
-  ep.address(asio::ip::address::from_string(endpoint.substr(0, delim)));
-  return ep;
+void BootstrapHandler::RemoveBootstrapContacts() {
+  sqlite::Statement statement{database_, "DELETE FROM BOOTSTRAP_CONTACTS"};
+  statement.Step();
+  statement.Reset();
 }
+
+void BootstrapHandler::CheckBootstrapContacts() {}
 
 }  // namespace routing
 

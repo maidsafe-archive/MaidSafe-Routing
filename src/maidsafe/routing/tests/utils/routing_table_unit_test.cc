@@ -21,6 +21,8 @@
 #include <bitset>
 #include <string>
 
+#include "maidsafe/passport/detail/fob.h"
+#include "maidsafe/passport/types.h"
 #include "maidsafe/common/utils.h"
 
 namespace maidsafe {
@@ -63,9 +65,12 @@ RoutingTableUnitTest::Bucket::Bucket(const Address& furthest_from_tables_own_id,
       close_contact(GetContact(furthest_from_tables_own_id, index, ContactType::kClose)) {}
 
 RoutingTableUnitTest::RoutingTableUnitTest()
-    : table_(Address{RandomString(Address::kSize)}),
+    : our_id_(RandomString(Address::kSize)),
+      fob_(passport::Pmid(passport::Anpmid())),
+      public_fob_(passport::PublicPmid(fob_)),
+      table_(our_id_),
       buckets_(InitialiseBuckets()),
-      info_(),
+      info_(our_id_, passport::PublicPmid{passport::Pmid(passport::Anpmid())}),
       initial_count_((RandomUint32() % (GroupSize - 1)) + 1),
       added_ids_() {
   for (int i = 0; i < 99; ++i) {
@@ -85,7 +90,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
                                       table_.OurId()));
 
   const asymm::Keys keys(asymm::GenerateKeyPair());
-  info_.public_key = keys.public_key;
+  info_.dht_fob->public_key() = keys.public_key;
 }
 
 void RoutingTableUnitTest::PartiallyFillTable() {

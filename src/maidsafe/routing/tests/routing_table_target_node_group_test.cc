@@ -40,13 +40,12 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses;
   addresses.reserve(network_size);
+  auto fob(PublicFob());
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->OurId();
-      nodeinfo_to_add.public_key = key.public_key;
+      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob);
       node->AddNode(nodeinfo_to_add);
     }
   }
@@ -61,13 +60,9 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
       auto addresses_itr = std::begin(addresses);  // our ID
       ++addresses_itr;                             // first of our close group
       auto target_close_group = node->TargetNodes(addresses.at(i));
-      EXPECT_EQ(GroupSize - 1, target_close_group.size()) << "Failed at index " << i;
-      if (GroupSize - 1 != target_close_group.size())
-        continue;
-      // should contain our close group minus 'addresses.at(i)'
+      EXPECT_EQ(GroupSize, target_close_group.size()) << "Failed at index " << i;
+      // should contain our close group
       for (auto itr = std::begin(target_close_group); itr != std::end(target_close_group); ++itr) {
-        if (*addresses_itr == addresses.at(i))
-          ++addresses_itr;
         EXPECT_EQ(*addresses_itr++, itr->id);
       }
     }

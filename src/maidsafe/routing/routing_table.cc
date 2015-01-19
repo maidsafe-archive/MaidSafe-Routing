@@ -44,45 +44,46 @@ RoutingTable::RoutingTable(Address our_id)
 
 std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
   Validate(their_info.id);
-  if (their_info.id == our_id_ || !asymm::ValidateKey(their_info.public_key))
-    return {false, boost::optional<NodeInfo>()};
+  if (their_info.id == our_id_ || !their_info.dht_fob)
+    return {false, boost::none};
 
   std::lock_guard<std::mutex> lock(mutex_);
 
   // check not duplicate
   if (HaveNode(their_info))
-    return {false, boost::optional<NodeInfo>()};
+    return {false, boost::none};
 
   // routing table small, just grab this node
   if (nodes_.size() < OptimalSize()) {
-    PushBackThenSort(std::move(their_info));
-    return {true, boost::optional<NodeInfo>()};
+    PushBackThenSort(their_info);
+    return {true, their_info};
   }
 
   // new close group member
-  auto result = std::make_pair(true, boost::optional<NodeInfo>());
   if (Address::CloserToTarget(their_info.id, nodes_.at(GroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     PushBackThenSort(std::move(their_info));
     auto removal_candidate(FindCandidateForRemoval());
     if (removal_candidate != std::end(nodes_)) {
-      result.second = *removal_candidate;
-      nodes_.erase(removal_candidate);
+      auto iter = nodes_.begin();
+      std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+      auto candidate = *removal_candidate;
+      nodes_.erase(iter);
+      return {true, candidate};
     }
-    return result;
   }
 
   // is there a node we can remove
   auto removal_candidate(FindCandidateForRemoval());
   if (NewNodeIsBetterThanExisting(their_info.id, removal_candidate)) {
-    result.second = *removal_candidate;
-    nodes_.erase(removal_candidate);
+    auto iter = nodes_.begin();
+    std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+    nodes_.erase(iter);
     PushBackThenSort(std::move(their_info));
-  } else {
-    result.first = false;
+    return {true, *removal_candidate};
   }
-  return result;
+  return {false, boost::none};
 }
 
 bool RoutingTable::CheckNode(const Address& their_id) const {
@@ -91,9 +92,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
     return false;
 
   // check for duplicates
-  static NodeInfo their_info;
-  their_info.id = their_id;
-  if (HaveNode(their_info))
+  if (HaveNode(NodeInfo(their_id)))
     return false;
 
   std::lock_guard<std::mutex> lock(mutex_);
@@ -126,10 +125,7 @@ std::vector<NodeInfo> RoutingTable::TargetNodes(const Address& target) const {
     std::lock_guard<std::mutex> lock(mutex_);
     auto parallelism = std::min(Parallelism(), nodes_.size());
     for (auto itr = std::begin(nodes_); itr != std::end(nodes_); ++itr, ++iterations) {
-      // we don't want to include the actual target in our results
-      if (target == itr->id)
-        continue;
-      // close group is first 'kGroupSize' contacts
+      // close group is first 'GroupSize' contacts
       if (iterations < GroupSize)
         our_close_group.push_back(itr);
       // add 'itr' to collection of all iterators for later partial sorting by closeness to target
@@ -168,6 +164,18 @@ std::vector<NodeInfo> RoutingTable::OurCloseGroup() const {
   return result;
 }
 
+boost::optional<asymm::PublicKey> RoutingTable::GetPublicKey(const Address& their_id) const {
+  Validate(their_id);
+  NodeInfo their_info(their_id);
+  std::lock_guard<std::mutex> lock(mutex_);
+  assert(std::is_sorted(std::begin(nodes_), std::end(nodes_), comparison_));
+  auto itrs = std::equal_range(std::begin(nodes_), std::end(nodes_), their_info, comparison_);
+  if (itrs.first == itrs.second)
+    return boost::none;
+  assert(std::distance(itrs.first, itrs.second) == 1);
+  return itrs.first->dht_fob->public_key();
+}
+
 size_t RoutingTable::Size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return nodes_.size();
@@ -190,7 +198,7 @@ bool RoutingTable::NewNodeIsBetterThanExisting(
          BucketIndex(their_id) > BucketIndex(removal_candidate->id);
 }
 
-void RoutingTable::PushBackThenSort(NodeInfo&& their_info) {
+void RoutingTable::PushBackThenSort(NodeInfo their_info) {
   nodes_.push_back(std::move(their_info));
   std::sort(std::begin(nodes_), std::end(nodes_), comparison_);
 }
@@ -211,10 +219,6 @@ std::vector<NodeInfo>::const_iterator RoutingTable::FindCandidateForRemoval() co
   });
 
   return found == furthest_group_member ? std::end(nodes_) : found.base();
-}
-
-unsigned int RoutingTable::NetworkStatus(size_t size) const {
-  return static_cast<unsigned int>(size * 100 / OptimalSize());
 }
 
 }  // namespace routing

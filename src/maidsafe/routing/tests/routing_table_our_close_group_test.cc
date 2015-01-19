@@ -36,7 +36,7 @@ TEST_F(RoutingTableUnitTest, BEH_OurCloseGroup) {
   auto our_close_group = table_.OurCloseGroup();
   EXPECT_TRUE(our_close_group.empty());
 
-  // Partially fill the table with < kGroupSize contacts
+  // Partially fill the table with < GroupSize contacts
   PartiallyFillTable();
 
   // Check we get all contacts returned

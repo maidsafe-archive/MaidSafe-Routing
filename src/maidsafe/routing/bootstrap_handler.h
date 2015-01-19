@@ -19,7 +19,7 @@
 /*
 The purpose of this simple object is to maintain a list of bootstrap nodes. These are nodes that are
 accessible through their published endpoint (external). Rudp confirms these nodes and passes us the
-NodeId:PublicKey:Endpoint. This is maintained as a sqlite3 db for the time being to  multi-
+NodeId:PublicKey:Endpoint. This is maintained as a sqlite3 db for the time being to multi-
 process access (particularly useful for vaults).
 
 This object in itself will very possibly end up in rudp itself.
@@ -39,6 +39,8 @@ This object in itself will very possibly end up in rudp itself.
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
+#include "maidsafe/rudp/contact.h"
+#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -48,8 +50,7 @@ namespace routing {
 
 class BootstrapHandler {
  public:
-  using Endpoint = asio::ip::udp::endpoint;
-  using BootstrapContact = std::tuple<NodeId, asymm::PublicKey, Endpoint>;
+  using BootstrapContact = rudp::Contact;
   using BootstrapContacts = std::vector<BootstrapContact>;
 
   static const int MaxListSize = 1500;
@@ -79,7 +80,6 @@ class BootstrapHandler {
   // we get all contacts and ping them (rudp_.ping) and when we have
   // MaxListSize or exhausted the list we replace the current list with the
   void CheckBootstrapContacts();
-  Endpoint GetEndpoint(const std::string& endpoint) const;
 
   boost::filesystem::path bootstrap_filename_;
   sqlite::Database database_;

@@ -28,9 +28,9 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-#include "maidsafe/common/crypto.h"
-#include "maidsafe/common/make_unique.h"
+#include "boost/optional/optional.hpp"
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -41,52 +41,56 @@ namespace routing {
 template <typename KeyType, typename ValueType>
 class Accumulator {
  public:
-  explicit Accumulator(std::chrono::steady_clock::duration time_to_live)
-      : time_to_live_(time_to_live) {}
+  explicit Accumulator(std::chrono::steady_clock::duration time_to_live, uint32_t quorum)
+      : time_to_live_(time_to_live), quorum_(quorum) {}
 
   ~Accumulator() = default;
   Accumulator(const Accumulator&) = delete;
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
+  using Map = std::map<NodeAddress, ValueType>;
 
-  std::pair<bool, ValueType> Add(KeyType key, ValueType value, NodeId sender) {
+  bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
+
+  bool CheckQuorumReached(KeyType key) {
+    auto it = storage_.find(key);
+    if (it == std::end(storage_))
+      return false;
+    return (std::get<0>(it->second).size() >= quorum_);
+  }
+  // returns true when the quorum has been reached. This will return Quorum times
+  // a tuple of of valuetype which should be Source Address signature tag tpye and value
+  boost::optional<std::pair<KeyType, Map>> Add(KeyType key, ValueType value, NodeAddress sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       AddNew(key, value, sender);
+      it = storage_.find(key);
     }
+
     std::get<0>(it->second).insert(std::make_pair(sender, value));
     ReOrder(key);
-    if (std::get<0>(it->second).size() >= QuorumSize) {
-      std::vector<ValueType> ret_vec;
-      for (const auto& part : std::get<0>(it->second))
-        ret_vec.push_back(part);
-
-      return {true, crypto::InfoRetrieve(GroupSize, ret_vec)};
+    if (std::get<0>(it->second).size() >= quorum_) {
+      return std::make_pair(it->first, std::get<0>(it->second));
     }
-    return {false, ValueType()};
+    return {boost::none};
   }
 
   // this is called when the return from Add returns a type that is incorrect
-  // this means a node sent bad dta, this method allows all parts to be collected
+  // this means a node sent bad data, this method allows all parts to be collected
   // and we can attempt to identify the bad node.
-  std::pair<bool, std::vector<ValueType>> GetAllParts(const KeyType& key) const {
+  boost::optional<std::pair<KeyType, Map>> GetAll(const KeyType& key) const {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
-      return {false, std::vector<ValueType>()};
+      return {boost::none};
     }
-
-    std::vector<ValueType> ret_vec;
-    for (const auto& part : std::get<0>(it->second))
-      ret_vec.push_back(part);
-
-    return {true, ret_vec};
+    return std::make_pair(it->first, std::get<0>(it->second));
   }
 
   size_t size() const { return storage_.size(); }
 
  private:
-  void AddNew(KeyType key, ValueType value, NodeId sender) {
+  void AddNew(KeyType key, ValueType value, NodeAddress sender) {
     // check if we have entries with time expired
     while (CheckTimeExpired())  // any old entries at beginning of the list
       RemoveOldestElement();
@@ -96,7 +100,7 @@ class Accumulator {
 
     // Create the key-value entry,
     // linked to the usage record.
-    std::map<NodeId, ValueType> map;
+    Map map;
     map.insert(std::make_pair(sender, value));
     storage_.insert(
         std::make_pair(key, std::make_tuple(map, it, std::chrono::steady_clock::now())));
@@ -124,12 +128,12 @@ class Accumulator {
     const auto it = storage_.find(key);
     assert(it != storage_.end());
     key_order_.splice(key_order_.end(), key_order_, std::get<1>(it->second));
-    return std::make_pair(true, std::get<0>(it->second));
   }
 
   std::chrono::steady_clock::duration time_to_live_;
+  uint32_t quorum_;
   std::list<KeyType> key_order_;
-  std::map<KeyType, std::tuple<std::map<NodeId, ValueType>, typename std::list<KeyType>::iterator,
+  std::map<KeyType, std::tuple<Map, typename std::list<KeyType>::iterator,
                                std::chrono::steady_clock::time_point>> storage_;
 };
 

@@ -21,6 +21,8 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
@@ -35,13 +37,11 @@ namespace test {
 TEST(RoutingTableTest, FUNC_AddCheckMultipleNodes) {
   const auto size(50);
   auto routing_tables(RoutingTableNetwork(size));
-  asymm::Keys key(asymm::GenerateKeyPair());
+  passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add;
-      nodeinfo_to_add.id = node_to_add->OurId();
-      nodeinfo_to_add.public_key = key.public_key;
+      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob);
       if (node->CheckNode(nodeinfo_to_add.id)) {
         auto removed_node = node->AddNode(nodeinfo_to_add);
         EXPECT_TRUE(removed_node.first);

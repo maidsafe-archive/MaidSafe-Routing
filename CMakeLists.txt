@@ -41,55 +41,60 @@ include(../../cmake_modules/standard_setup.cmake)
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 set(RoutingLibApiFiles
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/client.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/compile_time_mapper.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
+    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing_node.h
     ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/vault_node.h
     )
 source_group("Routing API Files" FILES ${RoutingLibApiFiles})
 set(RoutingLibHeaders
     ${RoutingSourcesDir}/accumulator.h
-#    ${RoutingSourcesDir}/acknowledgement.h
-#    ${RoutingSourcesDir}/bootstrap_file_operations.h
     ${RoutingSourcesDir}/bootstrap_handler.h
-#    ${RoutingSourcesDir}/bootstrap_utils.h
-    ${RoutingSourcesDir}/connect.h
     ${RoutingSourcesDir}/connection_manager.h
-    ${RoutingSourcesDir}/connect_response.h
-    ${RoutingSourcesDir}/find_group.h
-    ${RoutingSourcesDir}/find_group_response.h
-    ${RoutingSourcesDir}/get_data.h
-    ${RoutingSourcesDir}/get_data_response.h
-    ${RoutingSourcesDir}/messages.h
     ${RoutingSourcesDir}/message_handler.h
     ${RoutingSourcesDir}/message_header.h
-#    ${RoutingSourcesDir}/network.h
-    ${RoutingSourcesDir}/ping.h
-    ${RoutingSourcesDir}/ping_response.h
-    ${RoutingSourcesDir}/post.h
-    ${RoutingSourcesDir}/put_data.h
-    ${RoutingSourcesDir}/put_data_response.h
     ${RoutingSourcesDir}/routing_table.h
     ${RoutingSourcesDir}/utils.h
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
+set(RoutingMessagesHeaders
+    ${RoutingSourcesDir}/messages/connect.h
+    ${RoutingSourcesDir}/messages/connect_response.h
+    ${RoutingSourcesDir}/messages/find_group.h
+    ${RoutingSourcesDir}/messages/find_group_response.h
+    ${RoutingSourcesDir}/messages/get_data.h
+    ${RoutingSourcesDir}/messages/get_data_response.h
+    ${RoutingSourcesDir}/messages/messages.h
+    ${RoutingSourcesDir}/messages/messages_fwd.h
+    ${RoutingSourcesDir}/messages/post.h
+    ${RoutingSourcesDir}/messages/put_data.h
+    ${RoutingSourcesDir}/messages/put_data_response.h
+    )
+source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
-#    ${RoutingSourcesDir}/acknowledgement.cc
-#    ${RoutingSourcesDir}/bootstrap_file_operations.cc
     ${RoutingSourcesDir}/bootstrap_handler.cc
-#    ${RoutingSourcesDir}/bootstrap_utils.cc
-#    ${RoutingSourcesDir}/close_nodes_change.cc
     ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/message_handler.cc
-#    ${RoutingSourcesDir}/network.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/utils.cc
-    ${RoutingSourcesDir}/vault_node.cc
+    ${RoutingSourcesDir}/routing_node.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
-ms_add_static_library(maidsafe_routing ${RoutingLibApiFiles} ${RoutingLibHeaders} ${RoutingLibSources})
+set(RoutingMessagesSources
+    ${RoutingSourcesDir}/messages/messages.cc
+    )
+source_group("Routing Messages Source Files" FILES ${RoutingMessagesSources})
+ms_add_static_library(maidsafe_routing
+    ${RoutingLibApiFiles}
+    ${RoutingLibHeaders}
+    ${RoutingMessagesHeaders}
+    ${RoutingLibSources}
+    ${RoutingMessagesSources}
+    )
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport)
+target_link_libraries(maidsafe_routing maidsafe_rudp maidsafe_passport ${BoostCoroutineLibs} ${BoostContextLibs})
 
 if(INCLUDE_TESTS)
   ms_add_static_library(maidsafe_test_routing
@@ -103,9 +108,10 @@ if(INCLUDE_TESTS)
   target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
 
   file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
-  foreach(TestFile ${TestFiles})
+  file(GLOB MessagesTestFiles ${RoutingSourcesDir}/messages/tests/*.cc)
+  file(GLOB MessagesTestFileHeaders ${RoutingSourcesDir}/messages/tests/*.h)
+  foreach(TestFile ${TestFiles}  ${MessagesTestFiles})
     get_filename_component(TestName ${TestFile} NAME_WE)
-    # string(REGEX REPLACE "(.*)_test$" "test_\\1" TestName ${TestName})
     ms_add_executable(${TestName} "Tests/Routing" ${TestFile})
     target_link_libraries(${TestName} maidsafe_test_routing)
     list(APPEND RoutingTests ${TestName})

@@ -20,9 +20,10 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
-
+#include "boost/optional/optional.hpp"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -31,16 +32,17 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
-  NodeInfo() = default;
+  explicit NodeInfo(NodeId id) : id(id) {}
+  NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
   NodeInfo(const NodeInfo&) = default;
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
-                                                 public_key(std::move(other.public_key)),
+                                                 dht_fob(std::move(other.dht_fob)),
                                                  rank(std::move(other.rank)),
                                                  connected(std::move(other.connected)) {}
   NodeInfo& operator=(const NodeInfo&) = default;
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
-    public_key = std::move(other.public_key);
+    dht_fob = std::move(other.dht_fob);
     rank = std::move(other.rank);
     connected = std::move(other.connected);
     return *this;
@@ -56,7 +58,7 @@ struct NodeInfo {
   NonEmptyString serialise() const;
 
   Address id{};
-  asymm::PublicKey public_key{};
+  boost::optional<passport::PublicPmid> dht_fob;
   int32_t rank{0};
   bool connected{false};
 };

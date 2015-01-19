@@ -19,9 +19,12 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 #define MAIDSAFE_ROUTING_MESSAGE_HEADER_H_
 
+#include <cstdint>
 #include <tuple>
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/error.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
@@ -30,47 +33,102 @@ namespace maidsafe {
 
 namespace routing {
 
-struct MessageHeader {
+class MessageHeader {
+ public:
   MessageHeader() = default;
-  MessageHeader(const MessageHeader&) = delete;
-  MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
-      : destination(std::move(other.destination)),
-        source(std::move(other.source)),
-        message_id(std::move(other.message_id)) {}
-  // MessageHeader(DestinationAddress destination_in, SourceAddress source_in,
-  //              MessageId message_id_in, MurmurHash checksum_in, Checksums other_checksums_in)
-  //    : destination(std::move(destination_in)),
-  //      source(std::move(source_in)),
-  //      message_id(std::move(message_id_in)),
-  //      checksum(std::move(checksum_in)),
-  //      other_checksums((std::move(other_checksums_in))) {}
-  MessageHeader(DestinationAddress destination_in, SourceAddress source_in, MessageId message_id_in)
-      : destination(std::move(destination_in)),
-        source(std::move(source_in)),
-        message_id(std::move(message_id_in)) {}
   ~MessageHeader() = default;
-  MessageHeader& operator=(const MessageHeader&) = delete;
+
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id, asymm::Signature&& signature)
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_(message_id),
+        signature_{std::forward<asymm::Signature>(signature)} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
+
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id, Checksum&& checksum)
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_(message_id),
+        checksum_{std::forward<Checksum>(checksum)} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
+
+  template <typename T, typename U>
+  MessageHeader(T&& destination, U&& source, MessageId message_id)
+      : destination_{std::forward<T>(destination)},
+        source_{std::forward<U>(source)},
+        message_id_{message_id} {
+    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+  }
+
+  MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
+      : destination_(std::move(other.destination_)),
+        source_(std::move(other.source_)),
+        message_id_(std::move(other.message_id_)),
+        checksum_(std::move(other.checksum_)),
+        signature_(std::move(other.signature_)) {}
+
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
-    destination = std::move(other.destination);
-    source = std::move(other.source);
-    message_id = std::move(other.message_id);
+    destination_ = std::move(other.destination_);
+    source_ = std::move(other.source_);
+    message_id_ = std::move(other.message_id_);
+    checksum_ = std::move(other.checksum_);
+    signature_ = std::move(other.signature_);
     return *this;
   }
 
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(destination.data, source.data, message_id.data);
+  MessageHeader(const MessageHeader&) = delete;
+  MessageHeader& operator=(const MessageHeader&) = delete;
+
+  // regular
+  bool operator==(const MessageHeader& other) const {
+    return std::tie(message_id_, destination_, source_) ==
+           std::tie(other.message_id_, other.destination_, other.source_);
   }
 
-  DestinationAddress destination{};
-  SourceAddress source{};
-  MessageId message_id{};
-};
+  bool operator!=(const MessageHeader& other) const { return !operator==(other); }
 
-inline bool operator==(const MessageHeader& lhs, const MessageHeader& rhs) {
-  return std::tie(lhs.message_id, lhs.destination, lhs.source) ==
-         std::tie(rhs.message_id, rhs.destination, rhs.source);
-}
+  // fully ordered
+  bool operator<(const MessageHeader& other) const {
+    return std::tie(message_id_, destination_, source_) <
+           std::tie(other.message_id_, other.destination_, other.source_);
+  }
+
+  bool operator>(const MessageHeader& other) const {
+    return !(operator<(other) || operator==(other));
+  }
+
+  bool operator<=(const MessageHeader& other) const { return !operator>(other); }
+  bool operator>=(const MessageHeader& other) const { return !operator<(other); }
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(destination_, source_, message_id_, checksum_, signature_);
+  }
+  DestinationAddress GetDestination() { return destination_; }
+  SourceAddress GetSource() { return source_; }
+  uint32_t GetMessageId() { return message_id_; }
+  boost::optional<Checksum> GetChecksum() { return checksum_; }
+  boost::optional<asymm::Signature> GetSignature() { return signature_; }
+  bool IsDirect() { return source_.second ? true : false; }
+  Address NetworkAddressablElement() {
+    return IsDirect() ? source_.first.data : source_.second->data;
+  }
+
+ private:
+  DestinationAddress destination_;
+  SourceAddress source_;
+  // GroupAddress group_;
+  uint32_t message_id_;
+  boost::optional<crypto::SHA1Hash> checksum_;
+  boost::optional<asymm::Signature> signature_;
+};
 
 }  // namespace routing
 

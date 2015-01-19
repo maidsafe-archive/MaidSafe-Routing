@@ -78,19 +78,23 @@ class RoutingTable {
   void DropNode(const Address& node_to_drop);
 
   // This returns a collection of contacts to which a message should be sent onwards.  It will
-  // return all of our close group (comprising 'kGroupSize' contacts) if the closest one to the
+  // return all of our close group (comprising 'GroupSize' contacts) if the closest one to the
   // target is within our close group.  If not, it will return the 'Parallelism()' closest contacts
-  // to the target.  In both cases, if the target is an actual contact in our table, it is excluded
-  // from the returned collection.
+  // to the target.
   std::vector<NodeInfo> TargetNodes(const Address& target) const;
 
-  // This returns our close group, i.e. the 'kGroupSize' contacts closest to our ID (or the entire
-  // table if we hold less than 'kGroupSize' contacts in total).
+  // This returns our close group, i.e. the 'GroupSize' contacts closest to our ID (or the entire
+  // table if we hold less than 'GroupSize' contacts in total).
   std::vector<NodeInfo> OurCloseGroup() const;
 
-  Address OurId() const { return our_id_; }
+  // This returns the public key for the given node if the node is in our table.
+  boost::optional<asymm::PublicKey> GetPublicKey(const Address& their_id) const;
+
+  const Address& OurId() const { return our_id_; }
 
   size_t Size() const;
+
+  int32_t BucketIndex(const Address& node_id) const;
 
  private:
   class Comparison {
@@ -107,13 +111,11 @@ class RoutingTable {
    private:
     const Address our_id_;
   };
-  int32_t BucketIndex(const Address& node_id) const;
   bool HaveNode(const NodeInfo& their_info) const;
   bool NewNodeIsBetterThanExisting(const Address& their_id,
                                    std::vector<NodeInfo>::const_iterator removal_candidate) const;
-  void PushBackThenSort(NodeInfo&& their_info);
+  void PushBackThenSort(NodeInfo their_info);
   std::vector<NodeInfo>::const_iterator FindCandidateForRemoval() const;
-  unsigned int NetworkStatus(size_t size) const;
 
   const Address our_id_;
   const Comparison comparison_;

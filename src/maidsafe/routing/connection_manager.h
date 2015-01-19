@@ -44,6 +44,7 @@ destiations. In that case request a close_group message for this node.
 #include <vector>
 
 #include "asio/io_service.hpp"
+#include "boost/optional.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
 
@@ -51,23 +52,19 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
 
-
 namespace maidsafe {
 
 namespace routing {
 
 class ConnectionManager {
  public:
-  ConnectionManager(asio::io_service& io_service, rudp::ManagedConnections& rudp, Address our_id,
-                    std::function<void(CloseGroupDifference)> group_changed_functor)
+  ConnectionManager(asio::io_service& io_service, rudp::ManagedConnections& rudp, Address our_id)
       : mutex_(),
         io_service_(io_service),
         routing_table_(our_id),
         rudp_(rudp),
-        current_close_group_(),
-        group_changed_functor_(group_changed_functor) {
-    assert(group_changed_functor_ && "functor required to be set");
-  }
+        current_close_group_() {}
+
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
   ~ConnectionManager() = default;
@@ -76,15 +73,29 @@ class ConnectionManager {
 
   bool SuggestNodeToAdd(const Address& node_to_add) const;
   std::vector<NodeInfo> GetTarget(const Address& target_node) const;
-  void LostNetworkConnection(const Address& node);
+  boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  void DropNode(const Address& their_id);
-  void AddNode(NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair);
+  boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
+                                                rudp::EndpointPair their_endpoint_pair);
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
+  size_t CloseGroupBucketDistance() const {
+    return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
+  }
+  bool AddressInCloseGroupRange(const Address& address) {
+    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id, routing_table_.OurId());
+  }
+
+  const Address& OurId() const { return routing_table_.OurId(); }
+
+  boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
+    return routing_table_.GetPublicKey(node);
+  }
+
+  bool CloseGroupMember(const Address& their_id);
 
  private:
-  void GroupChanged();
-
+  boost::optional<CloseGroupDifference> GroupChanged();
 
   std::mutex mutex_;
   asio::io_service& io_service_;
