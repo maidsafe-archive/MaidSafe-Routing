@@ -65,7 +65,6 @@ struct FindGroup {
     archive(requester_id, target_id, relay_node);
   }
 
-  rudp::EndpointPair requester_endpoints;
   Address requester_id;
   Address target_id;
   boost::optional<Address> relay_node;

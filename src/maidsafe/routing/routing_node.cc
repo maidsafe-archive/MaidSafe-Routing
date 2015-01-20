@@ -84,7 +84,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
       if (data.relay_node)
         response.relay_node = data.relay_node;
       for (auto& hdr : CreateHeaders(data.key, crypto::Hash<crypto::SHA1>(data.key.string()),
-                                        header.GetMessageId())) {
+                                     header.GetMessageId())) {
         for (const auto& target : connection_manager_.GetTarget(hdr.GetDestination()))
           rudp_.Send(target.id, Serialise(hdr, MessageTypeTag::GetDataResponse, response),
                      asio::use_future).get();
@@ -181,10 +181,10 @@ void RoutingNode::HandleMessage(Connect connect, MessageId message_id) {
         respond.receiver_endpoints = endpoint_pair;
 
 
-        MessageHeader header(DestinationAddress(connect.requester_id),
-                             SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()),
-                                                          boost::optional<GroupAddress>())),
-                             message_id, asymm::Sign(Serialise(respond), keys_.private_key));
+        MessageHeader header(
+            DestinationAddress(connect.requester_id),
+            SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()), boost::none)),
+            message_id, asymm::Sign(Serialise(respond), keys_.private_key));
         rudp_.Send(connect.receiver_id,
                    Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
                    asio::use_future).get();
@@ -199,12 +199,30 @@ void RoutingNode::HandleMessage(ConnectResponse connect_response) {
   // TODO(dirvine) We have confirmed this node is still one we want and now we need to connect to
   // him and add to routing table as in connect above   :19/01/2015
 }
-void RoutingNode::HandleMessage(FindGroup /*find_group*/) {
-  // create header and message and send via rudp
+void RoutingNode::HandleMessage(FindGroup find_group) {
+  FindGroupResponse response(std::move(find_group));
+  response.public_fobs = std::move(connection_manager_.OurCloseGroup());
+
+  MessageHeader header(
+      DestinationAddress(find_group.requester_id),
+      SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()), boost::none)),
+      RandomUint32(), asymm::Sign(Serialise(response), keys_.private_key));
+
+  for (const auto& node : connection_manager_.GetTarget(find_group.requester_id)) {
+    rudp_.Send(node.id, Serialise(header, MessageToTag<FindGroupResponse>::value(), response),
+               asio::use_future).get();
+  }
 }
 
-void RoutingNode::HandleMessage(FindGroupResponse /*find_group_reponse*/) {
+void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
+  for (const auto node : find_group_reponse.public_fobs) {
+    if (!connection_manager_.SuggestNodeToAdd(node.id))
+      continue;
+    // rudp - Add connection
+    // if (!error)
+    // connection_manager_.Add(node)
+  }
 }
 
 void RoutingNode::HandleMessage(GetData /*get_data*/) {}
