@@ -49,13 +49,14 @@ struct CheckHoldersResult {
 };
 
 class ConnectionsChange {
- public:
+ protected:
   ConnectionsChange();
   ConnectionsChange(const ConnectionsChange& other);
   ConnectionsChange(ConnectionsChange&& other);
   ConnectionsChange& operator=(ConnectionsChange other);
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);
+ public:
   NodeId lost_node() const { return lost_node_; }
   NodeId new_node() const { return new_node_; }
   NodeId node_id() const { return node_id_; }

@@ -67,10 +67,8 @@ class CloseNodesChangeTest : public testing::Test {
  protected:
   CloseNodesChangeTest()
       : old_close_nodes_(), new_close_nodes_(), kNodeId_(RandomString(NodeId::kSize)) {
-    int old_close_nodes_size(20);
+    int old_close_nodes_size(Parameters::closest_nodes_size);
 
-    //    old_close_nodes_.push_back(kNodeId_);
-    //    new_close_nodes_.push_back(kNodeId_);
     for (auto i(0); i != old_close_nodes_size - 1; ++i) {
       old_close_nodes_.push_back(NodeId(RandomString(NodeId::kSize)));
       new_close_nodes_.push_back(old_close_nodes_.back());
@@ -336,7 +334,7 @@ void Choose(const std::set<NodeId>& online_pmids, const NodeId& kTarget,
 TEST(SingleCloseNodesChangeTest, BEH_ChoosePmidNode) {
   std::vector<NodeId> old_close_nodes, new_close_nodes;
   const auto kGroupSize(Parameters::group_size);
-  for (unsigned int i(0); i != kGroupSize * 5; ++i)
+  for (unsigned int i(0); i != Parameters::closest_nodes_size - 1; ++i)
     new_close_nodes.emplace_back(RandomString(NodeId::kSize));
   const NodeId kTarget(RandomString(NodeId::kSize));
 

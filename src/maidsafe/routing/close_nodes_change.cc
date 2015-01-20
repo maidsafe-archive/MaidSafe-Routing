@@ -56,8 +56,10 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
                                      const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
       lost_node_([&, this]() -> NodeId {
+        assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
+        assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
         std::vector<NodeId> lost_nodes;
-        for (const auto old_node : old_close_nodes) {
+        for (const auto& old_node : old_close_nodes) {
           if (std::none_of(new_close_nodes.begin(), new_close_nodes.end(),
                            [&old_node](const NodeId& node_id){
                              return node_id == old_node;
@@ -69,7 +71,7 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
       }()),
       new_node_([&, this]() -> NodeId {
         std::vector<NodeId> new_nodes;
-        for (const auto new_node : new_close_nodes) {
+        for (const auto& new_node : new_close_nodes) {
         if (std::none_of(old_close_nodes.begin(), old_close_nodes.end(),
                          [&new_node](const NodeId& node_id){
                            return node_id == new_node;
@@ -134,7 +136,7 @@ std::string ClientNodesChange::Print() const {
 
 void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
-  swap(dynamic_cast<ConnectionsChange&>(lhs), dynamic_cast<ConnectionsChange&>(rhs));
+  swap(static_cast<ConnectionsChange&>(lhs), static_cast<ConnectionsChange&>(rhs));
 }
 
 // ========================== non-client client close nodes change =================================
@@ -216,9 +218,9 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   size_t group_size_adjust(Parameters::group_size + 1U);
   size_t old_holders_size = std::min(old_close_nodes_.size(), group_size_adjust);
   size_t new_holders_size = std::min(new_close_nodes_.size(), group_size_adjust);
-  
+
   std::vector<NodeId> old_holders(old_holders_size), new_holders(new_holders_size);
-  
+
   std::partial_sort_copy(std::begin(old_close_nodes_), std::end(old_close_nodes_),
                          std::begin(old_holders), std::end(old_holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
@@ -229,7 +231,7 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
                          [target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
-  
+
   // Remove target == node ids and adjust holder size
   old_holders.erase(std::remove(std::begin(old_holders), std::end(old_holders), target),
                     std::end(old_holders));
@@ -237,14 +239,14 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     old_holders.resize(Parameters::group_size);
     assert(old_holders.size() == Parameters::group_size);
   }
-  
+
   new_holders.erase(std::remove(std::begin(new_holders), std::end(new_holders), target),
                     std::end(new_holders));
   if (new_holders.size() > Parameters::group_size) {
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
-  
+
   CheckHoldersResult holders_result;
   holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
   if (!new_holders.empty() && ((new_holders.size() < Parameters::group_size) ||
@@ -254,14 +256,14 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
       new_holders.pop_back();
     new_holders.push_back(node_id());
   }
-  
+
   if (!old_holders.empty() && NodeId::CloserToTarget(node_id(), old_holders.back(), target)) {
     old_holders.pop_back();
     if (old_holders.size() == Parameters::group_size)
       old_holders.pop_back();
     old_holders.push_back(node_id());
   }
-  
+
   std::vector<NodeId> diff_new_holders;
   std::for_each(std::begin(new_holders), std::end(new_holders), [&](const NodeId& new_holder) {
     if (std::find(std::begin(old_holders), std::end(old_holders), new_holder) ==
@@ -281,14 +283,14 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
 bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) const {
   if (new_close_nodes_.size() < Parameters::group_size)
     return true;
-  
+
   std::vector<NodeId> holders(Parameters::group_size);
   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
                          std::begin(holders), std::end(holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
-  
+
   return (std::find(std::begin(holders), std::end(holders), node_id) != std::end(holders));
 }
 
@@ -296,7 +298,7 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                                         const NodeId& target) const {
   if (online_pmids.empty())
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
-  
+
   // In case storing to PublicPmid, the data shall not be stored on the Vault itself
   // However, the vault will appear in DM's routing table and affect result
   std::vector<NodeId> temp(Parameters::group_size + 1);
@@ -304,25 +306,19 @@ NodeId CloseNodesChange::ChoosePmidNode(const std::set<NodeId>& online_pmids,
                          std::end(temp), [&target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
-  
-  auto temp_itr(std::begin(temp));
-  auto pmids_itr(std::begin(online_pmids));
-  while (*temp_itr != node_id()) {
-    ++temp_itr;
-    //     assert(temp_itr != std::end(temp));
-    if (temp_itr == std::end(temp)) {
-      LOG(kError) << "node_id_ not listed in group range having " << temp.size() << " nodes";
-      break;
-    }
-    if (++pmids_itr == std::end(online_pmids))
-      pmids_itr = std::begin(online_pmids);
+  for (const auto& close_node : temp) {
+    if (std::any_of(online_pmids.begin(), online_pmids.end(),
+                    [&](const NodeId& node_id) {
+                      return node_id == close_node;
+                    }))
+      return close_node;
   }
-  return *pmids_itr;
+  return NodeId();
 }
 
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
-  swap(dynamic_cast<ConnectionsChange&>(lhs), dynamic_cast<ConnectionsChange&>(rhs));
+  swap(static_cast<ConnectionsChange&>(lhs), static_cast<ConnectionsChange&>(rhs));
   swap(lhs.old_close_nodes_, rhs.old_close_nodes_);
   swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
   swap(lhs.radius_, rhs.radius_);
