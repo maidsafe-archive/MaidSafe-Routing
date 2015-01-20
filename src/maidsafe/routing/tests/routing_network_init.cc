@@ -21,6 +21,7 @@
 #include <tuple>
 #include <vector>
 
+#include "asio/use_future.hpp"
 #include "asio/ip/udp.hpp"
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
@@ -45,6 +46,8 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(RoutingNetworkInit, BEH_ConstructNode) {
+  // FIXME: The ios seems useless, RUDP has it's own and we don't have any
+  // other async actions (same with the tests below).
   asio::io_service ios;
 
   passport::Pmid pmid = passport::CreatePmidAndSigner().first;
@@ -54,11 +57,14 @@ TEST(RoutingNetworkInit, BEH_ConstructNode) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
   RoutingNode n(ios, *test_dir / "node.sqlite3", pmid, std::make_shared<RoutingNode::Listener>(cache));
-
-  ios.run();
 }
 
 TEST(RoutingNetworkInit, BEH_InitTwo) {
+  using rudp::Endpoint;
+  using rudp::Contact;
+  using rudp::EndpointPair;
+  using std::make_shared;
+
   asio::io_service ios;
 
   passport::Pmid pmid1 = passport::CreatePmidAndSigner().first;
@@ -69,10 +75,20 @@ TEST(RoutingNetworkInit, BEH_InitTwo) {
 
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_InitTwo"));
 
-  RoutingNode n1(ios, *test_dir / "node.sqlite3", pmid1, std::make_shared<RoutingNode::Listener>(cache1));
-  RoutingNode n2(ios, *test_dir / "node.sqlite3", pmid2, std::make_shared<RoutingNode::Listener>(cache2));
+  auto n1 = make_shared<RoutingNode>(ios, *test_dir / "node1.sqlite3", pmid1, make_shared<RoutingNode::Listener>(cache1));
+  auto n2 = make_shared<RoutingNode>(ios, *test_dir / "node2.sqlite3", pmid2, make_shared<RoutingNode::Listener>(cache2));
 
-  ios.run();
+  EndpointPair endpoints1(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
+  EndpointPair endpoints2(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
+
+  n1->AddBootstrapContact(n2->MakeContact(endpoints2));
+  n2->AddBootstrapContact(n1->MakeContact(endpoints1));
+
+  auto boot_future1 = n1->Bootstrap(endpoints1.local, asio::use_future);
+  auto boot_future2 = n2->Bootstrap(endpoints2.local, asio::use_future);
+
+  boot_future1.get();
+  boot_future2.get();
 }
 
 }  // namespace test

@@ -90,7 +90,7 @@ using GetHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, SerialisedMessage)>::type;
 
 template <typename CompletionToken>
-using GetReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;
+using GetReturn = typename asio::async_result<GetHandler<CompletionToken>>::type;
 
 template <typename CompletionToken>
 using RequestHandler =

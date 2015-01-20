@@ -96,7 +96,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   BootstrapReturn<CompletionToken> Bootstrap(CompletionToken token);
   // used where we wish to pass a specific node to bootstrap from
   template <typename CompletionToken>
-  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken token);
+  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
   // will return with the data
   template <typename CompletionToken>
   GetReturn<CompletionToken> Get(DataKey data_key, CompletionToken token);
@@ -108,6 +108,15 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
 
   Address OurId() const { return our_id_; }
+
+  void AddBootstrapContact(rudp::Contact bootstrap_contact) {
+    bootstrap_handler_.AddBootstrapContacts(
+        std::vector<rudp::Contact>(1, bootstrap_contact));
+  }
+
+  rudp::Contact MakeContact(rudp::EndpointPair eps) const {
+    return rudp::Contact(our_id_, eps, keys_.public_key);
+  }
 
  private:
   std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature,
@@ -174,14 +183,10 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
 
 template <typename CompletionToken>
 BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
-                                                        CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
-  io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
-                    handler, local_endpoint);
-  });
-  return result.get();
+                                                        CompletionToken&& token) {
+  return rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(),
+                         shared_from_this(), our_id_, keys_,
+                         std::forward<CompletionToken>(token), local_endpoint);
 }
 
 template <typename CompletionToken>
