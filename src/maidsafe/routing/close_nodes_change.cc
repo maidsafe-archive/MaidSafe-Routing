@@ -141,15 +141,16 @@ void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 
 // ========================== non-client client close nodes change =================================
 
-CloseNodesChange::CloseNodesChange() : ConnectionsChange() {}
+CloseNodesChange::CloseNodesChange() : ConnectionsChange(), old_close_nodes_(),
+                                       new_close_nodes_() {}
 
 CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
     : ConnectionsChange(other), old_close_nodes_(other.old_close_nodes_),
-      new_close_nodes_(other.old_close_nodes_), radius_(other.radius_) {}
+      new_close_nodes_(other.new_close_nodes_), radius_(other.radius_) {}
 
 CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
   : ConnectionsChange(std::move(other)), old_close_nodes_(std::move(other.old_close_nodes_)),
-  new_close_nodes_(std::move(other.old_close_nodes_)), radius_(std::move(other.radius_)) {}
+  new_close_nodes_(std::move(other.new_close_nodes_)), radius_(std::move(other.radius_)) {}
 
 CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
   std::swap(*this, other);
