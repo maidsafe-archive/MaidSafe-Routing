@@ -94,6 +94,8 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   }
 
   // send to next node(s) even our close group (swarm mode)
+  // FIXME: The variable serialized_message has been moved out at the beginning
+  // of this function.
   for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
     rudp_.Send(target.id, serialised_message, asio::use_future).get();
 
