@@ -24,7 +24,6 @@
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/sentinel.h"
@@ -53,6 +52,8 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       sentinel_(io_service_),
       cache_(std::chrono::minutes(10)) {}
 
+RoutingNode::~RoutingNode() {}
+
 void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{std::move(serialised_message)};
   MessageHeader header;
@@ -71,12 +72,12 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
 
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
-    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream);
+    auto data = Parse<GetDataResponse>(binary_input_stream);
     cache_.Add(data.key, data.data);
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
-    auto data = Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream);
+    auto data = Parse<GetData>(binary_input_stream);
     auto test = cache_.Get(data.key);
     if (test) {
       GetDataResponse response(data.key, test.value());
@@ -102,33 +103,28 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
   switch (tag) {
     case MessageTypeTag::Connect:
-      HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Connect>>(binary_input_stream),
-                    header.GetMessageId());
+      HandleMessage(Parse<Connect>(binary_input_stream), header.GetMessageId());
       break;
     case MessageTypeTag::ConnectResponse:
-      HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::ConnectResponse>>(binary_input_stream));
+      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroup:
-      HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::FindGroup>>(binary_input_stream));
+      HandleMessage(Parse<FindGroup>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroupResponse:
-      HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::FindGroupResponse>>(binary_input_stream));
+      HandleMessage(Parse<FindGroupResponse>(binary_input_stream));
       break;
     case MessageTypeTag::GetData:
-      HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::GetData>>(binary_input_stream));
+      HandleMessage(Parse<GetData>(binary_input_stream));
       break;
     case MessageTypeTag::GetDataResponse:
-      HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::GetDataResponse>>(binary_input_stream));
+      HandleMessage(Parse<GetDataResponse>(binary_input_stream));
       break;
     case MessageTypeTag::PutData:
-      HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::PutData>>(binary_input_stream));
+      HandleMessage(Parse<PutData>(binary_input_stream));
       break;
     case MessageTypeTag::PutDataResponse:
-      HandleMessage(
-          Parse<GivenTagFindType_t<MessageTypeTag::PutDataResponse>>(binary_input_stream));
+      HandleMessage(Parse<PutDataResponse>(binary_input_stream));
       break;
     // case MessageTypeTag::Post:
     //   HandleMessage(Parse<GivenTagFindType_t<MessageTypeTag::Post>>(binary_input_stream));
@@ -188,7 +184,7 @@ void RoutingNode::HandleMessage(Connect connect, MessageId message_id) {
                                                           boost::optional<GroupAddress>())),
                              message_id, asymm::Sign(Serialise(respond), keys_.private_key));
         rudp_.Send(connect.receiver_id,
-                   Serialise(header, GivenTypeFindTag_v<ConnectResponse>::value, respond),
+                   Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
                    asio::use_future).get();
       });
   // TODO(dirvine)  We need to add rudp_connect here and if sucessfull call

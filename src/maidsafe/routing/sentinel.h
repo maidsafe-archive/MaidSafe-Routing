@@ -25,6 +25,7 @@
 #include "maidsafe/routing/accumulator.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 namespace routing {

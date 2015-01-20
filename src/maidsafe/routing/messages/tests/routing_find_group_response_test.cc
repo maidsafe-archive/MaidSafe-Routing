@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/find_group_response.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -48,7 +47,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParseRelay) {
   // Serialise
   auto find_grp_resp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<FindGroupResponse>::value);
+  auto tag_before(MessageToTag<FindGroupResponse>::value());
 
   auto serialised_find_grp_rsp(Serialise(header_before, tag_before, find_grp_resp_before));
 
@@ -77,7 +76,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParseNoRelay) {
   auto find_grp_resp_before(FindGroupResponse{Address{RandomString(Address::kSize)},
                                               Address{RandomString(Address::kSize)}});
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<FindGroupResponse>::value);
+  auto tag_before(MessageToTag<FindGroupResponse>::value());
 
   auto serialised_find_grp_rsp(Serialise(header_before, tag_before, find_grp_resp_before));
 

@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/connect_response.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -50,7 +49,7 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_resp_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<ConnectResponse>::value);
+  auto tag_before(MessageToTag<ConnectResponse>::value());
 
   auto serialised_connect_rsp(Serialise(header_before, tag_before, connect_resp_before));
 

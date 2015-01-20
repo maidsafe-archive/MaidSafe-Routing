@@ -190,7 +190,7 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
   auto result(handler);
   io_service_.post([=] {
     for (const auto& header : CreateHeaders(Address(data_key->string()), ++message_id_)) {
-      rudp_.Send(Address(data_key), Serialise(header, GivenTypeFindTag_v<GetData>::value, data_key),
+      rudp_.Send(Address(data_key), Serialise(header, MessageToTag<GetData>::value(), data_key),
                  handler);
     }
   });

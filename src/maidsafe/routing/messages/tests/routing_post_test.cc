@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/post.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -51,7 +50,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Post>::value);
+  auto tag_before(MessageToTag<Post>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 

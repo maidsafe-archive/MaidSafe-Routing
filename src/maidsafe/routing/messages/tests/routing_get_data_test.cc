@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/get_data.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -40,7 +39,7 @@ TEST(GetDataTest, BEH_SerialiseParseRelay) {
   auto get_data_before(
       GetData{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}});
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<GetData>::value);
+  auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
@@ -68,7 +67,7 @@ TEST(GetDataTest, BEH_SerialiseParseNoRelay) {
   // Serialise
   auto get_data_before(GetData{Address{RandomString(Address::kSize)}});
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<GetData>::value);
+  auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 

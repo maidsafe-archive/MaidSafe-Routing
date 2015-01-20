@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/put_data.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -50,7 +49,7 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   // Serialise
   auto put_data_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<PutData>::value);
+  auto tag_before(MessageToTag<PutData>::value());
 
   auto serialised_put_data(Serialise(header_before, tag_before, put_data_before));
 

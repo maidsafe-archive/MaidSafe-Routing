@@ -26,7 +26,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/serialisation/compile_time_mapper.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/types.h"
 

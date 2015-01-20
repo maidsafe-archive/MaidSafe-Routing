@@ -19,7 +19,6 @@
 #include "maidsafe/routing/messages/connect.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
-#include "maidsafe/routing/compile_time_mapper.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -54,7 +53,7 @@ TEST(ConnectTest, BEH_SerialiseParseRelay) {
   // Serialise
   auto connect_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Connect>::value);
+  auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 
@@ -84,7 +83,7 @@ TEST(ConnectTest, BEH_SerialiseParseNoRelay) {
   // Serialise
   auto connect_before(GenerateNoRelayInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(GivenTypeFindTag_v<Connect>::value);
+  auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 

@@ -34,8 +34,8 @@
 #include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
+#include "maidsafe/routing/accumulator.h"
 #include "maidsafe/routing/connection_manager.h"
-#include "maidsafe/routing/message_handler.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages.h"
 #include "maidsafe/routing/types.h"
