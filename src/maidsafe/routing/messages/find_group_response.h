@@ -23,6 +23,8 @@
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 
 namespace maidsafe {
 
@@ -32,26 +34,29 @@ struct FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
+  FindGroupResponse(FindGroup&& other)
+      : requester_id(std::move(other.requester_id)),
+        target_id(std::move(other.target_id)),
+        relay_node(other.relay_node) {}
 
   template <typename T, typename U, typename V>
-  FindGroupResponse(T&& requester_id, U&& close_node_id, V&& relay_node)
+  FindGroupResponse(T&& requester_id, U&& target_id, V&& relay_node)
       : requester_id{std::forward<T>(requester_id)},
-        close_node_id{std::forward<U>(close_node_id)},
+        target_id{std::forward<U>(target_id)},
         relay_node{std::forward<V>(relay_node)} {}
 
   template <typename T, typename U>
-  FindGroupResponse(T&& requester_id, U&& close_node_id)
-      : requester_id{std::forward<T>(requester_id)},
-        close_node_id{std::forward<U>(close_node_id)} {}
+  FindGroupResponse(T&& requester_id, U&& target_id)
+      : requester_id{std::forward<T>(requester_id)}, target_id{std::forward<U>(target_id)} {}
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_id{std::move(other.requester_id)},
-        close_node_id{std::move(other.close_node_id)},
+        target_id{std::move(other.target_id)},
         relay_node{std::move(other.relay_node)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_id = std::move(other.requester_id);
-    close_node_id = std::move(other.close_node_id);
+    target_id = std::move(other.target_id);
     relay_node = std::move(other.relay_node);
     return *this;
   }
@@ -63,11 +68,12 @@ struct FindGroupResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_id, close_node_id, relay_node);
+    archive(requester_id, target_id, relay_node, public_fobs);
   }
 
   Address requester_id;
-  Address close_node_id;
+  Address target_id;
+  std::vector<NodeInfo> public_fobs{};
   boost::optional<Address> relay_node;
 };
 

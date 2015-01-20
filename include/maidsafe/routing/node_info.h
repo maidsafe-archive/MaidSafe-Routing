@@ -55,7 +55,11 @@ struct NodeInfo {
   bool operator<=(const NodeInfo& other) const { return !operator>(other); }
   bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
-  NonEmptyString serialise() const;
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(id, dht_fob);
+  }
+
 
   Address id{};
   boost::optional<passport::PublicPmid> dht_fob;
