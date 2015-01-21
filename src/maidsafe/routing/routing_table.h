@@ -111,7 +111,7 @@ class RoutingTable {
    private:
     const Address our_id_;
   };
-  bool HaveNode(const NodeInfo& their_info) const;
+  bool HaveNode(const Address& their_id) const;
   bool NewNodeIsBetterThanExisting(const Address& their_id,
                                    std::vector<NodeInfo>::const_iterator removal_candidate) const;
   void PushBackThenSort(NodeInfo their_info);

@@ -90,7 +90,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
                                       table_.OurId()));
 
   const asymm::Keys keys(asymm::GenerateKeyPair());
-  info_.dht_fob->public_key() = keys.public_key;
+  info_.dht_fob.public_key() = keys.public_key;
 }
 
 void RoutingTableUnitTest::PartiallyFillTable() {

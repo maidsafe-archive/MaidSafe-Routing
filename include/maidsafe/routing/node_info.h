@@ -34,9 +34,8 @@ namespace routing {
 struct NodeInfo {
   using PublicPmid = passport::PublicPmid;
 
-  NodeInfo() {}
-  explicit NodeInfo(NodeId id) : id(id) {}
   NodeInfo(NodeId id, PublicPmid dht_fob) : id(id), dht_fob(std::move(dht_fob)) {}
+  NodeInfo() = default;
   NodeInfo(const NodeInfo&) = default;
 
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
@@ -64,18 +63,16 @@ struct NodeInfo {
     typename PublicPmid::Name name;
     typename PublicPmid::serialised_type data;
     archive(id, name, data);
-    dht_fob.reset(PublicPmid(name, data));
+    dht_fob = PublicPmid(name, data);
     return archive;
   }
 
   template <typename Archive> Archive& save(Archive& archive) const {
-    return archive(id, dht_fob->name(), dht_fob->Serialise());
+    return archive(id, dht_fob.name(), dht_fob.Serialise());
   }
 
   Address id{};
-  // This is always set, we use optional to work around the fact
-  // that PublicPmid is not default constructibe.
-  boost::optional<PublicPmid> dht_fob;
+  PublicPmid dht_fob;
   int32_t rank{0};
   bool connected{false};
 };
