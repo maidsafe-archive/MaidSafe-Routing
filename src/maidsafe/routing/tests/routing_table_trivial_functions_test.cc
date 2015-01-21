@@ -46,7 +46,7 @@ TEST_F(RoutingTableUnitTest, BEH_TrivialFunctions) {  // 'GetPublicKey', 'OurId'
   ASSERT_TRUE(table_.AddNode(info_).first);
 
   ASSERT_TRUE(!!table_.GetPublicKey(info_.id));
-  EXPECT_TRUE(asymm::MatchingKeys(info_.dht_fob->public_key(), *table_.GetPublicKey(info_.id)));
+  EXPECT_TRUE(asymm::MatchingKeys(info_.dht_fob.public_key(), *table_.GetPublicKey(info_.id)));
   EXPECT_FALSE(table_.GetPublicKey(buckets_.back().far_contact));
   EXPECT_EQ(our_id_, table_.OurId());
   EXPECT_EQ(initial_count_ + 1, table_.Size());
@@ -59,7 +59,7 @@ TEST_F(RoutingTableUnitTest, BEH_TrivialFunctions) {  // 'GetPublicKey', 'OurId'
   ASSERT_TRUE(table_.AddNode(info_).first);
 
   ASSERT_TRUE(!!table_.GetPublicKey(info_.id));
-  EXPECT_TRUE(asymm::MatchingKeys(info_.dht_fob->public_key(), *table_.GetPublicKey(info_.id)));
+  EXPECT_TRUE(asymm::MatchingKeys(info_.dht_fob.public_key(), *table_.GetPublicKey(info_.id)));
   EXPECT_FALSE(table_.GetPublicKey(buckets_.back().far_contact));
   EXPECT_EQ(our_id_, table_.OurId());
   EXPECT_EQ(RoutingTable::OptimalSize(), table_.Size());

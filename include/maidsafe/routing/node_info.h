@@ -33,7 +33,6 @@ namespace routing {
 
 struct NodeInfo {
   NodeInfo() = default;
-  explicit NodeInfo(NodeId id) : id(id) {}
   NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
   NodeInfo(const NodeInfo&) = default;
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
@@ -58,12 +57,12 @@ struct NodeInfo {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(id, dht_fob->Serialise());
+    archive(id, dht_fob.Serialise());
   }
 
 
   Address id{};
-  boost::optional<passport::PublicPmid> dht_fob;
+  passport::PublicPmid dht_fob;
   int32_t rank{0};
   bool connected{false};
 };
