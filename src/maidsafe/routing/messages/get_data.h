@@ -33,11 +33,17 @@ struct GetData {
 
   template <typename T, typename U>
   GetData(T&& key, U&& relay_node)
-      : key{std::forward<T>(key)}, relay_node{std::forward<T>(relay_node)} {}
+      : key(std::forward<T>(key)), relay_node(std::forward<T>(relay_node)) {}
 
-  template <typename T>
+  // 2015-01-21 ned:
+  // VS2013 has an overload resolution bug where any T&& overload will be chosen
+  // preferentially to a direct match i.e. this disables the move constructor below without
+  // the enable_if.
+  template <typename T, typename U =
+    typename std::enable_if<!std::is_base_of<GetData,
+      typename std::decay<T>::type>::value, T>::type>
   GetData(T&& key)
-      : key{std::forward<T>(key)} {}
+      : key(std::forward<U>(key)) {}
 
   GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
                                                relay_node{std::move(other.relay_node)} {}

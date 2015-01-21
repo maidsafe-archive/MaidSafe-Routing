@@ -60,7 +60,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   MessageTypeTag tag;
   try {
     Parse(binary_input_stream, header, tag);
-  } catch (std::exception& e) {
+  } catch (const std::exception&) {
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
     return;
   }

@@ -37,7 +37,7 @@ namespace test {
 namespace {
 
 FindGroup GenerateInstance() {
-  return {Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
+  return FindGroup{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
           Address{RandomString(Address::kSize)}};
 }
 

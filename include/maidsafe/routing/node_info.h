@@ -32,8 +32,9 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
-  explicit NodeInfo(NodeId id) : id(id) {}
-  NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
+  explicit NodeInfo(NodeId id) : id(id), rank(0), connected(false) {}
+  NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob),
+    rank(0), connected(false) {}
   NodeInfo(const NodeInfo&) = default;
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                  dht_fob(std::move(other.dht_fob)),
@@ -57,10 +58,10 @@ struct NodeInfo {
 
   NonEmptyString serialise() const;
 
-  Address id{};
+  Address id;
   boost::optional<passport::PublicPmid> dht_fob;
-  int32_t rank{0};
-  bool connected{false};
+  int32_t rank;
+  bool connected;
 };
 
 }  // namespace routing
