@@ -80,6 +80,9 @@ typedef std::function<void(int /*network_health*/)> NetworkStatusFunctor;
 typedef std::function<void(std::shared_ptr<CloseNodesChange> /*close_nodes_change*/)>
     CloseNodesChangeFunctor;
 
+// This functor fires when a clinet close node is inserted or removed from clinet routing table.
+using ClientNodesChangeFunctor = std::function<void(std::shared_ptr<ClientNodesChange>)>;
+
 template <typename T>
 struct MessageAndCachingFunctorsType {
   std::function<void(const T& /*message*/)> message_received;
@@ -123,6 +126,7 @@ struct Functors {
   TypedMessageAndCachingFunctor typed_message_and_caching;
   NetworkStatusFunctor network_status;
   CloseNodesChangeFunctor close_nodes_change;
+  ClientNodesChangeFunctor client_nodes_change;
   GivePublicKeyFunctor set_public_key;
   RequestPublicKeyFunctor request_public_key;
 };

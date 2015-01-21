@@ -34,7 +34,11 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 }  // unnamed namespace
 
 ClientRoutingTable::ClientRoutingTable(NodeId node_id)
-    : kNodeId_(std::move(node_id)), nodes_(), mutex_() {}
+    : kNodeId_(std::move(node_id)), mutex_(), nodes_(), nodes_change_functor_() {}
+
+void ClientRoutingTable::InitialiseFunctors(ClientNodesChangeFunctor client_table_change_functor) {
+  nodes_change_functor_ = client_table_change_functor;
+}
 
 bool ClientRoutingTable::AddNode(NodeInfo& node, const NodeId& furthest_close_node_id) {
   return AddOrCheckNode(node, furthest_close_node_id, true);
@@ -48,10 +52,22 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
                                         bool add) {
   if (node.id == kNodeId_)
     return false;
+
   std::lock_guard<std::mutex> lock(mutex_);
   if (CheckRangeForNodeToBeAdded(node, furthest_close_node_id, add)) {
     if (add) {
+      std::vector<NodeId> old_client_ids;
+      for (const auto& client : nodes_)
+        old_client_ids.emplace_back(client.id);
       nodes_.push_back(node);
+
+      if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
+          [&](const NodeId& id) { return id == node.id; })) {
+        auto new_client_ids(old_client_ids);
+        new_client_ids.emplace_back(node.id);
+        nodes_change_functor_(
+            std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+      }
     }
     return true;
   }
@@ -62,6 +78,10 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
   std::vector<NodeInfo> nodes_info;
   std::lock_guard<std::mutex> lock(mutex_);
   unsigned int i(0);
+  std::vector<NodeId> old_client_ids, new_client_ids;
+  for (const auto& client : nodes_)
+    old_client_ids.emplace_back(client.id);
+
   while (i < nodes_.size()) {
     if (nodes_.at(i).id == node_to_drop) {
       nodes_info.push_back(nodes_.at(i));
@@ -70,12 +90,25 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
       ++i;
     }
   }
+
+  if ((old_client_ids.size() != nodes_.size()) &&
+      (old_client_ids.size() == nodes_.size() + 1)) {
+    for (const auto& client : nodes_)
+      new_client_ids.emplace_back(client.id);
+
+      nodes_change_functor_(
+          std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+  }
   return nodes_info;
 }
 
 NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
   NodeInfo node_info;
   std::lock_guard<std::mutex> lock(mutex_);
+  std::vector<NodeId> old_client_ids, new_client_ids;
+  for (const auto& client : nodes_)
+    old_client_ids.emplace_back(client.id);
+
   for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
     if ((*it).connection_id == connection_to_drop) {
       node_info = *it;
@@ -83,6 +116,18 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
       break;
     }
   }
+
+  if (old_client_ids.size() != nodes_.size() &&
+      std::none_of(nodes_.begin(), nodes_.end(), [&](const NodeInfo& info) {
+                                                   return info.connection_id == connection_to_drop;
+                                                 })) {
+    for (const auto& client : nodes_)
+      new_client_ids.emplace_back(client.id);
+
+      nodes_change_functor_(
+          std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+  }
+
   return node_info;
 }
 
