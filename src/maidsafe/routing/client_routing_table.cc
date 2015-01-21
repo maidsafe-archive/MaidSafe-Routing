@@ -59,14 +59,16 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
       std::vector<NodeId> old_client_ids;
       for (const auto& client : nodes_)
         old_client_ids.emplace_back(client.id);
+
       nodes_.push_back(node);
 
       if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
           [&](const NodeId& id) { return id == node.id; })) {
         auto new_client_ids(old_client_ids);
         new_client_ids.emplace_back(node.id);
-        nodes_change_functor_(
-            std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+        if (nodes_change_functor_)
+          nodes_change_functor_(
+              std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
       }
     }
     return true;
@@ -96,8 +98,9 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
     for (const auto& client : nodes_)
       new_client_ids.emplace_back(client.id);
 
-      nodes_change_functor_(
-          std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+     if (nodes_change_functor_)
+       nodes_change_functor_(
+           std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
   }
   return nodes_info;
 }
@@ -124,10 +127,10 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
     for (const auto& client : nodes_)
       new_client_ids.emplace_back(client.id);
 
-      nodes_change_functor_(
-          std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+     if (nodes_change_functor_)
+       nodes_change_functor_(
+           std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
   }
-
   return node_info;
 }
 

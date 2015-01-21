@@ -137,24 +137,24 @@ void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 
 CloseNodesChange::CloseNodesChange()
   : ConnectionsChange(),  old_close_nodes_(), new_close_nodes_(), radius_() {}
-  
+
 CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
     : ConnectionsChange(other),
       old_close_nodes_(other.old_close_nodes_),
       new_close_nodes_(other.new_close_nodes_),
       radius_(other.radius_) {}
-  
+
 CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
     : ConnectionsChange(std::move(other)),
       old_close_nodes_(std::move(other.old_close_nodes_)),
       new_close_nodes_(std::move(other.new_close_nodes_)),
       radius_(std::move(other.radius_)) {}
-  
+
 CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
   swap(*this, other);
   return *this;
 }
-  
+
 CloseNodesChange::CloseNodesChange(const NodeId& this_node_id,
                                    const std::vector<NodeId>& old_close_nodes,
                                    const std::vector<NodeId>& new_close_nodes)
@@ -185,7 +185,7 @@ CloseNodesChange::CloseNodesChange(const NodeId& this_node_id,
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
       }()) {}
-  
+
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group close_nodes nodes
   size_t group_size_adjust(Parameters::group_size + 1U);
@@ -212,14 +212,14 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     old_holders.resize(Parameters::group_size);
     assert(old_holders.size() == Parameters::group_size);
   }
-    
+
   new_holders.erase(std::remove(std::begin(new_holders), std::end(new_holders), target),
                     std::end(new_holders));
   if (new_holders.size() > Parameters::group_size) {
     new_holders.resize(Parameters::group_size);
     assert(new_holders.size() == Parameters::group_size);
   }
-    
+
   CheckHoldersResult holders_result;
   holders_result.proximity_status = GroupRangeStatus::kOutwithRange;
   if (!new_holders.empty() && ((new_holders.size() < Parameters::group_size) ||
@@ -229,14 +229,14 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
       new_holders.pop_back();
     new_holders.push_back(node_id_);
   }
-    
+
   if (!old_holders.empty() && NodeId::CloserToTarget(node_id_, old_holders.back(), target)) {
     old_holders.pop_back();
     if (old_holders.size() == Parameters::group_size)
       old_holders.pop_back();
     old_holders.push_back(node_id_);
   }
-    
+
   std::vector<NodeId> diff_new_holders;
   std::for_each(std::begin(new_holders), std::end(new_holders), [&](const NodeId& new_holder) {
     if (std::find(std::begin(old_holders), std::end(old_holders), new_holder) ==
@@ -252,18 +252,17 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
     holders_result.new_holder = NodeId();
   return holders_result;
 }
-  
+
 bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id) const {
   if (new_close_nodes_.size() < Parameters::group_size)
     return true;
-    
+
   std::vector<NodeId> holders(Parameters::group_size);
   std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),
                          std::begin(holders), std::end(holders),
                          [target](const NodeId& lhs, const NodeId& rhs) {
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
-    
   return (std::find(std::begin(holders), std::end(holders), node_id) != std::end(holders));
 }
 
@@ -293,7 +292,6 @@ std::string CloseNodesChange::ReportConnection() const {
 
     size_t closest_size_adjust(std::min(new_close_nodes_.size(),
                                         static_cast<size_t>(Parameters::group_size + 1U)));
-      
     if (closest_size_adjust != 0) {
       std::vector<NodeId> closest_nodes(closest_size_adjust);
       std::partial_sort_copy(std::begin(new_close_nodes_), std::end(new_close_nodes_),

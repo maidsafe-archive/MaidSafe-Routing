@@ -82,7 +82,7 @@ class ClientNodesChange : public ConnectionsChange {
 
   friend void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
 };
-  
+
 class CloseNodesChange : public ConnectionsChange {
  public:
   CloseNodesChange();
@@ -102,7 +102,7 @@ class CloseNodesChange : public ConnectionsChange {
   friend class RoutingTable;
   friend class test::CloseNodesChangeTest_BEH_CheckHolders_Test;
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
-    
+
  private:
   std::vector<NodeId> old_close_nodes_, new_close_nodes_;
   crypto::BigInt radius_;
