@@ -25,6 +25,7 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/passport/passport.h"
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 

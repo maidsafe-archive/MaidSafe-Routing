@@ -32,14 +32,19 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
+  using PublicPmid = passport::PublicPmid;
+
+  NodeInfo() {}
   explicit NodeInfo(NodeId id) : id(id) {}
-  NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
+  NodeInfo(NodeId id, PublicPmid dht_fob) : id(id), dht_fob(std::move(dht_fob)) {}
   NodeInfo(const NodeInfo&) = default;
+
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                  dht_fob(std::move(other.dht_fob)),
                                                  rank(std::move(other.rank)),
                                                  connected(std::move(other.connected)) {}
   NodeInfo& operator=(const NodeInfo&) = default;
+
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     dht_fob = std::move(other.dht_fob);
@@ -55,14 +60,22 @@ struct NodeInfo {
   bool operator<=(const NodeInfo& other) const { return !operator>(other); }
   bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(id, dht_fob);
+  template <typename Archive> Archive& load(Archive& archive) {
+    typename PublicPmid::Name name;
+    typename PublicPmid::serialised_type data;
+    archive(id, name, data);
+    dht_fob.reset(PublicPmid(name, data));
+    return archive;
   }
 
+  template <typename Archive> Archive& save(Archive& archive) const {
+    return archive(id, dht_fob->name(), dht_fob->Serialise());
+  }
 
   Address id{};
-  boost::optional<passport::PublicPmid> dht_fob;
+  // This is always set, we use optional to work around the fact
+  // that PublicPmid is not default constructibe.
+  boost::optional<PublicPmid> dht_fob;
   int32_t rank{0};
   bool connected{false};
 };
