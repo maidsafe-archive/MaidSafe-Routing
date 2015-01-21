@@ -50,9 +50,9 @@ struct CheckHoldersResult {
 
 class ConnectionsChange {
  protected:
-  ConnectionsChange();
-  ConnectionsChange(const ConnectionsChange& other);
-  ConnectionsChange(ConnectionsChange&& other);
+  ConnectionsChange() = default;
+  ConnectionsChange(const ConnectionsChange& other) = default;
+  ConnectionsChange(ConnectionsChange&& other) = default;
   ConnectionsChange& operator=(ConnectionsChange other);
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);
@@ -85,9 +85,9 @@ class ClientNodesChange : public ConnectionsChange {
 
 class CloseNodesChange : public ConnectionsChange {
  public:
-  CloseNodesChange();
-  CloseNodesChange(const CloseNodesChange& other);
-  CloseNodesChange(CloseNodesChange&& other);
+  CloseNodesChange() = default;
+  CloseNodesChange(const CloseNodesChange& other) = default;
+  CloseNodesChange(CloseNodesChange&& other) = default;
   CloseNodesChange& operator=(CloseNodesChange other);
   CloseNodesChange(const NodeId& this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);

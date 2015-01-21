@@ -33,18 +33,18 @@ namespace maidsafe {
 
 namespace routing {
 
-ConnectionsChange::ConnectionsChange()
-    : node_id_(), lost_node_(), new_node_() {}
-
-ConnectionsChange::ConnectionsChange(const ConnectionsChange& other)
-    : node_id_(other.node_id_),
-      lost_node_(other.lost_node_),
-      new_node_(other.new_node_) {}
-
-ConnectionsChange::ConnectionsChange(ConnectionsChange&& other)
-    : node_id_(std::move(other.node_id_)),
-      lost_node_(std::move(other.lost_node_)),
-      new_node_(std::move(other.new_node_)) {}
+//ConnectionsChange::ConnectionsChange()
+//    : node_id_(), lost_node_(), new_node_() {}
+//
+//ConnectionsChange::ConnectionsChange(const ConnectionsChange& other)
+//    : node_id_(other.node_id_),
+//      lost_node_(other.lost_node_),
+//      new_node_(other.new_node_) {}
+//
+//ConnectionsChange::ConnectionsChange(ConnectionsChange&& other)
+//    : node_id_(std::move(other.node_id_)),
+//      lost_node_(std::move(other.lost_node_)),
+//      new_node_(std::move(other.new_node_)) {}
 
 ConnectionsChange& ConnectionsChange::operator=(ConnectionsChange other) {
   swap(*this, other);
@@ -135,20 +135,20 @@ void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 
 // ========================== non-client client close nodes change =================================
 
-CloseNodesChange::CloseNodesChange()
-  : ConnectionsChange(),  old_close_nodes_(), new_close_nodes_(), radius_() {}
-
-CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
-    : ConnectionsChange(other),
-      old_close_nodes_(other.old_close_nodes_),
-      new_close_nodes_(other.new_close_nodes_),
-      radius_(other.radius_) {}
-
-CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
-    : ConnectionsChange(std::move(other)),
-      old_close_nodes_(std::move(other.old_close_nodes_)),
-      new_close_nodes_(std::move(other.new_close_nodes_)),
-      radius_(std::move(other.radius_)) {}
+//CloseNodesChange::CloseNodesChange()
+//  : ConnectionsChange(),  old_close_nodes_(), new_close_nodes_(), radius_() {}
+//
+//CloseNodesChange::CloseNodesChange(const CloseNodesChange& other)
+//    : ConnectionsChange(other),
+//      old_close_nodes_(other.old_close_nodes_),
+//      new_close_nodes_(other.new_close_nodes_),
+//      radius_(other.radius_) {}
+//
+//CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
+//    : ConnectionsChange(std::move(other)),
+//      old_close_nodes_(std::move(other.old_close_nodes_)),
+//      new_close_nodes_(std::move(other.new_close_nodes_)),
+//      radius_(std::move(other.radius_)) {}
 
 CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
   swap(*this, other);
