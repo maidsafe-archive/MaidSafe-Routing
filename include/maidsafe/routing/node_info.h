@@ -32,6 +32,7 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
+  NodeInfo() = default;
   explicit NodeInfo(NodeId id) : id(id) {}
   NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
   NodeInfo(const NodeInfo&) = default;
@@ -57,7 +58,7 @@ struct NodeInfo {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(id, dht_fob);
+    archive(id, dht_fob->Serialise());
   }
 
 

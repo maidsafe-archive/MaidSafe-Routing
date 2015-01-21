@@ -68,7 +68,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParseRelay) {
   Parse(binary_input_stream, find_grp_rsp_after);
 
   EXPECT_EQ(find_grp_resp_before.requester_id, find_grp_rsp_after.requester_id);
-  EXPECT_EQ(find_grp_resp_before.close_node_id, find_grp_rsp_after.close_node_id);
+  EXPECT_EQ(find_grp_resp_before.target_id, find_grp_rsp_after.target_id);
 }
 
 TEST(FindGroupResponseTest, BEH_SerialiseParseNoRelay) {
@@ -98,7 +98,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParseNoRelay) {
   Parse(binary_input_stream, find_grp_rsp_after);
 
   EXPECT_EQ(find_grp_resp_before.requester_id, find_grp_rsp_after.requester_id);
-  EXPECT_EQ(find_grp_resp_before.close_node_id, find_grp_rsp_after.close_node_id);
+  EXPECT_EQ(find_grp_resp_before.target_id, find_grp_rsp_after.target_id);
   EXPECT_FALSE(find_grp_resp_before.relay_node);
   EXPECT_FALSE(find_grp_rsp_after.relay_node);
 }
