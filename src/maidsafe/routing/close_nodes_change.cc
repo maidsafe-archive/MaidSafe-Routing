@@ -108,14 +108,6 @@ void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT {
 
 // ============================== client node change =========================================
 
-ClientNodesChange::ClientNodesChange() : ConnectionsChange() {}
-
-ClientNodesChange::ClientNodesChange(const ClientNodesChange& other)
-    : ConnectionsChange(other) {}
-
-ClientNodesChange::ClientNodesChange(ClientNodesChange&& other)
-    : ConnectionsChange(std::move(other)) {}
-
 ClientNodesChange& ClientNodesChange::operator=(ClientNodesChange other) {
   std::swap(*this, other);
   return *this;

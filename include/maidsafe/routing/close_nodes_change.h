@@ -76,9 +76,9 @@ class ConnectionsChange {
 
 class ClientNodesChange : public ConnectionsChange {
  public:
-  ClientNodesChange();
-  ClientNodesChange(const ClientNodesChange& other);
-  ClientNodesChange(ClientNodesChange&& other);
+  ClientNodesChange() = default;
+  ClientNodesChange(const ClientNodesChange& other) = default;
+  ClientNodesChange(ClientNodesChange&& other) = default;
   ClientNodesChange& operator=(ClientNodesChange other);
   ClientNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
