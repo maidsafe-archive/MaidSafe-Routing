@@ -62,13 +62,12 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
 
       nodes_.push_back(node);
 
-      if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
-          [&](const NodeId& id) { return id == node.id; })) {
+      if (nodes_change_functor_ && std::none_of(old_client_ids.begin(), old_client_ids.end(),
+                                                [&](const NodeId& id) { return id == node.id; })) {
         auto new_client_ids(old_client_ids);
         new_client_ids.emplace_back(node.id);
-        if (nodes_change_functor_)
-          nodes_change_functor_(
-              std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+        nodes_change_functor_(
+            std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
       }
     }
     return true;
@@ -78,11 +77,14 @@ bool ClientRoutingTable::AddOrCheckNode(NodeInfo& node, const NodeId& furthest_c
 
 std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) {
   std::vector<NodeInfo> nodes_info;
-  std::lock_guard<std::mutex> lock(mutex_);
-  unsigned int i(0);
   std::vector<NodeId> old_client_ids, new_client_ids;
-  for (const auto& client : nodes_)
-    old_client_ids.emplace_back(client.id);
+  std::lock_guard<std::mutex> lock(mutex_);
+  unsigned int i(0), old_size(nodes_.size());
+  for (const auto& node : nodes_) {
+    if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
+                     [&](const NodeId& node_id) { return node_id == node.id; }))
+      old_client_ids.emplace_back(node.id);
+  }
 
   while (i < nodes_.size()) {
     if (nodes_.at(i).id == node_to_drop) {
@@ -93,24 +95,25 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
     }
   }
 
-  if ((old_client_ids.size() != nodes_.size()) &&
-      (old_client_ids.size() == nodes_.size() + 1)) {
-    for (const auto& client : nodes_)
-      new_client_ids.emplace_back(client.id);
-
-     if (nodes_change_functor_)
-       nodes_change_functor_(
-           std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+  if (nodes_change_functor_ && (old_size != nodes_.size())) {
+     new_client_ids = old_client_ids;
+     new_client_ids.erase(std::remove(new_client_ids.begin(), new_client_ids.end(), node_to_drop),
+                          new_client_ids.end());
+     nodes_change_functor_(
+         std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
   }
   return nodes_info;
 }
 
 NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
   NodeInfo node_info;
-  std::lock_guard<std::mutex> lock(mutex_);
   std::vector<NodeId> old_client_ids, new_client_ids;
-  for (const auto& client : nodes_)
-    old_client_ids.emplace_back(client.id);
+  std::lock_guard<std::mutex> lock(mutex_);
+  for (const auto& node : nodes_) {
+    if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
+                     [&](const NodeId& node_id) { return node_id == node.id; }))
+      old_client_ids.emplace_back(node.id);
+  }
 
   for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
     if ((*it).connection_id == connection_to_drop) {
@@ -120,16 +123,14 @@ NodeInfo ClientRoutingTable::DropConnection(const NodeId& connection_to_drop) {
     }
   }
 
-  if (old_client_ids.size() != nodes_.size() &&
-      std::none_of(nodes_.begin(), nodes_.end(), [&](const NodeInfo& info) {
-                                                   return info.connection_id == connection_to_drop;
-                                                 })) {
-    for (const auto& client : nodes_)
-      new_client_ids.emplace_back(client.id);
-
-     if (nodes_change_functor_)
-       nodes_change_functor_(
-           std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
+  if (nodes_change_functor_ &&
+      std::none_of(nodes_.begin(), nodes_.end(),
+                   [&](const NodeInfo& info) { return info.id == node_info.id; })) {
+     new_client_ids = old_client_ids;
+     new_client_ids.erase(std::remove(new_client_ids.begin(), new_client_ids.end(), node_info.id),
+                          new_client_ids.end());
+     nodes_change_functor_(
+         std::make_shared<ClientNodesChange>(kNodeId(), old_client_ids, new_client_ids));
   }
   return node_info;
 }

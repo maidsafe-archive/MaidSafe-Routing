@@ -55,7 +55,7 @@ class ConnectionsChange {
   ConnectionsChange(ConnectionsChange&& other) = default;
   ConnectionsChange& operator=(ConnectionsChange other);
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-                   const std::vector<NodeId>& new_close_nodes);
+                    const std::vector<NodeId>& new_close_nodes);
 
  public:
   NodeId lost_node() const { return lost_node_; }
