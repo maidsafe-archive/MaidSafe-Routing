@@ -52,7 +52,7 @@ class ConnectionsChange {
  protected:
   ConnectionsChange() = default;
   ConnectionsChange(const ConnectionsChange& other) = default;
-  ConnectionsChange(ConnectionsChange&& other) = default;
+  ConnectionsChange(ConnectionsChange&& other) MAIDSAFE_NOEXCEPT;
   ConnectionsChange& operator=(ConnectionsChange other);
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
@@ -78,7 +78,7 @@ class ClientNodesChange : public ConnectionsChange {
  public:
   ClientNodesChange() = default;
   ClientNodesChange(const ClientNodesChange& other) = default;
-  ClientNodesChange(ClientNodesChange&& other) = default;
+  ClientNodesChange(ClientNodesChange&& other) MAIDSAFE_NOEXCEPT;
   ClientNodesChange& operator=(ClientNodesChange other);
   ClientNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
@@ -91,7 +91,7 @@ class CloseNodesChange : public ConnectionsChange {
  public:
   CloseNodesChange() = default;
   CloseNodesChange(const CloseNodesChange& other) = default;
-  CloseNodesChange(CloseNodesChange&& other) = default;
+  CloseNodesChange(CloseNodesChange&& other) MAIDSAFE_NOEXCEPT;
   CloseNodesChange& operator=(CloseNodesChange other);
   CloseNodesChange(const NodeId& this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);
