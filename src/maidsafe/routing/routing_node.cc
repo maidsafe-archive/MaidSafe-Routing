@@ -96,8 +96,9 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // send to next node(s) even our close group (swarm mode)
   // FIXME: The variable serialized_message has been moved out at the beginning
   // of this function.
-  for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
-    rudp_.Send(target.id, serialised_message, asio::use_future).get();
+  // FIXME: Uncomment and don't use future.
+  //for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
+  //  rudp_.Send(target.id, serialised_message, asio::use_future).get();
 
   if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination()))
     return;  // not for us
@@ -200,7 +201,7 @@ void RoutingNode::HandleMessage(ConnectResponse connect_response) {
   // him and add to routing table as in connect above   :19/01/2015
 }
 void RoutingNode::HandleMessage(FindGroup find_group) {
-  FindGroupResponse response(std::move(find_group));
+  FindGroupResponse response(find_group);
   response.public_fobs = std::move(connection_manager_.OurCloseGroup());
 
   MessageHeader header(
@@ -238,6 +239,30 @@ void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/) {}
 SourceAddress RoutingNode::OurSourceAddress() const {
   return std::make_pair(NodeAddress(connection_manager_.OurId()), boost::optional<GroupAddress>());
 }
+
+template<class Message>
+void RoutingNode::SendDirect(NodeId target, Message message, SendHandler handler) {
+  MessageHeader header(DestinationAddress(target),
+                       SourceAddress{NodeAddress(our_id_), boost::optional<GroupAddress>()},
+                       message_id_++);
+
+  rudp_.Send(target, Serialise(header, MessageToTag<Message>::value(), message), handler);
+}
+
+void RoutingNode::OnBootstrap(asio::error_code error,
+                              rudp::Contact contact,
+                              std::function<void (asio::error_code, rudp::Contact)> handler) {
+  if (error) {
+    return handler(error, contact);
+  }
+
+  SendDirect(contact.id,
+             FindGroup(our_id_, contact.id),
+             [=](asio::error_code error) {
+               handler(error, contact);
+             });
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

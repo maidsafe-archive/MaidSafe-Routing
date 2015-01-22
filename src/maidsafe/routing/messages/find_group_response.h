@@ -37,9 +37,9 @@ struct FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-  FindGroupResponse(FindGroup&& other)
-      : requester_id(std::move(other.requester_id)),
-        target_id(std::move(other.target_id)),
+  FindGroupResponse(const FindGroup& other)
+      : requester_id(other.requester_id),
+        target_id(other.target_id),
         relay_node(other.relay_node) {}
 
   template <typename T, typename U, typename V>

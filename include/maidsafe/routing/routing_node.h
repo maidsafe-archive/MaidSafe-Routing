@@ -45,6 +45,9 @@ namespace routing {
 
 class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                     public rudp::ManagedConnections::Listener {
+ private:
+   using SendHandler = std::function<void(asio::error_code)>;
+
  public:
   using PutToCache = bool;
   // The purpose of this object is to allow this API to allow upper layers to override default
@@ -155,6 +158,12 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
+
+  void OnBootstrap(asio::error_code, rudp::Contact, std::function<void(asio::error_code, rudp::Contact)>);
+
+  template<class Message> void SendDirect(NodeId, Message, SendHandler);
+
+ private:
   using unique_identifier = std::pair<Address, uint32_t>;
   asio::io_service& io_service_;
   Address our_id_;
@@ -184,9 +193,18 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
 template <typename CompletionToken>
 BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
                                                         CompletionToken&& token) {
-  return rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(),
-                         shared_from_this(), our_id_, keys_,
-                         std::forward<CompletionToken>(token), local_endpoint);
+  using Handler = BootstrapHandlerHandler<CompletionToken>;
+  Handler handler(std::forward<CompletionToken>(token));
+  asio::async_result<Handler> result(handler);
+
+  rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(),
+                  shared_from_this(), our_id_, keys_,
+                  [=](asio::error_code error, rudp::Contact contact) {
+                    OnBootstrap(error, contact, handler);
+                  },
+                  local_endpoint);
+
+  return result.get();
 }
 
 template <typename CompletionToken>
@@ -194,7 +212,7 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    for (const auto& header : CreateHeaders(Address(data_key->string()), ++message_id_)) {
+    for (const auto& header : CreateHeaders(Address(data_key->string()), message_id_++)) {
       rudp_.Send(Address(data_key), Serialise(header, MessageToTag<GetData>::value(), data_key),
                  handler);
     }

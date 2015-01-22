@@ -35,9 +35,7 @@ const int BootstrapHandler::MaxListSize;
 const std::chrono::steady_clock::duration BootstrapHandler::UpdateDuration = std::chrono::hours(4);
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
-    : bootstrap_filename_(std::move(bootstrap_filename)),
-      database_(bootstrap_filename_, sqlite::Mode::kReadWriteCreate),
-      bootstrap_contacts_(),
+    : database_(std::move(bootstrap_filename), sqlite::Mode::kReadWriteCreate),
       last_updated_(std::chrono::steady_clock::now()) {
   sqlite::Statement statement{database_,
                               "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID BLOB PRIMARY "
