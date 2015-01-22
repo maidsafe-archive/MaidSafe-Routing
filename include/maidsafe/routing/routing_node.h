@@ -114,7 +114,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
 
   void AddBootstrapContact(rudp::Contact bootstrap_contact) {
     bootstrap_handler_.AddBootstrapContacts(
-        std::vector<rudp::Contact>(1, bootstrap_contact));
+        std::vector<rudp::Contact>{bootstrap_contact});
   }
 
   rudp::Contact MakeContact(rudp::EndpointPair eps) const {
