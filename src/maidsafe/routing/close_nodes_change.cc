@@ -43,6 +43,8 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
                                      const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
       lost_node_([&, this]() -> NodeId {
+        assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
+        assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
         std::vector<NodeId> lost_nodes;
         for (const auto& old_node : old_close_nodes) {
           if (std::none_of(new_close_nodes.begin(), new_close_nodes.end(),
@@ -65,12 +67,33 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
         }
         assert(new_nodes.size() <= 1);
         return (new_nodes.empty()) ? NodeId() : new_nodes.at(0);
-      }()) {}
+      }()),
+      old_close_nodes_([this](std::vector<NodeId> old_close_nodes_in) -> std::vector<NodeId> {
+        std::sort(std::begin(old_close_nodes_in), std::end(old_close_nodes_in),
+                  [this](const NodeId& lhs, const NodeId& rhs) {
+                    return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                  });
+        return old_close_nodes_in;
+      }(old_close_nodes)),
+      new_close_nodes_([this](std::vector<NodeId> new_close_nodes_in)-> std::vector<NodeId> {
+        std::sort(std::begin(new_close_nodes_in), std::end(new_close_nodes_in),
+                  [this](const NodeId& lhs, const NodeId& rhs) {
+                    return NodeId::CloserToTarget(lhs, rhs, node_id_);
+                  });
+        return new_close_nodes_in;
+      }(new_close_nodes)) {}
 
 std::string ConnectionsChange::Print() const {
   std::stringstream stream;
   stream << "\n\t\tentry in lost_node\t------\t" << lost_node_;
   stream << "\n\t\tentry in new_node\t------\t" << new_node_;
+
+  for (const auto& node_id : old_close_nodes_)
+    stream << "\n\t\tentry in old_close_nodes\t------\t" << node_id;
+
+  for (const auto& node_id : new_close_nodes_)
+    stream << "\n\t\tentry in new_close_nodes\t------\t" << node_id;
+
   return stream.str();
 }
 
@@ -79,6 +102,8 @@ void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.node_id_, rhs.node_id_);
   swap(lhs.lost_node_, rhs.lost_node_);
   swap(lhs.new_node_, rhs.new_node_);
+  swap(lhs.old_close_nodes_, rhs.old_close_nodes_);
+  swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
 }
 
 // ============================== client node change =========================================
@@ -131,22 +156,6 @@ CloseNodesChange::CloseNodesChange(const NodeId& this_node_id,
                                    const std::vector<NodeId>& old_close_nodes,
                                    const std::vector<NodeId>& new_close_nodes)
     : ConnectionsChange(this_node_id, old_close_nodes, new_close_nodes),
-      old_close_nodes_([&, this](std::vector<NodeId> old_close_nodes_in) -> std::vector<NodeId> {
-        assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
-        assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
-        std::sort(std::begin(old_close_nodes_in), std::end(old_close_nodes_in),
-                  [this](const NodeId& lhs, const NodeId& rhs) {
-                    return NodeId::CloserToTarget(lhs, rhs, node_id_);
-                  });
-        return old_close_nodes_in;
-      }(old_close_nodes)),
-      new_close_nodes_([this](std::vector<NodeId> new_close_nodes_in) -> std::vector<NodeId> {
-        std::sort(std::begin(new_close_nodes_in), std::end(new_close_nodes_in),
-                  [this](const NodeId& lhs, const NodeId& rhs) {
-                    return NodeId::CloserToTarget(lhs, rhs, node_id_);
-                  });
-        return new_close_nodes_in;
-      }(new_close_nodes)),
       radius_([this]() -> crypto::BigInt {
         NodeId fcn_distance;
         if (new_close_nodes_.size() >= Parameters::closest_nodes_size)
@@ -215,8 +224,6 @@ CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
         std::end(old_holders))
       diff_new_holders.push_back(new_holder);
   });
-  //   holders_result.new_holders = new_holders;
-  //   holders_result.old_holders = old_holders;
   if (diff_new_holders.size() > 0)
     holders_result.new_holder = diff_new_holders.front();
   // in case the new_holder is the node itself, it shall be ignored
@@ -236,19 +243,6 @@ bool CloseNodesChange::CheckIsHolder(const NodeId& target, const NodeId& node_id
                            return NodeId::CloserToTarget(lhs, rhs, target);
                          });
   return (std::find(std::begin(holders), std::end(holders), node_id) != std::end(holders));
-}
-
-std::string CloseNodesChange::Print() const {
-  std::stringstream stream;
-  for (const auto& node_id : old_close_nodes_)
-    stream << "\n\t\tentry in old_close_nodes\t------\t" << node_id;
-
-  for (const auto& node_id : new_close_nodes_)
-    stream << "\n\t\tentry in new_close_nodes\t------\t" << node_id;
-
-  stream << ConnectionsChange::Print();
-
-  return stream.str();
 }
 
 std::string CloseNodesChange::ReportConnection() const {
@@ -290,8 +284,6 @@ std::string CloseNodesChange::ReportConnection() const {
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
   swap(static_cast<ConnectionsChange&>(lhs), static_cast<ConnectionsChange&>(rhs));
-  swap(lhs.old_close_nodes_, rhs.old_close_nodes_);
-  swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
   swap(lhs.radius_, rhs.radius_);
 }
 

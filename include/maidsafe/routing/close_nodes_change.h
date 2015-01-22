@@ -61,6 +61,9 @@ class ConnectionsChange {
   NodeId lost_node() const { return lost_node_; }
   NodeId new_node() const { return new_node_; }
   NodeId node_id() const { return node_id_; }
+  std::vector<NodeId> new_close_nodes() const { return new_close_nodes_; }
+  std::vector<NodeId> old_close_nodes() const { return old_close_nodes_; }
+
   std::string Print() const;
 
   friend void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
@@ -68,6 +71,7 @@ class ConnectionsChange {
  protected:
   NodeId node_id_;
   NodeId lost_node_, new_node_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
 };
 
 class ClientNodesChange : public ConnectionsChange {
@@ -94,8 +98,6 @@ class CloseNodesChange : public ConnectionsChange {
 
   CheckHoldersResult CheckHolders(const NodeId& target) const;
   bool CheckIsHolder(const NodeId& target, const NodeId& node_id) const;
-  std::vector<NodeId> new_close_nodes() const { return new_close_nodes_; }
-  std::string Print() const;
   std::string ReportConnection() const;
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
@@ -104,7 +106,6 @@ class CloseNodesChange : public ConnectionsChange {
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 
  private:
-  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
   crypto::BigInt radius_;
 };
 
