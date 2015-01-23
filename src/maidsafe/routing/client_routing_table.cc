@@ -79,7 +79,7 @@ std::vector<NodeInfo> ClientRoutingTable::DropNodes(const NodeId& node_to_drop) 
   std::vector<NodeInfo> nodes_info;
   std::vector<NodeId> old_client_ids, new_client_ids;
   std::lock_guard<std::mutex> lock(mutex_);
-  unsigned int i(0), old_size(nodes_.size());
+  size_t old_size(nodes_.size()), i(0);
   for (const auto& node : nodes_) {
     if (std::none_of(old_client_ids.begin(), old_client_ids.end(),
                      [&](const NodeId& node_id) { return node_id == node.id; }))
