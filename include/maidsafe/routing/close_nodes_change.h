@@ -54,6 +54,7 @@ class ConnectionsChange {
   ConnectionsChange(const ConnectionsChange& other) = default;
   ConnectionsChange(ConnectionsChange&& other) MAIDSAFE_NOEXCEPT;
   ConnectionsChange& operator=(ConnectionsChange other);
+  ConnectionsChange& operator=(ConnectionsChange&& other) MAIDSAFE_NOEXCEPT;
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
 
@@ -80,6 +81,7 @@ class ClientNodesChange : public ConnectionsChange {
   ClientNodesChange(const ClientNodesChange& other) = default;
   ClientNodesChange(ClientNodesChange&& other) MAIDSAFE_NOEXCEPT;
   ClientNodesChange& operator=(ClientNodesChange other);
+  ClientNodesChange& operator=(ClientNodesChange&& other) MAIDSAFE_NOEXCEPT;
   ClientNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
   std::string ReportConnection() const;
@@ -93,6 +95,7 @@ class CloseNodesChange : public ConnectionsChange {
   CloseNodesChange(const CloseNodesChange& other) = default;
   CloseNodesChange(CloseNodesChange&& other) MAIDSAFE_NOEXCEPT;
   CloseNodesChange& operator=(CloseNodesChange other);
+  CloseNodesChange& operator=(CloseNodesChange&& other) MAIDSAFE_NOEXCEPT;
   CloseNodesChange(const NodeId& this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);
 
@@ -108,6 +111,10 @@ class CloseNodesChange : public ConnectionsChange {
  private:
   crypto::BigInt radius_;
 };
+
+void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
+void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
 
 }  // namespace routing
 
