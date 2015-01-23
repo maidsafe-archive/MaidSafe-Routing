@@ -85,7 +85,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
         response.relay_node = data.relay_node;
       for (auto& hdr : CreateHeaders(data.key, crypto::Hash<crypto::SHA1>(data.key.string()),
                                      header.GetMessageId())) {
-        for (const auto& target : connection_manager_.GetTarget(hdr.GetDestination()))
+        for (const auto& target : connection_manager_.GetTarget(hdr.GetDestination().first))
           rudp_.Send(target.id, Serialise(hdr, MessageTypeTag::GetDataResponse, response),
                      asio::use_future).get();
       }
@@ -97,10 +97,10 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // FIXME: The variable serialized_message has been moved out at the beginning
   // of this function.
   // FIXME: Uncomment and don't use future.
-  //for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
+  // for (const auto& target : connection_manager_.GetTarget(header.GetDestination()))
   //  rudp_.Send(target.id, serialised_message, asio::use_future).get();
 
-  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination()))
+  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
     return;  // not for us
 
   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
@@ -240,7 +240,7 @@ SourceAddress RoutingNode::OurSourceAddress() const {
   return std::make_pair(NodeAddress(connection_manager_.OurId()), boost::optional<GroupAddress>());
 }
 
-template<class Message>
+template <class Message>
 void RoutingNode::SendDirect(NodeId target, Message message, SendHandler handler) {
   MessageHeader header(DestinationAddress(target),
                        SourceAddress{NodeAddress(our_id_), boost::optional<GroupAddress>()},
@@ -249,18 +249,14 @@ void RoutingNode::SendDirect(NodeId target, Message message, SendHandler handler
   rudp_.Send(target, Serialise(header, MessageToTag<Message>::value(), message), handler);
 }
 
-void RoutingNode::OnBootstrap(asio::error_code error,
-                              rudp::Contact contact,
-                              std::function<void (asio::error_code, rudp::Contact)> handler) {
+void RoutingNode::OnBootstrap(asio::error_code error, rudp::Contact contact,
+                              std::function<void(asio::error_code, rudp::Contact)> handler) {
   if (error) {
     return handler(error, contact);
   }
 
-  SendDirect(contact.id,
-             FindGroup(our_id_, contact.id),
-             [=](asio::error_code error) {
-               handler(error, contact);
-             });
+  SendDirect(contact.id, FindGroup(our_id_, contact.id),
+             [=](asio::error_code error) { handler(error, contact); });
 }
 
 }  // namespace routing
