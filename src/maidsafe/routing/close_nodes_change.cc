@@ -33,12 +33,12 @@ namespace maidsafe {
 
 namespace routing {
 
-ConnectionsChange::ConnectionsChange(ConnectionsChange&& other) MAIDSAFE_NOEXCEPT
+ConnectionsChange::ConnectionsChange(ConnectionsChange&& other)
     :  node_id_(std::move(other.node_id_)), lost_node_(std::move(other.lost_node_)),
        new_node_(std::move(other.new_node_)), old_close_nodes_(std::move(other.old_close_nodes_)),
        new_close_nodes_(std::move(other.new_close_nodes_)) {}
 
-ConnectionsChange& ConnectionsChange::operator=(ConnectionsChange&& other) MAIDSAFE_NOEXCEPT {
+ConnectionsChange& ConnectionsChange::operator=(ConnectionsChange&& other) {
   node_id_ = std::move(other.node_id_);
   lost_node_ = std::move(other.lost_node_);
   new_node_ = std::move(other.new_node_);
@@ -122,10 +122,10 @@ void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT {
 
 // ============================== client node change =========================================
 
-ClientNodesChange::ClientNodesChange(ClientNodesChange&& other) MAIDSAFE_NOEXCEPT
+ClientNodesChange::ClientNodesChange(ClientNodesChange&& other)
     : ConnectionsChange(std::move(other)) {}
 
-ClientNodesChange& ClientNodesChange::operator=(ClientNodesChange&& other) MAIDSAFE_NOEXCEPT {
+ClientNodesChange& ClientNodesChange::operator=(ClientNodesChange&& other) {
   node_id_ = std::move(other.node_id_);
   lost_node_ = std::move(other.lost_node_);
   new_node_ = std::move(other.new_node_);
@@ -165,10 +165,10 @@ void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
 
 // ========================== non-client client close nodes change =================================
 
-CloseNodesChange::CloseNodesChange(CloseNodesChange&& other) MAIDSAFE_NOEXCEPT
+CloseNodesChange::CloseNodesChange(CloseNodesChange&& other)
     : ConnectionsChange(std::move(other)), radius_(std::move(other.radius_)) {}
 
-CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange&& other) MAIDSAFE_NOEXCEPT {
+CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange&& other) {
   node_id_ = std::move(other.node_id_);
   lost_node_ = std::move(other.lost_node_);
   new_node_ = std::move(other.new_node_);
