@@ -118,7 +118,7 @@ class MessageHeader {
   boost::optional<asymm::Signature> GetSignature() { return signature_; }
   bool IsDirect() { return source_.second ? true : false; }
   Address NetworkAddressablElement() {
-    return IsDirect() ? source_.second->data : source_.first.data;
+    return IsDirect() ? source_.second->group.data : source_.first.data;
   }
 
  private:

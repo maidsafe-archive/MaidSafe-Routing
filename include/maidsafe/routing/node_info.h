@@ -59,7 +59,8 @@ struct NodeInfo {
   bool operator<=(const NodeInfo& other) const { return !operator>(other); }
   bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
-  template <typename Archive> Archive& load(Archive& archive) {
+  template <typename Archive>
+  Archive& load(Archive& archive) {
     typename PublicPmid::Name name;
     typename PublicPmid::serialised_type data;
     archive(id, name, data);
@@ -67,14 +68,15 @@ struct NodeInfo {
     return archive;
   }
 
-  template <typename Archive> Archive& save(Archive& archive) const {
+  template <typename Archive>
+  Archive& save(Archive& archive) const {
     return archive(id, dht_fob.name(), dht_fob.Serialise());
   }
 
-  Address id{};
-  PublicPmid dht_fob;
-  int32_t rank{0};
-  bool connected{false};
+  Address id;
+  passport::PublicPmid dht_fob;
+  int32_t rank;
+  bool connected;
 };
 
 }  // namespace routing

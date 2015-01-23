@@ -37,13 +37,13 @@ namespace test {
 namespace {
 
 Connect GenerateInstance() {
-  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
           Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
           Address{RandomString(Address::kSize)}};
 }
 
 Connect GenerateNoRelayInstance() {
-  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
           Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}};
 }
 

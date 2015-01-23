@@ -30,7 +30,7 @@ namespace test {
 
 
 inline MessageHeader GenerateMessageHeader() {
-  return {DestinationAddress{Address{RandomString(Address::kSize)}},
+  return MessageHeader{DestinationAddress{Address{RandomString(Address::kSize)}},
           SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}),
                         boost::optional<GroupAddress>()},
           uint32_t{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},

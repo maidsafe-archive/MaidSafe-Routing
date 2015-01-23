@@ -79,9 +79,10 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
   if (NewNodeIsBetterThanExisting(their_info.id, removal_candidate)) {
     auto iter = nodes_.begin();
     std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
+    auto candidate = *removal_candidate;
     nodes_.erase(iter);
     PushBackThenSort(std::move(their_info));
-    return {true, *removal_candidate};
+    return {true, candidate};
   }
   return {false, boost::none};
 }

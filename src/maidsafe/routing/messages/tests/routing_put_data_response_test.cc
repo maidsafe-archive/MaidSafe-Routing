@@ -35,7 +35,7 @@ namespace routing {
 namespace test {
 
 PutDataResponse GenerateInstance() {
-  return {Address{RandomString(Address::kSize)}, MakeError(CommonErrors::unknown)};
+  return PutDataResponse{Address{RandomString(Address::kSize)}, MakeError(CommonErrors::unknown)};
 }
 
 TEST(PutDataResponseTest, BEH_SerialiseParse) {

@@ -76,23 +76,31 @@ void BootstrapHandler::ReplaceBootstrapContacts(BootstrapContacts bootstrap_cont
 void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_contacts) {
   if (bootstrap_contacts.empty())
     return;
-  std::string query = {
-      "INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS(NODEID, PUBLIC_KEY, ENDPOINT) VALUES(?, ?, ?)"};
-  for (std::size_t i = 1; i != bootstrap_contacts.size(); ++i)
-    query += ",(?, ?, ?)";
-  sqlite::Statement statement{database_, query};
+  std::size_t insertlimit = static_cast<size_t>(database_.InsertLimit()) / 3;
+  LOG(kInfo) << "Capping SQLite3 inserts to " << insertlimit
+             << " items per insert, this insertion is " << bootstrap_contacts.size()
+             << " total items.";
+  for (std::size_t i = 0; i < bootstrap_contacts.size(); i += insertlimit) {
+    size_t thisbatch = std::min(bootstrap_contacts.size() - i, insertlimit);
+    std::string query = {
+        "INSERT OR REPLACE INTO BOOTSTRAP_CONTACTS(NODEID, PUBLIC_KEY, ENDPOINT) VALUES(?, ?, ?)"};
+    for (std::size_t j = 1; j < thisbatch; ++j)
+      query += ",(?, ?, ?)";
+    sqlite::Statement statement{database_, query};
 
-  int index = 1;
-  for (const auto& bootstrap_contact : bootstrap_contacts) {
-    statement.BindBlob(index++, Serialise(bootstrap_contact.id));
-    statement.BindBlob(index++, Serialise(bootstrap_contact.public_key));
-    statement.BindBlob(index++, Serialise(bootstrap_contact.endpoint_pair.external));
-    assert(bootstrap_contact.endpoint_pair.external ==
-           bootstrap_contact.endpoint_pair.local);
+    int index = 1;
+    for (std::size_t j = 0; j < thisbatch; ++j) {
+      const auto& bootstrap_contact = bootstrap_contacts[i + j];
+      statement.BindBlob(index++, Serialise(bootstrap_contact.id));
+      statement.BindBlob(index++, Serialise(bootstrap_contact.public_key));
+      statement.BindBlob(index++, Serialise(bootstrap_contact.endpoint_pair.external));
+      assert(bootstrap_contact.endpoint_pair.external ==
+            bootstrap_contact.endpoint_pair.local);
+    }
+
+    statement.Step();
+    statement.Reset();
   }
-
-  statement.Step();
-  statement.Reset();
 }
 
 void BootstrapHandler::RemoveBootstrapContacts() {

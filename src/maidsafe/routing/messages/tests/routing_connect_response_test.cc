@@ -37,7 +37,7 @@ namespace test {
 namespace {
 
 ConnectResponse GenerateInstance() {
-  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return ConnectResponse{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
           rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
           Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
           Address{RandomString(Address::kSize)}};

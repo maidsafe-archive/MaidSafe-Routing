@@ -55,7 +55,9 @@ using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
 using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress>>;
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
-using SourceAddress = std::pair<NodeAddress, boost::optional<GroupAddress>>;
+using SourceAddress = std::pair<
+    NodeAddress,
+    boost::optional<std::pair<boost::optional<GroupAddress>, boost::optional<NodeAddress>>>>;
 
 template <class Archive>
 void serialize(Archive& archive, SourceAddress& source_address) {
