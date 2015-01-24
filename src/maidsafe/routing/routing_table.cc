@@ -120,7 +120,8 @@ bool RoutingTable::AddOrCheckNode(NodeInfo peer, bool remove) {
             NodeId::CloserToTarget(
                 peer.id, nodes_.at(Parameters::closest_nodes_size - 1).id, kNodeId()))) {
           bool full_close_nodes(nodes_.size() >= Parameters::closest_nodes_size);
-          close_nodes_size = (full_close_nodes) ? (close_nodes_size - 1) : close_nodes_size;
+          close_nodes_size = (full_close_nodes) ? (Parameters::closest_nodes_size - 1)
+                                                : close_nodes_size;
           std::for_each (std::begin(nodes_), std::begin(nodes_) + close_nodes_size,
                          [&](const NodeInfo& node_info) {
                            old_close_nodes.push_back(node_info.id);
@@ -525,7 +526,6 @@ std::string RoutingTable::Print() {
     stream << "\n\tPeer [" << node.id << "]--> " << node.connection_id << " && xored "
            << NodeId(kNodeId_ ^ node.id) << " bucket " << node.bucket;
   }
-  stream << "\n\n";
   return stream.str();
 }
 

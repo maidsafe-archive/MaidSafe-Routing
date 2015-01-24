@@ -155,6 +155,7 @@ void Routing::Impl::ConnectFunctors(const Functors& functors) {
   routing_table_->InitialiseFunctors([this_ptr](const RoutingTableChange& routing_table_change) {
                                       this_ptr->OnRoutingTableChange(routing_table_change);
                                     });
+  client_routing_table_.InitialiseFunctors(functors.client_nodes_change);
   // only one of MessageAndCachingFunctors or TypedMessageAndCachingFunctor should be provided
   assert(!functors.message_and_caching.message_received !=
          !functors.typed_message_and_caching.single_to_single.message_received);

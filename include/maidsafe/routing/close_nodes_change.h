@@ -44,27 +44,63 @@ enum class GroupRangeStatus {
 };
 
 struct CheckHoldersResult {
-//   std::vector<NodeId> new_holders;  // New holders = All 4 New holders - All 4 Old holders
-//   std::vector<NodeId> old_holders;  // Old holders = All 4 Old holder ∩ All Lost nodes
   routing::GroupRangeStatus proximity_status;
   NodeId new_holder;
 };
 
-class CloseNodesChange {
+class ConnectionsChange {
+ protected:
+  ConnectionsChange() = default;
+  ConnectionsChange(const ConnectionsChange& other) = default;
+  ConnectionsChange(ConnectionsChange&& other);
+  ConnectionsChange& operator=(const ConnectionsChange& other);
+  ConnectionsChange& operator=(ConnectionsChange&& other);
+  ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
+                    const std::vector<NodeId>& new_close_nodes);
+
  public:
-  CloseNodesChange();
-  CloseNodesChange(const CloseNodesChange& other);
-  CloseNodesChange(CloseNodesChange&& other);
-  CloseNodesChange& operator=(CloseNodesChange other);
-  CloseNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
-                   const std::vector<NodeId>& new_close_nodes);
-  CheckHoldersResult CheckHolders(const NodeId& target) const;
-  bool CheckIsHolder(const NodeId& target, const NodeId& node_id) const;
-  NodeId ChoosePmidNode(const std::set<NodeId>& online_pmids, const NodeId& target) const;
   NodeId lost_node() const { return lost_node_; }
   NodeId new_node() const { return new_node_; }
+  NodeId node_id() const { return node_id_; }
   std::vector<NodeId> new_close_nodes() const { return new_close_nodes_; }
+  std::vector<NodeId> old_close_nodes() const { return old_close_nodes_; }
+
   std::string Print() const;
+
+  friend void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
+
+ protected:
+  NodeId node_id_;
+  NodeId lost_node_, new_node_;
+  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
+};
+
+class ClientNodesChange : public ConnectionsChange {
+ public:
+  ClientNodesChange() = default;
+  ClientNodesChange(const ClientNodesChange& other) = default;
+  ClientNodesChange(ClientNodesChange&& other);
+  ClientNodesChange& operator=(const ClientNodesChange& other);
+  ClientNodesChange& operator=(ClientNodesChange&& other);
+  ClientNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
+                    const std::vector<NodeId>& new_close_nodes);
+  std::string ReportConnection() const;
+
+  friend void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+};
+
+class CloseNodesChange : public ConnectionsChange {
+ public:
+  CloseNodesChange() = default;
+  CloseNodesChange(const CloseNodesChange& other) = default;
+  CloseNodesChange(CloseNodesChange&& other);
+  CloseNodesChange& operator=(const CloseNodesChange& other);
+  CloseNodesChange& operator=(CloseNodesChange&& other);
+  CloseNodesChange(const NodeId& this_node_id, const std::vector<NodeId>& old_close_nodes,
+                   const std::vector<NodeId>& new_close_nodes);
+
+  CheckHoldersResult CheckHolders(const NodeId& target) const;
+  bool CheckIsHolder(const NodeId& target, const NodeId& node_id) const;
   std::string ReportConnection() const;
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
@@ -73,11 +109,12 @@ class CloseNodesChange {
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
 
  private:
-  NodeId node_id_;
-  std::vector<NodeId> old_close_nodes_, new_close_nodes_;
-  NodeId lost_node_, new_node_;
   crypto::BigInt radius_;
 };
+
+void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
+void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
 
 }  // namespace routing
 

@@ -81,8 +81,7 @@ struct RoutingTableChange {
   unsigned int health;
 };
 
-typedef std::function<void(const RoutingTableChange& /*routing_table_change*/)>
-    RoutingTableChangeFunctor;
+using RoutingTableChangeFunctor = std::function<void(const RoutingTableChange&)>;
 
 class RoutingTable {
  public:

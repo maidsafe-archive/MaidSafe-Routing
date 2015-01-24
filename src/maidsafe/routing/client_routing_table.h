@@ -52,6 +52,7 @@ class Contact;
 class ClientRoutingTable {
  public:
   explicit ClientRoutingTable(NodeId node_id);
+  void InitialiseFunctors(ClientNodesChangeFunctor client_routing_table_change_functor);
   bool AddNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   bool CheckNode(NodeInfo& node, const NodeId& furthest_close_node_id);
   std::vector<NodeInfo> DropNodes(const NodeId& node_to_drop);
@@ -80,8 +81,9 @@ class ClientRoutingTable {
   friend class test::BasicClientRoutingTableTest_BEH_IsThisNodeInRange_Test;
 
   const NodeId kNodeId_;
-  std::vector<NodeInfo> nodes_;
   mutable std::mutex mutex_;
+  std::vector<NodeInfo> nodes_;
+  ClientNodesChangeFunctor nodes_change_functor_;
 };
 
 }  // namespace routing

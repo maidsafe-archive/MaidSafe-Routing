@@ -108,6 +108,8 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddFarAwayNode) {
 
 TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
   ClientRoutingTable client_routing_table(node_id_);
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_client_routing_table_size,
                                     client_routing_table.kNodeId());
@@ -130,6 +132,9 @@ TEST_F(ClientRoutingTableTest, FUNC_CheckAddSurplusNodes) {
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
   ClientRoutingTable client_routing_table(node_id_);
 
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
+
   PopulateNodes(2);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
@@ -146,6 +151,10 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameNodeIdTwice) {
 
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
   ClientRoutingTable client_routing_table(node_id_);
+
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
+
 
   PopulateNodes(3);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
@@ -180,6 +189,9 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionIdTwice) {
 TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
   ClientRoutingTable client_routing_table(node_id_);
 
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
+
   PopulateNodes(3);
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
 
@@ -198,6 +210,9 @@ TEST_F(ClientRoutingTableTest, BEH_CheckAddSameConnectionAndKeysTwice) {
 TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
   ClientRoutingTable client_routing_table(node_id_);
 
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
+
   PopulateNodes(2);
 
   SortFromTarget(client_routing_table.kNodeId(), nodes_);
@@ -210,6 +225,9 @@ TEST_F(ClientRoutingTableTest, BEH_AddThenCheckNode) {
 
 TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
   ClientRoutingTable client_routing_table(node_id_);
+
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
                                     client_routing_table.kNodeId());
@@ -241,6 +259,9 @@ TEST_F(ClientRoutingTableTest, FUNC_DropNodes) {
 TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
   ClientRoutingTable client_routing_table(node_id_);
 
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
+
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
                                     client_routing_table.kNodeId());
   ScrambleNodesOrder();
@@ -262,6 +283,9 @@ TEST_F(ClientRoutingTableTest, FUNC_DropConnection) {
 
 TEST_F(ClientRoutingTableTest, FUNC_GetNodesInfo) {
   ClientRoutingTable client_routing_table(node_id_);
+
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
 
   PopulateNodesSetFurthestCloseNode(Parameters::max_client_routing_table_size,
                                     client_routing_table.kNodeId());
@@ -291,6 +315,9 @@ TEST_F(ClientRoutingTableTest, FUNC_GetNodesInfo) {
 
 TEST_F(ClientRoutingTableTest, FUNC_IsConnected) {
   ClientRoutingTable client_routing_table(node_id_);
+
+  auto functor = [](std::shared_ptr<ClientNodesChange>) {};
+  client_routing_table.InitialiseFunctors(functor);
 
   PopulateNodesSetFurthestCloseNode(2 * Parameters::max_client_routing_table_size,
                                     client_routing_table.kNodeId());
