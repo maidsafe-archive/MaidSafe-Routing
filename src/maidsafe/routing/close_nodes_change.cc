@@ -144,7 +144,10 @@ ClientNodesChange& ClientNodesChange::operator=(const ClientNodesChange& other) 
 ClientNodesChange::ClientNodesChange(NodeId this_node_id,
                                      const std::vector<NodeId>& old_close_nodes,
                                      const std::vector<NodeId>& new_close_nodes)
-    : ConnectionsChange(this_node_id, old_close_nodes, new_close_nodes) {}
+    : ConnectionsChange(this_node_id, old_close_nodes, new_close_nodes) {
+  assert(old_close_nodes.size() <= Parameters::max_routing_table_size);
+  assert(new_close_nodes.size() <= Parameters::max_routing_table_size);
+}
 
 std::string ClientNodesChange::ReportConnection() const {
   std::stringstream stringstream;
@@ -199,7 +202,10 @@ CloseNodesChange::CloseNodesChange(const NodeId& this_node_id,
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
-      }()) {}
+      }()) {
+    assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
+    assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
+}
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group close_nodes nodes
