@@ -61,8 +61,6 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
                                      const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
       lost_node_([&, this]() -> NodeId {
-        assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
-        assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
         std::vector<NodeId> lost_nodes;
         for (const auto& old_node : old_close_nodes) {
           if (std::none_of(new_close_nodes.begin(), new_close_nodes.end(),
