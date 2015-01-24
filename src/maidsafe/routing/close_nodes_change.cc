@@ -47,8 +47,12 @@ ConnectionsChange& ConnectionsChange::operator=(ConnectionsChange&& other) {
   return *this;
 }
 
-ConnectionsChange& ConnectionsChange::operator=(ConnectionsChange other) {
-  swap(*this, other);
+ConnectionsChange& ConnectionsChange::operator=(const ConnectionsChange& other) {
+  node_id_ = other.node_id_;
+  lost_node_ = other.lost_node_;
+  new_node_ = other.new_node_;
+  old_close_nodes_ = other.old_close_nodes_;
+  new_close_nodes_ = other.new_close_nodes_;
   return *this;
 }
 
@@ -134,8 +138,8 @@ ClientNodesChange& ClientNodesChange::operator=(ClientNodesChange&& other) {
   return *this;
 }
 
-ClientNodesChange& ClientNodesChange::operator=(ClientNodesChange other) {
-  swap(*this, other);
+ClientNodesChange& ClientNodesChange::operator=(const ClientNodesChange& other) {
+  ConnectionsChange::operator=(other);
   return *this;
 }
 
@@ -178,8 +182,9 @@ CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange&& other) {
   return *this;
 }
 
-CloseNodesChange& CloseNodesChange::operator=(CloseNodesChange other) {
-  swap(*this, other);
+CloseNodesChange& CloseNodesChange::operator=(const CloseNodesChange& other) {
+  ConnectionsChange::operator=(other);
+  radius_ = other.radius_;
   return *this;
 }
 

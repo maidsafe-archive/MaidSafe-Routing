@@ -53,7 +53,7 @@ class ConnectionsChange {
   ConnectionsChange() = default;
   ConnectionsChange(const ConnectionsChange& other) = default;
   ConnectionsChange(ConnectionsChange&& other);
-  ConnectionsChange& operator=(ConnectionsChange other);
+  ConnectionsChange& operator=(const ConnectionsChange& other);
   ConnectionsChange& operator=(ConnectionsChange&& other);
   ConnectionsChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
@@ -80,7 +80,7 @@ class ClientNodesChange : public ConnectionsChange {
   ClientNodesChange() = default;
   ClientNodesChange(const ClientNodesChange& other) = default;
   ClientNodesChange(ClientNodesChange&& other);
-  ClientNodesChange& operator=(ClientNodesChange other);
+  ClientNodesChange& operator=(const ClientNodesChange& other);
   ClientNodesChange& operator=(ClientNodesChange&& other);
   ClientNodesChange(NodeId this_node_id, const std::vector<NodeId>& old_close_nodes,
                     const std::vector<NodeId>& new_close_nodes);
@@ -94,7 +94,7 @@ class CloseNodesChange : public ConnectionsChange {
   CloseNodesChange() = default;
   CloseNodesChange(const CloseNodesChange& other) = default;
   CloseNodesChange(CloseNodesChange&& other);
-  CloseNodesChange& operator=(CloseNodesChange other);
+  CloseNodesChange& operator=(const CloseNodesChange& other);
   CloseNodesChange& operator=(CloseNodesChange&& other);
   CloseNodesChange(const NodeId& this_node_id, const std::vector<NodeId>& old_close_nodes,
                    const std::vector<NodeId>& new_close_nodes);
