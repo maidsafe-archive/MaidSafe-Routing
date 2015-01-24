@@ -57,18 +57,21 @@ using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
 using SourceAddress = std::pair<
     NodeAddress,
-    boost::optional<std::pair<boost::optional<GroupAddress>, boost::optional<NodeAddress>>>>;
+    boost::optional<std::pair<boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>>>;
 
-template <class Archive>
-void serialize(Archive& archive, SourceAddress& source_address) {
-  archive(source_address.first, source_address.second);
-}
+// template <class Archive>
+// void serialize(Archive& archive, SourceAddress& source_address) {
+//   archive(source_address.first, source_address.second);
+// }
+using FilterType = std::pair<NodeAddress, MessageId>;
 
 using Endpoint = rudp::Endpoint;
+using EndpointPair = rudp::EndpointPair;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
 using Checksum = crypto::SHA1Hash;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
+
 
 template <typename CompletionToken>
 using BootstrapHandlerHandler =

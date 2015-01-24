@@ -19,32 +19,26 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
-#include "boost/optional.hpp"
-
 #include "maidsafe/routing/types.h"
+#include "maidsafe/passport/passport.h"
 
 
 namespace maidsafe {
 
 namespace routing {
 
-struct Connect {
+class Connect {
+ public:
   Connect() = default;
   ~Connect() = default;
 
 
   template <typename T, typename U, typename V, typename W>
-  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& relay_node)
+  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& requester_fob)
       : requester_endpoints{std::forward<T>(requester_endpoints)},
         requester_id{std::forward<U>(requester_id)},
         receiver_id{std::forward<V>(receiver_id)},
-        relay_node{std::forward<W>(relay_node)} {}
-
-  template <typename T, typename U, typename V>
-  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id)
-      : requester_endpoints{std::forward<T>(requester_endpoints)},
-        requester_id{std::forward<U>(requester_id)},
-        receiver_id{std::forward<V>(receiver_id)} {}
+        requester_fob{std::forward<W>(requester_fob)} {}
 
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints{std::move(other.requester_endpoints)},
@@ -58,20 +52,25 @@ struct Connect {
     return *this;
   }
 
-  Connect(const Connect&) = delete;
-  Connect& operator=(const Connect&) = delete;
+  Connect(const Connect&) = default;
+  Connect& operator=(const Connect&) = default;
 
   void operator()() {}
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id, relay_node);
+    archive(requester_endpoints, requester_id, receiver_id, requester_fob);
   }
+  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints; }
+  Address get_requester_id() { return requester_id; }
+  Address get_receiver_id() { return receiver_id; }
+  passport::PublicPmid get_requester_fob() { return requester_fob; }
 
+ private:
   rudp::EndpointPair requester_endpoints;
   Address requester_id;
   Address receiver_id;
-  boost::optional<Address> relay_node;
+  passport::PublicPmid requester_fob;
 };
 
 }  // namespace routing

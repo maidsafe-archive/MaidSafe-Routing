@@ -60,26 +60,24 @@ inline boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageH
                                                                         MessageTypeTag tag,
                                                                         SerialisedMessage message) {
   if (tag == MessageTypeTag::GetKeyResponse) {
-    assert(!header.GetSource().second && "keys should always come from a group");
-    if (group_key_accumulator_.Add(*header.GetSource().second,
+    if (!header.FromGroup())  // "keys should always come from a group");
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    if (group_key_accumulator_.Add(*header.FromGroup(),
                                    std::make_tuple(header.GetSource(), tag, std::move(message)),
                                    header.GetSource().first)) {
       // get the other accumulator and go for it
     }
   } else {
-    if (header.GetSource().second &&
-        !group_accumulator_.HaveKey(*header.GetSource().second)) {  // we need
+    if (header.FromGroup() && !group_accumulator_.HaveKey(*header.FromGroup())) {  // we need
       // to send a findkey for this GroupAddress
 
-    } else if (!header.GetSource().second &&
-               !node_accumulator_.HaveKey(header.GetSource().first)) {  // we need
+    } else if (!node_accumulator_.HaveKey(header.GetSource().first)) {  // we need
       // to send a findkey for this SourceAddress
     }
   }
 
   if (node_key_accumulator_.HaveKey(header.GetSource().first)) {  // ok direct
-  } else if (header.GetSource().second &&
-             group_key_accumulator_.HaveKey(*header.GetSource().second)) {  // ok dht
+  } else if (header.FromGroup() && group_key_accumulator_.HaveKey(*header.FromGroup())) {  // ok dht
   }
   return boost::none;
 }

@@ -20,7 +20,6 @@
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_RESPONSE_H_
 
 #include <vector>
-#include "boost/optional.hpp"
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
@@ -34,35 +33,27 @@ struct ConnectResponse {
   ~ConnectResponse() = default;
 
   template <typename T, typename U, typename V, typename W, typename X>
-  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
-                  W&& receiver_id_in, X&& relay_node_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
-        requester_id{std::forward<V>(requester_id_in)},
-        receiver_id{std::forward<W>(receiver_id_in)},
-        relay_node{std::forward<X>(relay_node_in)} {}
-
-  template <typename T, typename U, typename V, typename W>
-  ConnectResponse(T&& requester_endpoints_in, U&& receiver_endpoints_in, V&& requester_id_in,
-                  W&& receiver_id_in)
-      : requester_endpoints{std::forward<T>(requester_endpoints_in)},
-        receiver_endpoints{std::forward<U>(receiver_endpoints_in)},
-        requester_id{std::forward<V>(requester_id_in)},
-        receiver_id{std::forward<W>(receiver_id_in)} {}
+  ConnectResponse(T&& requester_endpoints, U&& receiver_endpoints, V&& requester_id,
+                  W&& receiver_id, X&& receiver_fob)
+      : requester_endpoints{std::forward<T>(requester_endpoints)},
+        receiver_endpoints{std::forward<U>(receiver_endpoints)},
+        requester_id{std::forward<V>(requester_id)},
+        receiver_id{std::forward<W>(receiver_id)},
+        receiver_fob{std::forward<X>(receiver_fob)} {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
         receiver_endpoints(std::move(other.receiver_endpoints)),
         requester_id(std::move(other.requester_id)),
         receiver_id(std::move(other.receiver_id)),
-        relay_node(std::move(other.relay_node)) {}
+        receiver_fob(std::move(other.receiver_fob)) {}
 
   ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
     requester_endpoints = std::move(other.requester_endpoints);
     receiver_endpoints = std::move(other.receiver_endpoints);
     requester_id = std::move(other.requester_id);
     receiver_id = std::move(other.receiver_id);
-    relay_node = std::move(other.relay_node);
+    receiver_fob = std::move(other.receiver_fob);
     return *this;
   }
 
@@ -73,14 +64,14 @@ struct ConnectResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, relay_node);
+    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, receiver_fob);
   }
 
   rudp::EndpointPair requester_endpoints;
   rudp::EndpointPair receiver_endpoints;
   Address requester_id;
   Address receiver_id;
-  boost::optional<Address> relay_node;
+  passport::PublicPmid receiver_fob;
 };
 
 }  // namespace routing

@@ -48,20 +48,15 @@ struct Post {
   // Also if the type of the member var is changed we will have to revisit the one above, while
   // there will be no change in the signature of the one below.
 
-  template <typename T, typename U, typename V>
-  Post(T&& key_in, U&& data_in, V&& part_in)
-      : key(std::forward<T>(key_in)),
-        data(std::forward<U>(data_in)),
-        part({std::forward<V>(part_in)}) {}
+  template <typename T, typename U>
+  Post(T&& key_in, U&& data_in)
+      : key(std::forward<T>(key_in)), data(std::forward<U>(data_in)) {}
 
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                         data{std::move(other.data)},
-                                         part{std::move(other.part)} {}
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)}, data{std::move(other.data)} {}
 
   Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
     data = std::move(other.data);
-    part = std::move(other.part);
     return *this;
   }
 
@@ -72,12 +67,11 @@ struct Post {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data, part);
+    archive(key, data);
   }
 
   Address key;
   SerialisedData data;
-  std::vector<crypto::SHA1Hash> part;
 };
 
 }  // namespace routing

@@ -36,6 +36,9 @@
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages/get_data.h"
+#include "maidsafe/routing/messages/put_data.h"
+#include "maidsafe/routing/messages/post.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 
@@ -46,7 +49,7 @@ namespace routing {
 class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
                     public rudp::ManagedConnections::Listener {
  private:
-   using SendHandler = std::function<void(asio::error_code)>;
+  using SendHandler = std::function<void(asio::error_code)>;
 
  public:
   using PutToCache = bool;
@@ -110,43 +113,37 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   template <typename CompletionToken>
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
 
-  Address OurId() const { return our_id_; }
-
   void AddBootstrapContact(rudp::Contact bootstrap_contact) {
-    bootstrap_handler_.AddBootstrapContacts(
-        std::vector<rudp::Contact>{bootstrap_contact});
-  }
-
-  rudp::Contact MakeContact(rudp::EndpointPair eps) const {
-    return rudp::Contact(our_id_, eps, keys_.public_key);
+    bootstrap_handler_.AddBootstrapContacts(std::vector<rudp::Contact>{bootstrap_contact});
   }
 
  private:
   std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature,
-                                           MessageId message_id);
-  std::vector<MessageHeader> CreateHeaders(Address target, Checksum checksum, MessageId message_id);
-  std::vector<MessageHeader> CreateHeaders(Address target, MessageId message_id);
-  void HandleMessage(Connect connect, MessageId message_id);
+                                           MessageHeader orig_header);
+  std::vector<MessageHeader> CreateHeaders(Address target, MessageHeader orig_header);
+  MessageHeader CreateReplyHeader(MessageHeader orig_header);
+  std::vector<MessageHeader> CreateReplyFromGroupHeaders(MessageHeader orig_header);
+  void HandleMessage(Connect connect, MessageHeader orig_header);
   // recieve connect from node and add nodes publicKey clients request to targetAddress
   void HandleMessage(ClientConnect client_connect, const MessageHeader& header);
   // like connect but add targets endpoint
-  void HandleMessage(ConnectResponse connect_response);
+  void HandleMessage(ConnectResponse connect_response, MessageHeader orig_header);
   // like clientconnect adding targets public key (recieved by targets close group) (recieveing
   // needs a Quorum)
 
   //  void HandleMessage(ClientConnectResponse client_connect_response);
   // sent by routing nodes to a network Address
-  void HandleMessage(FindGroup find_group);
+  void HandleMessage(FindGroup find_group, MessageHeader orig_header);
   // each member of the group close to network Address fills in their node_info and replies
-  void HandleMessage(FindGroupResponse find_group_reponse);
+  void HandleMessage(FindGroupResponse find_group_reponse, MessageHeader orig_header);
   // may be directly sent to a network Address
-  void HandleMessage(GetData get_data);
+  void HandleMessage(GetData get_data, MessageHeader orig_header);
   // Each node wiht the data sends it back to the originator
-  void HandleMessage(GetDataResponse get_data_response);
+  void HandleMessage(GetDataResponse get_data_response, MessageHeader orig_header);
   // sent by a client to store data, client does information dispersal and sends a part to each of
   // its close group
-  void HandleMessage(PutData put_data);
-  void HandleMessage(PutDataResponse put_data);
+  void HandleMessage(PutData put_data, MessageHeader orig_header);
+  void HandleMessage(PutDataResponse put_data, MessageHeader orig_header);
   // each member of a group needs to send this to the network address (recieveing needs a Quorum)
   // filling in public key again.
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
@@ -159,14 +156,21 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
 
-  void OnBootstrap(asio::error_code, rudp::Contact, std::function<void(asio::error_code, rudp::Contact)>);
+  void OnBootstrap(asio::error_code, rudp::Contact,
+                   std::function<void(asio::error_code, rudp::Contact)>);
 
-  template<class Message> void SendDirect(NodeId, Message, SendHandler);
+  template <class Message>
+  void SendDirect(NodeId, Message, SendHandler);
+  EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
+    return rudp::EndpointPair();
+  }
+
+  Address OurId() { return Address(our_fob_.name()); }
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
   asio::io_service& io_service_;
-  Address our_id_;
+  passport::Pmid our_fob_;
   std::atomic<unsigned long> message_id_{RandomUint32()};
   asymm::Keys keys_;
   rudp::ManagedConnections rudp_;
@@ -184,7 +188,7 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(), keys_,
                     handler);
   });
   return result.get();
@@ -197,12 +201,10 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
   Handler handler(std::forward<CompletionToken>(token));
   asio::async_result<Handler> result(handler);
 
-  rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(),
-                  shared_from_this(), our_id_, keys_,
-                  [=](asio::error_code error, rudp::Contact contact) {
-                    OnBootstrap(error, contact, handler);
-                  },
-                  local_endpoint);
+  rudp_.Bootstrap(
+      bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(), keys_,
+      [=](asio::error_code error, rudp::Contact contact) { OnBootstrap(error, contact, handler); },
+      local_endpoint);
 
   return result.get();
 }
@@ -212,29 +214,48 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    for (const auto& header : CreateHeaders(Address(data_key->string()), message_id_++)) {
-      rudp_.Send(Address(data_key), Serialise(header, MessageToTag<GetData>::value(), data_key),
-                 handler);
+    auto message(Serialise(
+        MessageHeader(std::make_pair(Destination(Address(data_key->string())), boost::none),
+                      std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
+        MessageToTag<GetData>::value(), GetData(Address(data_key->string()))));
+    for (const auto& target : connection_manager_.GetTarget(Address(data_key->string()))) {
+      rudp_.Send(target, message, handler);
     }
   });
   return result.get();
 }
 
 template <typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage message,
+PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage ser_message,
                                             CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoPut(key, message, handler); });
+  io_service_.post([=] {
+    auto message(
+        Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
+                                std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
+                  MessageToTag<PutData>::value(), PutData(key, ser_message)));
+    for (const auto& target : connection_manager_.GetTarget(key)) {
+      rudp_.Send(target, message, handler);
+    }
+  });
   return result.get();
 }
 
 template <typename CompletionToken>
-PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage message,
+PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage ser_message,
                                               CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoPost(key, message, handler); });
+  io_service_.post([=] {
+    auto message(
+        Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
+                                std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
+                  MessageToTag<PostMessage>::value(), PostMessage(key, ser_message)));
+    for (const auto& target : connection_manager_.GetTarget(key)) {
+      rudp_.Send(target, message, handler);
+    }
+  });
   return result.get();
 }
 
