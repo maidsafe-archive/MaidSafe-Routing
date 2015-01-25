@@ -77,6 +77,8 @@ class GenericNetwork;
 class NodesEnvironment;
 struct ScopedBootstrapFile;
 
+NodeId CloseRandomId(const NodeId& holder, unsigned int pos);
+
 class GenericNode {
  public:
   GenericNode(bool client_mode, const rudp::NatType& nat_type);
@@ -150,6 +152,8 @@ class GenericNode {
   void SetHealth(int health);
   friend class GenericNetwork;
   Functors functors_;
+  void SetFunctors(Functors functors);
+  Functors GetFunctors();
 
  protected:
   size_t id_;
@@ -166,16 +170,14 @@ class GenericNode {
   std::shared_ptr<Routing> routing_;
 
  private:
-  int health_;
   void InitialiseFunctors();
+  int health_;
 };
-
 
 template <typename T>
 void GenericNode::Send(const T& message) {
   routing_->Send(message);
 }
-
 
 class GenericNetwork {
  public:
@@ -247,6 +249,9 @@ class GenericNetwork {
                                       const NodeId& destination_node_id,
                                       const ExpectedNodeType& destination_node_type = kExpectVault);
   void AddPublicKey(const NodeId& node_id, const asymm::PublicKey& public_key);
+  std::vector<passport::Pmid> zero_states_pmids() {
+    return zero_states_pmids_;
+  }
 
   friend class NodesEnvironment;
 
@@ -260,6 +265,7 @@ class GenericNetwork {
   unsigned int client_index_;
   bool nat_info_available_;
   std::unique_ptr<ScopedBootstrapFile> bootstrap_file_;
+  std::vector<passport::Pmid> zero_states_pmids_;
 
  public:
   std::vector<NodePtr> nodes_;
