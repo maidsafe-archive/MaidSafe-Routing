@@ -67,6 +67,10 @@ typedef boost::asio::ip::udp::endpoint Endpoint;
 
 }  // unnamed namespace
 
+NodeId CloseRandomId(const NodeId& holder, unsigned int pos) {
+  return GenerateUniqueRandomId(holder, pos);
+}
+
 size_t GenericNode::next_node_id_(1);
 
 GenericNode::GenericNode(bool has_symmetric_nat)
@@ -195,6 +199,14 @@ void GenericNode::SetGetFromCacheFunctor(HaveCacheDataFunctor get_from_functor) 
   functors_.message_and_caching.have_cache_data = get_from_functor;
   routing_->pimpl_->message_handler_->cache_manager_->InitialiseFunctors(
       functors_.message_and_caching);
+}
+
+void GenericNode::SetFunctors(Functors functors) {
+  routing_->pimpl_->functors_ = functors;
+}
+
+Functors GenericNode::GetFunctors() {
+  return routing_->pimpl_->functors_;
 }
 
 int GenericNode::GetStatus() const { return routing_->network_status(); }
@@ -387,15 +399,16 @@ GenericNetwork::~GenericNetwork() {
 }
 
 void GenericNetwork::SetUp() {
-  NodePtr node1(new GenericNode(passport::CreatePmidAndSigner().first)),
-      node2(new GenericNode(passport::CreatePmidAndSigner().first));
+  zero_states_pmids_.emplace_back(passport::CreatePmidAndSigner().first);
+  zero_states_pmids_.emplace_back(passport::CreatePmidAndSigner().first);
+  NodePtr node1(new GenericNode(zero_states_pmids_.at(0))),
+          node2(new GenericNode(zero_states_pmids_.at(1)));
   nodes_.push_back(node1);
   nodes_.push_back(node2);
   bootstrap_file_.reset();
   bootstrap_file_ =
       maidsafe::make_unique<ScopedBootstrapFile>(BootstrapContacts{ node1->endpoint(),
                                                                     node2->endpoint() });
-
   client_index_ = 2;
   public_keys_.insert(std::make_pair(node1->node_id(), node1->public_key()));
   public_keys_.insert(std::make_pair(node2->node_id(), node2->public_key()));
