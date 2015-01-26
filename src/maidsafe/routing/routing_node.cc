@@ -34,7 +34,6 @@ namespace maidsafe {
 
 namespace routing {
 
-
 RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
                          const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
     : io_service_(io_service),
@@ -131,9 +130,6 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
     case MessageTypeTag::PutData:
       HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
       break;
-    case MessageTypeTag::PutDataResponse:
-      HandleMessage(Parse<PutDataResponse>(binary_input_stream), std::move(header));
-      break;
     case MessageTypeTag::PostMessage:
       HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
       break;
@@ -202,6 +198,10 @@ void RoutingNode::HandleMessage(ConnectResponse connect_response) {
         }
         if (added)
           listener_ptr_->HandleCloseGroupDifference(*added);
+        if (connection_manager_.Size() >= QuorumSize) {
+          rudp_.Remove(*bootstrap_node_, asio::use_future).get();
+          bootstrap_node_ = boost::none;
+        }
       });
 }
 void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
@@ -210,7 +210,8 @@ void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header)
   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
   FindGroupResponse response(find_group.get_target_id(), node_infos);
   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
-                       SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
+                       SourceAddress(OurSourceAddress(GroupAddress(find_group.get_target_id()))),
+                       orig_header.GetMessageId(),
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
   for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
@@ -256,6 +257,10 @@ SourceAddress RoutingNode::OurSourceAddress() const {
     return std::make_tuple(NodeAddress(*bootstrap_node_), boost::none, ReplyToAddress(OurId()));
   else
     return std::make_tuple(NodeAddress(OurId()), boost::none, boost::none);
+}
+
+SourceAddress RoutingNode::OurSourceAddress(GroupAddress group) const {
+  return std::make_tuple(NodeAddress(OurId()), group, boost::none);
 }
 
 template <class Message>
