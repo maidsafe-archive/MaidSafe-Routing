@@ -38,8 +38,8 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   RoutingTable routing_table(address);
   // check the node is useful when false is set
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    NodeInfo node{Address(RandomString(Address::kSize))};
-    EXPECT_TRUE(routing_table.CheckNode(node.id));
+    Address node(RandomString(Address::kSize));
+    EXPECT_TRUE(routing_table.CheckNode(node));
   }
   EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now

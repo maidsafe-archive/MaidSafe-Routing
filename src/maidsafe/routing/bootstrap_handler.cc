@@ -19,6 +19,7 @@
 #include "maidsafe/routing/bootstrap_handler.h"
 
 #include <cstdint>
+#include <algorithm>
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/serialisation/serialisation.h"
@@ -35,9 +36,7 @@ const int BootstrapHandler::MaxListSize;
 const std::chrono::steady_clock::duration BootstrapHandler::UpdateDuration = std::chrono::hours(4);
 
 BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
-    : bootstrap_filename_(std::move(bootstrap_filename)),
-      database_(bootstrap_filename_, sqlite::Mode::kReadWriteCreate),
-      bootstrap_contacts_(),
+    : database_(std::move(bootstrap_filename), sqlite::Mode::kReadWriteCreate),
       last_updated_(std::chrono::steady_clock::now()) {
   sqlite::Statement statement{database_,
                               "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID BLOB PRIMARY "
@@ -58,10 +57,9 @@ std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapC
   sqlite::Statement statement{database_,
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow) {
-    bootstrap_contacts.push_back(BootstrapContact {
-                                     Parse<NodeId>(statement.ColumnBlob(0)),
-                                     Parse<Endpoint>(statement.ColumnBlob(2)),
-                                     Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
+    bootstrap_contacts.push_back(BootstrapContact{
+        Parse<NodeId>(statement.ColumnBlob(0)), Parse<Endpoint>(statement.ColumnBlob(2)),
+        Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
   }
   return bootstrap_contacts;
 }
@@ -96,8 +94,7 @@ void BootstrapHandler::InsertBootstrapContacts(BootstrapContacts bootstrap_conta
       statement.BindBlob(index++, Serialise(bootstrap_contact.id));
       statement.BindBlob(index++, Serialise(bootstrap_contact.public_key));
       statement.BindBlob(index++, Serialise(bootstrap_contact.endpoint_pair.external));
-      assert(bootstrap_contact.endpoint_pair.external ==
-            bootstrap_contact.endpoint_pair.local);
+      assert(bootstrap_contact.endpoint_pair.external == bootstrap_contact.endpoint_pair.local);
     }
 
     statement.Step();

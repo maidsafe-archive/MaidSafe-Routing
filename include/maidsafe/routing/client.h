@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_ROUTING_NODE_H_
-#define MAIDSAFE_ROUTING_ROUTING_NODE_H_
+#ifndef MAIDSAFE_ROUTING_CLIENT_H_
+#define MAIDSAFE_ROUTING_CLIENT_H_
 
 #include <chrono>
 #include <memory>
@@ -92,7 +92,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   void HandleMessage(Connect connect);
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
-  void HandleMessage(Post post);
+  void HandleMessage(PostMessage post);
   void HandleMessage(Request request);
   void HandleMessage(Response response);
 
@@ -159,4 +159,4 @@ PutReturn<CompletionToken> Client::Put(Address key, SerialisedMessage message,
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_ROUTING_NODE_H_
+#endif  // MAIDSAFE_ROUTING_CLIENT_H_

@@ -30,11 +30,12 @@ namespace test {
 
 
 inline MessageHeader GenerateMessageHeader() {
-  return {DestinationAddress{Address{RandomString(Address::kSize)}},
-          SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}),
-                        boost::optional<GroupAddress>()},
-          uint32_t{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
-                                              asymm::GenerateKeyPair().private_key)};
+  return MessageHeader{
+      DestinationAddress{
+          std::make_pair(Destination(Address{RandomString(Address::kSize)}), boost::none)},
+      SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}), boost::none, boost::none},
+      MessageId{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
+                                           asymm::GenerateKeyPair().private_key)};
 }
 
 }  // namespace test

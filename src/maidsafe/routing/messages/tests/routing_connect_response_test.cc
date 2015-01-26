@@ -37,10 +37,11 @@ namespace test {
 namespace {
 
 ConnectResponse GenerateInstance() {
-  return {rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-          rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-          Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
-          Address{RandomString(Address::kSize)}};
+  return ConnectResponse{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+                         rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+                         Address{RandomString(Address::kSize)},
+                         Address{RandomString(Address::kSize)},
+                         passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
 }
 
 }  // anonymous namespace
@@ -69,15 +70,13 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, connect_resp_after);
 
-  EXPECT_EQ(connect_resp_before.requester_endpoints, connect_resp_after.requester_endpoints);
-  EXPECT_EQ(connect_resp_before.receiver_endpoints, connect_resp_after.receiver_endpoints);
+  EXPECT_EQ(connect_resp_before.get_requester_endpoints(),
+            connect_resp_after.get_requester_endpoints());
+  EXPECT_EQ(connect_resp_before.get_receiver_endpoints(),
+            connect_resp_after.get_receiver_endpoints());
 
-  EXPECT_EQ(connect_resp_before.requester_id, connect_resp_after.requester_id);
-  EXPECT_EQ(connect_resp_before.receiver_id, connect_resp_after.receiver_id);
-
-  EXPECT_TRUE(!!connect_resp_before.relay_node);
-  EXPECT_TRUE(!!connect_resp_after.relay_node);
-  EXPECT_EQ(*connect_resp_before.relay_node, *connect_resp_after.relay_node);
+  EXPECT_EQ(connect_resp_before.get_requester_id(), connect_resp_after.get_requester_id());
+  EXPECT_EQ(connect_resp_before.get_receiver_id(), connect_resp_after.get_receiver_id());
 }
 
 }  // namespace test

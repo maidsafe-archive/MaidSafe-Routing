@@ -83,7 +83,11 @@ class ConnectionManager {
     return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
   bool AddressInCloseGroupRange(const Address& address) {
-    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id, routing_table_.OurId());
+    if (routing_table_.Size() < GroupSize) {
+      return true;
+    }
+    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+                                  routing_table_.OurId());
   }
 
   const Address& OurId() const { return routing_table_.OurId(); }

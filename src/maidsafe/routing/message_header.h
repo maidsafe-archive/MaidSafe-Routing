@@ -44,17 +44,7 @@ class MessageHeader {
         source_{std::forward<U>(source)},
         message_id_(message_id),
         signature_{std::forward<asymm::Signature>(signature)} {
-    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-  }
-
-  template <typename T, typename U>
-  MessageHeader(T&& destination, U&& source, MessageId message_id, Checksum&& checksum)
-      : destination_{std::forward<T>(destination)},
-        source_{std::forward<U>(source)},
-        message_id_(message_id),
-        checksum_{std::forward<Checksum>(checksum)} {
-    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+    if (!ValidateHeader())
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
   }
 
@@ -63,7 +53,7 @@ class MessageHeader {
       : destination_{std::forward<T>(destination)},
         source_{std::forward<U>(source)},
         message_id_{message_id} {
-    if (!GetSource().first->IsValid() || (!IsDirect() && source_.second))
+    if (!ValidateHeader())
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
   }
 
@@ -71,14 +61,12 @@ class MessageHeader {
       : destination_(std::move(other.destination_)),
         source_(std::move(other.source_)),
         message_id_(std::move(other.message_id_)),
-        checksum_(std::move(other.checksum_)),
         signature_(std::move(other.signature_)) {}
 
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination_ = std::move(other.destination_);
     source_ = std::move(other.source_);
     message_id_ = std::move(other.message_id_);
-    checksum_ = std::move(other.checksum_);
     signature_ = std::move(other.signature_);
     return *this;
   }
@@ -109,24 +97,43 @@ class MessageHeader {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination_, source_, message_id_, checksum_, signature_);
+    archive(destination_, source_, message_id_, signature_);
   }
+  // pair - Destination and reply to address (reply_to means this is a node not in routing tables)
   DestinationAddress GetDestination() { return destination_; }
+  // pair or pairs (messy, for on the wire efficiency)
+  // Actual source, plus an optional pair that may contain a group address (claim to be from a
+  // group)
+  // OR a reply_to address that will get copied to the Destingation address reply to above (to allow
+  // relaying of messages)
   SourceAddress GetSource() { return source_; }
   uint32_t GetMessageId() { return message_id_; }
-  boost::optional<Checksum> GetChecksum() { return checksum_; }
   boost::optional<asymm::Signature> GetSignature() { return signature_; }
-  bool IsDirect() { return source_.second ? true : false; }
-  Address NetworkAddressablElement() {
-    return IsDirect() ? source_.first.data : source_.second->data;
+  NodeAddress FromNode() { return std::get<0>(source_); }
+
+  boost::optional<GroupAddress> FromGroup() { return std::get<1>(source_); }
+
+  boost::optional<ReplyToAddress> RelayedMessage() { return std::get<2>(source_); }
+
+  DestinationAddress ReturnDestinationAddress() {
+    if (RelayedMessage())
+      return DestinationAddress(
+          std::make_pair(Destination(std::get<0>(source_)), *RelayedMessage()));
+    else
+      return DestinationAddress(std::make_pair(Destination(std::get<0>(source_)), boost::none));
   }
+  bool ValidateHeader() {
+    return (std::get<0>(source_)->IsValid() ||
+            ((FromGroup() && FromGroup()->data.IsValid()) ||
+             (RelayedMessage() && RelayedMessage()->data.IsValid())) ||
+            (FromGroup() && RelayedMessage()));
+  }
+  FilterType FilterValue() { return std::make_pair(std::get<0>(source_), message_id_); }
 
  private:
   DestinationAddress destination_;
   SourceAddress source_;
-  // GroupAddress group_;
-  uint32_t message_id_;
-  boost::optional<crypto::SHA1Hash> checksum_;
+  MessageId message_id_;
   boost::optional<asymm::Signature> signature_;
 };
 

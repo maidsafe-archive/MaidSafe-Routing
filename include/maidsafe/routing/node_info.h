@@ -32,14 +32,18 @@ namespace maidsafe {
 namespace routing {
 
 struct NodeInfo {
-  explicit NodeInfo(NodeId id) : id(id) {}
-  NodeInfo(NodeId id, passport::PublicPmid dht_fob) : id(id), dht_fob(dht_fob) {}
+  using PublicPmid = passport::PublicPmid;
+
+  NodeInfo(NodeId id, PublicPmid dht_fob) : id(id), dht_fob(std::move(dht_fob)) {}
+  NodeInfo() = default;
   NodeInfo(const NodeInfo&) = default;
+
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
                                                  dht_fob(std::move(other.dht_fob)),
                                                  rank(std::move(other.rank)),
                                                  connected(std::move(other.connected)) {}
   NodeInfo& operator=(const NodeInfo&) = default;
+
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     dht_fob = std::move(other.dht_fob);
@@ -55,12 +59,24 @@ struct NodeInfo {
   bool operator<=(const NodeInfo& other) const { return !operator>(other); }
   bool operator>=(const NodeInfo& other) const { return !operator<(other); }
 
-  NonEmptyString serialise() const;
+  template <typename Archive>
+  Archive& load(Archive& archive) {
+    typename PublicPmid::Name name;
+    typename PublicPmid::serialised_type data;
+    archive(id, name, data);
+    dht_fob = PublicPmid(name, data);
+    return archive;
+  }
 
-  Address id{};
-  boost::optional<passport::PublicPmid> dht_fob;
-  int32_t rank{0};
-  bool connected{false};
+  template <typename Archive>
+  Archive& save(Archive& archive) const {
+    return archive(id, dht_fob.name(), dht_fob.Serialise());
+  }
+
+  Address id;
+  passport::PublicPmid dht_fob;
+  int32_t rank;
+  bool connected;
 };
 
 }  // namespace routing

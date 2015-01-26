@@ -27,24 +27,21 @@ namespace maidsafe {
 
 namespace routing {
 
-struct GetData {
+class GetData {
+ public:
   GetData() = default;
   ~GetData() = default;
 
-  template <typename T, typename U>
-  GetData(T&& key, U&& relay_node)
-      : key{std::forward<T>(key)}, relay_node{std::forward<T>(relay_node)} {}
-
   template <typename T>
-  GetData(T&& key)
-      : key{std::forward<T>(key)} {}
+  explicit GetData(T&& key)
+      : key_(std::forward<T>(key)) {}
 
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                               relay_node{std::move(other.relay_node)} {}
+
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)} {}
+
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
-    relay_node = std::move(other.relay_node);
+    key_ = std::move(other.key_);
     return *this;
   }
 
@@ -55,11 +52,12 @@ struct GetData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, relay_node);
+    archive(key_);
   }
+  Address get_key() { return key_; }
 
-  Address key;
-  boost::optional<Address> relay_node;
+ private:
+  Address key_;
 };
 
 }  // namespace routing

@@ -16,11 +16,11 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/accumulator.h"
 
 #include <chrono>
 #include <thread>
 
+#include "maidsafe/routing/accumulator.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"

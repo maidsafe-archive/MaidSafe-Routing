@@ -83,7 +83,6 @@ class BootstrapHandler {
 
   boost::filesystem::path bootstrap_filename_;
   sqlite::Database database_;
-  BootstrapContacts bootstrap_contacts_;
   std::chrono::steady_clock::time_point last_updated_;
 };
 

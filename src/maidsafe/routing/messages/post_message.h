@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
-#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
 
 #include <cstdint>
 #include <vector>
@@ -33,55 +33,44 @@ namespace maidsafe {
 
 namespace routing {
 
-struct Post {
-  Post() = default;
-  ~Post() = default;
+class PostMessage {
+ public:
+  PostMessage() = default;
+  ~PostMessage() = default;
 
-  //  Post(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
-  //      : key{std::move(data_name_in)},
-  //        data{std::move(data_in)},
-  //        part{std::move(part_in)} {}
+  template <typename T, typename V>
+  PostMessage(T&& key_in, V&& data_in)
+      : key(std::forward<T>(key_in)), data(std::forward<V>(data_in)) {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
+  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                                       data{std::move(other.data)} {}
 
-  template <typename T, typename U, typename V>
-  Post(T&& key_in, U&& data_in, V&& part_in)
-      : key{std::forward<T>(key_in)},
-        data{std::forward<U>(data_in)},
-        part{std::forward<V>(part_in)} {}
-
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                         data{std::move(other.data)},
-                                         part{std::move(other.part)} {}
-
-  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
+  PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
     data = std::move(other.data);
-    part = std::move(other.part);
     return *this;
   }
 
-  Post(const Post&) = delete;
-  Post& operator=(const Post&) = delete;
+  PostMessage(const PostMessage&) = default;
+  PostMessage& operator=(const PostMessage&) = default;
 
   void operator()() {}
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data, part);
+    archive(key, data);
   }
 
+  Address get_key() { return key; }
+  SerialisedData get_data() { return data; }
+
+ private:
   Address key;
   SerialisedData data;
-  std::vector<crypto::SHA1Hash> part;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_

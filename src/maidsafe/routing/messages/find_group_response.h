@@ -19,40 +19,37 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 
-#include "boost/optional.hpp"
+#include <vector>
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/messages/find_group.h"
+#include "maidsafe/passport/types.h"
+#include "maidsafe/passport/passport.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct FindGroupResponse {
+class FindGroupResponse {
+ public:
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
 
-  template <typename T, typename U, typename V>
-  FindGroupResponse(T&& requester_id, U&& close_node_id, V&& relay_node)
-      : requester_id{std::forward<T>(requester_id)},
-        close_node_id{std::forward<U>(close_node_id)},
-        relay_node{std::forward<V>(relay_node)} {}
-
   template <typename T, typename U>
-  FindGroupResponse(T&& requester_id, U&& close_node_id)
-      : requester_id{std::forward<T>(requester_id)},
-        close_node_id{std::forward<U>(close_node_id)} {}
+  FindGroupResponse(T&& target_id, U&& node_info)
+      : target_id_{std::forward<T>(target_id)}, node_infos_{std::forward<U>(node_info)} {}
+
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_id{std::move(other.requester_id)},
-        close_node_id{std::move(other.close_node_id)},
-        relay_node{std::move(other.relay_node)} {}
+      : target_id_{std::move(other.target_id_)},
+        node_infos_{std::move(other.node_infos_)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_id = std::move(other.requester_id);
-    close_node_id = std::move(other.close_node_id);
-    relay_node = std::move(other.relay_node);
+    target_id_ = std::move(other.target_id_);
+    node_infos_ = std::move(other.node_infos_);
     return *this;
   }
 
@@ -63,12 +60,15 @@ struct FindGroupResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_id, close_node_id, relay_node);
+    archive(target_id_, node_infos_);
   }
 
-  Address requester_id;
-  Address close_node_id;
-  boost::optional<Address> relay_node;
+  Address get_target_id() { return target_id_; }
+  std::vector<NodeInfo> get_node_infos() { return node_infos_; }
+
+ private:
+  Address target_id_;
+  std::vector<NodeInfo> node_infos_;
 };
 
 }  // namespace routing

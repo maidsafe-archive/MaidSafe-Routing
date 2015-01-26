@@ -26,10 +26,6 @@
 
 namespace maidsafe {
 
-namespace routing {
-
-
-
-}  // namespace routing
+namespace routing {}  // namespace routing
 
 }  // namespace maidsafe
