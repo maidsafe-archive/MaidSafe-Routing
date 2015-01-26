@@ -74,6 +74,10 @@ TEST(ConnectTest, BEH_SerialiseParse) {
   EXPECT_EQ(connect_before.get_requester_endpoints(), connect_after.get_requester_endpoints());
   EXPECT_EQ(connect_before.get_requester_id(), connect_after.get_requester_id());
   EXPECT_EQ(connect_before.get_receiver_id(), connect_after.get_receiver_id());
+  EXPECT_EQ(connect_before.get_requester_fob().validation_token(),
+            connect_after.get_requester_fob().validation_token());
+  EXPECT_TRUE(asymm::MatchingKeys(connect_before.get_requester_fob().public_key(),
+                                  connect_after.get_requester_fob().public_key()));
 }
 
 }  // namespace test

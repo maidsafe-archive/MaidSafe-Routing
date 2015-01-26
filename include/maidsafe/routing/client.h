@@ -68,13 +68,12 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
   // TODO(dirvine) Weird this hides the POst type below in HandlePost)  :06/01/2015
   // will return with allowed or not (error_code only)
-  // template <typename CompletionToken>
-  // PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken
-  // token);
-  // // will return with response message
-  // template <typename CompletionToken>
-  // RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
-  //                                        CompletionToken token);
+  template <typename CompletionToken>
+  PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
+  // will return with response message
+  template <typename CompletionToken>
+  RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
+                                         CompletionToken token);
   //
   Address OurId() const { return our_id_; }
 
@@ -82,19 +81,13 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
 
-
-  void GetDataResponseReceived(GetData get_data);
-  void PutDataResponseReceived(PutData put_data);
-  void ResponseReceived(Response response);
-
   void OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
-  void HandleMessage(Connect connect);
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
   void HandleMessage(PostMessage post);
-  void HandleMessage(Request request);
-  void HandleMessage(Response response);
+  void HandleMessage(RequestMessage request);
+  void HandleMessage(ResponseMessage response);
 
   using unique_identifier = std::pair<SourceAddress, uint32_t>;
 
@@ -146,14 +139,14 @@ PutReturn<CompletionToken> Client::Put(Address key, SerialisedMessage message,
   return result.get();
 }
 
-// template <typename CompletionToken>
-// PostReturn<CompletionToken> Client::Post(Address key, SerialisedMessage message,
-//                                          CompletionToken token) {
-//   auto handler(std::forward<decltype(token)>(token));
-//   auto result(handler);
-//   io_service_.post([=] { DoPost(key, message, handler); });
-//   return result.get();
-// }
+template <typename CompletionToken>
+PostReturn<CompletionToken> Client::Post(Address key, SerialisedMessage message,
+                                         CompletionToken token) {
+  auto handler(std::forward<decltype(token)>(token));
+  auto result(handler);
+  io_service_.post([=] { DoPost(key, message, handler); });
+  return result.get();
+}
 
 }  // namespace routing
 
