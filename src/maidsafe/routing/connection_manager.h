@@ -86,9 +86,8 @@ class ConnectionManager {
     if (routing_table_.Size() < GroupSize) {
       return true;
     }
-    return NodeId::CloserToTarget( address
-                                 , routing_table_.OurCloseGroup().back().id
-                                 , routing_table_.OurId());
+    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+                                  routing_table_.OurId());
   }
 
   const Address& OurId() const { return routing_table_.OurId(); }

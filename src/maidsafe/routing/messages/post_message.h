@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
-#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
 
 #include <cstdint>
 #include <vector>
@@ -73,4 +73,4 @@ class PostMessage {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_

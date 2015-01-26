@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_RESPONSE_H_
 
-#include "boost/optional.hpp"
+#include <vector>
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/types.h"
@@ -27,40 +27,29 @@
 #include "maidsafe/routing/messages/find_group.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-struct FindGroupResponse {
+class FindGroupResponse {
+ public:
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-  FindGroupResponse(const FindGroup& other)
-      : requester_id(other.requester_id),
-        target_id(other.target_id),
-        relay_node(other.relay_node) {}
-
-  template <typename T, typename U, typename V>
-  FindGroupResponse(T&& requester_id, U&& target_id, V&& relay_node)
-      : requester_id{std::forward<T>(requester_id)},
-        target_id{std::forward<U>(target_id)},
-        relay_node{std::forward<V>(relay_node)} {}
 
   template <typename T, typename U>
-  FindGroupResponse(T&& requester_id, U&& target_id)
-      : requester_id{std::forward<T>(requester_id)}, target_id{std::forward<U>(target_id)} {}
+  FindGroupResponse(T&& target_id, U&& node_info)
+      : target_id{std::forward<T>(target_id)}, node_infos{std::forward<U>(node_info)} {}
+
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_id{std::move(other.requester_id)},
-        target_id{std::move(other.target_id)},
-        relay_node{std::move(other.relay_node)} {}
+      : target_id{std::move(other.target_id)},
+        node_infos{std::move(other.node_infos)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_id = std::move(other.requester_id);
     target_id = std::move(other.target_id);
-    relay_node = std::move(other.relay_node);
+    node_infos = std::move(other.node_infos);
     return *this;
   }
 
@@ -71,13 +60,15 @@ struct FindGroupResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_id, target_id, relay_node, public_fobs);
+    archive(target_id, node_infos);
   }
 
-  Address requester_id;
+  Address get_target_id() { return target_id; }
+  std::vector<NodeInfo> get_node_infos() { return node_infos; }
+
+ private:
   Address target_id;
-  std::vector<NodeInfo> public_fobs{};
-  boost::optional<Address> relay_node;
+  std::vector<NodeInfo> node_infos;
 };
 
 }  // namespace routing

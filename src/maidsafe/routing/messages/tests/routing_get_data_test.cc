@@ -34,36 +34,8 @@ namespace routing {
 
 namespace test {
 
-TEST(GetDataTest, BEH_SerialiseParseRelay) {
-  // Serialise
-  auto get_data_before(
-      GetData{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}});
-  auto header_before(GenerateMessageHeader());
-  auto tag_before(MessageToTag<GetData>::value());
 
-  auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
-
-  // Parse
-  auto get_data_after(
-      GetData{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}});
-  auto header_after(GenerateMessageHeader());
-  auto tag_after(MessageTypeTag{});
-
-  InputVectorStream binary_input_stream{serialised_get_data};
-
-  // Parse Header, Tag
-  Parse(binary_input_stream, header_after, tag_after);
-
-  EXPECT_EQ(header_before, header_after);
-  EXPECT_EQ(tag_before, tag_after);
-
-  // Parse the rest
-  Parse(binary_input_stream, get_data_after);
-
-  EXPECT_EQ(get_data_before.key, get_data_after.key);
-}
-
-TEST(GetDataTest, BEH_SerialiseParseNoRelay) {
+TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
   auto get_data_before(GetData{Address{RandomString(Address::kSize)}});
   auto header_before(GenerateMessageHeader());
@@ -87,7 +59,7 @@ TEST(GetDataTest, BEH_SerialiseParseNoRelay) {
   // Parse the rest
   Parse(binary_input_stream, get_data_after);
 
-  EXPECT_EQ(get_data_before.key, get_data_after.key);
+  EXPECT_EQ(get_data_before.get_key(), get_data_after.get_key());
 }
 
 }  // namespace test

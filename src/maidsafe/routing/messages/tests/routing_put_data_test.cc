@@ -40,7 +40,7 @@ PutData GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
   return PutData{Address{RandomString(Address::kSize)},
-          std::vector<byte>(serialised_data.begin(), serialised_data.end())};
+                 std::vector<byte>(serialised_data.begin(), serialised_data.end())};
 }
 
 }  // anonymous namespace

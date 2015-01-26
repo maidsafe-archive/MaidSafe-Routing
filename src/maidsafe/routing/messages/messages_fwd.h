@@ -48,8 +48,8 @@ enum class MessageTypeTag : uint16_t {
 class Connect;
 class ConnectResponse;
 struct FindGroup;
-struct FindGroupResponse;
-struct GetData;
+class FindGroupResponse;
+class GetData;
 struct GetDataResponse;
 struct GetKey;
 struct GetKeyResponse;

@@ -18,7 +18,7 @@
 
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
-
+#include <vector>
 #include "boost/optional.hpp"
 
 #include "maidsafe/routing/types.h"

@@ -74,9 +74,9 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
     auto data = Parse<GetData>(binary_input_stream);
-    auto test = cache_.Get(data.key);
+    auto test = cache_.Get(data.get_key());
     if (test) {
-      GetDataResponse response(data.key, test.value());
+      GetDataResponse response(data.get_key(), test.value());
       auto message(Serialise(
           MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
           MessageTypeTag::GetDataResponse, response));
@@ -201,10 +201,10 @@ void RoutingNode::HandleMessage(ConnectResponse connect_response) {
       });
 }
 void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
-  FindGroupResponse response(find_group);
   auto node_infos = std::move(connection_manager_.OurCloseGroup());
   // add ourselves
   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
+  FindGroupResponse response(find_group.target_id, node_infos);
   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
                        SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
@@ -217,7 +217,7 @@ void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header)
 void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse,
                                 MessageHeader /* orig_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
-  for (const auto node : find_group_reponse.public_fobs) {
+  for (const auto node : find_group_reponse.get_node_infos()) {
     if (!connection_manager_.SuggestNodeToAdd(node.id))
       continue;
     // rudp - Add connection

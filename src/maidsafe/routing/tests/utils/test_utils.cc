@@ -26,10 +26,8 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/types.h"
 
-#include "maidsafe/passport/types.h"
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 

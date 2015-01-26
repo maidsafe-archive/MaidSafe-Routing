@@ -30,7 +30,6 @@
 
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/routing_table.h"
-#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 

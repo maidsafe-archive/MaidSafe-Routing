@@ -16,9 +16,10 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_VALIDATOR_H_
-#define MAIDSAFE_ROUTING_VALIDATOR_H_
+#ifndef MAIDSAFE_ROUTING_SENTINEL_H_
+#define MAIDSAFE_ROUTING_SENTINEL_H_
 
+#include <vector>
 #include <utility>
 #include "boost/optional/optional.hpp"
 #include "maidsafe/common/rsa.h"
@@ -33,7 +34,7 @@ namespace routing {
 class Sentinel {
  public:
   using ResultType = std::tuple<SourceAddress, MessageTypeTag, SerialisedMessage>;
-  Sentinel(asio::io_service& io_service) : io_service_(io_service) {}
+  explicit Sentinel(asio::io_service& io_service) : io_service_(io_service) {}
   Sentinel(const Sentinel&) = delete;
   Sentinel(Sentinel&&) = delete;
   ~Sentinel() = default;
@@ -88,4 +89,4 @@ inline boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageH
 }  // namespace maidsafe
 
 
-#endif  // MAIDSAFE_ROUTING_VALIDATOR_H_
+#endif  // MAIDSAFE_ROUTING_SENTINEL_H_

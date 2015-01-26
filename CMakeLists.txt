@@ -78,16 +78,11 @@ set(RoutingLibSources
     ${RoutingSourcesDir}/routing_node.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
-set(RoutingMessagesSources
-    ${RoutingSourcesDir}/messages/messages.cc
-    )
-source_group("Routing Messages Source Files" FILES ${RoutingMessagesSources})
 ms_add_static_library(maidsafe_routing
     ${RoutingLibApiFiles}
     ${RoutingLibHeaders}
     ${RoutingMessagesHeaders}
     ${RoutingLibSources}
-    ${RoutingMessagesSources}
     )
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)

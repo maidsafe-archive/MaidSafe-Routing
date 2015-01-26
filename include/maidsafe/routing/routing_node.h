@@ -22,6 +22,9 @@
 #include <chrono>
 #include <memory>
 #include <utility>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "asio/io_service.hpp"
 #include "boost/filesystem/path.hpp"

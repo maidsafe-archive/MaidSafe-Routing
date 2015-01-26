@@ -83,12 +83,10 @@ void Client::OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_
       HandleMessage(Parse<Connect>(binary_input_stream));
       break;
     case MessageTypeTag::ConnectResponse:
-      HandleMessage(
-          Parse<ConnectResponse>(binary_input_stream));
+      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
       break;
     case MessageTypeTag::GetDataResponse:
-      HandleMessage(
-          Parse<GetDataResponse>(binary_input_stream));
+      HandleMessage(Parse<GetDataResponse>(binary_input_stream));
       break;
     // case MessageTypeTag::PutDataResponse:
     //   HandleMessage(
@@ -119,9 +117,7 @@ void Client::MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) {
   OnMessageReceived(peer_id, std::move(message));
 }
 
-void ConnectionLost(NodeId /* peer */) { /*LostNetworkConnection(peer);*/
-}
+// void ConnectionLost(NodeId /* peer */) { /*LostNetworkConnection(peer);*/ }
 
 }  // namespace routing
-
 }  // namespace maidsafe
