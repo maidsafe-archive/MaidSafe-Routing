@@ -37,7 +37,7 @@ namespace test {
 namespace {
 
 FindGroup GenerateInstance() {
-  return FindGroup{Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
+  return FindGroup{NodeAddress(Address{RandomString(Address::kSize)}),
                    Address{RandomString(Address::kSize)}};
 }
 
@@ -67,8 +67,8 @@ TEST(FindGroupTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, find_group_after);
 
-  EXPECT_EQ(find_group_before.target_id, find_group_after.target_id);
-  EXPECT_EQ(find_group_before.requester_id, find_group_after.requester_id);
+  EXPECT_EQ(find_group_before.get_target_id(), find_group_after.get_target_id());
+  EXPECT_EQ(find_group_before.get_requester_id(), find_group_after.get_requester_id());
 }
 
 }  // namespace test

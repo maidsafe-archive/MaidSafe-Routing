@@ -39,24 +39,15 @@ struct PutDataResponse {
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  template <typename T, typename U, typename V>
-  PutDataResponse(T&& key_in, U&& relay_node_in, V&& result_in)
-      : key{std::forward<T>(key_in)},
-        relay_node{std::forward<U>(relay_node_in)},
-        result{std::forward<V>(result_in)} {}
-
   template <typename T, typename U>
   PutDataResponse(T&& key_in, U&& result_in)
       : key{std::forward<T>(key_in)}, result{std::forward<U>(result_in)} {}
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT
-      : key{std::move(other.key)},
-        relay_node{std::move(other.relay_node)},
-        result{std::move(other.result)} {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                                               result{std::move(other.result)} {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
-    relay_node = std::move(other.relay_node);
     result = std::move(other.result);
     return *this;
   }
@@ -68,11 +59,10 @@ struct PutDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, relay_node, result);
+    archive(key, result);
   }
 
   Address key;
-  boost::optional<Address> relay_node;
   maidsafe_error result;
 };
 

@@ -33,28 +33,28 @@ class ConnectResponse {
   ConnectResponse() = default;
   ~ConnectResponse() = default;
 
-  ConnectResponse(rudp::EndpointPair&& requester_endpoints, rudp::EndpointPair&& receiver_endpoints,
-                  Address&& requester_id, Address&& receiver_id,
-                  passport::PublicPmid&& receiver_fob)
-      : requester_endpoints{std::forward<rudp::EndpointPair>(requester_endpoints)},
-        receiver_endpoints{std::forward<rudp::EndpointPair>(receiver_endpoints)},
-        requester_id{std::forward<Address>(requester_id)},
-        receiver_id{std::forward<Address>(receiver_id)},
-        receiver_fob{std::forward<passport::PublicPmid>(receiver_fob)} {}
+  template <typename T, typename U, typename V, typename W, typename X>
+  ConnectResponse(T&& requester_endpoints, U&& receiver_endpoints, V&& requester_id,
+                  W&& receiver_id, X&& receiver_fob)
+      : requester_endpoints_{std::forward<T>(requester_endpoints)},
+        receiver_endpoints_{std::forward<U>(receiver_endpoints)},
+        requester_id_{std::forward<V>(requester_id)},
+        receiver_id_{std::forward<W>(receiver_id)},
+        receiver_fob_{std::forward<X>(receiver_fob)} {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_endpoints(std::move(other.requester_endpoints)),
-        receiver_endpoints(std::move(other.receiver_endpoints)),
-        requester_id(std::move(other.requester_id)),
-        receiver_id(std::move(other.receiver_id)),
-        receiver_fob(std::move(other.receiver_fob)) {}
+      : requester_endpoints_(std::move(other.requester_endpoints_)),
+        receiver_endpoints_(std::move(other.receiver_endpoints_)),
+        requester_id_(std::move(other.requester_id_)),
+        receiver_id_(std::move(other.receiver_id_)),
+        receiver_fob_(std::move(other.receiver_fob_)) {}
 
   ConnectResponse& operator=(ConnectResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_endpoints = std::move(other.requester_endpoints);
-    receiver_endpoints = std::move(other.receiver_endpoints);
-    requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
-    receiver_fob = std::move(other.receiver_fob);
+    requester_endpoints_ = std::move(other.requester_endpoints_);
+    receiver_endpoints_ = std::move(other.receiver_endpoints_);
+    requester_id_ = std::move(other.requester_id_);
+    receiver_id_ = std::move(other.receiver_id_);
+    receiver_fob_ = std::move(other.receiver_fob_);
     return *this;
   }
 
@@ -65,21 +65,21 @@ class ConnectResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, receiver_fob);
+    archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_, receiver_fob_);
   }
 
-  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints; }
-  rudp::EndpointPair get_receiver_endpoints() { return receiver_endpoints; }
-  Address get_requester_id() { return requester_id; }
-  Address get_receiver_id() { return receiver_id; }
-  passport::PublicPmid get_receiver_fob() { return receiver_fob; }
+  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints_; }
+  rudp::EndpointPair get_receiver_endpoints() { return receiver_endpoints_; }
+  Address get_requester_id() { return requester_id_; }
+  Address get_receiver_id() { return receiver_id_; }
+  passport::PublicPmid get_receiver_fob() { return receiver_fob_; }
 
  private:
-  rudp::EndpointPair requester_endpoints;
-  rudp::EndpointPair receiver_endpoints;
-  Address requester_id;
-  Address receiver_id;
-  passport::PublicPmid receiver_fob;
+  rudp::EndpointPair requester_endpoints_;
+  rudp::EndpointPair receiver_endpoints_;
+  Address requester_id_;
+  Address receiver_id_;
+  passport::PublicPmid receiver_fob_;
 };
 
 }  // namespace routing

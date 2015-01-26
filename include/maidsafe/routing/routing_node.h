@@ -173,7 +173,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
   LruCache<Address, SerialisedMessage> cache_;
-  std::map<MessageId, std::function<void(SerialisedMessage)>> responder_;
+  std::vector<Address> connected_nodes_;
 };
 
 template <typename CompletionToken>

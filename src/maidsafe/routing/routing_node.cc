@@ -69,7 +69,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
     auto data = Parse<GetDataResponse>(binary_input_stream);
-    cache_.Add(data.key, data.data);
+    cache_.Add(data.get_key(), data.get_data());
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
@@ -91,15 +91,19 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
   }
 
   // send to next node(s) even our close group (swarm mode)
-  // FIXME: The variable serialized_message has been moved out at the beginning
-  // of this function.
-  // FIXME: Uncomment and don't use future.
   for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
     rudp_.Send(target.id, serialised_message, [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "rudp cannot send" << error.message();
       }
     });
+  // FIXME(dirvine) We need new rudp for this :26/01/2015
+  if (header.RelayedMessage() &&
+      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
+                  [&header](const Address& node) { return node == *header.RelayedMessage(); })) {
+    // send message to connected node
+    return;
+  }
 
   if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
     return;  // not for us
@@ -204,7 +208,7 @@ void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header)
   auto node_infos = std::move(connection_manager_.OurCloseGroup());
   // add ourselves
   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
-  FindGroupResponse response(find_group.target_id, node_infos);
+  FindGroupResponse response(find_group.get_target_id(), node_infos);
   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
                        SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
@@ -217,12 +221,21 @@ void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header)
 void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse,
                                 MessageHeader /* orig_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
+  // Only other reason is to allow the sentinel to check signatures and those calls will just fall
+  // through here.
   for (const auto node : find_group_reponse.get_node_infos()) {
     if (!connection_manager_.SuggestNodeToAdd(node.id))
       continue;
-    // rudp - Add connection
-    // if (!error)
-    // connection_manager_.Add(node)
+    Connect message(NextEndpointPair(), OurId(), node.id, passport::PublicPmid(our_fob_));
+    MessageHeader header(DestinationAddress(std::make_pair(Destination(node.id), boost::none)),
+                         SourceAddress{OurSourceAddress()}, ++message_id_);
+    for (const auto& target : connection_manager_.GetTarget(node.id))
+      rudp_.Send(target.id, Serialise(header, MessageToTag<Connect>::value(), message),
+                 [](asio::error_code error) {
+        if (error) {
+          LOG(kWarning) << "rudp cannot send" << error.message();
+        }
+      });
   }
 }
 
@@ -239,7 +252,10 @@ void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/,
 void RoutingNode::HandleMessage(PostMessage /* post */, MessageHeader /* orig_header */) {}
 
 SourceAddress RoutingNode::OurSourceAddress() const {
-  return std::make_tuple(NodeAddress(OurId()), boost::none, boost::none);
+  if (bootstrap_node_)
+    return std::make_tuple(NodeAddress(*bootstrap_node_), boost::none, ReplyToAddress(OurId()));
+  else
+    return std::make_tuple(NodeAddress(OurId()), boost::none, boost::none);
 }
 
 template <class Message>

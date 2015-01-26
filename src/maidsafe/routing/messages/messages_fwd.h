@@ -47,17 +47,11 @@ enum class MessageTypeTag : uint16_t {
 
 class Connect;
 class ConnectResponse;
-struct FindGroup;
+class FindGroup;
 class FindGroupResponse;
 class GetData;
-struct GetDataResponse;
-struct GetKey;
-struct GetKeyResponse;
-struct GetGroupKey;
-struct GetGroupKeyResponse;
-struct ClientPutData;
-struct PutData;
-struct PutKey;
+class GetDataResponse;
+class PutData;
 struct PutDataResponse;
 class PostMessage;
 struct Request;
@@ -90,28 +84,8 @@ struct MessageToTag<GetDataResponse> {
   static MessageTypeTag value() { return MessageTypeTag::GetDataResponse; }
 };
 template <>
-struct MessageToTag<GetKey> {
-  static MessageTypeTag value() { return MessageTypeTag::GetKey; }
-};
-template <>
-struct MessageToTag<GetKeyResponse> {
-  static MessageTypeTag value() { return MessageTypeTag::GetKeyResponse; }
-};
-template <>
-struct MessageToTag<GetGroupKey> {
-  static MessageTypeTag value() { return MessageTypeTag::GetGroupKey; }
-};
-template <>
-struct MessageToTag<GetGroupKeyResponse> {
-  static MessageTypeTag value() { return MessageTypeTag::GetGroupKeyResponse; }
-};
-template <>
 struct MessageToTag<PutData> {
   static MessageTypeTag value() { return MessageTypeTag::PutData; }
-};
-template <>
-struct MessageToTag<PutKey> {
-  static MessageTypeTag value() { return MessageTypeTag::PutKey; }
 };
 template <>
 struct MessageToTag<PutDataResponse> {

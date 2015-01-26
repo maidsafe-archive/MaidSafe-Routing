@@ -40,16 +40,16 @@ class FindGroupResponse {
 
   template <typename T, typename U>
   FindGroupResponse(T&& target_id, U&& node_info)
-      : target_id{std::forward<T>(target_id)}, node_infos{std::forward<U>(node_info)} {}
+      : target_id_{std::forward<T>(target_id)}, node_infos_{std::forward<U>(node_info)} {}
 
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : target_id{std::move(other.target_id)},
-        node_infos{std::move(other.node_infos)} {}
+      : target_id_{std::move(other.target_id_)},
+        node_infos_{std::move(other.node_infos_)} {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
-    target_id = std::move(other.target_id);
-    node_infos = std::move(other.node_infos);
+    target_id_ = std::move(other.target_id_);
+    node_infos_ = std::move(other.node_infos_);
     return *this;
   }
 
@@ -60,15 +60,15 @@ class FindGroupResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(target_id, node_infos);
+    archive(target_id_, node_infos_);
   }
 
-  Address get_target_id() { return target_id; }
-  std::vector<NodeInfo> get_node_infos() { return node_infos; }
+  Address get_target_id() { return target_id_; }
+  std::vector<NodeInfo> get_node_infos() { return node_infos_; }
 
  private:
-  Address target_id;
-  std::vector<NodeInfo> node_infos;
+  Address target_id_;
+  std::vector<NodeInfo> node_infos_;
 };
 
 }  // namespace routing

@@ -32,22 +32,24 @@ class Connect {
   Connect() = default;
   ~Connect() = default;
 
-  Connect(rudp::EndpointPair&& requester_endpoints, Address&& requester_id, Address&& receiver_id,
-          passport::PublicPmid&& requester_fob)
-      : requester_endpoints{std::forward<rudp::EndpointPair>(requester_endpoints)},
-        requester_id{std::forward<Address>(requester_id)},
-        receiver_id{std::forward<Address>(receiver_id)},
-        requester_fob{std::forward<passport::PublicPmid>(requester_fob)} {}
+  template <typename T, typename U, typename V, typename W>
+  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& requester_fob)
+      : requester_endpoints_{std::forward<T>(requester_endpoints)},
+        requester_id_{std::forward<U>(requester_id)},
+        receiver_id_{std::forward<V>(receiver_id)},
+        requester_fob_{std::forward<W>(requester_fob)} {}
 
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
-      : requester_endpoints{std::move(other.requester_endpoints)},
-        requester_id{std::move(other.requester_id)},
-        receiver_id{std::move(other.receiver_id)} {}
+      : requester_endpoints_{std::move(other.requester_endpoints_)},
+        requester_id_{std::move(other.requester_id_)},
+        receiver_id_{std::move(other.receiver_id_)},
+        requester_fob_{std::move(other.requester_fob_)} {}
 
   Connect& operator=(Connect&& other) MAIDSAFE_NOEXCEPT {
-    requester_endpoints = std::move(other.requester_endpoints);
-    requester_id = std::move(other.requester_id);
-    receiver_id = std::move(other.receiver_id);
+    requester_endpoints_ = std::move(other.requester_endpoints_);
+    requester_id_ = std::move(other.requester_id_);
+    receiver_id_ = std::move(other.receiver_id_);
+    requester_fob_ = std::move(other.requester_fob_);
     return *this;
   }
 
@@ -58,18 +60,18 @@ class Connect {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(requester_endpoints, requester_id, receiver_id, requester_fob);
+    archive(requester_endpoints_, requester_id_, receiver_id_, requester_fob_);
   }
-  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints; }
-  Address get_requester_id() { return requester_id; }
-  Address get_receiver_id() { return receiver_id; }
-  passport::PublicPmid get_requester_fob() { return requester_fob; }
+  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints_; }
+  Address get_requester_id() { return requester_id_; }
+  Address get_receiver_id() { return receiver_id_; }
+  passport::PublicPmid get_requester_fob() { return requester_fob_; }
 
  private:
-  rudp::EndpointPair requester_endpoints;
-  Address requester_id;
-  Address receiver_id;
-  passport::PublicPmid requester_fob;
+  rudp::EndpointPair requester_endpoints_;
+  Address requester_id_;
+  Address receiver_id_;
+  passport::PublicPmid requester_fob_;
 };
 
 }  // namespace routing

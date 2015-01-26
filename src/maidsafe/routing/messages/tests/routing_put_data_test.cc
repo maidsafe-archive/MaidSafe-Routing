@@ -69,10 +69,10 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, put_data_after);
 
-  EXPECT_EQ(put_data_before.key, put_data_after.key);
+  EXPECT_EQ(put_data_before.get_key(), put_data_after.get_key());
 
-  EXPECT_EQ(put_data_before.data.size(), put_data_after.data.size());
-  EXPECT_EQ(put_data_before.data, put_data_after.data);
+  EXPECT_EQ(put_data_before.get_data().size(), put_data_after.get_data().size());
+  EXPECT_EQ(put_data_before.get_data(), put_data_after.get_data());
 }
 
 }  // namespace test

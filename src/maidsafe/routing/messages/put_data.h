@@ -20,13 +20,9 @@
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 
 #include <cstdint>
-#include <vector>
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 
@@ -34,28 +30,22 @@ namespace maidsafe {
 
 namespace routing {
 
-struct PutData {
+class PutData {
+ public:
   PutData() = default;
   ~PutData() = default;
 
-  template <typename T, typename U, typename V>
-  PutData(T&& key_in, U&& data_in, V&& relay_node_in)
-      : key{std::forward<T>(key_in)},
-        data{std::forward<U>(data_in)},
-        relay_node{std::forward<V>(relay_node_in)} {}
 
   template <typename T, typename U>
-  PutData(T&& key_in, U&& data_in)
-      : key{std::forward<T>(key_in)}, data{std::forward<U>(data_in)} {}
+  PutData(T&& key, U&& data)
+      : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                               data{std::move(other.data)},
-                                               relay_node{std::move(other.relay_node)} {}
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
+                                               data_{std::move(other.data_)} {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
-    data = std::move(other.data);
-    relay_node = std::move(other.relay_node);
+    key_ = std::move(other.key_);
+    data_ = std::move(other.data_);
     return *this;
   }
 
@@ -66,12 +56,15 @@ struct PutData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data, relay_node);
+    archive(key_, data_);
   }
 
-  Address key;
-  SerialisedData data;
-  Address relay_node;
+  Address get_key() { return key_; }
+  SerialisedData get_data() { return data_; }
+
+ private:
+  Address key_;
+  SerialisedData data_;
 };
 
 }  // namespace routing

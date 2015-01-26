@@ -34,14 +34,14 @@ class GetData {
 
   template <typename T>
   explicit GetData(T&& key)
-      : key(std::forward<T>(key)) {}
+      : key_(std::forward<T>(key)) {}
 
 
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)} {}
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)} {}
 
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
+    key_ = std::move(other.key_);
     return *this;
   }
 
@@ -52,12 +52,12 @@ class GetData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key);
+    archive(key_);
   }
-  Address get_key() { return key; }
+  Address get_key() { return key_; }
 
  private:
-  Address key;
+  Address key_;
 };
 
 }  // namespace routing

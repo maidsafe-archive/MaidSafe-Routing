@@ -19,7 +19,6 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #include <vector>
-#include "boost/optional.hpp"
 
 #include "maidsafe/routing/types.h"
 
@@ -27,26 +26,21 @@ namespace maidsafe {
 
 namespace routing {
 
-struct GetDataResponse {
+class GetDataResponse {
+ public:
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  template <typename T, typename U, typename V>
-  GetDataResponse(T&& key, U&& data, V&& relay_node)
-      : key{std::forward<T>(key)},
-        data{std::forward<U>(data)},
-        relay_node{std::forward<U>(relay_node)} {}
-
   template <typename T, typename U>
   GetDataResponse(T&& key, U&& data)
-      : key{std::forward<T>(key)}, data{std::forward<U>(data)} {}
+      : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
 
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                                               data{std::move(other.data)} {}
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
+                                                               data_{std::move(other.data_)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
-    data = std::move(other.data);
+    key_ = std::move(other.key_);
+    data_ = std::move(other.data_);
     return *this;
   }
 
@@ -57,12 +51,15 @@ struct GetDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data, relay_node);
+    archive(key_, data_);
   }
 
-  Address key;
-  std::vector<byte> data;
-  boost::optional<Address> relay_node;
+  Address get_key() { return key_; }
+  std::vector<byte> get_data() { return data_; }
+
+ private:
+  Address key_;
+  std::vector<byte> data_;
 };
 
 }  // namespace routing
