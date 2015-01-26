@@ -239,10 +239,10 @@ PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage ser
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    auto message(
-        Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
-                                std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
-                  MessageToTag<PostMessage>::value(), PostMessage(key, ser_message)));
+    auto message(Serialise(
+        MessageHeader(std::make_pair(Destination(key), boost::none),
+                      std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
+        MessageToTag<PostMessage>::value(), PostMessage(std::move(key), std::move(ser_message))));
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target, message, handler);
     }

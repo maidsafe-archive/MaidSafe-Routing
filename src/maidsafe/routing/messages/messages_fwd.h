@@ -59,7 +59,7 @@ struct ClientPutData;
 struct PutData;
 struct PutKey;
 struct PutDataResponse;
-struct PostMessage;
+class PostMessage;
 struct Request;
 struct Response;
 

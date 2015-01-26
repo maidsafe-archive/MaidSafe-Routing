@@ -33,24 +33,14 @@ namespace maidsafe {
 
 namespace routing {
 
-struct PostMessage {
+class PostMessage {
+ public:
   PostMessage() = default;
   ~PostMessage() = default;
 
-  //  PostMessage(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
-  //      : key{std::move(data_name_in)},
-  //        data{std::move(data_in)},
-  //        part{std::move(part_in)} {}
 
-  // The one above will have either double move or 1 copy 1 move or double copy (if a parameter
-  // does not have a move ctor) depending on invocation site.
-  // The one below will always have single move or single copy depending on invocation site.
-  // Also if the type of the member var is changed we will have to revisit the one above, while
-  // there will be no change in the signature of the one below.
-
-  template <typename T, typename U>
-  PostMessage(T&& key_in, U&& data_in)
-      : key(std::forward<T>(key_in)), data(std::forward<U>(data_in)) {}
+  PostMessage(Address&& key_in, SerialisedData&& data_in)
+      : key(std::forward<Address>(key_in)), data(std::forward<SerialisedData>(data_in)) {}
 
   PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
                                                        data{std::move(other.data)} {}
@@ -61,8 +51,8 @@ struct PostMessage {
     return *this;
   }
 
-  PostMessage(const PostMessage&) = delete;
-  PostMessage& operator=(const PostMessage&) = delete;
+  PostMessage(const PostMessage&) = default;
+  PostMessage& operator=(const PostMessage&) = default;
 
   void operator()() {}
 
@@ -71,6 +61,10 @@ struct PostMessage {
     archive(key, data);
   }
 
+  Address get_key() { return key; }
+  SerialisedData get_data() { return data; }
+
+ private:
   Address key;
   SerialisedData data;
 };
