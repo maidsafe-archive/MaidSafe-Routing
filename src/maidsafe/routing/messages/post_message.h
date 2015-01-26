@@ -33,11 +33,11 @@ namespace maidsafe {
 
 namespace routing {
 
-struct Post {
-  Post() = default;
-  ~Post() = default;
+struct PostMessage {
+  PostMessage() = default;
+  ~PostMessage() = default;
 
-  //  Post(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
+  //  PostMessage(Address data_name_in, std::vector<byte> data_in, uint8_t part_in)
   //      : key{std::move(data_name_in)},
   //        data{std::move(data_in)},
   //        part{std::move(part_in)} {}
@@ -49,19 +49,20 @@ struct Post {
   // there will be no change in the signature of the one below.
 
   template <typename T, typename U>
-  Post(T&& key_in, U&& data_in)
+  PostMessage(T&& key_in, U&& data_in)
       : key(std::forward<T>(key_in)), data(std::forward<U>(data_in)) {}
 
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)}, data{std::move(other.data)} {}
+  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
+                                                       data{std::move(other.data)} {}
 
-  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
+  PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
     key = std::move(other.key);
     data = std::move(other.data);
     return *this;
   }
 
-  Post(const Post&) = delete;
-  Post& operator=(const Post&) = delete;
+  PostMessage(const PostMessage&) = delete;
+  PostMessage& operator=(const PostMessage&) = delete;
 
   void operator()() {}
 

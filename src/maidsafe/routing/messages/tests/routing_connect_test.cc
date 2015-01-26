@@ -22,6 +22,7 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/passport/passport.h"
 #include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/messages/messages_fwd.h"
@@ -36,20 +37,17 @@ namespace test {
 
 namespace {
 
+
 Connect GenerateInstance() {
   return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-          Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
-          Address{RandomString(Address::kSize)}};
-}
-
-Connect GenerateNoRelayInstance() {
-  return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-          Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)}};
+                 Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
+                 passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
 }
 
 }  // anonymous namespace
 
-TEST(ConnectTest, BEH_SerialiseParseRelay) {
+
+TEST(ConnectTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
@@ -73,39 +71,9 @@ TEST(ConnectTest, BEH_SerialiseParseRelay) {
   // Parse the rest
   Parse(binary_input_stream, connect_after);
 
-  EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
-  EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
-  EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
-  EXPECT_EQ(*connect_before.relay_node, *connect_after.relay_node);
-}
-
-TEST(ConnectTest, BEH_SerialiseParseNoRelay) {
-  // Serialise
-  auto connect_before(GenerateNoRelayInstance());
-  auto header_before(GenerateMessageHeader());
-  auto tag_before(MessageToTag<Connect>::value());
-
-  auto serialised_connect(Serialise(header_before, tag_before, connect_before));
-
-  // Parse
-  auto connect_after(GenerateNoRelayInstance());
-  auto header_after(GenerateMessageHeader());
-  auto tag_after(MessageTypeTag{});
-
-  InputVectorStream binary_input_stream{serialised_connect};
-
-  // Parse Header, Tag
-  Parse(binary_input_stream, header_after, tag_after);
-
-  EXPECT_EQ(header_before, header_after);
-  EXPECT_EQ(tag_before, tag_after);
-
-  // Parse the rest
-  Parse(binary_input_stream, connect_after);
-
-  EXPECT_EQ(connect_before.requester_endpoints, connect_after.requester_endpoints);
-  EXPECT_EQ(connect_before.requester_id, connect_after.requester_id);
-  EXPECT_EQ(connect_before.receiver_id, connect_after.receiver_id);
+  EXPECT_EQ(connect_before.get_requester_endpoints(), connect_after.get_requester_endpoints());
+  EXPECT_EQ(connect_before.get_requester_id(), connect_after.get_requester_id());
+  EXPECT_EQ(connect_before.get_receiver_id(), connect_after.get_receiver_id());
 }
 
 }  // namespace test

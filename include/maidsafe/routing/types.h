@@ -22,6 +22,7 @@
 #include <array>
 #include <cstdint>
 #include <utility>
+#include <tuple>
 #include <vector>
 
 #include "boost/optional/optional.hpp"
@@ -40,11 +41,11 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t GroupSize = 16;
+static const size_t GroupSize = 17;
 #ifdef ZERO_STATE_NODE
 static const size_t QuorumSize = 1;
 #else
-static const size_t QuorumSize = 12;
+static const size_t QuorumSize = 13;
 #endif
 using Address = NodeId;
 using DataKey = TaggedValue<Identity, struct DataKeyTag>;
@@ -55,14 +56,18 @@ using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
 using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress>>;
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
-using SourceAddress = std::pair<
-    NodeAddress,
-    boost::optional<std::pair<boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>>>;
+using SourceAddress =
+    std::tuple<NodeAddress, boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>;
 
-// template <class Archive>
-// void serialize(Archive& archive, SourceAddress& source_address) {
-//   archive(source_address.first, source_address.second);
-// }
+template <class Archive>
+void serialize(Archive& archive, DestinationAddress& address) {
+  archive(address.first, address.second);
+}
+
+template <class Archive>
+void serialize(Archive& archive, SourceAddress& address) {
+  archive(std::get<0>(address), std::get<1>(address), std::get<2>(address));
+}
 using FilterType = std::pair<NodeAddress, MessageId>;
 
 using Endpoint = rudp::Endpoint;

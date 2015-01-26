@@ -25,7 +25,7 @@
 #include "maidsafe/routing/messages/find_group_response.h"
 #include "maidsafe/routing/messages/get_data.h"
 #include "maidsafe/routing/messages/get_data_response.h"
-#include "maidsafe/routing/messages/post.h"
+#include "maidsafe/routing/messages/post_message.h"
 #include "maidsafe/routing/messages/put_data.h"
 #include "maidsafe/routing/messages/put_data_response.h"
 

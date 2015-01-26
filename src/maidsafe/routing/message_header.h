@@ -109,33 +109,26 @@ class MessageHeader {
   SourceAddress GetSource() { return source_; }
   uint32_t GetMessageId() { return message_id_; }
   boost::optional<asymm::Signature> GetSignature() { return signature_; }
-  SourceAddress FromNode() { return source_; }
+  NodeAddress FromNode() { return std::get<0>(source_); }
 
-  boost::optional<GroupAddress> FromGroup() {
-    if (source_.second && source_.second->first)
-      return *source_.second->first;
-    else
-      return boost::none;
-  }
-  boost::optional<ReplyToAddress> RelayedMessage() {
-    if (source_.second && source_.second->second)
-      return *source_.second->second;
-    else
-      return boost::none;
-  }
+  boost::optional<GroupAddress> FromGroup() { return std::get<1>(source_); }
+
+  boost::optional<ReplyToAddress> RelayedMessage() { return std::get<2>(source_); }
+
   DestinationAddress ReturnDestinationAddress() {
     if (RelayedMessage())
-      return std::make_pair(Destination(source_.first.data), *RelayedMessage());
+      return DestinationAddress(
+          std::make_pair(Destination(std::get<0>(source_)), *RelayedMessage()));
     else
-      return std::make_pair(Destination(source_.first.data), boost::none);
+      return DestinationAddress(std::make_pair(Destination(std::get<0>(source_)), boost::none));
   }
   bool ValidateHeader() {
-    return (!source_.first->IsValid() ||
-            ((FromGroup() && !FromGroup()->data.IsValid()) ||
-             (RelayedMessage() && !RelayedMessage()->data.IsValid())) ||
+    return (std::get<0>(source_)->IsValid() ||
+            ((FromGroup() && FromGroup()->data.IsValid()) ||
+             (RelayedMessage() && RelayedMessage()->data.IsValid())) ||
             (FromGroup() && RelayedMessage()));
   }
-  FilterType FilterValue() { return std::make_pair(source_.first, message_id_); }
+  FilterType FilterValue() { return std::make_pair(std::get<0>(source_), message_id_); }
 
  private:
   DestinationAddress destination_;

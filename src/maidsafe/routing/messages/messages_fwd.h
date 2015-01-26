@@ -28,8 +28,6 @@ namespace routing {
 enum class MessageTypeTag : uint16_t {
   Connect,
   ConnectResponse,
-  ClientConnectResponse,
-  ClientConnect,
   FindGroup,
   FindGroupResponse,
   GetData,
@@ -48,9 +46,7 @@ enum class MessageTypeTag : uint16_t {
 };
 
 class Connect;
-struct ConnectResponse;
-struct ClientConnectResponse;
-struct ClientConnect;
+class ConnectResponse;
 struct FindGroup;
 struct FindGroupResponse;
 struct GetData;
@@ -76,14 +72,6 @@ struct MessageToTag<Connect> {
 template <>
 struct MessageToTag<ConnectResponse> {
   static MessageTypeTag value() { return MessageTypeTag::ConnectResponse; }
-};
-template <>
-struct MessageToTag<ClientConnectResponse> {
-  static MessageTypeTag value() { return MessageTypeTag::ClientConnectResponse; }
-};
-template <>
-struct MessageToTag<ClientConnect> {
-  static MessageTypeTag value() { return MessageTypeTag::ClientConnect; }
 };
 template <>
 struct MessageToTag<FindGroup> {

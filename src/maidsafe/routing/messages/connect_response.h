@@ -28,18 +28,19 @@ namespace maidsafe {
 
 namespace routing {
 
-struct ConnectResponse {
+class ConnectResponse {
+ public:
   ConnectResponse() = default;
   ~ConnectResponse() = default;
 
-  template <typename T, typename U, typename V, typename W, typename X>
-  ConnectResponse(T&& requester_endpoints, U&& receiver_endpoints, V&& requester_id,
-                  W&& receiver_id, X&& receiver_fob)
-      : requester_endpoints{std::forward<T>(requester_endpoints)},
-        receiver_endpoints{std::forward<U>(receiver_endpoints)},
-        requester_id{std::forward<V>(requester_id)},
-        receiver_id{std::forward<W>(receiver_id)},
-        receiver_fob{std::forward<X>(receiver_fob)} {}
+  ConnectResponse(rudp::EndpointPair&& requester_endpoints, rudp::EndpointPair&& receiver_endpoints,
+                  Address&& requester_id, Address&& receiver_id,
+                  passport::PublicPmid&& receiver_fob)
+      : requester_endpoints{std::forward<rudp::EndpointPair>(requester_endpoints)},
+        receiver_endpoints{std::forward<rudp::EndpointPair>(receiver_endpoints)},
+        requester_id{std::forward<Address>(requester_id)},
+        receiver_id{std::forward<Address>(receiver_id)},
+        receiver_fob{std::forward<passport::PublicPmid>(receiver_fob)} {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints(std::move(other.requester_endpoints)),
@@ -57,8 +58,8 @@ struct ConnectResponse {
     return *this;
   }
 
-  ConnectResponse(const ConnectResponse&) = delete;
-  ConnectResponse& operator=(const ConnectResponse&) = delete;
+  ConnectResponse(const ConnectResponse&) = default;
+  ConnectResponse& operator=(const ConnectResponse&) = default;
 
   void operator()() {}
 
@@ -67,6 +68,13 @@ struct ConnectResponse {
     archive(requester_endpoints, receiver_endpoints, requester_id, receiver_id, receiver_fob);
   }
 
+  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints; }
+  rudp::EndpointPair get_receiver_endpoints() { return receiver_endpoints; }
+  Address get_requester_id() { return requester_id; }
+  Address get_receiver_id() { return receiver_id; }
+  passport::PublicPmid get_receiver_fob() { return receiver_fob; }
+
+ private:
   rudp::EndpointPair requester_endpoints;
   rudp::EndpointPair receiver_endpoints;
   Address requester_id;

@@ -88,6 +88,7 @@ TODO         text svneol=native#text/plain
 
 # Code formats
 *.c          text svneol=native#text/plain
+*.cc         text svneol=native#text/plain
 *.cpp        text svneol=native#text/plain
 *.h          text svneol=native#text/plain
 *.hpp        text svneol=native#text/plain

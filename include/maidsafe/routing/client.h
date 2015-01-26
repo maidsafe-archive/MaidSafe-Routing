@@ -92,7 +92,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   void HandleMessage(Connect connect);
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
-  void HandleMessage(Post post);
+  void HandleMessage(PostMessage post);
   void HandleMessage(Request request);
   void HandleMessage(Response response);
 

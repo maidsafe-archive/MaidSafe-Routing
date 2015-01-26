@@ -39,6 +39,7 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
                          const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
     : io_service_(io_service),
       our_fob_(pmid),
+      bootstrap_node_(boost::none),
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service, rudp_, Address(pmid.name()->string())),
@@ -76,9 +77,10 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
     auto test = cache_.Get(data.key);
     if (test) {
       GetDataResponse response(data.key, test.value());
-      auto message(Serialise(CreateReplyHeader(std::move(header)), MessageTypeTag::GetDataResponse,
-                             response));
-      for (const auto& target : connection_manager_.GetTarget(header.GetSource().first))
+      auto message(Serialise(
+          MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
+          MessageTypeTag::GetDataResponse, response));
+      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
         rudp_.Send(target.id, message, [](asio::error_code error) {
           if (error) {
             LOG(kWarning) << "rudp cannot send" << error.message();
@@ -108,7 +110,7 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
       HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::ConnectResponse:
-      HandleMessage(Parse<ConnectResponse>(binary_input_stream), std::move(header));
+      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
       break;
     case MessageTypeTag::FindGroup:
       HandleMessage(Parse<FindGroup>(binary_input_stream), std::move(header));
@@ -138,20 +140,6 @@ void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage se
 }
 
 
-MessageHeader RoutingNode::CreateReplyHeader(MessageHeader orig_header) {
-  return MessageHeader{
-      DestinationAddress(orig_header.ReturnDestinationAddress()),
-      SourceAddress{
-          NodeAddress(OurId()),
-          orig_header.FromGroup()
-              ? boost::optional<
-                    std::pair<boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>>(
-                    std::make_pair(*orig_header.FromGroup(), boost::none))
-              : boost::none},
-      orig_header.GetMessageId()};
-}
-
-
 void RoutingNode::ConnectionLost(NodeId peer) { connection_manager_.LostNetworkConnection(peer); }
 
 // reply with our details;
@@ -159,18 +147,13 @@ void RoutingNode::HandleMessage(Connect connect, MessageHeader orig_header) {
   if (!connection_manager_.SuggestNodeToAdd(connect.get_requester_id()))
     return;
   auto targets(connection_manager_.GetTarget(connect.get_requester_id()));
-  ConnectResponse respond;
-  respond.requester_id = connect.get_requester_id();
-  respond.requester_endpoints = connect.get_requester_endpoints();
-  respond.receiver_id = connect.get_receiver_id();
+  ConnectResponse respond(connect.get_requester_endpoints(), NextEndpointPair(),
+                          connect.get_requester_id(), OurId(), passport::PublicPmid(our_fob_));
   assert(connect.get_receiver_id() == OurId());
-  respond.receiver_endpoints = NextEndpointPair();
-  respond.receiver_fob = passport::PublicPmid(our_fob_);
 
-  MessageHeader header(
-      DestinationAddress(orig_header.ReturnDestinationAddress()),
-      SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()), boost::none)),
-      orig_header.GetMessageId(), asymm::Sign(Serialise(respond), keys_.private_key));
+  MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
+                       SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
+                       asymm::Sign(Serialise(respond), our_fob_.private_key()));
   // FIXME(dirvine) Do we need to pass a shared_from_this type object or this may segfault on
   // shutdown
   // :24/01/2015
@@ -198,36 +181,41 @@ void RoutingNode::HandleMessage(Connect connect, MessageHeader orig_header) {
     listener_ptr_->HandleCloseGroupDifference(*added);
 }
 
-void RoutingNode::HandleMessage(ConnectResponse connect_response, MessageHeader orig_header) {
-  if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id))
+void RoutingNode::HandleMessage(ConnectResponse connect_response) {
+  if (!connection_manager_.SuggestNodeToAdd(connect_response.get_requester_id()))
     return;
-  auto added = connection_manager_.AddNode(NodeInfo(target, connect_response.get_requester_fob()));
-  if (added.first)
-    rudp_.Add(target, [target, added, this](asio::error_code error) {
-      if (error) {
-        this->connection_manager_.DropNode(target);
-        return;
-      }
-      if (added.second)
-        rudp_.Remove(*added.second.id, asio::use_future).get();
-    });
+  auto added = connection_manager_.AddNode(
+      NodeInfo(connect_response.get_requester_id(), connect_response.get_receiver_fob()),
+      connect_response.get_receiver_endpoints());
+  auto target = connect_response.get_requester_id();
+  rudp_.Add(
+      rudp::Contact(connect_response.get_receiver_id(), connect_response.get_receiver_endpoints(),
+                    connect_response.get_receiver_fob().public_key()),
+      [target, added, this](asio::error_code error) {
+        if (error) {
+          this->connection_manager_.DropNode(target);
+          return;
+        }
+        if (added)
+          listener_ptr_->HandleCloseGroupDifference(*added);
+      });
 }
 void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
   FindGroupResponse response(find_group);
-  response.public_fobs = std::move(connection_manager_.OurCloseGroup());
-
-  MessageHeader header(
-      DestinationAddress(find_group.requester_id),
-      SourceAddress(std::make_pair(NodeAddress(connection_manager_.OurId()), boost::none)),
-      RandomUint32(), asymm::Sign(Serialise(response), keys_.private_key));
-
-  for (const auto& node : connection_manager_.GetTarget(find_group.requester_id)) {
-    rudp_.Send(node.id, Serialise(header, MessageToTag<FindGroupResponse>::value(), response),
-               asio::use_future).get();
+  auto node_infos = std::move(connection_manager_.OurCloseGroup());
+  // add ourselves
+  node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
+  MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
+                       SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
+                       asymm::Sign(Serialise(response), our_fob_.private_key()));
+  auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
+  for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
+    rudp_.Send(node.id, message, asio::use_future).get();
   }
 }
 
-void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse, MessageHeader orig_header) {
+void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse,
+                                MessageHeader /* orig_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   for (const auto node : find_group_reponse.public_fobs) {
     if (!connection_manager_.SuggestNodeToAdd(node.id))
@@ -238,26 +226,26 @@ void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse, MessageHea
   }
 }
 
-void RoutingNode::HandleMessage(GetData /*get_data*/, MessageHeader orig_header) {}
+void RoutingNode::HandleMessage(GetData /*get_data*/, MessageHeader /* orig_header */) {}
 
 void RoutingNode::HandleMessage(GetDataResponse /* get_data_response */,
-                                MessageHeader orig_header) {}
+                                MessageHeader /* orig_header */) {}
 
-void RoutingNode::HandleMessage(PutData /*put_data*/, MessageHeader orig_header) {}
+void RoutingNode::HandleMessage(PutData /*put_data*/, MessageHeader /* orig_header */) {}
 
-void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/, MessageHeader orig_header) {}
+void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/,
+                                MessageHeader /* orig_header */) {}
 
-// void RoutingNode::HandleMessage(Post /*post*/, MessageHeader orig_header) {}
+void RoutingNode::HandleMessage(PostMessage /* post */, MessageHeader /* orig_header */) {}
 
 SourceAddress RoutingNode::OurSourceAddress() const {
-  return std::make_pair(NodeAddress(connection_manager_.OurId()), boost::optional<GroupAddress>());
+  return std::make_tuple(NodeAddress(OurId()), boost::none, boost::none);
 }
 
 template <class Message>
-void RoutingNode::SendDirect(NodeId target, Message message, SendHandler handler) {
-  MessageHeader header(DestinationAddress(target),
-                       SourceAddress{NodeAddress(our_id_), boost::optional<GroupAddress>()},
-                       message_id_++);
+void RoutingNode::SendDirect(Address target, Message message, SendHandler handler) {
+  MessageHeader header(DestinationAddress(std::make_pair(Destination(target), boost::none)),
+                       SourceAddress{OurSourceAddress()}, ++message_id_);
 
   rudp_.Send(target, Serialise(header, MessageToTag<Message>::value(), message), handler);
 }
@@ -268,7 +256,7 @@ void RoutingNode::OnBootstrap(asio::error_code error, rudp::Contact contact,
     return handler(error, contact);
   }
 
-  SendDirect(contact.id, FindGroup(our_id_, contact.id),
+  SendDirect(contact.id, FindGroup(OurId(), contact.id),
              [=](asio::error_code error) { handler(error, contact); });
 }
 

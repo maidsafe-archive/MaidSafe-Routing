@@ -32,13 +32,12 @@ class Connect {
   Connect() = default;
   ~Connect() = default;
 
-
-  template <typename T, typename U, typename V, typename W>
-  Connect(T&& requester_endpoints, U&& requester_id, V&& receiver_id, W&& requester_fob)
-      : requester_endpoints{std::forward<T>(requester_endpoints)},
-        requester_id{std::forward<U>(requester_id)},
-        receiver_id{std::forward<V>(receiver_id)},
-        requester_fob{std::forward<W>(requester_fob)} {}
+  Connect(rudp::EndpointPair&& requester_endpoints, Address&& requester_id, Address&& receiver_id,
+          passport::PublicPmid&& requester_fob)
+      : requester_endpoints{std::forward<rudp::EndpointPair>(requester_endpoints)},
+        requester_id{std::forward<Address>(requester_id)},
+        receiver_id{std::forward<Address>(receiver_id)},
+        requester_fob{std::forward<passport::PublicPmid>(requester_fob)} {}
 
   Connect(Connect&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints{std::move(other.requester_endpoints)},

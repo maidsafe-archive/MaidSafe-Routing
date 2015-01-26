@@ -65,7 +65,7 @@ set(RoutingMessagesHeaders
     ${RoutingSourcesDir}/messages/get_data_response.h
     ${RoutingSourcesDir}/messages/messages.h
     ${RoutingSourcesDir}/messages/messages_fwd.h
-    ${RoutingSourcesDir}/messages/post.h
+    ${RoutingSourcesDir}/messages/post_message.h
     ${RoutingSourcesDir}/messages/put_data.h
     ${RoutingSourcesDir}/messages/put_data_response.h
     )

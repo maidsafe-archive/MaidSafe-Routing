@@ -38,7 +38,7 @@
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/get_data.h"
 #include "maidsafe/routing/messages/put_data.h"
-#include "maidsafe/routing/messages/post.h"
+#include "maidsafe/routing/messages/post_message.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 
@@ -118,20 +118,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   }
 
  private:
-  std::vector<MessageHeader> CreateHeaders(Address target, asymm::Signature signature,
-                                           MessageHeader orig_header);
-  std::vector<MessageHeader> CreateHeaders(Address target, MessageHeader orig_header);
-  MessageHeader CreateReplyHeader(MessageHeader orig_header);
-  std::vector<MessageHeader> CreateReplyFromGroupHeaders(MessageHeader orig_header);
   void HandleMessage(Connect connect, MessageHeader orig_header);
-  // recieve connect from node and add nodes publicKey clients request to targetAddress
-  void HandleMessage(ClientConnect client_connect, const MessageHeader& header);
   // like connect but add targets endpoint
-  void HandleMessage(ConnectResponse connect_response, MessageHeader orig_header);
-  // like clientconnect adding targets public key (recieved by targets close group) (recieveing
-  // needs a Quorum)
-
-  //  void HandleMessage(ClientConnectResponse client_connect_response);
+  void HandleMessage(ConnectResponse connect_response);
   // sent by routing nodes to a network Address
   void HandleMessage(FindGroup find_group, MessageHeader orig_header);
   // each member of the group close to network Address fills in their node_info and replies
@@ -148,13 +137,14 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   // filling in public key again.
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
-  // void HandleMessage(Post post);
+  void HandleMessage(PostMessage post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   virtual void MessageReceived(NodeId peer_id,
                                rudp::ReceivedMessage serialised_message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
+  SourceAddress OurSourceAddress(GroupAddress) const;
 
   void OnBootstrap(asio::error_code, rudp::Contact,
                    std::function<void(asio::error_code, rudp::Contact)>);
@@ -165,14 +155,14 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
     return rudp::EndpointPair();
   }
 
-  Address OurId() { return Address(our_fob_.name()); }
+  Address OurId() const { return Address(our_fob_.name()); }
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
   asio::io_service& io_service_;
   passport::Pmid our_fob_;
-  std::atomic<unsigned long> message_id_{RandomUint32()};
-  asymm::Keys keys_;
+  boost::optional<Address> bootstrap_node_;
+  std::atomic<MessageId> message_id_{RandomUint32()};
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
@@ -188,8 +178,8 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(), keys_,
-                    handler);
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(),
+                    our_fob_.public_key(), handler);
   });
   return result.get();
 }
@@ -201,10 +191,11 @@ BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
   Handler handler(std::forward<CompletionToken>(token));
   asio::async_result<Handler> result(handler);
 
-  rudp_.Bootstrap(
-      bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(), keys_,
-      [=](asio::error_code error, rudp::Contact contact) { OnBootstrap(error, contact, handler); },
-      local_endpoint);
+  rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(),
+                  our_fob_.public_key(), [=](asio::error_code error, rudp::Contact contact) {
+                                           OnBootstrap(error, contact, handler);
+                                         },
+                  local_endpoint);
 
   return result.get();
 }
