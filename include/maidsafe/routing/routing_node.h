@@ -207,7 +207,7 @@ GetReturn<CompletionToken> RoutingNode::Get(DataKey data_key, CompletionToken to
   io_service_.post([=] {
     auto message(Serialise(
         MessageHeader(std::make_pair(Destination(Address(data_key->string())), boost::none),
-                      std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
+                      OurSourceAddress(), ++message_id_),
         MessageToTag<GetData>::value(), GetData(Address(data_key->string()))));
     for (const auto& target : connection_manager_.GetTarget(Address(data_key->string()))) {
       rudp_.Send(target, message, handler);
@@ -222,10 +222,10 @@ PutReturn<CompletionToken> RoutingNode::Put(Address key, SerialisedMessage ser_m
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    auto message(
-        Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
-                                std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
-                  MessageToTag<PutData>::value(), PutData(key, ser_message)));
+    auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
+                                         OurSourceAddress(), ++message_id_),
+                           MessageToTag<PutData>::value(),
+                           PutData(std::move(key), std::move(ser_message))));
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target, message, handler);
     }
@@ -239,10 +239,10 @@ PostReturn<CompletionToken> RoutingNode::Post(Address key, SerialisedMessage ser
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    auto message(Serialise(
-        MessageHeader(std::make_pair(Destination(key), boost::none),
-                      std::make_pair(NodeAddress(OurId()), boost::none), ++message_id_),
-        MessageToTag<PostMessage>::value(), PostMessage(std::move(key), std::move(ser_message))));
+    auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
+                                         OurSourceAddress(), ++message_id_),
+                           MessageToTag<PostMessage>::value(),
+                           PostMessage(std::move(key), std::move(ser_message))));
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target, message, handler);
     }

@@ -86,8 +86,8 @@ TEST(RoutingNetworkInit, BEH_InitTwo) {
   EndpointPair endpoints1(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
   EndpointPair endpoints2(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
 
-  n1->AddBootstrapContact(n2->MakeContact(endpoints2));
-  n2->AddBootstrapContact(n1->MakeContact(endpoints1));
+  // n1->AddBootstrapContact(n2->MakeContact(endpoints2));
+  // n2->AddBootstrapContact(n1->MakeContact(endpoints1));
 
   // auto boot_future1 = n1->Bootstrap(endpoints1.local, asio::use_future);
   // auto boot_future2 = n2->Bootstrap(endpoints2.local, asio::use_future);

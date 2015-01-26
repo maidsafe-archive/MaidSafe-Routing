@@ -49,7 +49,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(MessageToTag<Post>::value());
+  auto tag_before(MessageToTag<PostMessage>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 
@@ -72,8 +72,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   EXPECT_EQ(post_before.get_key(), post_after.get_key());
 
   EXPECT_EQ(post_before.get_data().size(), post_after.get_data().size());
-  EXPECT_TRUE(std::equal(post_before.get_data().begin(), post_before.get_data().end(),
-                         post_before.get_data().begin()));
+  EXPECT_EQ(post_before.get_data(), post_after.get_data());
 }
 
 }  // namespace test
