@@ -60,7 +60,7 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
                                      const std::vector<NodeId>& old_close_nodes,
                                      const std::vector<NodeId>& new_close_nodes)
     : node_id_(std::move(this_node_id)),
-      lost_node_([&, this]() -> NodeId {
+      lost_node_([&]() -> NodeId {
         std::vector<NodeId> lost_nodes;
         for (const auto& old_node : old_close_nodes) {
           if (std::none_of(new_close_nodes.begin(), new_close_nodes.end(),
@@ -72,7 +72,7 @@ ConnectionsChange::ConnectionsChange(NodeId this_node_id,
         assert(lost_nodes.size() <= 1);
         return (lost_nodes.empty()) ? NodeId() : lost_nodes.at(0);
       }()),
-      new_node_([&, this]() -> NodeId {
+      new_node_([&]() -> NodeId {
         std::vector<NodeId> new_nodes;
         for (const auto& new_node : new_close_nodes) {
         if (std::none_of(old_close_nodes.begin(), old_close_nodes.end(),
@@ -144,7 +144,10 @@ ClientNodesChange& ClientNodesChange::operator=(const ClientNodesChange& other) 
 ClientNodesChange::ClientNodesChange(NodeId this_node_id,
                                      const std::vector<NodeId>& old_close_nodes,
                                      const std::vector<NodeId>& new_close_nodes)
-    : ConnectionsChange(this_node_id, old_close_nodes, new_close_nodes) {}
+    : ConnectionsChange(this_node_id, old_close_nodes, new_close_nodes) {
+  assert(old_close_nodes.size() <= Parameters::max_routing_table_size);
+  assert(new_close_nodes.size() <= Parameters::max_routing_table_size);
+}
 
 std::string ClientNodesChange::ReportConnection() const {
   std::stringstream stringstream;
@@ -199,7 +202,10 @@ CloseNodesChange::CloseNodesChange(const NodeId& this_node_id,
         return (crypto::BigInt(
                     (fcn_distance.ToStringEncoded(NodeId::EncodingType::kHex) + 'h').c_str()) *
                 Parameters::proximity_factor);
-      }()) {}
+      }()) {
+    assert(old_close_nodes.size() <= Parameters::closest_nodes_size);
+    assert(new_close_nodes.size() <= Parameters::closest_nodes_size);
+}
 
 CheckHoldersResult CloseNodesChange::CheckHolders(const NodeId& target) const {
   // Handle cases of lower number of group close_nodes nodes
