@@ -436,7 +436,7 @@ TEST(APITest, BEH_API_MpidClientNode) {
   ScopedBootstrapFile bootstrap_file({endpoint1, endpoint2});
 
   auto pmid1(passport::CreatePmidAndSigner().first), pmid2(passport::CreatePmidAndSigner().first);
-  auto mpid(passport::CreateMpidAndSigner(NonEmptyString("Random")).first);
+  auto mpid(passport::CreateMpidAndSigner().first);
   NodeInfoAndPrivateKey node1(MakeNodeInfoAndKeysWithPmid(pmid1));
   NodeInfoAndPrivateKey node2(MakeNodeInfoAndKeysWithPmid(pmid2));
   NodeInfoAndPrivateKey node3(MakeNodeInfoAndKeysWithMpid(mpid));
