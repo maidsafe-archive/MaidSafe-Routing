@@ -78,6 +78,15 @@ TEST(ConnectTest, BEH_SerialiseParse) {
             connect_after.get_requester_fob().validation_token());
   EXPECT_TRUE(asymm::MatchingKeys(connect_before.get_requester_fob().public_key(),
                                   connect_after.get_requester_fob().public_key()));
+  auto moved_connect(std::move(connect_after));
+  EXPECT_EQ(connect_before.get_requester_endpoints(), moved_connect.get_requester_endpoints());
+  EXPECT_EQ(connect_before.get_requester_endpoints(), moved_connect.get_requester_endpoints());
+  EXPECT_EQ(connect_before.get_requester_id(), moved_connect.get_requester_id());
+  EXPECT_EQ(connect_before.get_receiver_id(), moved_connect.get_receiver_id());
+  EXPECT_EQ(connect_before.get_requester_fob().validation_token(),
+            moved_connect.get_requester_fob().validation_token());
+  EXPECT_TRUE(asymm::MatchingKeys(connect_before.get_requester_fob().public_key(),
+                                  moved_connect.get_requester_fob().public_key()));
 }
 
 }  // namespace test
