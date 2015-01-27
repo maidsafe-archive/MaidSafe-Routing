@@ -385,6 +385,37 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
   }
 }
 
+TEST_F(CloseNodesChangeTest, BEH_Constructors) {
+  std::vector<NodeId> old_ids, new_ids;
+
+  for (auto index(Parameters::closest_nodes_size); index != 0; --index)
+    old_ids.push_back(NodeId(RandomString(NodeId::kSize)));
+
+  new_ids = old_ids;
+  old_ids.erase(old_ids.begin());
+  {
+    auto close_nodes_change(CloseNodesChange(kNodeId_, old_ids, new_ids));
+    auto copy(close_nodes_change);
+    auto copy2(std::move(copy));
+    EXPECT_EQ(close_nodes_change, copy2);
+    EXPECT_NE(copy, copy2);
+  }
+  {
+    auto client_nodes_change(ClientNodesChange(kNodeId_, old_ids, new_ids));
+    auto copy(client_nodes_change);
+    auto copy2(std::move(copy));
+    EXPECT_EQ(client_nodes_change, copy2);
+    EXPECT_NE(copy, copy2);
+  }
+  {
+    auto connections_change(ConnectionsChange(kNodeId_, old_ids, new_ids));
+    auto copy(connections_change);
+    auto copy2(std::move(copy));
+    EXPECT_EQ(connections_change, copy2);
+    EXPECT_NE(copy, copy2);
+  }
+}
+
 }  // namespace test
 
 }  // namespace routing
