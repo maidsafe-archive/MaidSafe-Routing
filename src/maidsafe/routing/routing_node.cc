@@ -20,6 +20,7 @@
 
 #include <utility>
 #include "asio/use_future.hpp"
+#include "asio/ip/udp.hpp"
 #include "boost/exception/diagnostic_information.hpp"
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/serialisation.h"
@@ -45,10 +46,59 @@ RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path d
       listener_ptr_(listener_ptr),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service_),
-      cache_(std::chrono::minutes(10)) {}
+      cache_(std::chrono::minutes(60)) {
+  // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
+  // need Quorum number of these signed anyway.
+  cache_.Add(Address(pmid.name()->string()), Serialise(passport::PublicPmid(our_fob_)));
+  // try an connect to any local nodes (5483) Expect to be told Node_Id
+  auto temp_id(Address(RandomString(Address::kSize)));
+  rudp_.Add(rudp::Contact(temp_id, rudp::EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
+                                                      rudp::Endpoint{GetLocalIp(), 5433}},
+                          our_fob_.public_key()),
+            [this, temp_id](asio::error_code error) {
+    if (!error) {
+      bootstrap_node_ = temp_id;
+      ConnectToCloseGroup();
+      return;
+    }
+  });
+  for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
+    rudp_.Add(node, [node, this](asio::error_code error) {
+      if (!error) {
+        bootstrap_node_ = node.id;
+        ConnectToCloseGroup();
+        return;
+      }
+    });
+    if (bootstrap_node_)
+      break;
+  }
+}
 
 RoutingNode::~RoutingNode() {}
 
+void RoutingNode::ConnectToCloseGroup() {
+  FindGroup message(NodeAddress(OurId()), OurId());
+  MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),
+                       SourceAddress{OurSourceAddress()}, ++message_id_);
+  if (bootstrap_node_) {
+    rudp_.Send(*bootstrap_node_, Serialise(header, MessageToTag<FindGroup>::value(), message),
+               [](asio::error_code error) {
+      if (error) {
+        LOG(kWarning) << "rudp cannot send via bootstrap node" << error.message();
+      }
+    });
+
+    return;
+  }
+  for (const auto& target : connection_manager_.GetTarget(OurId()))
+    rudp_.Send(target.id, Serialise(header, MessageToTag<Connect>::value(), message),
+               [](asio::error_code error) {
+      if (error) {
+        LOG(kWarning) << "rudp cannot send" << error.message();
+      }
+    });
+}
 void RoutingNode::MessageReceived(NodeId /* peer_id */, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;

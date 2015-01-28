@@ -41,8 +41,8 @@ enum class MessageTypeTag : uint16_t {
   PutDataResponse,
   ClientPost,
   PostMessage,
-  Request,
-  Response
+  RequestMessage,
+  ResponseMessage
 };
 
 class Connect;
@@ -54,8 +54,8 @@ class GetDataResponse;
 class PutData;
 struct PutDataResponse;
 class PostMessage;
-struct Request;
-struct Response;
+struct RequestMessage;
+struct ResponseMessage;
 
 template <class T>
 struct MessageToTag;
@@ -96,12 +96,12 @@ struct MessageToTag<PostMessage> {
   static MessageTypeTag value() { return MessageTypeTag::PostMessage; }
 };
 template <>
-struct MessageToTag<Request> {
-  static MessageTypeTag value() { return MessageTypeTag::Request; }
+struct MessageToTag<RequestMessage> {
+  static MessageTypeTag value() { return MessageTypeTag::RequestMessage; }
 };
 template <>
-struct MessageToTag<Response> {
-  static MessageTypeTag value() { return MessageTypeTag::Response; }
+struct MessageToTag<ResponseMessage> {
+  static MessageTypeTag value() { return MessageTypeTag::ResponseMessage; }
 };
 
 }  // namespace routing

@@ -157,7 +157,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode>,
   EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
     return rudp::EndpointPair();
   }
-
+  // this innocuous looking call will bootstrap the node and also be used if we spot close group
+  // nodes appering or vanishing so its pretty important.
+  void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
  private:
