@@ -42,11 +42,8 @@ namespace maidsafe {
 namespace routing {
 
 static const size_t GroupSize = 17;
-#ifdef ZERO_STATE_NODE
-static const size_t QuorumSize = 1;
-#else
 static const size_t QuorumSize = 13;
-#endif
+
 using Address = NodeId;
 using DataKey = TaggedValue<Identity, struct DataKeyTag>;
 using DataValue = TaggedValue<std::vector<byte>, struct DataValueTag>;
