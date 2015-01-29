@@ -45,8 +45,6 @@ static const size_t GroupSize = 17;
 static const size_t QuorumSize = 13;
 
 using Address = NodeId;
-using DataKey = TaggedValue<Identity, struct DataKeyTag>;
-using DataValue = TaggedValue<std::vector<byte>, struct DataValueTag>;
 using MessageId = uint32_t;
 using Destination = TaggedValue<Address, struct DestinationTag>;
 using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
