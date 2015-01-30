@@ -43,12 +43,33 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-
+class MaidManager {};
+class DataManager {};
+class PmidManager {};
+class PmidNode {};
 namespace fs = boost::filesystem;
-class Listener {
+class Vault : public MaidManager, public DataManager, public PmidManager, public PmidNode {
  public:
-  Listener() = default;
-  ~Listener() {}
+  Vault() = default;
+  ~Vault() {}
+  using DataTag = DataTagValue;  // DataTag must be defined (enum class of data types
+  enum class FunctorType {       // what functors for Post and Request/Response
+    FunctionOne,
+    FunctionTwo
+  };
+
+  enum class DataType { ImmutableData, MutableData };
+
+  //   HandleGet() {
+  //   swich (tag) {
+  //     case DataTag::ImmutableData;
+  //    switch (FromAuthority) {
+  //    case nae_manager;
+  //    // persona for us == PmiManger
+  //    ImmutableData PmidManagr::Get<ImmutableData>(Identity);
+  //    }
+  //   }
+  // }
   // default no post allowed unless implemented in upper layers
   bool HandlePost(const SerialisedMessage&) { return false; }
   // not in local cache do upper layers have it (called when we are in target group)
@@ -76,7 +97,7 @@ TEST(RoutingNetworkInit, BEH_ConstructNode) {
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
 
-  RoutingNode<Listener> n(ios, *test_dir / "node.sqlite3", pmid);
+  RoutingNode<Vault> n(ios, *test_dir / "node.sqlite3", pmid);
   auto value = NonEmptyString(RandomAlphaNumericString(65));
 
   Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
@@ -110,8 +131,8 @@ TEST(RoutingNetworkInit, BEH_InitTwo) {
   maidsafe::test::TestPath test_dir(
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_InitTwo"));
 
-  auto n1 = make_shared<RoutingNode<Listener>>(ios, *test_dir / "node1.sqlite3", pmid1);
-  auto n2 = make_shared<RoutingNode<Listener>>(ios, *test_dir / "node2.sqlite3", pmid2);
+  auto n1 = make_shared<RoutingNode<Vault>>(ios, *test_dir / "node1.sqlite3", pmid1);
+  auto n2 = make_shared<RoutingNode<Vault>>(ios, *test_dir / "node2.sqlite3", pmid2);
 
   EndpointPair endpoints1(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
   EndpointPair endpoints2(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
