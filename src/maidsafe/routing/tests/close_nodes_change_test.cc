@@ -409,7 +409,7 @@ TYPED_TEST_CASE_P(ConnectionChangesTest);
 TYPED_TEST_P(ConnectionChangesTest, BEH_BEH_Constructors) {}
 
 REGISTER_TYPED_TEST_CASE_P(ConnectionChangesTest, BEH_BEH_Constructors);
-typedef testing::Types<ConnectionsChange, ClientNodesChange, CloseNodesChange> ConnectionTypes;
+using ConnectionTypes = testing::Types<ConnectionsChange, ClientNodesChange, CloseNodesChange>;
 INSTANTIATE_TYPED_TEST_CASE_P(AccountTransfer, ConnectionChangesTest, ConnectionTypes);
 
 }  // namespace test
