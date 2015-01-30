@@ -44,6 +44,13 @@ namespace routing {
 static const size_t GroupSize = 17;
 static const size_t QuorumSize = 13;
 
+enum class FromAuthority : int32_t {
+  my_group,
+  node_in_my_group,
+  node_not_in_my_group,
+  nae_manager  // network addressable element manager
+};
+
 using Address = NodeId;
 using MessageId = uint32_t;
 using Destination = TaggedValue<Address, struct DestinationTag>;

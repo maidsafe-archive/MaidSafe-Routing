@@ -77,8 +77,20 @@ TEST(RoutingNetworkInit, BEH_ConstructNode) {
 
 
   RoutingNode<Listener> n(ios, *test_dir / "node.sqlite3", pmid);
-  n.Get<ImmutableData>(Address(RandomString(Address::kSize)), [](asio::error_code /* error */) {});
-  n.Get<MutableData>(Address(RandomString(Address::kSize)), [](asio::error_code /* error */) {});
+  auto value = NonEmptyString(RandomAlphaNumericString(65));
+
+  Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
+  MutableData a{MutableData::Name(key), value};
+  ImmutableData b{value};
+
+  Address from(Address(RandomString(Address::kSize)));
+  Address to(Address(RandomString(Address::kSize)));
+
+  n.Get<ImmutableData>(key, from, [](asio::error_code /* error */) {});
+  n.Get<MutableData>(key, from, [](asio::error_code /* error */) {});
+
+  n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
+  n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});
 }
 
 TEST(RoutingNetworkInit, BEH_InitTwo) {

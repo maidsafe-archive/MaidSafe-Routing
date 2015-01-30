@@ -52,7 +52,7 @@ namespace routing {
 template <typename HandlerPolicy>
 class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolicy>>,
                     public rudp::ManagedConnections::Listener,
-                    private HandlerPolicy {
+                    public HandlerPolicy {
  private:
   using SendHandler = std::function<void(asio::error_code)>;
 
@@ -73,13 +73,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolic
   // BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
   // // will return with the data
   template <typename T, typename CompletionToken>
-  GetReturn<CompletionToken> Get(Address key, CompletionToken token);
+  GetReturn<CompletionToken> Get(Identity key, Address from, CompletionToken token);
   // will return with allowed or not (error_code only)
-  template <typename CompletionToken, typename PutType>
-  PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
+  template <typename DataType, typename CompletionToken>
+  PutReturn<CompletionToken> Put(Address to, DataType data, CompletionToken token);
   // will return with allowed or not (error_code only)
-  template <typename CompletionToken, typename PostType>
-  PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
+  template <typename FunctorType, typename CompletionToken>
+  PostReturn<CompletionToken> Post(Address key, FunctorType functor, CompletionToken token);
 
   void AddBootstrapContact(rudp::Contact bootstrap_contact) {
     bootstrap_handler_.AddBootstrapContacts(std::vector<rudp::Contact>{bootstrap_contact});
@@ -210,14 +210,33 @@ RoutingNode<HandlerPolicy>::RoutingNode(asio::io_service& io_service,
 }
 
 template <typename HandlerPolicy>
-template <typename T, typename CompletionToken>
-GetReturn<CompletionToken> RoutingNode<HandlerPolicy>::Get(Address key, CompletionToken token) {
+template <typename DataType, typename CompletionToken>
+GetReturn<CompletionToken> RoutingNode<HandlerPolicy>::Get(Identity key, Address from,
+                                                           CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  io_service_.post([=] {
+    auto message(Serialise(MessageHeader(std::make_pair(Destination(from), boost::none),
+                                         OurSourceAddress(), ++message_id_),
+                           MessageToTag<GetData>::value(), DataType::Tag::kValue, key));
+    for (const auto& target : connection_manager_.GetTarget(from)) {
+      rudp_.Send(target.id, message, handler);
+    }
+  });
+  return result.get();
+}
+
+template <typename HandlerPolicy>
+template <typename DataType, typename CompletionToken>
+PutReturn<CompletionToken> RoutingNode<HandlerPolicy>::Put(Address key, DataType /*data*/,
+                                                           CompletionToken token) {
+  PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
     auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
                                          OurSourceAddress(), ++message_id_),
-                           MessageToTag<GetData>::value(), T::Tag::kValue, GetData(key)));
+                           MessageToTag<PutData>::value(), DataType::Tag::kValue));  //
+    // FIXME(dirvine) need serialiseable data types  :29/01/2015 // , data));
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target.id, message, handler);
     }
@@ -226,36 +245,16 @@ GetReturn<CompletionToken> RoutingNode<HandlerPolicy>::Get(Address key, Completi
 }
 
 template <typename HandlerPolicy>
-template <typename CompletionToken, typename PutType>
-PutReturn<CompletionToken> RoutingNode<HandlerPolicy>::Put(Address key,
-                                                           SerialisedMessage ser_message,
-                                                           CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
-  io_service_.post([=] {
-    auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
-                                         OurSourceAddress(), ++message_id_),
-                           MessageToTag<PutData>::value(),
-                           PutData(std::move(key), std::move(ser_message))));
-    for (const auto& target : connection_manager_.GetTarget(key)) {
-      rudp_.Send(target, message, handler);
-    }
-  });
-  return result.get();
-}
-
-template <typename HandlerPolicy>
-template <typename CompletionToken, typename PostType>
-PostReturn<CompletionToken> RoutingNode<HandlerPolicy>::Post(Address key,
-                                                             SerialisedMessage ser_message,
+template <typename FunctorType, typename CompletionToken>
+PostReturn<CompletionToken> RoutingNode<HandlerPolicy>::Post(Address key, FunctorType functor,
                                                              CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+  PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
     auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
                                          OurSourceAddress(), ++message_id_),
-                           MessageToTag<PostMessage>::value(),
-                           PostMessage(std::move(key), std::move(ser_message))));
+                           MessageToTag<PostMessage>::value(), FunctorType::Tag::kValue, functor));
+
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target, message, handler);
     }
@@ -296,6 +295,7 @@ void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
+  // Datatype data_tag;
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
@@ -365,8 +365,9 @@ void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
       HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::GetData:
-      HandleMessage(Parse<GetData>(binary_input_stream), std::move(header));
-      break;
+      if (header.FromGroup())
+        // HandlerPolicy::HandleGet(*header.FromGroup(), FromAuthority::nae_manager, data_tag,
+        break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
       break;
