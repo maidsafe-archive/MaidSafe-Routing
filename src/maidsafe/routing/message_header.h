@@ -100,29 +100,29 @@ class MessageHeader {
     archive(destination_, source_, message_id_, signature_);
   }
   // pair - Destination and reply to address (reply_to means this is a node not in routing tables)
-  DestinationAddress GetDestination() { return destination_; }
+  DestinationAddress GetDestination() const { return destination_; }
   // pair or pairs (messy, for on the wire efficiency)
   // Actual source, plus an optional pair that may contain a group address (claim to be from a
   // group)
   // OR a reply_to address that will get copied to the Destingation address reply to above (to allow
   // relaying of messages)
-  SourceAddress GetSource() { return source_; }
-  uint32_t GetMessageId() { return message_id_; }
-  boost::optional<asymm::Signature> GetSignature() { return signature_; }
-  NodeAddress FromNode() { return std::get<0>(source_); }
+  SourceAddress GetSource() const { return source_; }
+  uint32_t GetMessageId() const { return message_id_; }
+  boost::optional<asymm::Signature> GetSignature() const { return signature_; }
+  NodeAddress FromNode() const { return std::get<0>(source_); }
 
-  boost::optional<GroupAddress> FromGroup() { return std::get<1>(source_); }
+  boost::optional<GroupAddress> FromGroup() const { return std::get<1>(source_); }
 
-  boost::optional<ReplyToAddress> RelayedMessage() { return std::get<2>(source_); }
+  boost::optional<ReplyToAddress> RelayedMessage() const { return std::get<2>(source_); }
 
-  DestinationAddress ReturnDestinationAddress() {
+  DestinationAddress ReturnDestinationAddress() const {
     if (RelayedMessage())
       return DestinationAddress(
           std::make_pair(Destination(std::get<0>(source_)), *RelayedMessage()));
     else
       return DestinationAddress(std::make_pair(Destination(std::get<0>(source_)), boost::none));
   }
-  bool ValidateHeader() {
+  bool ValidateHeader() const {
     return (std::get<0>(source_)->IsValid() ||
             ((FromGroup() && FromGroup()->data.IsValid()) ||
              (RelayedMessage() && RelayedMessage()->data.IsValid())) ||

@@ -43,13 +43,19 @@ namespace routing {
 
 static const size_t GroupSize = 17;
 static const size_t QuorumSize = 13;
-
-enum class FromAuthority : int32_t {
-  my_group,
-  node_in_my_group,
-  node_not_in_my_group,
-  nae_manager  // network addressable element manager
+// aghh please c++14 come on MSVC
+enum class FromType : int32_t {
+  client_manager,
+  nae_manager,
+  node_manager,
+  managed_client,
+  remote_client,
+  managed_node
 };
+
+enum class OurAuthority : int32_t { client_manager, nae_manager, node_manager, managed_node };
+
+using Authority = std::pair<FromType, OurAuthority>;
 
 using Address = NodeId;
 using MessageId = uint32_t;

@@ -107,6 +107,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolic
   // filling in public key again.
   void HandleMessage(PostMessage post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
+  OurAuthority OurAuthority(const Address& element, const MessageHeader& header) const;
   virtual void MessageReceived(NodeId peer_id,
                                rudp::ReceivedMessage serialised_message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
@@ -383,6 +384,25 @@ void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
   }
 }
 
+template <typename HandlerPolicy>
+OurAuthority RoutingNode<HandlerPolicy>::OurAuthority(const Address& element,
+                                                      const MessageHeader& header) const {
+  if (!header.FromGroup() && connection_manager_.AddressInCloseGroupRange(header.FromNode()) &&
+      header.GetDestination().first.data != element)
+    return OurAuthority::client_manager;
+  else if (connection_manager_.AddressInCloseGroupRange(element) &&
+           header.GetDestination().first.data == element)
+    return OurAuthority::nae_manager;
+  else if (header.FromGroup() &&
+           connection_manager_.AddressInCloseGroupRange(header.GetDestination().first) &&
+           header.GetDestination().first.data != OurId())
+    return OurAuthority::node_manager;
+  else if (header.FromGroup() &&
+           connection_manager_.AddressInCloseGroupRange(*header.FromGroup()) &&
+           header.GetDestination().first.data == OurId())
+    return OurAuthority::managed_node;
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+}
 
 template <typename HandlerPolicy>
 void RoutingNode<HandlerPolicy>::ConnectionLost(NodeId peer) {
