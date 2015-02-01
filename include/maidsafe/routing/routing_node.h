@@ -64,12 +64,6 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   RoutingNode& operator=(RoutingNode&&) = delete;
   ~RoutingNode() = default;
 
-  // // normal bootstrap mechanism
-  // template <typename CompletionToken>
-  // BootstrapReturn<CompletionToken> Bootstrap(CompletionToken token);
-  // // used where we wish to pass a specific node to bootstrap from
-  // template <typename CompletionToken>
-  // BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
   // // will return with the data
   template <typename T, typename CompletionToken>
   GetReturn<CompletionToken> Get(Identity key, Address from, CompletionToken token);
@@ -416,7 +410,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
     }
   });
   if (added)
-    static_cast<Child*>(this)->HandleCloseGroupDifference(*added);
+    static_cast<Child*>(this)->HandleChurn();
 }
 
 template <typename Child>
@@ -436,7 +430,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
           return;
         }
         if (added)
-          static_cast<Child*>(this)->HandleCloseGroupDifference(*added);
+          static_cast<Child*>(this)->HandleChurn();
         if (connection_manager_.Size() >= QuorumSize) {
           rudp_.Remove(*bootstrap_node_, asio::use_future).get();
           bootstrap_node_ = boost::none;

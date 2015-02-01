@@ -46,8 +46,12 @@ namespace test {
 class VaultFacade;
 template <typename Child>
 class MaidManager {
+ public:
   template <typename T>
   void HandleGet(Address /* from */, Identity /* data_name */) {}
+  void HandleChurn() {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
 };
 template <typename Child>
 class VersionManager {};
@@ -61,6 +65,9 @@ class DataManager {
         LOG(kWarning) << "could not send from datamanager ";
     });
   }
+  void HandleChurn() {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
 };
 template <typename DataManagerType, typename VersionManagerType>
 class NaeManager {
@@ -73,6 +80,9 @@ class PmidManager {
  public:
   template <typename T>
   void HandleGet(Address /* from */, Identity /* data_name */) {}
+  void HandleChurn() {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
 };
 template <typename Child>
 class PmidNode {
@@ -143,7 +153,11 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   bool HandlePut(Address, SerialisedMessage) { return true; }
   // if the implementation allows any put of data in unauthenticated mode
   bool HandleUnauthenticatedPut(Address, SerialisedMessage) { return true; }
-  void HandleCloseGroupDifference(CloseGroupDifference) {}
+  void HandleChurn() {
+    MaidManager::HandleChurn();
+    DataManager::HandleChurn();
+    PmidManager::HandleChurn();
+  }
 
  private:
   // RoutingNode routing_node_;
