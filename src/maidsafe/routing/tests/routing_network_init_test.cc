@@ -56,7 +56,10 @@ class DataManager {
  public:
   template <typename T>
   void HandleGet(Address from, Identity data_name) {
-    static_cast<Child*>(this)->template Get<T>(data_name, from);
+    static_cast<Child*>(this)->template Get<T>(data_name, from, [](asio::error_code error) {
+      if (error)
+        LOG(kWarning) << "could not send from datamanager ";
+    });
   }
 };
 template <typename DataManagerType, typename VersionManagerType>
@@ -103,7 +106,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // get/put
   // std::tuple<ImmutableData, MutableData> DataTuple;
   template <typename DataType>
-  void Get(Identity /* name */, Address /* from */) {}
+  // void Get(Identity /* name */, Address /* from */) {}
   void HandleGet(Address from, Authority authority, DataType data_type, Identity data_name) {
     switch (authority) {
       case Authority::nae_manager:
