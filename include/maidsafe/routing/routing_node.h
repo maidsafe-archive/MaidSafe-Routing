@@ -410,7 +410,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
     }
   });
   if (added)
-    static_cast<Child*>(this)->HandleChurn();
+    static_cast<Child*>(this)->HandleChurn(*added);
 }
 
 template <typename Child>
@@ -430,7 +430,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
           return;
         }
         if (added)
-          static_cast<Child*>(this)->HandleChurn();
+          static_cast<Child*>(this)->HandleChurn(*added);
         if (connection_manager_.Size() >= QuorumSize) {
           rudp_.Remove(*bootstrap_node_, asio::use_future).get();
           bootstrap_node_ = boost::none;

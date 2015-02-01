@@ -49,7 +49,7 @@ class MaidManager {
  public:
   template <typename T>
   void HandleGet(Address /* from */, Identity /* data_name */) {}
-  void HandleChurn() {
+  void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
 };
@@ -65,7 +65,7 @@ class DataManager {
         LOG(kWarning) << "could not send from datamanager ";
     });
   }
-  void HandleChurn() {
+  void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
 };
@@ -80,7 +80,7 @@ class PmidManager {
  public:
   template <typename T>
   void HandleGet(Address /* from */, Identity /* data_name */) {}
-  void HandleChurn() {
+  void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
 };
@@ -153,10 +153,10 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   bool HandlePut(Address, SerialisedMessage) { return true; }
   // if the implementation allows any put of data in unauthenticated mode
   bool HandleUnauthenticatedPut(Address, SerialisedMessage) { return true; }
-  void HandleChurn() {
-    MaidManager::HandleChurn();
-    DataManager::HandleChurn();
-    PmidManager::HandleChurn();
+  void HandleChurn(CloseGroupDifference diff) {
+    MaidManager::HandleChurn(diff);
+    DataManager::HandleChurn(diff);
+    PmidManager::HandleChurn(diff);
   }
 
  private:
