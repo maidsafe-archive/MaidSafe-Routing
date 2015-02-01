@@ -48,7 +48,7 @@ template <typename Child>
 class MaidManager {
  public:
   template <typename T>
-  void HandleGet(Address /* from */, Identity /* data_name */) {}
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
   void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
@@ -59,11 +59,14 @@ template <typename Child>
 class DataManager {
  public:
   template <typename T>
-  void HandleGet(Address from, Identity data_name) {
-    static_cast<Child*>(this)->template Get<T>(data_name, from, [](asio::error_code error) {
-      if (error)
-        LOG(kWarning) << "could not send from datamanager ";
-    });
+  void HandleGet(SourceAddress from, Identity data_name) {
+    // FIXME(dirvine) We need to pass along the full source address to retain the ReplyTo field
+    // :01/02/2015
+    static_cast<Child*>(this)
+        ->template Get<T>(data_name, std::get<0>(from), [](asio::error_code error) {
+          if (error)
+            LOG(kWarning) << "could not send from datamanager ";
+        });
   }
   void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
@@ -73,13 +76,13 @@ template <typename DataManagerType, typename VersionManagerType>
 class NaeManager {
  public:
   template <typename T>
-  void HandleGet(Address from, Identity data_name);
+  void HandleGet(SourceAddress from, Identity data_name);
 };  // becomes a dispatcher as its now multiple personas
 template <typename Child>
 class PmidManager {
  public:
   template <typename T>
-  void HandleGet(Address /* from */, Identity /* data_name */) {}
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
   void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
@@ -88,7 +91,7 @@ template <typename Child>
 class PmidNode {
  public:
   template <typename T>
-  void HandleGet(Address /* from */, Identity /* data_name */) {}
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
 };
 class ChurnHandler {};
 class GroupClient {};
@@ -117,7 +120,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // std::tuple<ImmutableData, MutableData> DataTuple;
   template <typename DataType>
   // void Get(Identity /* name */, Address /* from */) {}
-  void HandleGet(Address from, Authority authority, DataType data_type, Identity data_name) {
+  void HandleGet(SourceAddress from, Authority authority, DataType data_type, Identity data_name) {
     switch (authority) {
       case Authority::nae_manager:
         if (data_type == DataType::ImmutableData)

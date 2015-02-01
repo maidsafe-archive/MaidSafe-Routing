@@ -195,14 +195,15 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address from,
 
 template <typename Child>
 template <typename DataType, typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType /*data*/,
+PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType data,
                                                    CompletionToken token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
     auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
                                          OurSourceAddress(), ++message_id_),
-                           MessageToTag<PutData>::value(), DataType::Tag::kValue));  //
+                           MessageToTag<PutData>::value(), DataType::Tag::kValue,
+                           data.Serialise()));  //
     // FIXME(dirvine) need serialiseable data types  :29/01/2015 // , data));
     for (const auto& target : connection_manager_.GetTarget(key)) {
       rudp_.Send(target.id, message, handler);
@@ -331,7 +332,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
     case MessageTypeTag::GetData:
       Parse(binary_input_stream, data_tag, key);
       static_cast<Child*>(this)->HandleGet(
-          header.FromAddress(), OurAuthority(Address(key.string()), header), data_tag, key);
+          header.GetSource(), OurAuthority(Address(key.string()), header), data_tag, key);
       break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
