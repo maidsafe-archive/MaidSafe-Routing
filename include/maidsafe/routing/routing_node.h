@@ -183,9 +183,11 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address from,
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
-    auto message(Serialise(MessageHeader(std::make_pair(Destination(from), boost::none),
-                                         OurSourceAddress(), ++message_id_),
-                           MessageToTag<GetData>::value(), DataType::Tag::kValue, key));
+    MessageHeader our_header(std::make_pair(Destination(from), boost::none), OurSourceAddress(),
+                             ++message_id_);
+    auto message(Serialise(our_header, MessageToTag<GetData>::value(),
+                           OurAuthority(Address(key.string()), our_header), DataType::Tag::kValue,
+                           key));
     for (const auto& target : connection_manager_.GetTarget(from)) {
       rudp_.Send(target.id, message, handler);
     }
@@ -259,6 +261,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
+  Authority from_authority;
   typename Child::DataType data_tag;
   Identity key;
   try {
@@ -330,9 +333,10 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
       HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::GetData:
-      Parse(binary_input_stream, data_tag, key);
-      static_cast<Child*>(this)->HandleGet(
-          header.GetSource(), OurAuthority(Address(key.string()), header), data_tag, key);
+      Parse(binary_input_stream, from_authority, data_tag, key);
+      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
+                                           OurAuthority(Address(key.string()), header), data_tag,
+                                           key);
       break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));

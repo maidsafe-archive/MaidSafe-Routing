@@ -119,10 +119,12 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // get/put
   // std::tuple<ImmutableData, MutableData> DataTuple;
   template <typename DataType>
-  // void Get(Identity /* name */, Address /* from */) {}
-  void HandleGet(SourceAddress from, Authority authority, DataType data_type, Identity data_name) {
+  void HandleGet(SourceAddress from, Authority from_authority, Authority authority,
+                 DataType data_type, Identity data_name) {
     switch (authority) {
       case Authority::nae_manager:
+        if (from_authority != Authority::client_manager)
+          break;
         if (data_type == DataType::ImmutableData)
           DataManager::template HandleGet<ImmutableData>(from, data_name);
         else if (data_type == DataType::MutableData)
