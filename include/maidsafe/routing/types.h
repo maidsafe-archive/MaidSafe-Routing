@@ -41,8 +41,8 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t GroupSize = 17;
-static const size_t QuorumSize = 13;
+static const size_t GroupSize = 23;
+static const size_t QuorumSize = 19;
 // aghh please c++14 come on MSVC
 enum class FromType : int32_t {
   client_manager,
