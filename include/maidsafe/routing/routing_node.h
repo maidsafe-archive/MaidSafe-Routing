@@ -49,10 +49,9 @@ namespace maidsafe {
 
 namespace routing {
 
-template <typename HandlerPolicy>
-class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolicy>>,
-                    public rudp::ManagedConnections::Listener,
-                    public HandlerPolicy {
+template <typename Child>
+class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
+                    public rudp::ManagedConnections::Listener {
  private:
   using SendHandler = std::function<void(asio::error_code)>;
 
@@ -63,7 +62,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolic
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
   RoutingNode& operator=(RoutingNode&&) = delete;
-  ~RoutingNode();
+  ~RoutingNode() = default;
 
   // // normal bootstrap mechanism
   // template <typename CompletionToken>
@@ -107,7 +106,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolic
   // filling in public key again.
   void HandleMessage(PostMessage post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
-  OurAuthority OurAuthority(const Address& element, const MessageHeader& header) const;
+  Authority OurAuthority(const Address& element, const MessageHeader& header) const;
   virtual void MessageReceived(NodeId peer_id,
                                rudp::ReceivedMessage serialised_message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
@@ -143,36 +142,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<HandlerPolic
   std::vector<Address> connected_nodes_;
 };
 
-// template <typename CompletionToken>
-// BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(CompletionToken token) {
-//   auto handler(std::forward<decltype(token)>(token));
-//   auto result(handler);
-//   io_service_.post([=] {
-//     rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(),
-//                     our_fob_.public_key(), handler);
-//   });
-//   return result.get();
-// }
-//
-// template <typename CompletionToken>
-// BootstrapReturn<CompletionToken> RoutingNode::Bootstrap(Endpoint local_endpoint,
-//                                                         CompletionToken&& token) {
-//   using Handler = BootstrapHandlerHandler<CompletionToken>;
-//   Handler handler(std::forward<CompletionToken>(token));
-//   asio::async_result<Handler> result(handler);
-//
-//   rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), OurId(),
-//                   our_fob_.public_key(), [=](asio::error_code error, rudp::Contact contact) {
-//                                            OnBootstrap(error, contact, handler);
-//                                          },
-//                   local_endpoint);
-//
-//   return result.get();
-// }
-template <typename HandlerPolicy>
-RoutingNode<HandlerPolicy>::RoutingNode(asio::io_service& io_service,
-                                        boost::filesystem::path db_location,
-                                        const passport::Pmid& pmid)
+template <typename Child>
+RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
+                                const passport::Pmid& pmid)
     : io_service_(io_service),
       our_fob_(pmid),
       bootstrap_node_(boost::none),
@@ -210,10 +182,10 @@ RoutingNode<HandlerPolicy>::RoutingNode(asio::io_service& io_service,
   }
 }
 
-template <typename HandlerPolicy>
+template <typename Child>
 template <typename DataType, typename CompletionToken>
-GetReturn<CompletionToken> RoutingNode<HandlerPolicy>::Get(Identity key, Address from,
-                                                           CompletionToken token) {
+GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address from,
+                                                   CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
@@ -227,10 +199,10 @@ GetReturn<CompletionToken> RoutingNode<HandlerPolicy>::Get(Identity key, Address
   return result.get();
 }
 
-template <typename HandlerPolicy>
+template <typename Child>
 template <typename DataType, typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode<HandlerPolicy>::Put(Address key, DataType /*data*/,
-                                                           CompletionToken token) {
+PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType /*data*/,
+                                                   CompletionToken token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
@@ -245,10 +217,10 @@ PutReturn<CompletionToken> RoutingNode<HandlerPolicy>::Put(Address key, DataType
   return result.get();
 }
 
-template <typename HandlerPolicy>
+template <typename Child>
 template <typename FunctorType, typename CompletionToken>
-PostReturn<CompletionToken> RoutingNode<HandlerPolicy>::Post(Address key, FunctorType functor,
-                                                             CompletionToken token) {
+PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType functor,
+                                                     CompletionToken token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
@@ -263,12 +235,8 @@ PostReturn<CompletionToken> RoutingNode<HandlerPolicy>::Post(Address key, Functo
   return result.get();
 }
 
-
-template <typename HandlerPolicy>
-RoutingNode<HandlerPolicy>::~RoutingNode() {}
-
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::ConnectToCloseGroup() {
+template <typename Child>
+void RoutingNode<Child>::ConnectToCloseGroup() {
   FindGroup message(NodeAddress(OurId()), OurId());
   MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),
                        SourceAddress{OurSourceAddress()}, ++message_id_);
@@ -290,13 +258,14 @@ void RoutingNode<HandlerPolicy>::ConnectToCloseGroup() {
       }
     });
 }
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
-                                                 rudp::ReceivedMessage serialised_message) {
+template <typename Child>
+void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
+                                         rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
-  // Datatype data_tag;
+  typename Child::DataType data_tag;
+  Identity key;
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
@@ -366,9 +335,10 @@ void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
       HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::GetData:
-      if (header.FromGroup())
-        // HandlerPolicy::HandleGet(*header.FromGroup(), FromAuthority::nae_manager, data_tag,
-        break;
+      Parse(binary_input_stream, data_tag, key);
+      static_cast<Child*>(this)->HandleGet(
+          header.FromAddress(), OurAuthority(Address(key.string()), header), data_tag, key);
+      break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
       break;
@@ -384,34 +354,34 @@ void RoutingNode<HandlerPolicy>::MessageReceived(NodeId /* peer_id */,
   }
 }
 
-template <typename HandlerPolicy>
-OurAuthority RoutingNode<HandlerPolicy>::OurAuthority(const Address& element,
-                                                      const MessageHeader& header) const {
+template <typename Child>
+Authority RoutingNode<Child>::OurAuthority(const Address& element,
+                                           const MessageHeader& header) const {
   if (!header.FromGroup() && connection_manager_.AddressInCloseGroupRange(header.FromNode()) &&
       header.GetDestination().first.data != element)
-    return OurAuthority::client_manager;
+    return Authority::client_manager;
   else if (connection_manager_.AddressInCloseGroupRange(element) &&
            header.GetDestination().first.data == element)
-    return OurAuthority::nae_manager;
+    return Authority::nae_manager;
   else if (header.FromGroup() &&
            connection_manager_.AddressInCloseGroupRange(header.GetDestination().first) &&
            header.GetDestination().first.data != OurId())
-    return OurAuthority::node_manager;
+    return Authority::node_manager;
   else if (header.FromGroup() &&
            connection_manager_.AddressInCloseGroupRange(*header.FromGroup()) &&
            header.GetDestination().first.data == OurId())
-    return OurAuthority::managed_node;
+    return Authority::managed_node;
   BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 }
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::ConnectionLost(NodeId peer) {
+template <typename Child>
+void RoutingNode<Child>::ConnectionLost(NodeId peer) {
   connection_manager_.LostNetworkConnection(peer);
 }
 
 // reply with our details;
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(Connect connect, MessageHeader orig_header) {
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_header) {
   if (!connection_manager_.SuggestNodeToAdd(connect.get_requester_id()))
     return;
   auto targets(connection_manager_.GetTarget(connect.get_requester_id()));
@@ -446,11 +416,11 @@ void RoutingNode<HandlerPolicy>::HandleMessage(Connect connect, MessageHeader or
     }
   });
   if (added)
-    HandlerPolicy::HandleCloseGroupDifference(*added);
+    static_cast<Child*>(this)->HandleCloseGroupDifference(*added);
 }
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(ConnectResponse connect_response) {
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   if (!connection_manager_.SuggestNodeToAdd(connect_response.get_requester_id()))
     return;
   auto added = connection_manager_.AddNode(
@@ -466,15 +436,15 @@ void RoutingNode<HandlerPolicy>::HandleMessage(ConnectResponse connect_response)
           return;
         }
         if (added)
-          HandlerPolicy::HandleCloseGroupDifference(*added);
+          static_cast<Child*>(this)->HandleCloseGroupDifference(*added);
         if (connection_manager_.Size() >= QuorumSize) {
           rudp_.Remove(*bootstrap_node_, asio::use_future).get();
           bootstrap_node_ = boost::none;
         }
       });
 }
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
   auto node_infos = std::move(connection_manager_.OurCloseGroup());
   // add ourselves
   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
@@ -489,9 +459,9 @@ void RoutingNode<HandlerPolicy>::HandleMessage(FindGroup find_group, MessageHead
   }
 }
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(FindGroupResponse find_group_reponse,
-                                               MessageHeader /* orig_header */) {
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
+                                       MessageHeader /* orig_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
@@ -511,39 +481,37 @@ void RoutingNode<HandlerPolicy>::HandleMessage(FindGroupResponse find_group_repo
   }
 }
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(GetData get_data, MessageHeader /* orig_header */) {
-  auto result = HandlerPolicy::HandleGet(get_data.get_key());
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader /* orig_header */) {
+  auto result = Child::HandleGet(get_data.get_key());
   if (result) {
   }
 }
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(GetDataResponse /* get_data_response */,
-                                               MessageHeader /* orig_header */) {}
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(GetDataResponse /* get_data_response */,
+                                       MessageHeader /* orig_header */) {}
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(PutData /*put_data*/,
-                                               MessageHeader /* orig_header */) {}
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(PutData /*put_data*/, MessageHeader /* orig_header */) {}
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(PutDataResponse /*put_data_response*/,
-                                               MessageHeader /* orig_header */) {}
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(PutDataResponse /*put_data_response*/,
+                                       MessageHeader /* orig_header */) {}
 
-template <typename HandlerPolicy>
-void RoutingNode<HandlerPolicy>::HandleMessage(PostMessage /* post */,
-                                               MessageHeader /* orig_header */) {}
+template <typename Child>
+void RoutingNode<Child>::HandleMessage(PostMessage /* post */, MessageHeader /* orig_header */) {}
 
-template <typename HandlerPolicy>
-SourceAddress RoutingNode<HandlerPolicy>::OurSourceAddress() const {
+template <typename Child>
+SourceAddress RoutingNode<Child>::OurSourceAddress() const {
   if (bootstrap_node_)
     return std::make_tuple(NodeAddress(*bootstrap_node_), boost::none, ReplyToAddress(OurId()));
   else
     return std::make_tuple(NodeAddress(OurId()), boost::none, boost::none);
 }
 
-template <typename HandlerPolicy>
-SourceAddress RoutingNode<HandlerPolicy>::OurSourceAddress(GroupAddress group) const {
+template <typename Child>
+SourceAddress RoutingNode<Child>::OurSourceAddress(GroupAddress group) const {
   return std::make_tuple(NodeAddress(OurId()), group, boost::none);
 }
 

@@ -110,10 +110,16 @@ class MessageHeader {
   uint32_t GetMessageId() const { return message_id_; }
   boost::optional<asymm::Signature> GetSignature() const { return signature_; }
   NodeAddress FromNode() const { return std::get<0>(source_); }
-
   boost::optional<GroupAddress> FromGroup() const { return std::get<1>(source_); }
 
   boost::optional<ReplyToAddress> RelayedMessage() const { return std::get<2>(source_); }
+
+  Address FromAddress() const {
+    if (FromGroup())
+      return FromGroup()->data;
+    else
+      return FromNode().data;
+  }
 
   DestinationAddress ReturnDestinationAddress() const {
     if (RelayedMessage())

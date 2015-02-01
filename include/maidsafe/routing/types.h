@@ -53,9 +53,8 @@ enum class FromType : int32_t {
   managed_node
 };
 
-enum class OurAuthority : int32_t { client_manager, nae_manager, node_manager, managed_node };
+enum class Authority : int32_t { client_manager, nae_manager, node_manager, managed_node };
 
-using Authority = std::pair<FromType, OurAuthority>;
 
 using Address = NodeId;
 using MessageId = uint32_t;

@@ -43,23 +43,55 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-class MaidManager {};
+class VaultFacade;
+template <typename Child>
+class MaidManager {
+  template <typename T>
+  void HandleGet(Address /* from */, Identity /* data_name */) {}
+};
+template <typename Child>
 class VersionManager {};
-class DataManager {};
+template <typename Child>
+class DataManager {
+ public:
+  template <typename T>
+  void HandleGet(Address from, Identity data_name) {
+    static_cast<Child*>(this)->template Get<T>(data_name, from);
+  }
+};
 template <typename DataManagerType, typename VersionManagerType>
-class NaeManager {};  // becomes a dispatcher as its now multiple personas
-class PmidManager {};
-class PmidNode {};
+class NaeManager {
+ public:
+  template <typename T>
+  void HandleGet(Address from, Identity data_name);
+};  // becomes a dispatcher as its now multiple personas
+template <typename Child>
+class PmidManager {
+ public:
+  template <typename T>
+  void HandleGet(Address /* from */, Identity /* data_name */) {}
+};
+template <typename Child>
+class PmidNode {
+ public:
+  template <typename T>
+  void HandleGet(Address /* from */, Identity /* data_name */) {}
+};
 class ChurnHandler {};
 class GroupClient {};
 class RemoteClient {};
-class ManagedNode {};
+
 namespace fs = boost::filesystem;
-template <typename ClientManager, typename NaeManager, typename NodeManager>
-class VaultFacade : public ClientManager, public NaeManager, public NodeManager {
+// template <typename ClientManager, typename NaeManager, typename NodeManager, typename
+// ManagedNode>
+class VaultFacade : public test::MaidManager<VaultFacade>,
+                    public test::DataManager<VaultFacade>,
+                    public test::PmidManager<VaultFacade>,
+                    public test::PmidNode<VaultFacade>,
+                    public RoutingNode<VaultFacade> {
  public:
   VaultFacade() = default;
-  ~VaultFacade() {}
+  ~VaultFacade() = default;
   // what functors for Post and Request/Response
   enum class FunctorType { FunctionOne, FunctionTwo };
   // what data types are we to handle
@@ -67,22 +99,36 @@ class VaultFacade : public ClientManager, public NaeManager, public NodeManager 
   // for data handling this is the types from FromAuthority enumeration // other types will use
   // different
   // path
-  std::tuple<ClientManager, NaeManager, NodeManager, GroupClient, RemoteClient, ManagedNode>
-      from_personas;                                                // i.e. handle
-  std::tuple<ClientManager, NaeManager, NodeManager> our_personas;  // i.e. handle
-                                                                    // get/put
+  // std::tuple<ClientManager, NaeManager, NodeManager> our_personas;  // i.e. handle
+  // get/put
   // std::tuple<ImmutableData, MutableData> DataTuple;
+  template <typename DataType>
+  void Get(Identity /* name */, Address /* from */) {}
+  void HandleGet(Address from, Authority authority, DataType data_type, Identity data_name) {
+    switch (authority) {
+      case Authority::nae_manager:
+        if (data_type == DataType::ImmutableData)
+          DataManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          DataManager::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      case Authority::node_manager:
+        if (data_type == DataType::ImmutableData)
+          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      case Authority::managed_node:
+        if (data_type == DataType::ImmutableData)
+          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      default:
+        break;
+    }
+  }
 
-  //   HandleGet() {
-  //   swich (tag) {
-  //     case DataTag::ImmutableData;
-  //    switch (FromAuthority) {
-  //    case nae_manager;
-  //    // persona for us == PmiManger
-  //    ImmutableData PmidManagr::Get<ImmutableData>(Identity);
-  //    }
-  //   }
-  // }
   // default no post allowed unless implemented in upper layers
   bool HandlePost(const SerialisedMessage&) { return false; }
   // not in local cache do upper layers have it (called when we are in target group)
@@ -97,6 +143,7 @@ class VaultFacade : public ClientManager, public NaeManager, public NodeManager 
   void HandleCloseGroupDifference(CloseGroupDifference) {}
 
  private:
+  // RoutingNode routing_node_;
 };
 
 TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
@@ -112,8 +159,7 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
 
-  RoutingNode<VaultFacade<MaidManager, DataManager, PmidManager>> n(ios, *test_dir / "node.sqlite3",
-                                                                    pmid);
+  RoutingNode<VaultFacade> n(ios, *test_dir / "node.sqlite3", pmid);
   auto value = NonEmptyString(RandomAlphaNumericString(65));
 
   Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
