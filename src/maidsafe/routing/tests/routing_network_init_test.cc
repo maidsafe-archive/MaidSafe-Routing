@@ -219,8 +219,8 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
 
 
   RoutingNode<VaultFacade> n(ios, *test_dir / "node.sqlite3", pmid);
+  
   auto value = NonEmptyString(RandomAlphaNumericString(65));
-
   Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
   MutableData a{MutableData::Name(key), value};
   ImmutableData b{value};

@@ -66,7 +66,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 
   // // will return with the data
   template <typename T, typename CompletionToken>
-  GetReturn<CompletionToken> Get(Identity key, Address from, CompletionToken token);
+  GetReturn<CompletionToken> Get(Identity key, Address to, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename DataType, typename CompletionToken>
   PutReturn<CompletionToken> Put(Address to, DataType data, CompletionToken token);
@@ -178,17 +178,17 @@ RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem:
 
 template <typename Child>
 template <typename DataType, typename CompletionToken>
-GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address from,
+GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                                                    CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.post([=] {
-    MessageHeader our_header(std::make_pair(Destination(from), boost::none), OurSourceAddress(),
+    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
                              ++message_id_);
     auto message(Serialise(our_header, MessageToTag<GetData>::value(),
                            OurAuthority(Address(key.string()), our_header), DataType::Tag::kValue,
                            key));
-    for (const auto& target : connection_manager_.GetTarget(from)) {
+    for (const auto& target : connection_manager_.GetTarget(to)) {
       rudp_.Send(target.id, message, handler);
     }
   });
@@ -370,6 +370,7 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
            connection_manager_.AddressInCloseGroupRange(*header.FromGroup()) &&
            header.GetDestination().first.data == OurId())
     return Authority::managed_node;
+  LOG(kWarning) << "Unknown Authority type";
   BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 }
 
