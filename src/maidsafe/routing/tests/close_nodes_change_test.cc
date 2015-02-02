@@ -386,31 +386,25 @@ TEST_F(CloseNodesChangeTest, BEH_FullSizeRoutingTable) {
 }
 
 template <typename ConnectionType>
-class ConnectionChangesTest : public testing::Test {
- public:
-  ConnectionChangesTest() {
-    std::vector<NodeId> old_ids, new_ids;
+class ConnectionChangesTest : public testing::Test {};
 
-    for (auto index(Parameters::closest_nodes_size); index != 0; --index)
-      old_ids.push_back(NodeId(RandomString(NodeId::kSize)));
-
-    new_ids = old_ids;
-    old_ids.erase(old_ids.begin());
-    auto close_nodes_change(ConnectionType(NodeId(RandomString(NodeId::kSize)), old_ids, new_ids));
-    auto copy(close_nodes_change);
-    auto copy2(std::move(copy));
-    EXPECT_EQ(close_nodes_change, copy2);
-    EXPECT_NE(copy, copy2);
-  }
-};
-
-TYPED_TEST_CASE_P(ConnectionChangesTest);
-
-TYPED_TEST_P(ConnectionChangesTest, BEH_BEH_Constructors) {}
-
-REGISTER_TYPED_TEST_CASE_P(ConnectionChangesTest, BEH_BEH_Constructors);
 using ConnectionTypes = testing::Types<ConnectionsChange, ClientNodesChange, CloseNodesChange>;
-INSTANTIATE_TYPED_TEST_CASE_P(AccountTransfer, ConnectionChangesTest, ConnectionTypes);
+TYPED_TEST_CASE(ConnectionChangesTest, ConnectionTypes);
+
+TYPED_TEST(ConnectionChangesTest, BEH_Constructors) {
+  std::vector<NodeId> old_ids, new_ids;
+
+  for (auto index(Parameters::closest_nodes_size); index != 0; --index)
+    old_ids.push_back(NodeId(RandomString(NodeId::kSize)));
+
+  new_ids = old_ids;
+  old_ids.erase(old_ids.begin());
+  auto close_nodes_change(TypeParam(NodeId(RandomString(NodeId::kSize)), old_ids, new_ids));
+  auto copy(close_nodes_change);
+  auto copy2(std::move(copy));
+  EXPECT_EQ(close_nodes_change, copy2);
+  EXPECT_NE(copy, copy2);
+}
 
 }  // namespace test
 
