@@ -49,7 +49,7 @@ struct CheckHoldersResult {
 };
 
 class ConnectionsChange {
- protected:
+ public:
   ConnectionsChange() = default;
   ConnectionsChange(const ConnectionsChange& other) = default;
   ConnectionsChange(ConnectionsChange&& other);
@@ -68,6 +68,7 @@ class ConnectionsChange {
   std::string Print() const;
 
   friend void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
+  friend bool operator==(const ConnectionsChange& lhs, const ConnectionsChange& rhs);
 
  protected:
   NodeId node_id_;
@@ -87,6 +88,7 @@ class ClientNodesChange : public ConnectionsChange {
   std::string ReportConnection() const;
 
   friend void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+  friend bool operator==(const ClientNodesChange& lhs, const ClientNodesChange& rhs);
 };
 
 class CloseNodesChange : public ConnectionsChange {
@@ -104,6 +106,8 @@ class CloseNodesChange : public ConnectionsChange {
   std::string ReportConnection() const;
 
   friend void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+  friend bool operator==(const CloseNodesChange& lhs, const CloseNodesChange& rhs);
+
   friend class RoutingTable;
   friend class test::CloseNodesChangeTest_BEH_CheckHolders_Test;
   friend class test::SingleCloseNodesChangeTest_BEH_ChoosePmidNode_Test;
@@ -115,6 +119,14 @@ class CloseNodesChange : public ConnectionsChange {
 void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT;
 void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT;
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT;
+
+bool operator==(const ConnectionsChange& lhs, const ConnectionsChange& rhs);
+bool operator==(const ClientNodesChange& lhs, const ClientNodesChange& rhs);
+bool operator==(const CloseNodesChange& lhs, const CloseNodesChange& rhs);
+bool operator!=(const ConnectionsChange& lhs, const ConnectionsChange& rhs);
+bool operator!=(const ClientNodesChange& lhs, const ClientNodesChange& rhs);
+bool operator!=(const CloseNodesChange& lhs, const CloseNodesChange& rhs);
+
 
 }  // namespace routing
 

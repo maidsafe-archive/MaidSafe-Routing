@@ -122,6 +122,22 @@ void swap(ConnectionsChange& lhs, ConnectionsChange& rhs) MAIDSAFE_NOEXCEPT {
   swap(lhs.new_close_nodes_, rhs.new_close_nodes_);
 }
 
+bool operator==(const ConnectionsChange& lhs, const ConnectionsChange& rhs) {
+  return lhs.node_id_ == rhs.node_id_ &&
+         lhs.new_close_nodes_.size() == rhs.new_close_nodes_.size() &&
+         lhs.old_close_nodes_.size() == rhs.old_close_nodes_.size() &&
+         lhs.new_node_ == rhs.new_node_ &&
+         lhs.lost_node_ == rhs.lost_node_ &&
+         std::equal(lhs.old_close_nodes_.begin(), lhs.old_close_nodes_.end(),
+                    rhs.old_close_nodes_.begin()) &&
+         std::equal(lhs.new_close_nodes_.begin(), lhs.new_close_nodes_.end(),
+                    rhs.new_close_nodes_.begin());
+}
+
+bool operator!=(const ConnectionsChange& lhs, const ConnectionsChange& rhs) {
+  return !(lhs == rhs);
+}
+
 // ============================== client node change =========================================
 
 ClientNodesChange::ClientNodesChange(ClientNodesChange&& other)
@@ -166,6 +182,14 @@ std::string ClientNodesChange::ReportConnection() const {
 void swap(ClientNodesChange& lhs, ClientNodesChange& rhs) MAIDSAFE_NOEXCEPT {
   using std::swap;
   swap(static_cast<ConnectionsChange&>(lhs), static_cast<ConnectionsChange&>(rhs));
+}
+
+bool operator==(const ClientNodesChange& lhs, const ClientNodesChange& rhs) {
+  return (static_cast<ConnectionsChange>(lhs) == static_cast<ConnectionsChange>(rhs));
+}
+
+bool operator!=(const ClientNodesChange& lhs, const ClientNodesChange& rhs) {
+  return !(lhs == rhs);
 }
 
 // ========================== non-client client close nodes change =================================
@@ -319,6 +343,15 @@ std::string CloseNodesChange::ReportConnection() const {
     }
   }
   return stringstream.str();
+}
+
+bool operator==(const CloseNodesChange& lhs, const CloseNodesChange& rhs) {
+  return lhs.radius_ == rhs.radius_ &&
+         (static_cast<ConnectionsChange>(lhs) == static_cast<ConnectionsChange>(rhs));
+}
+
+bool operator!=(const CloseNodesChange& lhs, const CloseNodesChange& rhs) {
+  return !(lhs == rhs);
 }
 
 void swap(CloseNodesChange& lhs, CloseNodesChange& rhs) MAIDSAFE_NOEXCEPT {
