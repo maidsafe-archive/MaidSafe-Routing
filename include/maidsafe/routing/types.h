@@ -41,12 +41,22 @@ namespace maidsafe {
 
 namespace routing {
 
-static const size_t GroupSize = 17;
-static const size_t QuorumSize = 13;
+static const size_t GroupSize = 23;
+static const size_t QuorumSize = 19;
+// aghh please c++14 come on MSVC
+enum class FromType : int32_t {
+  client_manager,
+  nae_manager,
+  node_manager,
+  managed_client,
+  remote_client,
+  managed_node
+};
+
+enum class Authority : int32_t { client_manager, nae_manager, node_manager, managed_node };
+
 
 using Address = NodeId;
-using DataKey = TaggedValue<Identity, struct DataKeyTag>;
-using DataValue = TaggedValue<std::vector<byte>, struct DataValueTag>;
 using MessageId = uint32_t;
 using Destination = TaggedValue<Address, struct DestinationTag>;
 using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;

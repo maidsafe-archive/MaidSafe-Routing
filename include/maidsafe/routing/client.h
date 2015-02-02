@@ -62,7 +62,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken token);
   // will return with the data
   template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(DataKey data_key, CompletionToken token);
+  GetReturn<CompletionToken> Get(Address data_key, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
@@ -123,7 +123,7 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, Comp
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> Client::Get(DataKey data_key, CompletionToken token) {
+GetReturn<CompletionToken> Client::Get(Address data_key, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] { DoGet(data_key, handler); });

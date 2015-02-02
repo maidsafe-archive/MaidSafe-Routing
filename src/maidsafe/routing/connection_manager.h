@@ -82,7 +82,7 @@ class ConnectionManager {
   size_t CloseGroupBucketDistance() const {
     return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
-  bool AddressInCloseGroupRange(const Address& address) {
+  bool AddressInCloseGroupRange(const Address& address) const {
     if (routing_table_.Size() < GroupSize) {
       return true;
     }

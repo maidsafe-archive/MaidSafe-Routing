@@ -28,6 +28,7 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/data_types/immutable_data.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -42,10 +43,169 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+enum class DataType { ImmutableData, MutableData, End };
+class VaultFacade;
+template <typename Child>
+class MaidManager {
+ public:
+  template <typename T>
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
+  template <typename T>
+  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+  void HandleChurn(CloseGroupDifference) {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
+};
+template <typename Child>
+class VersionManager {};
+template <typename Child>
+class DataManager {
+ public:
+  template <typename T>
+  void HandleGet(SourceAddress from, Identity data_name) {
+    // FIXME(dirvine) We need to pass along the full source address to retain the ReplyTo field
+    // :01/02/2015
+    static_cast<Child*>(this)
+        ->template Get<T>(data_name, std::get<0>(from), [](asio::error_code error) {
+          if (error)
+            LOG(kWarning) << "could not send from datamanager ";
+        });
+  }
+  template <typename T>
+  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+  void HandleChurn(CloseGroupDifference) {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
+};
+template <typename DataManagerType, typename VersionManagerType>
+class NaeManager {
+ public:
+  template <typename T>
+  void HandleGet(SourceAddress from, Identity data_name);
+  template <typename T>
+  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+};  // becomes a dispatcher as its now multiple personas
+template <typename Child>
+class PmidManager {
+ public:
+  template <typename T>
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
+  template <typename T>
+  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+  void HandleChurn(CloseGroupDifference) {
+    // send all account info to the group of each key and delete it - wait for refreshed accounts
+  }
+};
+template <typename Child>
+class PmidNode {
+ public:
+  template <typename T>
+  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
+  template <typename T>
+  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+};
+class ChurnHandler {};
+class GroupClient {};
+class RemoteClient {};
 
 namespace fs = boost::filesystem;
+// template <typename ClientManager, typename NaeManager, typename NodeManager, typename
+// ManagedNode>
+class VaultFacade : public test::MaidManager<VaultFacade>,
+                    public test::DataManager<VaultFacade>,
+                    public test::PmidManager<VaultFacade>,
+                    public test::PmidNode<VaultFacade>,
+                    public RoutingNode<VaultFacade> {
+ public:
+  VaultFacade() = default;
+  ~VaultFacade() = default;
+  // what functors for Post and Request/Response
+  enum class FunctorType { FunctionOne, FunctionTwo };
+  using DataType = DataType;
+  // what data types are we to handle
+  // for data handling this is the types from FromAuthority enumeration // other types will use
+  // different
+  // path
+  // std::tuple<ClientManager, NaeManager, NodeManager> our_personas;  // i.e. handle
+  // get/put
+  // std::tuple<ImmutableData, MutableData> DataTuple;
+  template <typename DataType>
+  void HandleGet(SourceAddress from, Authority /* from_authority */, Authority authority,
+                 DataType data_type, Identity data_name) {
+    switch (authority) {
+      case Authority::nae_manager:
+        if (data_type == DataType::ImmutableData)
+          DataManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          DataManager::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      case Authority::node_manager:
+        if (data_type == DataType::ImmutableData)
+          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      case Authority::managed_node:
+        if (data_type == DataType::ImmutableData)
+          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataType::MutableData)
+          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        break;
+      default:
+        break;
+    }
+  }
+  template <typename DataType>
+  void HandlePut(SourceAddress from, Authority from_authority, Authority authority,
+                 DataType data_type) {
+    switch (authority) {
+      case Authority::nae_manager:
+        if (from_authority != Authority::client_manager)
+          break;
+        if (data_type == DataType::ImmutableData)
+          DataManager::template HandlePut<ImmutableData>(from, data_type);
+        else if (data_type == DataType::MutableData)
+          DataManager::template HandlePut<ImmutableData>(from, data_type);
+        break;
+      case Authority::node_manager:
+        if (data_type == DataType::ImmutableData)
+          PmidManager::template HandlePut<ImmutableData>(from, data_type);
+        else if (data_type == DataType::MutableData)
+          PmidManager::template HandlePut<ImmutableData>(from, data_type);
+        break;
+      case Authority::managed_node:
+        if (data_type == DataType::ImmutableData)
+          PmidNode::template HandlePut<ImmutableData>(from, data_type);
+        else if (data_type == DataType::MutableData)
+          PmidNode::template HandlePut<ImmutableData>(from, data_type);
+        break;
+      default:
+        break;
+    }
+  }
 
-TEST(RoutingNetworkInit, BEH_ConstructNode) {
+  // default no post allowed unless implemented in upper layers
+  bool HandlePost(const SerialisedMessage&) { return false; }
+  // not in local cache do upper layers have it (called when we are in target group)
+  // template <typename DataType>
+  boost::expected<SerialisedMessage, maidsafe_error> HandleGet(Address) {
+    return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
+  }
+  // default put is allowed unless prevented by upper layers
+  bool HandlePut(Address, SerialisedMessage) { return true; }
+  // if the implementation allows any put of data in unauthenticated mode
+  bool HandleUnauthenticatedPut(Address, SerialisedMessage) { return true; }
+  void HandleChurn(CloseGroupDifference diff) {
+    MaidManager::HandleChurn(diff);
+    DataManager::HandleChurn(diff);
+    PmidManager::HandleChurn(diff);
+  }
+
+ private:
+  // RoutingNode routing_node_;
+};
+
+TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   // FIXME: The ios seems useless, RUDP has it's own and we don't have any
   // other async actions (same with the tests below).
   asio::io_service ios;
@@ -57,44 +217,24 @@ TEST(RoutingNetworkInit, BEH_ConstructNode) {
   maidsafe::test::TestPath test_dir(
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
-  RoutingNode n(ios, *test_dir / "node.sqlite3", pmid,
-                std::make_shared<RoutingNode::Listener>(cache));
+
+  RoutingNode<VaultFacade> n(ios, *test_dir / "node.sqlite3", pmid);
+  
+  auto value = NonEmptyString(RandomAlphaNumericString(65));
+  Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
+  MutableData a{MutableData::Name(key), value};
+  ImmutableData b{value};
+
+  Address from(Address(RandomString(Address::kSize)));
+  Address to(Address(RandomString(Address::kSize)));
+
+  n.Get<ImmutableData>(key, from, [](asio::error_code /* error */) {});
+  n.Get<MutableData>(key, from, [](asio::error_code /* error */) {});
+
+  n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
+  n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});
 }
 
-TEST(RoutingNetworkInit, BEH_InitTwo) {
-  using rudp::Endpoint;
-  using rudp::Contact;
-  using rudp::EndpointPair;
-  using std::make_shared;
-
-  asio::io_service ios;
-
-  passport::Pmid pmid1 = passport::CreatePmidAndSigner().first;
-  passport::Pmid pmid2 = passport::CreatePmidAndSigner().first;
-
-  LruCache<Identity, SerialisedMessage> cache1(0, std::chrono::seconds(0));
-  LruCache<Identity, SerialisedMessage> cache2(0, std::chrono::seconds(0));
-
-  maidsafe::test::TestPath test_dir(
-      maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_InitTwo"));
-
-  auto n1 = make_shared<RoutingNode>(ios, *test_dir / "node1.sqlite3", pmid1,
-                                     make_shared<RoutingNode::Listener>(cache1));
-  auto n2 = make_shared<RoutingNode>(ios, *test_dir / "node2.sqlite3", pmid2,
-                                     make_shared<RoutingNode::Listener>(cache2));
-
-  EndpointPair endpoints1(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
-  EndpointPair endpoints2(Endpoint(GetLocalIp(), maidsafe::test::GetRandomPort()));
-
-  // n1->AddBootstrapContact(n2->MakeContact(endpoints2));
-  // n2->AddBootstrapContact(n1->MakeContact(endpoints1));
-
-  // auto boot_future1 = n1->Bootstrap(endpoints1.local, asio::use_future);
-  // auto boot_future2 = n2->Bootstrap(endpoints2.local, asio::use_future);
-  //
-  // boot_future1.get();
-  // boot_future2.get();
-}
 
 }  // namespace test
 
