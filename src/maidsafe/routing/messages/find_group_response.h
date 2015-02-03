@@ -40,12 +40,12 @@ class FindGroupResponse {
 
   template <typename T, typename U>
   FindGroupResponse(T&& target_id, U&& node_info)
-      : target_id_{std::forward<T>(target_id)}, node_infos_{std::forward<U>(node_info)} {}
+      : target_id_(std::forward<T>(target_id)), node_infos_(std::forward<U>(node_info)) {}
 
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
-      : target_id_{std::move(other.target_id_)},
-        node_infos_{std::move(other.node_infos_)} {}
+      : target_id_(std::move(other.target_id_)),
+        node_infos_(std::move(other.node_infos_)) {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
     target_id_ = std::move(other.target_id_);
