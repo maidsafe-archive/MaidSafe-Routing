@@ -178,20 +178,147 @@ RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem:
 
 template <typename Child>
 template <typename DataType, typename CompletionToken>
+SendReturn<CompletionToken> RoutingNode<Child>::Send(NodeId peer_id,
+                                                     MessageId message_id,
+                                                     SerialisedData message,
+                                                     CompletionToken token) {
+  /* A unique message_id would be needed per send, which means a unique header
+     must be serialised per send? */
+  template<typename Handler>
+  struct SendRoutine {
+    struct Frame {
+      std::reference_wrapper<RoutingNode<Child>> routing_node;
+      NodeId peer_id;
+      MessageId message_id;
+      SerialisedData message;
+      boost::expected<SerialisedData, std::error_code> result;
+      Handler handler;
+      std::once_flag once;
+    };
+
+    template<Handler>
+    struct SendBridge {
+      void operator()(int result) const {
+        if (result == error ) {
+          handler(boost::make_unexpected(...));
+        }
+      }
+
+      Handler handler;
+    };
+
+    static SendBridge<Handler> MakeSendBridge(Handler handler) {
+      return {std::move(handler)};
+    }
+
+    void operator()(coroutine<SendRoutine<Handler>, Frame>& coro) const {
+      ASIO_CORO_REENTER(coro) {
+        ASIO_CORO_YIELD {
+          auto& this_node = coro.frame().routing_node.get();
+
+          // call_once synchronizes with send and receive async operation
+          auto store_result = action::CallOnce(
+              std::ref(coro.frame().once),
+              action::Store(std::ref(coro.frame().result)).Then(action::Resume(coro)));
+          {
+            const std::lock_guard<std::mutex> lock{this_node.mutex_};
+            this_node.expected_messages[std::move(coro.frame().message_id)] = store_result;
+          }
+
+          this_node.rudp_.Send(
+                std::move(coro.frame().peer_id),
+                std::move(coro.frame.message),
+                MakeSendBridge(std::move(store_result)));
+        } // yield
+
+        if (coro.frame().result) {
+          // process ?
+          coro.frame().handler(DataType{});
+        } else {
+          // retry (burned once_flag ... crap, theres a better way obviously)
+          coro.frame().handler(boost::make_unexpected(...));
+        }
+      }
+    }
+  };
+
+  SendHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+
+  auto coro = MakeCoroutine<SendRoutine<Handler>>(
+      std::ref(*this),
+      std::move(peer_id),
+      std::move(message_id),
+      std::move(message),
+      boost::expected<SerialisedData, std::error_code>{},
+      std::move(handler),
+      std::once_flag{});
+
+  return result.get();
+}
+
+template <typename Child>
+template <typename DataType, typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                                                    CompletionToken token) {
+  template<typename Handler>
+  struct GetRoutine {
+    struct Frame {
+      std::reference_wrapper<RoutingNode<Child>> routing_node;
+      Address to;
+      MessageId message_id;
+      SerialisedData message;
+      std::vector<boost::expected<DataType, std::error_code>> results;
+      std::atomic<std::size_t> count;
+      Handler handler;
+    };
+
+    void operator()(coroutine<GetRoutine<Handler>, Frame>& coro) const {
+      ASIO_CORO_REENTER(coro) {
+        ASIO_CORO_YIELD {
+          const auto& targets =
+            coro.frame().routine_node.get().connection_manager_.GetTarget(coro.frame().to);
+          coro.frame().count = targets.size();
+          coro.frame().results.resize(targets.size());
+
+          std::size_t count{};
+          for (const auto& target : targets) {
+            coro.frame().routing_node.get().Send<DataType>(
+                target.id,
+                std::move(coro.frame().message_id),
+                std::move(coro.frame().message),
+                action::Store(std::ref(coro.frame().results[count])).Then(action::Resume(coro)));
+            ++count;
+          }
+        } // yield
+
+        if (--(coro.frame().count) == 0) {
+          coro.frame().handler(coro.frame().sentinel(coro.frame().results));
+        }
+      }
+    }
+  };
+
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  io_service_.post([=] {
-    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
-                             ++message_id_);
-    auto message(Serialise(our_header, MessageToTag<GetData>::value(),
-                           OurAuthority(Address(key.string()), our_header), DataType::Tag::kValue,
-                           key));
-    for (const auto& target : connection_manager_.GetTarget(to)) {
-      rudp_.Send(target.id, message, handler);
-    }
-  });
+
+  auto current_id = ++message_id_;
+  MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
+                           current_id);
+  auto message(Serialise(our_header, MessageToTag<GetData>::value(),
+                         OurAuthority(Address(key.string()), our_header), DataType::Tag::kValue,
+                         coro.frame().key));
+
+  auto coro = MakeCoroutine<GetRoutine<Handler>>(
+      std::ref(*this),
+      std::move(to),
+      std::move(current_id);
+      std::move(message),
+      std::vector<boost::expected<ImmutableData, std::error_code>>{},
+      std::atomic<std::size_t>{},
+      std::move(handler));
+  coro.Execute();
+
   return result.get();
 }
 
