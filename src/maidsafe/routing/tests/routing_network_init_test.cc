@@ -43,7 +43,8 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-enum class DataType { ImmutableData, MutableData, End };
+enum class DataType;
+
 class VaultFacade;
 template <typename Child>
 class MaidManager {
@@ -121,7 +122,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   ~VaultFacade() = default;
   // what functors for Post and Request/Response
   enum class FunctorType { FunctionOne, FunctionTwo };
-  using DataType = DataType;
+  enum class DataType { ImmutableData, MutableData, End };
   // what data types are we to handle
   // for data handling this is the types from FromAuthority enumeration // other types will use
   // different
@@ -137,19 +138,19 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
         if (data_type == DataType::ImmutableData)
           DataManager::template HandleGet<ImmutableData>(from, data_name);
         else if (data_type == DataType::MutableData)
-          DataManager::template HandleGet<ImmutableData>(from, data_name);
+          DataManager::template HandleGet<MutableData>(from, data_name);
         break;
       case Authority::node_manager:
         if (data_type == DataType::ImmutableData)
           PmidManager::template HandleGet<ImmutableData>(from, data_name);
         else if (data_type == DataType::MutableData)
-          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+          PmidManager::template HandleGet<MutableData>(from, data_name);
         break;
       case Authority::managed_node:
         if (data_type == DataType::ImmutableData)
           PmidNode::template HandleGet<ImmutableData>(from, data_name);
         else if (data_type == DataType::MutableData)
-          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+          PmidNode::template HandleGet<MutableData>(from, data_name);
         break;
       default:
         break;
@@ -165,19 +166,19 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
         if (data_type == DataType::ImmutableData)
           DataManager::template HandlePut<ImmutableData>(from, data_type);
         else if (data_type == DataType::MutableData)
-          DataManager::template HandlePut<ImmutableData>(from, data_type);
+          DataManager::template HandlePut<MutableData>(from, data_type);
         break;
       case Authority::node_manager:
         if (data_type == DataType::ImmutableData)
           PmidManager::template HandlePut<ImmutableData>(from, data_type);
         else if (data_type == DataType::MutableData)
-          PmidManager::template HandlePut<ImmutableData>(from, data_type);
+          PmidManager::template HandlePut<MutableData>(from, data_type);
         break;
       case Authority::managed_node:
         if (data_type == DataType::ImmutableData)
           PmidNode::template HandlePut<ImmutableData>(from, data_type);
         else if (data_type == DataType::MutableData)
-          PmidNode::template HandlePut<ImmutableData>(from, data_type);
+          PmidNode::template HandlePut<MutableData>(from, data_type);
         break;
       default:
         break;
