@@ -193,23 +193,9 @@ SendReturn<CompletionToken> RoutingNode<Child>::Send(NodeId peer_id,
       SerialisedData message;
       boost::expected<SerialisedData, std::error_code> result;
       Handler handler;
+      asio::timer timer;
       std::once_flag once;
     };
-
-    template<Handler>
-    struct SendBridge {
-      void operator()(int result) const {
-        if (result == error ) {
-          handler(boost::make_unexpected(...));
-        }
-      }
-
-      Handler handler;
-    };
-
-    static SendBridge<Handler> MakeSendBridge(Handler handler) {
-      return {std::move(handler)};
-    }
 
     void operator()(coroutine<SendRoutine<Handler>, Frame>& coro) const {
       ASIO_CORO_REENTER(coro) {
@@ -225,10 +211,23 @@ SendReturn<CompletionToken> RoutingNode<Child>::Send(NodeId peer_id,
             this_node.expected_messages[std::move(coro.frame().message_id)] = store_result;
           }
 
+          coro.frame().timer.expires_from_now(std::chrono::seconds(30));
+          coro.frame().timer.async_wait([store_result](std::error_code error) {
+              if (error) {
+                store_result(boost::make_unexpected(error));
+              } else {
+                store_result(boost::make_unexpected(std::errc::timeout));
+              }
+            });
+
           this_node.rudp_.Send(
                 std::move(coro.frame().peer_id),
                 std::move(coro.frame.message),
-                MakeSendBridge(std::move(store_result)));
+                [store_result](int result) {
+                  if (result == error ) {
+                    handler(boost::make_unexpected(...));
+                  }
+                });
         } // yield
 
         if (coro.frame().result) {
@@ -252,6 +251,7 @@ SendReturn<CompletionToken> RoutingNode<Child>::Send(NodeId peer_id,
       std::move(message),
       boost::expected<SerialisedData, std::error_code>{},
       std::move(handler),
+      asio::timer{asio_service.service()}
       std::once_flag{});
 
   return result.get();
