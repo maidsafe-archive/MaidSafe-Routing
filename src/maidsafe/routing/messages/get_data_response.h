@@ -33,10 +33,10 @@ class GetDataResponse {
 
   template <typename T, typename U>
   GetDataResponse(T&& key, U&& data)
-      : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
+      : key_(std::forward<T>(key)), data_(std::forward<U>(data)) {}
 
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
-                                                               data_{std::move(other.data_)} {}
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
+                                                               data_(std::move(other.data_)) {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);

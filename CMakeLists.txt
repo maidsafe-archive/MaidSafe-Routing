@@ -74,7 +74,6 @@ set(RoutingLibSources
     ${RoutingSourcesDir}/bootstrap_handler.cc
     ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/routing_table.cc
-    ${RoutingSourcesDir}/utils.cc
     ${RoutingSourcesDir}/routing_node.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})

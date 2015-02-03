@@ -40,8 +40,8 @@ class PutData {
   PutData(T&& key, U&& data)
       : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
-                                               data_{std::move(other.data_)} {}
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
+                                               data_(std::move(other.data_)) {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);

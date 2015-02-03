@@ -97,7 +97,7 @@ class ConnectionManager {
   }
 
   bool CloseGroupMember(const Address& their_id);
-  uint32_t Size() { return routing_table_.Size(); }
+  size_t Size() { return routing_table_.Size(); }
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
