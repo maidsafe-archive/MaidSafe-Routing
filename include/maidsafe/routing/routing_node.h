@@ -58,6 +58,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
  public:
   RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
               const passport::Pmid& pmid);
+  RoutingNode() = delete;
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
@@ -334,9 +335,9 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
       break;
     case MessageTypeTag::GetData:
       Parse(binary_input_stream, from_authority, data_tag, key);
-      // static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
-      //                                      OurAuthority(Address(key.string()), header), data_tag,
-      //                                      key);
+      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
+                                           OurAuthority(Address(key.string()), header), data_tag,
+                                           key);
       break;
     case MessageTypeTag::GetDataResponse:
       HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
@@ -415,8 +416,8 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
       return;
     }
   });
-  // if (added)
-  //   static_cast<Child*>(this)->HandleChurn(*added);
+  if (added)
+    static_cast<Child*>(this)->HandleChurn(*added);
 }
 
 template <typename Child>
@@ -435,8 +436,8 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
           this->connection_manager_.DropNode(target);
           return;
         }
-        // if (added)
-        //   static_cast<Child*>(this)->HandleChurn(*added);
+        if (added)
+          static_cast<Child*>(this)->HandleChurn(*added);
         if (connection_manager_.Size() >= QuorumSize) {
           rudp_.Remove(*bootstrap_node_, asio::use_future).get();
           bootstrap_node_ = boost::none;

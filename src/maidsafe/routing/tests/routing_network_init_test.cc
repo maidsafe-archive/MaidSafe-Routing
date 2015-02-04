@@ -192,7 +192,8 @@ namespace fs = boost::filesystem;
 class VaultFacade : public test::MaidManager<VaultFacade>,
                     public test::DataManager<VaultFacade>,
                     public test::PmidManager<VaultFacade>,
-                    public test::PmidNode<VaultFacade> {
+                    public test::PmidNode<VaultFacade>,
+                    public RoutingNode<VaultFacade> {
  public:
   VaultFacade() = default;
   ~VaultFacade() = default;
