@@ -43,15 +43,89 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
-enum class DataType { ImmutableData, MutableData, End };
+enum class DataType;
 class VaultFacade;
+
+struct MaidManagerAccount {
+  MaidManagerAccount() = default;
+  MaidManagerAccount(const MaidManagerAccount&) = default;
+  MaidManagerAccount(MaidManagerAccount&& other) MAIDSAFE_NOEXCEPT
+      : name(std::move(other.name)),
+        stored(std::move(other.stored)),
+        available(std::move(other.available)) {}
+  ~MaidManagerAccount() = default;
+  MaidManagerAccount& operator=(const MaidManagerAccount&) = default;
+  MaidManagerAccount& operator=(MaidManagerAccount&& rhs) MAIDSAFE_NOEXCEPT {
+    name = std::move(rhs.name);
+    stored = std::move(rhs.stored);
+    available = std::move(rhs.available);
+    return *this;
+  }
+
+  bool operator==(const MaidManagerAccount& other) const {
+    return std::tie(name, stored, available) == std::tie(other.name, other.stored, other.available);
+  }
+  bool operator!=(const MaidManagerAccount& other) const { return !operator==(other); }
+  bool operator<(const MaidManagerAccount& other) const {
+    return std::tie(name, stored, available) < std::tie(other.name, other.stored, other.available);
+  }
+  bool operator>(const MaidManagerAccount& other) { return operator<(other); }
+  bool operator<=(const MaidManagerAccount& other) { return !operator>(other); }
+  bool operator>=(const MaidManagerAccount& other) { return !operator<(other); }
+
+  Address name;
+  uint64_t stored;
+  uint64_t available;
+};
+
+struct PmidManagerAccount {
+  PmidManagerAccount() = default;
+  PmidManagerAccount(const PmidManagerAccount&) = default;
+  PmidManagerAccount(PmidManagerAccount&& other) MAIDSAFE_NOEXCEPT
+      : name(std::move(other.name)),
+        stored(std::move(other.stored)),
+        available(std::move(other.available)) {}
+  ~PmidManagerAccount() = default;
+  PmidManagerAccount& operator=(const PmidManagerAccount&) = default;
+  PmidManagerAccount& operator=(PmidManagerAccount&& rhs) MAIDSAFE_NOEXCEPT {
+    name = std::move(rhs.name);
+    stored = std::move(rhs.stored);
+    available = std::move(rhs.available);
+    return *this;
+  }
+
+  bool operator==(const PmidManagerAccount& other) const {
+    return std::tie(name, stored, available) == std::tie(other.name, other.stored, other.available);
+  }
+  bool operator!=(const PmidManagerAccount& other) const { return !operator==(other); }
+  bool operator<(const PmidManagerAccount& other) const {
+    return std::tie(name, stored, available) < std::tie(other.name, other.stored, other.available);
+  }
+  bool operator>(const PmidManagerAccount& other) { return operator<(other); }
+  bool operator<=(const PmidManagerAccount& other) { return !operator>(other); }
+  bool operator>=(const PmidManagerAccount& other) { return !operator<(other); }
+
+  Address name;
+  uint64_t stored;
+  uint64_t available;
+};
+
 template <typename Child>
 class MaidManager {
  public:
+  using account_type = MaidManagerAccount;
   template <typename T>
-  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
-  template <typename T>
-  void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
+  void HandlePut(SourceAddress from, Identity data_name, T data) {
+    auto found = static_cast<Child*>(this)->maid_account(std::get<0>(from));
+    if (!found)
+      return;  // invalid we can return an error - no account if we wish
+    found->stored += data.size();
+    static_cast<Child*>(this)
+        ->template Put<T>(data_name, data_name, data, [](asio::error_code error) {
+          if (error)
+            LOG(kWarning) << "could not send from MiadManager (Put)";
+        });
+  }
   void HandleChurn(CloseGroupDifference) {
     // send all account info to the group of each key and delete it - wait for refreshed accounts
   }
@@ -61,6 +135,7 @@ class VersionManager {};
 template <typename Child>
 class DataManager {
  public:
+  using account_type = MaidManagerAccount;
   template <typename T>
   void HandleGet(SourceAddress from, Identity data_name) {
     // FIXME(dirvine) We need to pass along the full source address to retain the ReplyTo field
@@ -80,6 +155,7 @@ class DataManager {
 template <typename DataManagerType, typename VersionManagerType>
 class NaeManager {
  public:
+  using account_type = MaidManagerAccount;
   template <typename T>
   void HandleGet(SourceAddress from, Identity data_name);
   template <typename T>
@@ -88,6 +164,7 @@ class NaeManager {
 template <typename Child>
 class PmidManager {
  public:
+  using account_type = MaidManagerAccount;
   template <typename T>
   void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
   template <typename T>
@@ -99,6 +176,7 @@ class PmidManager {
 template <typename Child>
 class PmidNode {
  public:
+  using account_type = PmidManagerAccount;
   template <typename T>
   void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
   template <typename T>
@@ -114,14 +192,13 @@ namespace fs = boost::filesystem;
 class VaultFacade : public test::MaidManager<VaultFacade>,
                     public test::DataManager<VaultFacade>,
                     public test::PmidManager<VaultFacade>,
-                    public test::PmidNode<VaultFacade>,
-                    public RoutingNode<VaultFacade> {
+                    public test::PmidNode<VaultFacade> {
  public:
   VaultFacade() = default;
   ~VaultFacade() = default;
   // what functors for Post and Request/Response
   enum class FunctorType { FunctionOne, FunctionTwo };
-  using DataType = DataType;
+  enum class DataType { ImmutableData, MutableData, End };
   // what data types are we to handle
   // for data handling this is the types from FromAuthority enumeration // other types will use
   // different
@@ -201,8 +278,11 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
     PmidManager::HandleChurn(diff);
   }
 
- private:
-  // RoutingNode routing_node_;
+ protected:
+  RoutingNode<VaultFacade> routing_node_;
+  std::vector<MaidManager::account_type> maid_manager_account;
+  std::vector<PmidManager::account_type> pmid_manager_account;
+  std::vector<DataManager::account_type> dm_manager_account;
 };
 
 TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
