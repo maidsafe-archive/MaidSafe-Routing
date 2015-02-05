@@ -31,7 +31,8 @@
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/peer_node.h"
+#include "maidsafe/routing/boost_asio_conversions.h"
 
 namespace maidsafe {
 
@@ -43,9 +44,9 @@ bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
 
 std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
   auto nodes(routing_table_.TargetNodes(target_node));
-  nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
-                             [](NodeInfo& node) { return !node.connected; }),
-              std::end(nodes));
+  //nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+  //                           [](NodeInfo& node) { return !node.connected(); }),
+  //            std::end(nodes));
   return nodes;
 }
 
@@ -60,12 +61,13 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add) {
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair eps) {
   boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
     boost::system::error_code error;
     auto socket = std::make_shared<crux::socket>(boost_ios_, crux::endpoint(boost::asio::ip::udp::v4(), 0));
 
-    socket->async_connect(node_to_add.endpoint, yield[error]);
+    // TODO(PeterJ): Try both endpoints, choose the first one that connects.
+    socket->async_connect(to_boost(eps.external), yield[error]);
 
     if (!error) {
       auto added = routing_table_.AddNode(node_to_add);

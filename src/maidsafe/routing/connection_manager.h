@@ -49,7 +49,8 @@ destiations. In that case request a close_group message for this node.
 
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/peer_node.h"
+#include "maidsafe/crux/socket.hpp"
 
 namespace maidsafe {
 
@@ -76,11 +77,12 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add);
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add, rudp::EndpointPair);
 
   void AddNode(crux::endpoint endpoint);
 
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
+
   size_t CloseGroupBucketDistance() const {
     return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
@@ -101,12 +103,19 @@ class ConnectionManager {
   bool CloseGroupMember(const Address& their_id);
   uint32_t Size() { return routing_table_.Size(); }
 
+  PeerNode* FindPeer(Address addr) {
+    auto i = peers_.find(addr);
+    if (i == peers_.end()) return nullptr;
+    return &i->second;
+  }
+
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
   asio::io_service& io_service_;
   boost::asio::io_service& boost_ios_;
   RoutingTable routing_table_;
+  std::map<Address, PeerNode> peers_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
 };

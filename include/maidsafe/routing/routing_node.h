@@ -118,15 +118,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>> {
 
   template <class Message>
   void SendDirect(NodeId, Message, SendHandler);
-  //EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
-  //  return rudp::EndpointPair();
-  //}
+  EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
+    return rudp::EndpointPair();
+  }
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
   // nodes appering or vanishing so its pretty important.
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
-
-  void Connect(crux::endpoint);
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
@@ -208,7 +206,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                            key));
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      target.Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -229,7 +227,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType data,
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     // FIXME(dirvine) need serialiseable data types  :29/01/2015 // , data));
     for (const auto& target : connection_manager_.GetTarget(key)) {
-      target.Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -249,7 +247,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType fu
 
     for (const auto& target : connection_manager_.GetTarget(key)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
-      target.Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
     }
   });
   return result.get();
@@ -279,103 +277,104 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   //    }
   //  });
 }
-template <typename Child>
-void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
-                                         rudp::ReceivedMessage serialised_message) {
-  InputVectorStream binary_input_stream{serialised_message};
-  MessageHeader header;
-  MessageTypeTag tag;
-  Authority from_authority;
-  typename Child::DataType data_tag;
-  Identity key;
-  try {
-    Parse(binary_input_stream, header, tag);
-  } catch (const std::exception&) {
-    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
-    return;
-  }
-
-  if (filter_.Check(header.FilterValue()))
-    return;  // already seen
-  // add to filter as soon as posible
-  filter_.Add({header.FilterValue()});
-
-  // We add these to cache
-  if (tag == MessageTypeTag::GetDataResponse) {
-    auto data = Parse<GetDataResponse>(binary_input_stream);
-    cache_.Add(data.get_key(), data.get_data());
-  }
-  // if we can satisfy request from cache we do
-  if (tag == MessageTypeTag::GetData) {
-    auto data = Parse<GetData>(binary_input_stream);
-    auto test = cache_.Get(data.get_key());
-    if (test) {
-      GetDataResponse response(data.get_key(), test.value());
-      auto message(Serialise(
-          MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
-          MessageTypeTag::GetDataResponse, response));
-      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
-        target.Send(message, [](boost::system::error_code error) {
-          if (error) {
-            LOG(kWarning) << "cannot send" << error.message();
-          }
-        });
-      return;
-    }
-  }
-
-  // send to next node(s) even our close group (swarm mode)
-  for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
-    target.Send(serialised_message, [](asio::error_code error) {
-      if (error) {
-        LOG(kWarning) << "cannot send" << error.message();
-      }
-    });
-  // FIXME(dirvine) We need new rudp for this :26/01/2015
-  if (header.RelayedMessage() &&
-      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
-                  [&header](const Address& node) { return node == *header.RelayedMessage(); })) {
-    // send message to connected node
-    return;
-  }
-
-  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
-    return;  // not for us
-
-  // FIXME(dirvine) Sentinel check here!!  :19/01/2015
-  switch (tag) {
-    case MessageTypeTag::Connect:
-      HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
-      break;
-    case MessageTypeTag::ConnectResponse:
-      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
-      break;
-    case MessageTypeTag::FindGroup:
-      HandleMessage(Parse<FindGroup>(binary_input_stream), std::move(header));
-      break;
-    case MessageTypeTag::FindGroupResponse:
-      HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
-      break;
-    case MessageTypeTag::GetData:
-      Parse(binary_input_stream, from_authority, data_tag, key);
-      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
-                                           OurAuthority(Address(key.string()), header), data_tag,
-                                           key);
-      break;
-    case MessageTypeTag::GetDataResponse:
-      HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
-      break;
-    case MessageTypeTag::PutData:
-      HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
-      break;
-    case MessageTypeTag::PostMessage:
-      HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
-      break;
-    default:
-      LOG(kWarning) << "Received message of unknown type.";
-      break;
-  }
-}
+// TODO(PeterJ):
+//template <typename Child>
+//void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
+//                                         std::vector<unsigned char> serialised_message) {
+//  InputVectorStream binary_input_stream{serialised_message};
+//  MessageHeader header;
+//  MessageTypeTag tag;
+//  Authority from_authority;
+//  typename Child::DataType data_tag;
+//  Identity key;
+//  try {
+//    Parse(binary_input_stream, header, tag);
+//  } catch (const std::exception&) {
+//    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
+//    return;
+//  }
+//
+//  if (filter_.Check(header.FilterValue()))
+//    return;  // already seen
+//  // add to filter as soon as posible
+//  filter_.Add({header.FilterValue()});
+//
+//  // We add these to cache
+//  if (tag == MessageTypeTag::GetDataResponse) {
+//    auto data = Parse<GetDataResponse>(binary_input_stream);
+//    cache_.Add(data.get_key(), data.get_data());
+//  }
+//  // if we can satisfy request from cache we do
+//  if (tag == MessageTypeTag::GetData) {
+//    auto data = Parse<GetData>(binary_input_stream);
+//    auto test = cache_.Get(data.get_key());
+//    if (test) {
+//      GetDataResponse response(data.get_key(), test.value());
+//      auto message(Serialise(
+//          MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
+//          MessageTypeTag::GetDataResponse, response));
+//      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
+//        target.Send(message, [](boost::system::error_code error) {
+//          if (error) {
+//            LOG(kWarning) << "cannot send" << error.message();
+//          }
+//        });
+//      return;
+//    }
+//  }
+//
+//  // send to next node(s) even our close group (swarm mode)
+//  for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
+//    target.Send(serialised_message, [](asio::error_code error) {
+//      if (error) {
+//        LOG(kWarning) << "cannot send" << error.message();
+//      }
+//    });
+//  // FIXME(dirvine) We need new rudp for this :26/01/2015
+//  if (header.RelayedMessage() &&
+//      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
+//                  [&header](const Address& node) { return node == *header.RelayedMessage(); })) {
+//    // send message to connected node
+//    return;
+//  }
+//
+//  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
+//    return;  // not for us
+//
+//  // FIXME(dirvine) Sentinel check here!!  :19/01/2015
+//  switch (tag) {
+//    case MessageTypeTag::Connect:
+//      HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
+//      break;
+//    case MessageTypeTag::ConnectResponse:
+//      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
+//      break;
+//    case MessageTypeTag::FindGroup:
+//      HandleMessage(Parse<FindGroup>(binary_input_stream), std::move(header));
+//      break;
+//    case MessageTypeTag::FindGroupResponse:
+//      HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
+//      break;
+//    case MessageTypeTag::GetData:
+//      Parse(binary_input_stream, from_authority, data_tag, key);
+//      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
+//                                           OurAuthority(Address(key.string()), header), data_tag,
+//                                           key);
+//      break;
+//    case MessageTypeTag::GetDataResponse:
+//      HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
+//      break;
+//    case MessageTypeTag::PutData:
+//      HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
+//      break;
+//    case MessageTypeTag::PostMessage:
+//      HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
+//      break;
+//    default:
+//      LOG(kWarning) << "Received message of unknown type.";
+//      break;
+//  }
+//}
 
 template <typename Child>
 Authority RoutingNode<Child>::OurAuthority(const Address& element,
@@ -421,14 +420,15 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
   // shutdown
   // :24/01/2015
   for (auto& target : targets) {
-    target.Send(Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
+    connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
                [connect, this](boost::system::error_code error_code) {
       if (error_code)
         return;
     });
   }
   auto added =
-      connection_manager_.AddNode(NodeInfo(connect.get_requester_id(), connect.get_requester_fob()),
+      connection_manager_.AddNode(NodeInfo(connect.get_requester_id(),
+                                           connect.get_requester_fob()),
                                   connect.get_requester_endpoints());
 
   // TODO(PeterJ):
@@ -450,7 +450,8 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   if (!connection_manager_.SuggestNodeToAdd(connect_response.get_requester_id()))
     return;
   auto added = connection_manager_.AddNode(
-      NodeInfo(connect_response.get_requester_id(), connect_response.get_receiver_fob()),
+      NodeInfo(connect_response.get_requester_id(),
+               connect_response.get_receiver_fob()),
       connect_response.get_receiver_endpoints());
   auto target = connect_response.get_requester_id();
   // TODO(PeterJ):
@@ -482,7 +483,7 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader orig_
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
   for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
-    node.Send(message, asio::use_future).get();
+    connection_manager_.FindPeer(node.id)->Send(message, [](boost::system::error_code){});
   }
 }
 
@@ -499,12 +500,8 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     MessageHeader header(DestinationAddress(std::make_pair(Destination(node.id), boost::none)),
                          SourceAddress{OurSourceAddress()}, ++message_id_);
     for (const auto& target : connection_manager_.GetTarget(node.id))
-      rudp_.Send(target.id, Serialise(header, MessageToTag<Connect>::value(), message),
-                 [](asio::error_code error) {
-        if (error) {
-          LOG(kWarning) << "rudp cannot send" << error.message();
-        }
-      });
+      connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<Connect>::value(), message),
+                 [](boost::system::error_code error) {});
   }
 }
 
