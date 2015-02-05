@@ -40,7 +40,6 @@ destiations. In that case request a close_group message for this node.
 
 #include <functional>
 #include <map>
-#include <mutex>
 #include <vector>
 
 #include "asio/io_service.hpp"
@@ -58,11 +57,12 @@ namespace routing {
 
 class ConnectionManager {
  public:
-  ConnectionManager(asio::io_service& io_service, rudp::ManagedConnections& rudp, Address our_id)
-      : mutex_(),
-        io_service_(io_service),
+  ConnectionManager(asio::io_service& io_service,
+                    boost::asio::io_service& boost_ios,
+                    Address our_id)
+      : io_service_(io_service),
+        boost_ios_(boost_ios),
         routing_table_(our_id),
-        rudp_(rudp),
         current_close_group_() {}
 
   ConnectionManager(const ConnectionManager&) = delete;
@@ -76,8 +76,10 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
-                                                rudp::EndpointPair their_endpoint_pair);
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add);
+
+  void AddNode(crux::endpoint endpoint);
+
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
   size_t CloseGroupBucketDistance() const {
     return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
@@ -102,10 +104,9 @@ class ConnectionManager {
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
-  std::mutex mutex_;
   asio::io_service& io_service_;
+  boost::asio::io_service& boost_ios_;
   RoutingTable routing_table_;
-  rudp::ManagedConnections& rudp_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
 };

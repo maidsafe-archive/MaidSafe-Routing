@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "asio/spawn.hpp"
+#include "boost/asio/spawn.hpp"
 #include "asio/use_future.hpp"
 
 #include "maidsafe/rudp/managed_connections.h"
@@ -60,23 +60,23 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
-    NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
-  rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
-                             node_to_add.dht_fob.public_key());
-  asio::spawn(io_service_, [=](asio::yield_context yield) {
-    asio::error_code error;
-    rudp_.Add(std::move(rudp_contact), yield[error]);
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add) {
+  boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
+    boost::system::error_code error;
+    auto socket = std::make_shared<crux::socket>(boost_ios_, crux::endpoint(boost::asio::ip::udp::v4(), 0));
+
+    socket->async_connect(node_to_add.endpoint, yield[error]);
 
     if (!error) {
       auto added = routing_table_.AddNode(node_to_add);
-      if (!added.first) {
-        rudp_.Remove(node_to_add.id, asio::use_future);  // become invalid for us
-      } else if (added.second) {
-        rudp_.Remove(added.second->id, asio::use_future);  // a sacrificlal node was found
+      if (!added.first || added.second) {
+        return;
       }
     }
   });
+  // FIXME: The above stuff happens inside io_service, the GroupChanged() function
+  // always returns 'no change' in here. The result should be returned
+  // in form of an argument to callback.
   return GroupChanged();
 }
 
@@ -92,7 +92,6 @@ boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   for (const auto& nodes : new_nodeinfo_group)
     new_group.push_back(nodes.id);
 
-  std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
     auto changed = std::make_pair(new_group, current_close_group_);
     current_close_group_ = new_group;

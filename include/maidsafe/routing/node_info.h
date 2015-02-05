@@ -26,6 +26,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/crux/socket.hpp"
 
 namespace maidsafe {
 
@@ -34,7 +35,8 @@ namespace routing {
 struct NodeInfo {
   using PublicPmid = passport::PublicPmid;
 
-  NodeInfo(NodeId id, PublicPmid dht_fob) : id(id), dht_fob(std::move(dht_fob)) {}
+  NodeInfo(NodeId id, crux::endpoint endpoint, PublicPmid dht_fob)
+    : id(id), dht_fob(std::move(dht_fob)), endpoint(endpoint) {}
   NodeInfo() = default;
   NodeInfo(const NodeInfo&) = default;
 
@@ -47,7 +49,7 @@ struct NodeInfo {
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     dht_fob = std::move(other.dht_fob);
-    rank = std::move(other.rank);
+
     connected = std::move(other.connected);
     return *this;
   }
@@ -58,6 +60,10 @@ struct NodeInfo {
   bool operator>(const NodeInfo& other) const { return id > other.id; }
   bool operator<=(const NodeInfo& other) const { return !operator>(other); }
   bool operator>=(const NodeInfo& other) const { return !operator<(other); }
+
+  template<class Message, class Handler> void Send(Message&&, Handler) {
+    assert(0 && "FIXME(PeterJ)");
+  }
 
   template <typename Archive>
   Archive& load(Archive& archive) {
@@ -75,6 +81,8 @@ struct NodeInfo {
 
   Address id;
   passport::PublicPmid dht_fob;
+  std::shared_ptr<crux::socket> socket;
+  crux::endpoint endpoint;
   int32_t rank;
   bool connected;
 };
