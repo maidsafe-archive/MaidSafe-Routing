@@ -56,7 +56,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode() = default;
+  RoutingNode() = delete;
   RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
               const passport::Pmid& pmid);
   RoutingNode(const RoutingNode&) = delete;
@@ -124,7 +124,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  asio::io_service io_service_;
+  asio::io_service& io_service_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -138,9 +138,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 };
 
 template <typename Child>
-RoutingNode<Child>::RoutingNode(asio::io_service& /*io_service*/, boost::filesystem::path db_location,
+RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
                                 const passport::Pmid& pmid)
-    : io_service_(1),
+    : io_service_(io_service),
       our_fob_(pmid),
       bootstrap_node_(boost::none),
       rudp_(),

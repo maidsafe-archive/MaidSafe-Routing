@@ -118,7 +118,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
                     public test::PmidNode<VaultFacade>,
                     public RoutingNode<VaultFacade> {
  public:
-  VaultFacade() = default;
+  VaultFacade() = delete;
   ~VaultFacade() = default;
   // what functors for Post and Request/Response
   enum class FunctorType { FunctionOne, FunctionTwo };
