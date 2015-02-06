@@ -268,7 +268,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
-    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
+    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
 

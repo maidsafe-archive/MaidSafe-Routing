@@ -53,6 +53,7 @@ set(RoutingLibHeaders
     ${RoutingSourcesDir}/connection_manager.h
     ${RoutingSourcesDir}/message_header.h
     ${RoutingSourcesDir}/routing_table.h
+    ${RoutingSourcesDir}/sentinel.h
     ${RoutingSourcesDir}/utils.h
     )
 source_group("Routing Header Files" FILES ${RoutingLibHeaders})
@@ -75,6 +76,7 @@ set(RoutingLibSources
     ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/routing_node.cc
+    ${RoutingSourcesDir}/sentinel.cc
     )
 source_group("Routing Source Files" FILES ${RoutingLibSources})
 ms_add_static_library(maidsafe_routing

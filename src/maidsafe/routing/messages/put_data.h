@@ -38,7 +38,7 @@ class PutData {
 
   template <typename T, typename U>
   PutData(T&& key, U&& data)
-      : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
+      : key_(std::forward<T>(key)), data_(std::forward<U>(data)) {}
 
   PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
                                                data_(std::move(other.data_)) {}

@@ -19,16 +19,23 @@
 #ifndef MAIDSAFE_ROUTING_SENTINEL_H_
 #define MAIDSAFE_ROUTING_SENTINEL_H_
 
+#include <chrono>
+#include <future>
 #include <vector>
 #include <utility>
+
+#include "asio/io_service.hpp"
 #include "boost/optional/optional.hpp"
+
 #include "maidsafe/common/rsa.h"
+
 #include "maidsafe/routing/accumulator.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 class Sentinel {
@@ -39,7 +46,7 @@ class Sentinel {
   Sentinel(Sentinel&&) = delete;
   ~Sentinel() = default;
   Sentinel& operator=(const Sentinel&) = delete;
-  Sentinel& operator=(Sentinel&& rhs) = delete;
+  Sentinel& operator=(Sentinel&&) = delete;
   // at some stage this will return a valid answer when all data is accumulated
   // and signatures checked
   boost::optional<std::future<ResultType>> Add(MessageHeader, MessageTypeTag, SerialisedMessage);
@@ -56,37 +63,8 @@ class Sentinel {
   Accumulator<NodeAddress, ResultType> node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
 };
 
-// TODO(dirvine) move to cc file  :19/01/2015
-inline boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageHeader header,
-                                                                        MessageTypeTag tag,
-                                                                        SerialisedMessage message) {
-  if (tag == MessageTypeTag::GetKeyResponse) {
-    if (!header.FromGroup())  // "keys should always come from a group");
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    if (group_key_accumulator_.Add(*header.FromGroup(),
-                                   std::make_tuple(header.GetSource(), tag, std::move(message)),
-                                   header.FromNode())) {
-      // get the other accumulator and go for it
-    }
-  } else {
-    if (header.FromGroup() && !group_accumulator_.HaveKey(*header.FromGroup())) {  // we need
-      // to send a findkey for this GroupAddress
-
-    } else if (!node_accumulator_.HaveKey(header.FromNode())) {  // we need
-      // to send a findkey for this SourceAddress
-    }
-  }
-
-  if (node_key_accumulator_.HaveKey(header.FromNode())) {  // ok direct
-  } else if (header.FromGroup() && group_key_accumulator_.HaveKey(*header.FromGroup())) {  // ok dht
-  }
-  return boost::none;
-}
-
-
-
 }  // namespace routing
-}  // namespace maidsafe
 
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_SENTINEL_H_
