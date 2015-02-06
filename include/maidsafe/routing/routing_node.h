@@ -50,14 +50,9 @@ namespace maidsafe {
 namespace routing {
 
 template <typename Child>
-class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>> {
+class RoutingNode {
  private:
   using SendHandler = std::function<void(asio::error_code)>;
-
-  struct ConnectingSocket {
-    // FIXME: This needs timers
-    std::shared_ptr<crux::socket> socket;
-  };
 
  public:
   RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
