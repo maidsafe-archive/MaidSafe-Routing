@@ -25,6 +25,7 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/boost_asio_conversions.h"
 
 namespace maidsafe {
 
@@ -58,7 +59,8 @@ std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapC
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow) {
     bootstrap_contacts.push_back(BootstrapContact{
-        Parse<NodeId>(statement.ColumnBlob(0)), Parse<Endpoint>(statement.ColumnBlob(2)),
+        Parse<NodeId>(statement.ColumnBlob(0)),
+        Parse<asio::ip::udp::endpoint>(statement.ColumnBlob(2)),
         Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
   }
   return bootstrap_contacts;

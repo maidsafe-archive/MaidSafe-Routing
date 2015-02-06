@@ -39,10 +39,10 @@ This object in itself will very possibly end up in rudp itself.
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
-#include "maidsafe/rudp/contact.h"
 #include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/contact.h"
 
 namespace maidsafe {
 
@@ -50,7 +50,7 @@ namespace routing {
 
 class BootstrapHandler {
  public:
-  using BootstrapContact = rudp::Contact;
+  using BootstrapContact = Contact;
   using BootstrapContacts = std::vector<BootstrapContact>;
 
   static const int MaxListSize = 1500;

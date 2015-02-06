@@ -61,7 +61,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add, rudp::EndpointPair eps) {
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add, EndpointPair eps) {
   boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
     boost::system::error_code error;
     auto socket = std::make_shared<crux::socket>(boost_ios_, crux::endpoint(boost::asio::ip::udp::v4(), 0));

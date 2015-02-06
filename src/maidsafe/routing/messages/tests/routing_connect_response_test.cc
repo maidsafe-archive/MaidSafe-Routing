@@ -22,7 +22,7 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
+#include "maidsafe/routing/contact.h"
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
@@ -37,8 +37,8 @@ namespace test {
 namespace {
 
 ConnectResponse GenerateInstance() {
-  return ConnectResponse{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-                         rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return ConnectResponse{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+                         EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
                          Address{RandomString(Address::kSize)},
                          Address{RandomString(Address::kSize)},
                          passport::PublicPmid(passport::Pmid(passport::Anpmid()))};

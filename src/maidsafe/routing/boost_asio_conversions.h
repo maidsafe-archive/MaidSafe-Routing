@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_RUDP_BOOST_ASIO_CONVERSIONS_H_
-#define MAIDSAFE_RUDP_BOOST_ASIO_CONVERSIONS_H_
+#ifndef MAIDSAFE_ROUTING_BOOST_ASIO_CONVERSIONS_H_
+#define MAIDSAFE_ROUTING_BOOST_ASIO_CONVERSIONS_H_
 
 namespace maidsafe { namespace routing {
 
@@ -84,4 +84,4 @@ inline asio::ip::udp::endpoint from_boost(const boost::asio::ip::udp::endpoint& 
 }  // namespace routing
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_RUDP_BOOST_ASIO_CONVERSIONS_H_
+#endif  // MAIDSAFE_ROUTING_BOOST_ASIO_CONVERSIONS_H_

@@ -35,14 +35,13 @@
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/passport/types.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/types.h"
 #include "maidsafe/crux/socket.hpp"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/connection_manager.h"
 #include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/routing/endpoint_pair.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 
@@ -119,7 +118,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>> {
   template <class Message>
   void SendDirect(NodeId, Message, SendHandler);
   EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
-    return rudp::EndpointPair();
+    return EndpointPair();
   }
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
   // nodes appering or vanishing so its pretty important.
@@ -166,7 +165,7 @@ RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem:
   auto temp_id(Address(RandomString(Address::kSize)));
 
   // PeterJ: Start listening on ports 5483 and 5433 (why two though?)
-  //rudp_.Add(rudp::Contact(temp_id, rudp::EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
+  //rudp_.Add(rudp::Contact(temp_id, EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
   //                                                    rudp::Endpoint{GetLocalIp(), 5433}},
   //                        our_fob_.public_key()),
   //          [this, temp_id](asio::error_code error) {

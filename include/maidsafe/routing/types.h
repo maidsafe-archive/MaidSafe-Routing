@@ -34,8 +34,8 @@
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/tagged_value.h"
-#include "maidsafe/rudp/contact.h"
-#include "maidsafe/rudp/types.h"
+#include "maidsafe/routing/contact.h"
+#include "maidsafe/routing/endpoint_pair.h"
 
 namespace maidsafe {
 
@@ -77,8 +77,7 @@ void serialize(Archive& archive, SourceAddress& address) {
 }
 using FilterType = std::pair<NodeAddress, MessageId>;
 
-using Endpoint = rudp::Endpoint;
-using EndpointPair = rudp::EndpointPair;
+using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
 using Checksum = crypto::SHA1Hash;
@@ -87,7 +86,7 @@ using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address
 
 template <typename CompletionToken>
 using BootstrapHandlerHandler =
-    typename asio::handler_type<CompletionToken, void(asio::error_code, rudp::Contact)>::type;
+    typename asio::handler_type<CompletionToken, void(asio::error_code, Contact)>::type;
 
 template <typename CompletionToken>
 using BootstrapReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;

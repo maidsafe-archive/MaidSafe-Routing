@@ -29,8 +29,7 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/contact.h"
+#include "maidsafe/routing/contact.h"
 
 namespace maidsafe {
 
@@ -39,11 +38,11 @@ namespace routing {
 namespace test {
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
-  rudp::ManagedConnections rudp;
   asio::io_service io_service(1);
+  boost::asio::io_service boost_io_service;
   auto our_id(Address(RandomString(Address::kSize)));
 
-  ConnectionManager connection_manager(io_service, rudp, our_id);
+  ConnectionManager connection_manager(io_service, boost_io_service, our_id);
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses(60, Address(RandomString(Address::kSize)));
   // iterate and fill oruting table
@@ -51,7 +50,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   for (auto& node : addresses) {
     NodeInfo nodeinfo_to_add(node, fob);
     EXPECT_TRUE(connection_manager.SuggestNodeToAdd(nodeinfo_to_add.id));
-    rudp::EndpointPair endpoint_pair;
+    EndpointPair endpoint_pair;
     endpoint_pair.local = (GetRandomEndpoint());
     endpoint_pair.external = (GetRandomEndpoint());
     connection_manager.AddNode(nodeinfo_to_add, endpoint_pair);

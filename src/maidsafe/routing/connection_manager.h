@@ -77,7 +77,7 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add, rudp::EndpointPair);
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add, EndpointPair);
 
   void AddNode(crux::endpoint endpoint);
 
