@@ -37,20 +37,20 @@ namespace test {
 TEST(UtilsTest, BEH_Serialisation) {
   // Load/save endpoints in IPv4 format
   auto test_address = address{GetRandomIPv4Address()};
-  auto endpoint_v4 = rudp::Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
+  auto endpoint_v4 = Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
   auto serialised_endpoint = Serialise(endpoint_v4);
 
   InputVectorStream binary_input_stream{serialised_endpoint};
-  auto parsed_endpoint = Parse<rudp::Endpoint>(binary_input_stream);
+  auto parsed_endpoint = Parse<Endpoint>(binary_input_stream);
   EXPECT_EQ(endpoint_v4, parsed_endpoint);
 
   // Load/save endpoints in IPv6 format
   test_address = address{GetRandomIPv6Address()};
-  auto endpoint_v6 = rudp::Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
+  auto endpoint_v6 = Endpoint{test_address, static_cast<Port>(RandomUint32() % 65536)};
   serialised_endpoint = Serialise(endpoint_v6);
 
   binary_input_stream.swap_vector(serialised_endpoint);
-  parsed_endpoint = Parse<rudp::Endpoint>(binary_input_stream);
+  parsed_endpoint = Parse<Endpoint>(binary_input_stream);
   EXPECT_EQ(endpoint_v6, parsed_endpoint);
 
   // Load/save EndpointPair

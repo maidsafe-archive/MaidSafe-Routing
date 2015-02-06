@@ -26,9 +26,6 @@
 #include "boost/asio/spawn.hpp"
 #include "asio/use_future.hpp"
 
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/contact.h"
-
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"

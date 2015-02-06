@@ -29,8 +29,6 @@
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/rudp/types.h"
-#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 
@@ -60,7 +58,7 @@ address_v4 GetRandomIPv4Address();
 
 address_v6 GetRandomIPv6Address();
 
-rudp::Endpoint GetRandomEndpoint();
+Endpoint GetRandomEndpoint();
 
 }  // namespace test
 

@@ -39,7 +39,6 @@ This object in itself will very possibly end up in rudp itself.
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
-#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/contact.h"

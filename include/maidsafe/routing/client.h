@@ -30,8 +30,6 @@
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/passport/types.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/accumulator.h"
@@ -44,7 +42,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnections::Listener {
+class Client : std::enable_shared_from_this<Client> {
  public:
   Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
          const asymm::Keys& keys);
@@ -78,10 +76,10 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   Address OurId() const { return our_id_; }
 
  private:
-  virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) override final;
-  virtual void ConnectionLost(NodeId peer) override final;
+  virtual void MessageReceived(NodeId peer_id, std::vector<unsigned char> message);
+  virtual void ConnectionLost(NodeId peer);
 
-  void OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message);
+  void OnMessageReceived(NodeId peer_id, std::vector<unsigned char> serialised_message);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
@@ -94,7 +92,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   asio::io_service& io_service_;
   Address our_id_;
   asymm::Keys keys_;
-  rudp::ManagedConnections rudp_;
+  //rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   LruCache<unique_identifier, void> filter_;
   Accumulator<unique_identifier, SerialisedMessage> accumulator_;
@@ -105,8 +103,9 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
-                    handler);
+    // TODO(PeterJ)
+    //rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
+    //                handler);
   });
   return result.get();
 }
@@ -116,8 +115,9 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, Comp
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
-                    handler, local_endpoint);
+    // TODO(PeterJ)
+    //rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
+    //                handler, local_endpoint);
   });
   return result.get();
 }

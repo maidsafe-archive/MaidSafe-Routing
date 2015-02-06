@@ -45,8 +45,6 @@ destiations. In that case request a close_group message for this node.
 #include "asio/io_service.hpp"
 #include "boost/optional.hpp"
 
-#include "maidsafe/rudp/managed_connections.h"
-
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"

@@ -45,7 +45,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   ConnectionManager connection_manager(io_service, boost_io_service, our_id);
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses(60, Address(RandomString(Address::kSize)));
-  // iterate and fill oruting table
+  // iterate and fill routing table
   auto fob(PublicFob());
   for (auto& node : addresses) {
     NodeInfo nodeinfo_to_add(node, fob);
