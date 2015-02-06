@@ -49,7 +49,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   auto fob(PublicFob());
   for (auto& node : addresses) {
     NodeInfo nodeinfo_to_add(node, fob);
-    EXPECT_TRUE(connection_manager.SuggestNodeToAdd(nodeinfo_to_add.id));
+    EXPECT_TRUE(connection_manager.IsManaged(nodeinfo_to_add.id));
     EndpointPair endpoint_pair;
     endpoint_pair.local = (GetRandomEndpoint());
     endpoint_pair.external = (GetRandomEndpoint());

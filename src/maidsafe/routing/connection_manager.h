@@ -55,13 +55,25 @@ namespace maidsafe {
 namespace routing {
 
 class ConnectionManager {
+  class Comparison {
+   public:
+    explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
+
+    bool operator()(const Address& lhs, const Address& rhs) const {
+      return Address::CloserToTarget(lhs, rhs, our_id_);
+    }
+
+   private:
+    const Address our_id_;
+  };
  public:
-  ConnectionManager(asio::io_service& io_service,
+  ConnectionManager(asio::io_service& /*io_service*/,
                     boost::asio::io_service& boost_ios,
                     Address our_id)
-      : io_service_(io_service),
-        boost_ios_(boost_ios),
+      : boost_ios_(boost_ios),
+        our_id_(our_id),
         routing_table_(our_id),
+        peers_(Comparison(our_id)),
         current_close_group_() {}
 
   ConnectionManager(const ConnectionManager&) = delete;
@@ -70,36 +82,48 @@ class ConnectionManager {
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-  bool SuggestNodeToAdd(const Address& node_to_add) const;
+  bool IsManaged(const Address& node_to_add) const;
   std::vector<NodeInfo> GetTarget(const Address& target_node) const;
-  boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+  //boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
   boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add, EndpointPair);
 
-  void AddNode(crux::endpoint endpoint);
-
-  std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
-
-  size_t CloseGroupBucketDistance() const {
-    return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
+  std::vector<NodeInfo> OurCloseGroup() const {
+    std::vector<NodeInfo> result;
+    result.reserve(GroupSize);
+    size_t i = 0;
+    for (const auto& pair : peers_) {
+      if (++i > GroupSize) break;
+      result.push_back(pair.second.node_info());
+    }
+    return result;
   }
+
+  //size_t CloseGroupBucketDistance() const {
+  //  return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
+  //}
+
   bool AddressInCloseGroupRange(const Address& address) const {
-    if (routing_table_.Size() < GroupSize) {
+    if (peers_.size() < GroupSize) {
       return true;
     }
-    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
-                                  routing_table_.OurId());
+    //return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+    //                              routing_table_.OurId());
+    return NodeId::CloserToTarget(address, OurCloseGroup().back().id, our_id_);
   }
 
-  const Address& OurId() const { return routing_table_.OurId(); }
+  const Address& OurId() const { return our_id_; }
 
   boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
-    return routing_table_.GetPublicKey(node);
+    auto found_i = peers_.find(node);
+    if (found_i == peers_.end()) { return boost::none; }
+    return found_i->second.node_info().dht_fob.public_key();
   }
 
-  bool CloseGroupMember(const Address& their_id);
-  uint32_t Size() { return routing_table_.Size(); }
+  //bool CloseGroupMember(const Address& their_id);
+  //uint32_t Size() { return routing_table_.Size(); }
+  uint32_t Size() { return peers_.size(); }
 
   PeerNode* FindPeer(Address addr) {
     auto i = peers_.find(addr);
@@ -110,10 +134,11 @@ class ConnectionManager {
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
-  asio::io_service& io_service_;
+  //asio::io_service& io_service_;
   boost::asio::io_service& boost_ios_;
+  NodeId our_id_;
   RoutingTable routing_table_;
-  std::map<Address, PeerNode> peers_;
+  std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
 };

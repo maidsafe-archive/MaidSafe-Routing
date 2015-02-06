@@ -21,6 +21,11 @@
 
 namespace maidsafe { namespace routing {
 
+// TODO: The other way around
+inline std::error_code from_boost(const boost::system::error_code& ec) {
+  return std::make_error_code(static_cast<std::errc>(ec.value()));
+}
+
 inline boost::asio::ip::address_v4 to_boost(const asio::ip::address_v4& addr) {
   return boost::asio::ip::address_v4(addr.to_ulong());
 }

@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_PEER_NODE_H_
 
 #include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/boost_asio_conversions.h"
 #include "maidsafe/crux/socket.hpp"
 
 namespace maidsafe {
@@ -29,13 +30,17 @@ class PeerNode {
  public:
   using PublicPmid = passport::PublicPmid;
 
-  PeerNode(NodeId id, crux::endpoint endpoint, PublicPmid dht_fob)
+  PeerNode(NodeId id, std::shared_ptr<crux::socket> socket, PublicPmid dht_fob)
     : node_info_(id, std::move(dht_fob))
-    , remote_endpoint(endpoint)
+    , socket(socket)
   {}
 
-  template<class Message, class Handler> void Send(Message&&, Handler) {
-    assert(0 && "FIXME(PeterJ)");
+  template<class Message, class Handler> void Send(Message msg, const Handler& handler) {
+    auto msg_ptr = std::make_shared<Message>(std::move(msg));
+    socket->async_send(boost::asio::buffer(*msg_ptr),
+                       [msg_ptr, handler](boost::system::error_code error, size_t) {
+                         handler(from_boost(error));
+                       });
   }
 
   const NodeInfo& node_info() const { return node_info_; }
@@ -44,7 +49,6 @@ class PeerNode {
  private:
   NodeInfo node_info_;
   std::shared_ptr<crux::socket> socket;
-  crux::endpoint remote_endpoint;
   //int32_t rank;
   bool connected_;
 };

@@ -35,8 +35,9 @@ namespace maidsafe {
 
 namespace routing {
 
-bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
-  return routing_table_.CheckNode(node_to_add);
+bool ConnectionManager::IsManaged(const Address& node_id) const {
+  return peers_.find(node_id) != peers_.end();
+  //return routing_table_.CheckNode(node_to_add);
 }
 
 std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
@@ -47,18 +48,19 @@ std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) c
   return nodes;
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
-    const Address& node) {
-  routing_table_.DropNode(node);
-  return GroupChanged();
-}
+//boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+//    const Address& node) {
+//  routing_table_.DropNode(node);
+//  return GroupChanged();
+//}
 
 boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
-  routing_table_.DropNode(their_id);
+  //routing_table_.DropNode(their_id);
+  peers_.erase(their_id);
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add, EndpointPair eps) {
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
   boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
     boost::system::error_code error;
     auto socket = std::make_shared<crux::socket>(boost_ios_, crux::endpoint(boost::asio::ip::udp::v4(), 0));
@@ -67,10 +69,12 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_t
     socket->async_connect(to_boost(eps.external), yield[error]);
 
     if (!error) {
-      auto added = routing_table_.AddNode(node_to_add);
-      if (!added.first || added.second) {
-        return;
-      }
+      peers_.insert(std::make_pair(node_info.id,
+                                   PeerNode(node_info.id, socket, node_info.dht_fob)));
+      //auto added = routing_table_.AddNode(node_id);
+      //if (!added.first || added.second) {
+      //  return;
+      //}
     }
   });
   // FIXME: The above stuff happens inside io_service, the GroupChanged() function
@@ -79,14 +83,14 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_t
   return GroupChanged();
 }
 
-bool ConnectionManager::CloseGroupMember(const Address& their_id) {
-  auto close_group(routing_table_.OurCloseGroup());
-  return std::any_of(std::begin(close_group), std::end(close_group),
-                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
-}
+//bool ConnectionManager::CloseGroupMember(const Address& their_id) {
+//  auto close_group(routing_table_.OurCloseGroup());
+//  return std::any_of(std::begin(close_group), std::end(close_group),
+//                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
+//}
 
 boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
-  auto new_nodeinfo_group(routing_table_.OurCloseGroup());
+  auto new_nodeinfo_group(OurCloseGroup());
   std::vector<Address> new_group;
   for (const auto& nodes : new_nodeinfo_group)
     new_group.push_back(nodes.id);

@@ -200,7 +200,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                            key));
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -221,7 +221,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType data,
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     // FIXME(dirvine) need serialiseable data types  :29/01/2015 // , data));
     for (const auto& target : connection_manager_.GetTarget(key)) {
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -241,7 +241,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType fu
 
     for (const auto& target : connection_manager_.GetTarget(key)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](boost::system::error_code) {});
+      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
     }
   });
   return result.get();
@@ -308,7 +308,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
           MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
           MessageTypeTag::GetDataResponse, response));
       for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
-        connection_manager_.FindPeer(target.id)->Send(message, [](boost::system::error_code error) {
+        connection_manager_.FindPeer(target.id)->Send(message, [](asio::error_code error) {
           if (error) {
             LOG(kWarning) << "cannot send" << error.message();
           }
@@ -400,7 +400,7 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 // reply with our details;
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_header) {
-  if (!connection_manager_.SuggestNodeToAdd(connect.get_requester_id()))
+  if (!connection_manager_.IsManaged(connect.get_requester_id()))
     return;
   auto targets(connection_manager_.GetTarget(connect.get_requester_id()));
   ConnectResponse respond(connect.get_requester_endpoints(), NextEndpointPair(),
@@ -415,7 +415,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
   // :24/01/2015
   for (auto& target : targets) {
     connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
-               [connect, this](boost::system::error_code error_code) {
+               [connect, this](asio::error_code error_code) {
       if (error_code)
         return;
     });
@@ -441,7 +441,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
-  if (!connection_manager_.SuggestNodeToAdd(connect_response.get_requester_id()))
+  if (!connection_manager_.IsManaged(connect_response.get_requester_id()))
     return;
   auto added = connection_manager_.AddNode(
       NodeInfo(connect_response.get_requester_id(),
@@ -477,7 +477,7 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader orig_
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
   for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
-    connection_manager_.FindPeer(node.id)->Send(message, [](boost::system::error_code){});
+    connection_manager_.FindPeer(node.id)->Send(message, [](asio::error_code){});
   }
 }
 
@@ -488,14 +488,14 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
   for (const auto node : find_group_reponse.get_node_infos()) {
-    if (!connection_manager_.SuggestNodeToAdd(node.id))
+    if (!connection_manager_.IsManaged(node.id))
       continue;
     Connect message(NextEndpointPair(), OurId(), node.id, passport::PublicPmid(our_fob_));
     MessageHeader header(DestinationAddress(std::make_pair(Destination(node.id), boost::none)),
                          SourceAddress{OurSourceAddress()}, ++message_id_);
     for (const auto& target : connection_manager_.GetTarget(node.id))
       connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<Connect>::value(), message),
-                 [](boost::system::error_code) {});
+                 [](asio::error_code) {});
   }
 }
 
