@@ -105,8 +105,8 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>> {
   void HandleMessage(PostMessage post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
-  //virtual void MessageReceived(NodeId peer_id,
-  //                             rudp::ReceivedMessage serialised_message) override final;
+  virtual void MessageReceived(NodeId peer_id,
+                               std::vector<unsigned char> serialised_message);
   //virtual void ConnectionLost(NodeId peer) override final;
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
@@ -276,104 +276,104 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   //    }
   //  });
 }
-// TODO(PeterJ):
-//template <typename Child>
-//void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
-//                                         std::vector<unsigned char> serialised_message) {
-//  InputVectorStream binary_input_stream{serialised_message};
-//  MessageHeader header;
-//  MessageTypeTag tag;
-//  Authority from_authority;
-//  typename Child::DataType data_tag;
-//  Identity key;
-//  try {
-//    Parse(binary_input_stream, header, tag);
-//  } catch (const std::exception&) {
-//    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
-//    return;
-//  }
-//
-//  if (filter_.Check(header.FilterValue()))
-//    return;  // already seen
-//  // add to filter as soon as posible
-//  filter_.Add({header.FilterValue()});
-//
-//  // We add these to cache
-//  if (tag == MessageTypeTag::GetDataResponse) {
-//    auto data = Parse<GetDataResponse>(binary_input_stream);
-//    cache_.Add(data.get_key(), data.get_data());
-//  }
-//  // if we can satisfy request from cache we do
-//  if (tag == MessageTypeTag::GetData) {
-//    auto data = Parse<GetData>(binary_input_stream);
-//    auto test = cache_.Get(data.get_key());
-//    if (test) {
-//      GetDataResponse response(data.get_key(), test.value());
-//      auto message(Serialise(
-//          MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
-//          MessageTypeTag::GetDataResponse, response));
-//      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
-//        target.Send(message, [](boost::system::error_code error) {
-//          if (error) {
-//            LOG(kWarning) << "cannot send" << error.message();
-//          }
-//        });
-//      return;
-//    }
-//  }
-//
-//  // send to next node(s) even our close group (swarm mode)
-//  for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
-//    target.Send(serialised_message, [](asio::error_code error) {
-//      if (error) {
-//        LOG(kWarning) << "cannot send" << error.message();
-//      }
-//    });
-//  // FIXME(dirvine) We need new rudp for this :26/01/2015
-//  if (header.RelayedMessage() &&
-//      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
-//                  [&header](const Address& node) { return node == *header.RelayedMessage(); })) {
-//    // send message to connected node
-//    return;
-//  }
-//
-//  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
-//    return;  // not for us
-//
-//  // FIXME(dirvine) Sentinel check here!!  :19/01/2015
-//  switch (tag) {
-//    case MessageTypeTag::Connect:
-//      HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
-//      break;
-//    case MessageTypeTag::ConnectResponse:
-//      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
-//      break;
-//    case MessageTypeTag::FindGroup:
-//      HandleMessage(Parse<FindGroup>(binary_input_stream), std::move(header));
-//      break;
-//    case MessageTypeTag::FindGroupResponse:
-//      HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
-//      break;
-//    case MessageTypeTag::GetData:
-//      Parse(binary_input_stream, from_authority, data_tag, key);
-//      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
-//                                           OurAuthority(Address(key.string()), header), data_tag,
-//                                           key);
-//      break;
-//    case MessageTypeTag::GetDataResponse:
-//      HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
-//      break;
-//    case MessageTypeTag::PutData:
-//      HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
-//      break;
-//    case MessageTypeTag::PostMessage:
-//      HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
-//      break;
-//    default:
-//      LOG(kWarning) << "Received message of unknown type.";
-//      break;
-//  }
-//}
+
+template <typename Child>
+void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
+                                         std::vector<unsigned char> serialised_message) {
+  InputVectorStream binary_input_stream{serialised_message};
+  MessageHeader header;
+  MessageTypeTag tag;
+  Authority from_authority;
+  typename Child::DataType data_tag;
+  Identity key;
+  try {
+    Parse(binary_input_stream, header, tag);
+  } catch (const std::exception&) {
+    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
+    return;
+  }
+
+  if (filter_.Check(header.FilterValue()))
+    return;  // already seen
+  // add to filter as soon as posible
+  filter_.Add({header.FilterValue()});
+
+  // We add these to cache
+  if (tag == MessageTypeTag::GetDataResponse) {
+    auto data = Parse<GetDataResponse>(binary_input_stream);
+    cache_.Add(data.get_key(), data.get_data());
+  }
+  // if we can satisfy request from cache we do
+  if (tag == MessageTypeTag::GetData) {
+    auto data = Parse<GetData>(binary_input_stream);
+    auto test = cache_.Get(data.get_key());
+    if (test) {
+      GetDataResponse response(data.get_key(), test.value());
+      auto message(Serialise(
+          MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
+          MessageTypeTag::GetDataResponse, response));
+      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
+        connection_manager_.FindPeer(target.id)->Send(message, [](boost::system::error_code error) {
+          if (error) {
+            LOG(kWarning) << "cannot send" << error.message();
+          }
+        });
+      return;
+    }
+  }
+
+  // send to next node(s) even our close group (swarm mode)
+  for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
+    connection_manager_.FindPeer(target.id)->Send(serialised_message, [](asio::error_code error) {
+      if (error) {
+        LOG(kWarning) << "cannot send" << error.message();
+      }
+    });
+  // FIXME(dirvine) We need new rudp for this :26/01/2015
+  if (header.RelayedMessage() &&
+      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
+                  [&header](const Address& node) { return node == *header.RelayedMessage(); })) {
+    // send message to connected node
+    return;
+  }
+
+  if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
+    return;  // not for us
+
+  // FIXME(dirvine) Sentinel check here!!  :19/01/2015
+  switch (tag) {
+    case MessageTypeTag::Connect:
+      HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
+      break;
+    case MessageTypeTag::ConnectResponse:
+      HandleMessage(Parse<ConnectResponse>(binary_input_stream));
+      break;
+    case MessageTypeTag::FindGroup:
+      HandleMessage(Parse<FindGroup>(binary_input_stream), std::move(header));
+      break;
+    case MessageTypeTag::FindGroupResponse:
+      HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
+      break;
+    case MessageTypeTag::GetData:
+      Parse(binary_input_stream, from_authority, data_tag, key);
+      static_cast<Child*>(this)->HandleGet(header.GetSource(), from_authority,
+                                           OurAuthority(Address(key.string()), header), data_tag,
+                                           key);
+      break;
+    case MessageTypeTag::GetDataResponse:
+      HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
+      break;
+    case MessageTypeTag::PutData:
+      HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
+      break;
+    case MessageTypeTag::PostMessage:
+      HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
+      break;
+    default:
+      LOG(kWarning) << "Received message of unknown type.";
+      break;
+  }
+}
 
 template <typename Child>
 Authority RoutingNode<Child>::OurAuthority(const Address& element,
@@ -500,7 +500,7 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
                          SourceAddress{OurSourceAddress()}, ++message_id_);
     for (const auto& target : connection_manager_.GetTarget(node.id))
       connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<Connect>::value(), message),
-                 [](boost::system::error_code error) {});
+                 [](boost::system::error_code) {});
   }
 }
 
