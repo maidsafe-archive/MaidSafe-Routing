@@ -289,7 +289,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
 TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   // FIXME: The ios seems useless, RUDP has it's own and we don't have any
   // other async actions (same with the tests below).
-  asio::io_service ios;
+  AsioService ios(1);
 
   passport::Pmid pmid = passport::CreatePmidAndSigner().first;
 

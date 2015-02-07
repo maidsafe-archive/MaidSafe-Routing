@@ -34,7 +34,7 @@ namespace routing {
 class Sentinel {
  public:
   using ResultType = std::tuple<SourceAddress, MessageTypeTag, SerialisedMessage>;
-  explicit Sentinel(asio::io_service& io_service) : io_service_(io_service) {}
+  explicit Sentinel(AsioService& io_service) : io_service_(io_service) {}
   Sentinel(const Sentinel&) = delete;
   Sentinel(Sentinel&&) = delete;
   ~Sentinel() = default;
@@ -48,7 +48,7 @@ class Sentinel {
   std::vector<std::pair<asymm::PublicKey, Address>> AccumulateKeys(GroupAddress);
 
  private:
-  asio::io_service& io_service_;
+  AsioService& io_service_;
   Accumulator<NodeAddress, ResultType> node_accumulator_{std::chrono::minutes(20), 1U};
   Accumulator<GroupAddress, ResultType> group_accumulator_{std::chrono::minutes(20), QuorumSize};
   Accumulator<GroupAddress, ResultType> group_key_accumulator_{std::chrono::minutes(20),

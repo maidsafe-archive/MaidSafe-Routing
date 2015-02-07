@@ -40,7 +40,7 @@ namespace test {
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   rudp::ManagedConnections rudp;
-  asio::io_service io_service(1);
+  AsioService io_service(1);
   auto our_id(Address(RandomString(Address::kSize)));
 
   ConnectionManager connection_manager(io_service, rudp, our_id);

@@ -56,7 +56,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
+  RoutingNode(AsioService& io_service, boost::filesystem::path db_location,
               const passport::Pmid& pmid);
   RoutingNode() = delete;
   RoutingNode(const RoutingNode&) = delete;
@@ -124,7 +124,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  asio::io_service& io_service_;
+  AsioService& io_service_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -138,7 +138,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 };
 
 template <typename Child>
-RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
+RoutingNode<Child>::RoutingNode(AsioService& io_service, boost::filesystem::path db_location,
                                 const passport::Pmid& pmid)
     : io_service_(io_service),
       our_fob_(pmid),
@@ -183,7 +183,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                                                    CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  io_service_.post([=] {
+  io_service_.service().post([=] {
     MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
                              ++message_id_);
     auto message(Serialise(our_header, MessageToTag<GetData>::value(),
@@ -202,7 +202,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType data,
                                                    CompletionToken token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  io_service_.post([=] {
+  io_service_.service().post([=] {
     auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
                                          OurSourceAddress(), ++message_id_),
                            MessageToTag<PutData>::value(), DataType::Tag::kValue,
@@ -221,7 +221,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType fu
                                                      CompletionToken token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  io_service_.post([=] {
+  io_service_.service().post([=] {
     auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
                                          OurSourceAddress(), ++message_id_),
                            MessageToTag<PostMessage>::value(), FunctorType::Tag::kValue, functor));
