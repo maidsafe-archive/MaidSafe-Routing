@@ -67,12 +67,10 @@ class ConnectionManager {
     const Address our_id_;
   };
  public:
-  ConnectionManager(asio::io_service& /*io_service*/,
-                    boost::asio::io_service& boost_ios,
-                    Address our_id)
+  ConnectionManager(boost::asio::io_service& boost_ios, Address our_id)
       : boost_ios_(boost_ios),
         our_id_(our_id),
-        routing_table_(our_id),
+        //routing_table_(our_id),
         peers_(Comparison(our_id)),
         current_close_group_() {}
 
@@ -83,7 +81,7 @@ class ConnectionManager {
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
   bool IsManaged(const Address& node_to_add) const;
-  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
+  std::set<Address, Comparison> GetTarget(const Address& target_node) const;
   //boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
@@ -131,13 +129,15 @@ class ConnectionManager {
     return &i->second;
   }
 
+  void Clear() { peers_.clear(); }
+
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
   //asio::io_service& io_service_;
   boost::asio::io_service& boost_ios_;
   NodeId our_id_;
-  RoutingTable routing_table_;
+  //RoutingTable routing_table_;
   std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;

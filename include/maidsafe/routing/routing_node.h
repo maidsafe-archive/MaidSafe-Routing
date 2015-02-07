@@ -55,13 +55,12 @@ class RoutingNode {
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
-              const passport::Pmid& pmid);
+  RoutingNode(boost::filesystem::path db_location, const passport::Pmid& pmid);
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
   RoutingNode& operator=(RoutingNode&&) = delete;
-  ~RoutingNode() = default;
+  ~RoutingNode();
 
   // // will return with the data
   template <typename T, typename CompletionToken>
@@ -122,11 +121,11 @@ class RoutingNode {
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  asio::io_service& io_service_;
+  //asio::io_service& io_service_;
   // Crux uses boost io_service.
-  boost::asio::io_service::work work_;
-  boost::asio::io_service boost_ios_;
-  std::thread boost_ios_runner_;
+  boost::asio::io_service io_service_;
+  std::unique_ptr<boost::asio::io_service::work> work_;
+  std::thread io_service_runner_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -140,16 +139,16 @@ class RoutingNode {
 };
 
 template <typename Child>
-RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
+RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location,
                                 const passport::Pmid& pmid)
-    : io_service_(io_service),
-      work_(boost_ios_),
-      boost_ios_runner_([=]() { boost_ios_.run(); }),
+    : io_service_(),
+      work_(new boost::asio::io_service::work(io_service_)),
+      io_service_runner_([=]() { io_service_.run(); }),
       our_fob_(pmid),
       bootstrap_node_(boost::none),
       //rudp_(),
       bootstrap_handler_(std::move(db_location)),
-      connection_manager_(io_service, boost_ios_, Address(pmid.name()->string())),
+      connection_manager_(io_service_, Address(pmid.name()->string())),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service_),
       cache_(std::chrono::minutes(60)) {
@@ -186,6 +185,16 @@ RoutingNode<Child>::RoutingNode(asio::io_service& io_service, boost::filesystem:
 
 }
 
+template<typename Child> RoutingNode<Child>::~RoutingNode() {
+  std::cerr << "~RoutingNode 1\n";
+  work_.reset();
+  std::cerr << "~RoutingNode 2\n";
+  connection_manager_.Clear();
+  std::cerr << "~RoutingNode 3\n";
+  io_service_runner_.join();
+  std::cerr << "~RoutingNode 4\n";
+}
+
 template <typename Child>
 template <typename DataType, typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
@@ -200,7 +209,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
                            key));
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -221,7 +230,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address key, DataType data,
     // FIXME(PeterJ) Call the above handler when all send handlers finish.
     // FIXME(dirvine) need serialiseable data types  :29/01/2015 // , data));
     for (const auto& target : connection_manager_.GetTarget(key)) {
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
       //rudp_.Send(target.id, message, handler);
     }
   });
@@ -241,7 +250,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType fu
 
     for (const auto& target : connection_manager_.GetTarget(key)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
-      connection_manager_.FindPeer(target.id)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
     }
   });
   return result.get();
@@ -308,7 +317,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
           MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
           MessageTypeTag::GetDataResponse, response));
       for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
-        connection_manager_.FindPeer(target.id)->Send(message, [](asio::error_code error) {
+        connection_manager_.FindPeer(target)->Send(message, [](asio::error_code error) {
           if (error) {
             LOG(kWarning) << "cannot send" << error.message();
           }
@@ -319,7 +328,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
 
   // send to next node(s) even our close group (swarm mode)
   for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
-    connection_manager_.FindPeer(target.id)->Send(serialised_message, [](asio::error_code error) {
+    connection_manager_.FindPeer(target)->Send(serialised_message, [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "cannot send" << error.message();
       }
@@ -414,7 +423,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader orig_heade
   // shutdown
   // :24/01/2015
   for (auto& target : targets) {
-    connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
+    connection_manager_.FindPeer(target)->Send(Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
                [connect, this](asio::error_code error_code) {
       if (error_code)
         return;
@@ -477,7 +486,7 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader orig_
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
   for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
-    connection_manager_.FindPeer(node.id)->Send(message, [](asio::error_code){});
+    connection_manager_.FindPeer(node)->Send(message, [](asio::error_code){});
   }
 }
 
@@ -494,7 +503,7 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     MessageHeader header(DestinationAddress(std::make_pair(Destination(node.id), boost::none)),
                          SourceAddress{OurSourceAddress()}, ++message_id_);
     for (const auto& target : connection_manager_.GetTarget(node.id))
-      connection_manager_.FindPeer(target.id)->Send(Serialise(header, MessageToTag<Connect>::value(), message),
+      connection_manager_.FindPeer(target)->Send(Serialise(header, MessageToTag<Connect>::value(), message),
                  [](asio::error_code) {});
   }
 }

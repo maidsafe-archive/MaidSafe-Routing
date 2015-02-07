@@ -30,8 +30,8 @@ class PeerNode {
  public:
   using PublicPmid = passport::PublicPmid;
 
-  PeerNode(NodeId id, std::shared_ptr<crux::socket> socket, PublicPmid dht_fob)
-    : node_info_(id, std::move(dht_fob))
+  PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
+    : node_info_(std::move(node_info))
     , socket(socket)
   {}
 

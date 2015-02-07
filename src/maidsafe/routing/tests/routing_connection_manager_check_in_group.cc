@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <vector>
-#include "boost/asio/io_service.hpp"
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
@@ -38,11 +37,10 @@ namespace routing {
 namespace test {
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
-  asio::io_service io_service(1);
-  boost::asio::io_service boost_io_service;
+  boost::asio::io_service io_service;
   auto our_id(Address(RandomString(Address::kSize)));
 
-  ConnectionManager connection_manager(io_service, boost_io_service, our_id);
+  ConnectionManager connection_manager(io_service, our_id);
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses(60, Address(RandomString(Address::kSize)));
   // iterate and fill routing table

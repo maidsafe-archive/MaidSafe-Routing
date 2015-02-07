@@ -40,12 +40,18 @@ bool ConnectionManager::IsManaged(const Address& node_id) const {
   //return routing_table_.CheckNode(node_to_add);
 }
 
-std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
-  auto nodes(routing_table_.TargetNodes(target_node));
-  //nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
-  //                           [](NodeInfo& node) { return !node.connected(); }),
-  //            std::end(nodes));
-  return nodes;
+std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(const Address& target_node) const {
+  // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
+  auto result = std::set<Address, ConnectionManager::Comparison>(Comparison(target_node));
+  for (const auto& peer : peers_) {
+    result.insert(peer.first);
+  }
+  return result;
+  //auto nodes(routing_table_.TargetNodes(target_node));
+  ////nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+  ////                           [](NodeInfo& node) { return !node.connected(); }),
+  ////            std::end(nodes));
+  //return nodes;
 }
 
 //boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
@@ -63,18 +69,14 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
 boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
   boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
     boost::system::error_code error;
-    auto socket = std::make_shared<crux::socket>(boost_ios_, crux::endpoint(boost::asio::ip::udp::v4(), 0));
+    static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+    auto socket = std::make_shared<crux::socket>(boost_ios_, unspecified_ep);
 
     // TODO(PeterJ): Try both endpoints, choose the first one that connects.
     socket->async_connect(to_boost(eps.external), yield[error]);
 
     if (!error) {
-      peers_.insert(std::make_pair(node_info.id,
-                                   PeerNode(node_info.id, socket, node_info.dht_fob)));
-      //auto added = routing_table_.AddNode(node_id);
-      //if (!added.first || added.second) {
-      //  return;
-      //}
+      peers_.insert(std::make_pair(node_info.id, PeerNode(node_info, socket)));
     }
   });
   // FIXME: The above stuff happens inside io_service, the GroupChanged() function
