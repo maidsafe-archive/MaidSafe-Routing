@@ -139,14 +139,7 @@ class DataManager {
  public:
   using account_type = MaidManagerAccount;
   template <typename T>
-  HandleGetReturn HandleGet(SourceAddress from, Identity data_name) {
-    // FIXME(dirvine) We need to pass along the full source address to retain the ReplyTo field
-    // :01/02/2015
-    static_cast<Child*>(this)
-        ->template Get<T>(data_name, std::get<0>(from), [](asio::error_code error) {
-          if (error)
-            LOG(kWarning) << "could not send from datamanager ";
-        });
+  HandleGetReturn HandleGet(SourceAddress /* from */, Identity /* data_name */) {
     return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
   }
   template <typename T>
@@ -319,8 +312,8 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   Address from(Address(RandomString(Address::kSize)));
   Address to(Address(RandomString(Address::kSize)));
 
-  n.Get<ImmutableData>(key, from, [](asio::error_code /* error */) {});
-  n.Get<MutableData>(key, from, [](asio::error_code /* error */) {});
+  n.Get<ImmutableData>(key, [](asio::error_code /* error */) {});
+  n.Get<MutableData>(key, [](asio::error_code /* error */) {});
 
   // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
   // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});

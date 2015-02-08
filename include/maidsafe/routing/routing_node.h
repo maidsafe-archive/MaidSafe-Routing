@@ -68,13 +68,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 
   // // will return with the data
   template <typename T, typename CompletionToken>
-  GetReturn<CompletionToken> Get(Identity key, Address to, CompletionToken token);
+  GetReturn<CompletionToken> Get(Identity key, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename DataType, typename CompletionToken>
-  PutReturn<CompletionToken> Put(Identity key, Address to, DataType data, CompletionToken token);
+  PutReturn<CompletionToken> Put(Address to, DataType data, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename FunctorType, typename CompletionToken>
-  PostReturn<CompletionToken> Post(Address key, FunctorType functor, CompletionToken token);
+  PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken token);
 
   void AddBootstrapContact(rudp::Contact bootstrap_contact) {
     bootstrap_handler_.AddBootstrapContacts(std::vector<rudp::Contact>{bootstrap_contact});
@@ -180,15 +180,38 @@ RoutingNode<Child>::RoutingNode(AsioService& io_service, boost::filesystem::path
 
 template <typename Child>
 template <typename DataType, typename CompletionToken>
-GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
-                                                   CompletionToken token) {
+GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.service().post([=] {
-    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
-                             ++message_id_, Authority::node);
+    MessageHeader our_header(std::make_pair(Destination(Address(key.string())), boost::none),
+                             OurSourceAddress(), ++message_id_, Authority::node);
     GetData request(key, OurSourceAddress(), DataType::Tag::kValue);
     auto message(Serialise(our_header, MessageToTag<GetData>::value(), request));
+    for (const auto& target : connection_manager_.GetTarget(Address(key.string()))) {
+      rudp_.Send(target.id, message, handler);
+    }
+  });
+  return result.get();
+}
+// As this is a routing_node this should be renamed to PutPublicPmid one time
+// and possibly it should be a single type it deals with rather than Put<DataType> as this call is
+// special
+// amongst all node types and is the only unauthorised Put anywhere
+// nodes have no reason to Put anywhere else
+template <typename Child>
+template <typename DataType, typename CompletionToken>
+PutReturn<CompletionToken> RoutingNode<Child>::Put(Address to, DataType data,
+                                                   CompletionToken token) {
+  PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  io_service_.service().post([=] {
+    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
+                             ++message_id_, Authority::client);
+    PutData request(DataType::Tag::kValue, data.serialise());
+    // FIXME(dirvine) For client in real put this needs signed :08/02/2015
+    // fixme data should serialise properly and not require the above call to serialse()
+    auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
     for (const auto& target : connection_manager_.GetTarget(to)) {
       rudp_.Send(target.id, message, handler);
     }
@@ -197,36 +220,19 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, Address to,
 }
 
 template <typename Child>
-template <typename DataType, typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode<Child>::Put(Identity key, Address to, DataType data,
-                                                   CompletionToken token) {
-  PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
-  asio::async_result<decltype(handler)> result(handler);
-  io_service_.service().post([=] {
-    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
-                             ++message_id_);
-    auto message(Serialise(our_header, MessageToTag<PutData>::value(),
-                           OurAuthority(Address(key.string()), our_header), DataType::Tag::kValue,
-                           data.Serialise()));  //
-    for (const auto& target : connection_manager_.GetTarget(key)) {
-      rudp_.Send(target.id, message, handler);
-    }
-  });
-  return result.get();
-}
-
-template <typename Child>
 template <typename FunctorType, typename CompletionToken>
-PostReturn<CompletionToken> RoutingNode<Child>::Post(Address key, FunctorType functor,
+PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType functor,
                                                      CompletionToken token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   io_service_.service().post([=] {
-    auto message(Serialise(MessageHeader(std::make_pair(Destination(key), boost::none),
-                                         OurSourceAddress(), ++message_id_),
-                           MessageToTag<PostMessage>::value(), FunctorType::Tag::kValue, functor));
+    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
+                             ++message_id_, Authority::node);
+    PutData request(FunctorType::Tag::kValue, functor);
+    // FIXME(dirvine) This needs signed :08/02/2015
+    auto message(Serialise(our_header, MessageToTag<PostMessage>::value(), request));
 
-    for (const auto& target : connection_manager_.GetTarget(key)) {
+    for (const auto& target : connection_manager_.GetTarget(to)) {
       rudp_.Send(target, message, handler);
     }
   });

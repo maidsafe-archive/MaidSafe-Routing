@@ -24,7 +24,6 @@
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -38,13 +37,13 @@ class PutData {
 
   template <typename T, typename U>
   PutData(T&& key, U&& data)
-      : key_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
+      : tag_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_{std::move(other.tag_)},
                                                data_{std::move(other.data_)} {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    key_ = std::move(other.key_);
+    tag_ = std::move(other.tag_);
     data_ = std::move(other.data_);
     return *this;
   }
@@ -56,14 +55,14 @@ class PutData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_, data_);
+    archive(tag_, data_);
   }
 
-  Address get_key() { return key_; }
+  DataTagValue get_tag() { return tag_; }
   SerialisedData get_data() { return data_; }
 
  private:
-  Address key_;
+  DataTagValue tag_;
   SerialisedData data_;
 };
 
