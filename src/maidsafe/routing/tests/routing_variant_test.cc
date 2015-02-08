@@ -42,7 +42,7 @@ TEST(RoutingVariantTest, BEH_Variant) {
   z = 32;
   EXPECT_TRUE(bool(z));
   ASSERT_EQ(*z.target<int>(), 32);
-  EXPECT_EQ(z.target_type(), typeid(int));
+  EXPECT_EQ(z.target_type(), typeid(int));  // NOLINT
   z = std::string("hello again");
   EXPECT_EQ(z.target_type(), typeid(std::string));
 
