@@ -39,7 +39,6 @@ TEST(RoutingVariantTest, BEH_ExpextedVariant) {
   EXPECT_TRUE(bool(v));
   EXPECT_TRUE(bool(*v));
   EXPECT_TRUE(bool(x));
-  EXPECT_FALSE(bool(x));
   *x = 32;
   EXPECT_TRUE(bool(x));
   ASSERT_EQ(*x->target<int>(), 32);
@@ -52,7 +51,7 @@ TEST(RoutingVariantTest, BEH_ExpextedVariant) {
   EXPECT_EQ(v->which(), 0u);
   EXPECT_EQ(x->which(), 1u);
   ASSERT_EQ(*v->target<int>(), 42);
-  ASSERT_EQ(*x->target<std::string>(), std::string("hello"));
+  ASSERT_EQ(*x->target<std::string>(), std::string("hello again"));
 
   int const& ref = eggs::variants::get<0>(*v);
 
