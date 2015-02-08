@@ -39,7 +39,7 @@ namespace {
 GetDataResponse GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return GetDataResponse{Address{RandomString(Address::kSize)},
+  return GetDataResponse{Identity{RandomString(Address::kSize)},
                          SerialisedData(serialised_data.begin(), serialised_data.end())};
 }
 

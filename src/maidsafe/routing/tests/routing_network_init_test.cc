@@ -25,6 +25,8 @@
 #include "asio/ip/udp.hpp"
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/expected/expected.hpp"
+#include "eggs/variant.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -115,10 +117,10 @@ class MaidManager {
  public:
   using account_type = MaidManagerAccount;
   template <typename T>
-  void HandlePut(SourceAddress from, Identity data_name, T data) {
+  HandlePutReturn HandlePut(SourceAddress from, Identity data_name, T data) {
     auto found = static_cast<Child*>(this)->maid_account(std::get<0>(from));
     if (!found)
-      return;  // invalid we can return an error - no account if we wish
+      return boost::make_unexpected(MakeError(VaultErrors::no_such_account));
     found->stored += data.size();
     static_cast<Child*>(this)
         ->template Put<T>(data_name, data_name, data, [](asio::error_code error) {
@@ -137,7 +139,7 @@ class DataManager {
  public:
   using account_type = MaidManagerAccount;
   template <typename T>
-  void HandleGet(SourceAddress from, Identity data_name) {
+  HandleGetReturn HandleGet(SourceAddress from, Identity data_name) {
     // FIXME(dirvine) We need to pass along the full source address to retain the ReplyTo field
     // :01/02/2015
     static_cast<Child*>(this)
@@ -145,6 +147,7 @@ class DataManager {
           if (error)
             LOG(kWarning) << "could not send from datamanager ";
         });
+    return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
   }
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
@@ -157,7 +160,9 @@ class NaeManager {
  public:
   using account_type = MaidManagerAccount;
   template <typename T>
-  void HandleGet(SourceAddress from, Identity data_name);
+  HandleGetReturn HandleGet(SourceAddress /* from */, Identity /* data_name */) {
+    return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
+  }
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
 };  // becomes a dispatcher as its now multiple personas
@@ -166,7 +171,9 @@ class PmidManager {
  public:
   using account_type = MaidManagerAccount;
   template <typename T>
-  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
+  HandleGetReturn HandleGet(SourceAddress /* from */, Identity /* data_name */) {
+    return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
+  }
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
   void HandleChurn(CloseGroupDifference) {
@@ -178,7 +185,9 @@ class PmidNode {
  public:
   using account_type = PmidManagerAccount;
   template <typename T>
-  void HandleGet(SourceAddress /* from */, Identity /* data_name */) {}
+  HandleGetReturn HandleGet(SourceAddress /* from */, Identity /* data_name */) {
+    return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
+  }
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
 };
@@ -208,60 +217,61 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // get/put
   // std::tuple<ImmutableData, MutableData> DataTuple;
   template <typename DataType>
-  void HandleGet(SourceAddress from, Authority /* from_authority */, Authority authority,
-                 DataType data_type, Identity data_name) {
+  HandleGetReturn HandleGet(SourceAddress from, Authority authority, DataType data_type,
+                            Identity data_name) {
     switch (authority) {
       case Authority::nae_manager:
-        if (data_type == DataType::ImmutableData)
-          DataManager::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataType::MutableData)
-          DataManager::template HandleGet<ImmutableData>(from, data_name);
+        if (data_type == DataTagValue::kImmutableDataValue)
+          return DataManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataTagValue::kMutableDataValue)
+          return DataManager::template HandleGet<ImmutableData>(from, data_name);
         break;
       case Authority::node_manager:
-        if (data_type == DataType::ImmutableData)
-          PmidManager::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataType::MutableData)
-          PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        if (data_type == DataTagValue::kImmutableDataValue)
+          return PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataTagValue::kMutableDataValue)
+          return PmidManager::template HandleGet<ImmutableData>(from, data_name);
         break;
       case Authority::managed_node:
-        if (data_type == DataType::ImmutableData)
-          PmidNode::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataType::MutableData)
-          PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        if (data_type == DataTagValue::kImmutableDataValue)
+          return PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        else if (data_type == DataTagValue::kMutableDataValue)
+          return PmidNode::template HandleGet<ImmutableData>(from, data_name);
         break;
       default:
         break;
     }
+    return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
   }
-  template <typename DataType>
-  void HandlePut(SourceAddress from, Authority from_authority, Authority authority,
-                 DataType data_type) {
-    switch (authority) {
-      case Authority::nae_manager:
-        if (from_authority != Authority::client_manager)
-          break;
-        if (data_type == DataType::ImmutableData)
-          DataManager::template HandlePut<ImmutableData>(from, data_type);
-        else if (data_type == DataType::MutableData)
-          DataManager::template HandlePut<ImmutableData>(from, data_type);
-        break;
-      case Authority::node_manager:
-        if (data_type == DataType::ImmutableData)
-          PmidManager::template HandlePut<ImmutableData>(from, data_type);
-        else if (data_type == DataType::MutableData)
-          PmidManager::template HandlePut<ImmutableData>(from, data_type);
-        break;
-      case Authority::managed_node:
-        if (data_type == DataType::ImmutableData)
-          PmidNode::template HandlePut<ImmutableData>(from, data_type);
-        else if (data_type == DataType::MutableData)
-          PmidNode::template HandlePut<ImmutableData>(from, data_type);
-        break;
-      default:
-        break;
-    }
-  }
-
+  // template <typename DataType>
+  // void HandlePut(SourceAddress from, Authority from_authority, Authority authority,
+  //                DataType data_type) {
+  //   // switch (authority) {
+  //   //   case Authority::nae_manager:
+  //   //     if (from_authority != Authority::client_manager)
+  //   //       break;
+  //   //     if (data_type == DataType::ImmutableData)
+  //   //       DataManager::template HandlePut<ImmutableData>(from, data_type);
+  //   //     else if (data_type == DataType::MutableData)
+  //   //       DataManager::template HandlePut<ImmutableData>(from, data_type);
+  //   //     break;
+  //   //   case Authority::node_manager:
+  //   //     if (data_type == DataType::ImmutableData)
+  //   //       PmidManager::template HandlePut<ImmutableData>(from, data_type);
+  //   //     else if (data_type == DataType::MutableData)
+  //   //       PmidManager::template HandlePut<ImmutableData>(from, data_type);
+  //   //     break;
+  //   //   case Authority::managed_node:
+  //   //     if (data_type == DataType::ImmutableData)
+  //   //       PmidNode::template HandlePut<ImmutableData>(from, data_type);
+  //   //     else if (data_type == DataType::MutableData)
+  //   //       PmidNode::template HandlePut<ImmutableData>(from, data_type);
+  //   //     break;
+  //   //   default:
+  //   //     break;
+  //   // }
+  // }
+  //
   // default no post allowed unless implemented in upper layers
   bool HandlePost(const SerialisedMessage&) { return false; }
   // not in local cache do upper layers have it (called when we are in target group)
@@ -312,8 +322,8 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   n.Get<ImmutableData>(key, from, [](asio::error_code /* error */) {});
   n.Get<MutableData>(key, from, [](asio::error_code /* error */) {});
 
-  n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
-  n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});
+  // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
+  // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});
 }
 
 

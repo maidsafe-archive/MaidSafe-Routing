@@ -54,11 +54,11 @@ class GetDataResponse {
     archive(key_, data_);
   }
 
-  Address get_key() { return key_; }
+  Identity get_key() { return key_; }
   std::vector<byte> get_data() { return data_; }
 
  private:
-  Address key_;
+  Identity key_;
   std::vector<byte> data_;
 };
 
