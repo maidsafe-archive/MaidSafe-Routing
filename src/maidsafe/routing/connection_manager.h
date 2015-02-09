@@ -49,6 +49,7 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/crux/socket.hpp"
+#include "maidsafe/crux/acceptor.hpp"
 
 namespace maidsafe {
 
@@ -67,12 +68,16 @@ class ConnectionManager {
     const Address our_id_;
   };
  public:
-  ConnectionManager(boost::asio::io_service& boost_ios, Address our_id)
-      : boost_ios_(boost_ios),
+  ConnectionManager(boost::asio::io_service& ios, Address our_id)
+      : io_service_(ios),
+        acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
         our_id_(our_id),
         //routing_table_(our_id),
         peers_(Comparison(our_id)),
-        current_close_group_() {}
+        current_close_group_()
+  {
+    StartAccepting();
+  }
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -132,15 +137,19 @@ class ConnectionManager {
   void Clear() { peers_.clear(); }
 
  private:
+  void StartAccepting();
+
+ private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
   //asio::io_service& io_service_;
-  boost::asio::io_service& boost_ios_;
+  boost::asio::io_service& io_service_;
+  crux::acceptor acceptor_;
   NodeId our_id_;
   //RoutingTable routing_table_;
   std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
-  std::function<void(CloseGroupDifference)> group_changed_functor_;
+  //std::function<void(CloseGroupDifference)> group_changed_functor_;
 };
 
 }  // namespace routing

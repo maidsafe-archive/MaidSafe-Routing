@@ -42,7 +42,7 @@ bool ConnectionManager::IsManaged(const Address& node_id) const {
 
 std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(const Address& target_node) const {
   // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
-  auto result = std::set<Address, ConnectionManager::Comparison>(Comparison(target_node));
+  auto result = std::set<Address, Comparison>(Comparison(target_node));
   for (const auto& peer : peers_) {
     result.insert(peer.first);
   }
@@ -66,11 +66,25 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
   return GroupChanged();
 }
 
+void ConnectionManager::StartAccepting() {
+  auto socket = std::make_shared<crux::socket>(io_service_);
+  acceptor_.async_accept(*socket, [this, socket](boost::system::error_code error) {
+      if (error) {
+        if (error == boost::asio::error::operation_aborted) {
+          return;
+        }
+        return StartAccepting();
+      }
+      // TODO: Exchange node info and add the socket to the peers_ map.
+      StartAccepting();
+      });
+}
+
 boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
-  boost::asio::spawn(boost_ios_, [=](boost::asio::yield_context yield) {
+  boost::asio::spawn(io_service_, [=](boost::asio::yield_context yield) {
     boost::system::error_code error;
     static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
-    auto socket = std::make_shared<crux::socket>(boost_ios_, unspecified_ep);
+    auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
 
     // TODO(PeterJ): Try both endpoints, choose the first one that connects.
     socket->async_connect(to_boost(eps.external), yield[error]);

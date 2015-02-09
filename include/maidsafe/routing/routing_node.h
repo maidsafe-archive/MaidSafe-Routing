@@ -119,17 +119,15 @@ class RoutingNode {
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
+
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  //asio::io_service& io_service_;
-  // Crux uses boost io_service.
   boost::asio::io_service io_service_;
   std::unique_ptr<boost::asio::io_service::work> work_;
   std::thread io_service_runner_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
-  //rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
@@ -186,13 +184,11 @@ RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location,
 }
 
 template<typename Child> RoutingNode<Child>::~RoutingNode() {
-  std::cerr << "~RoutingNode 1\n";
   work_.reset();
-  std::cerr << "~RoutingNode 2\n";
+  // TODO(PeterJ): Not yet implemented in crux.
+  //acceptor_.close();
   connection_manager_.Clear();
-  std::cerr << "~RoutingNode 3\n";
   io_service_runner_.join();
-  std::cerr << "~RoutingNode 4\n";
 }
 
 template <typename Child>
