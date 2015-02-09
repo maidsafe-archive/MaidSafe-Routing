@@ -73,6 +73,7 @@ set(RoutingMessagesHeaders
 source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
 set(RoutingLibSources
     ${RoutingSourcesDir}/bootstrap_handler.cc
+    ${RoutingSourcesDir}/client.cc
     ${RoutingSourcesDir}/connection_manager.cc
     ${RoutingSourcesDir}/routing_table.cc
     ${RoutingSourcesDir}/routing_node.cc

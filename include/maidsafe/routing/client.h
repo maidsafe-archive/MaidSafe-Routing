@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -19,35 +19,37 @@
 #ifndef MAIDSAFE_ROUTING_CLIENT_H_
 #define MAIDSAFE_ROUTING_CLIENT_H_
 
-#include <chrono>
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
 #include "asio/io_service.hpp"
 #include "boost/filesystem/path.hpp"
-#include "boost/expected/expected.hpp"
+#include "boost/optional/optional.hpp"
 
+#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
-#include "maidsafe/passport/types.h"
 #include "maidsafe/rudp/managed_connections.h"
 #include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/accumulator.h"
-#include "maidsafe/routing/connection_manager.h"
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnections::Listener {
+class Client : public std::enable_shared_from_this<Client>,
+               public rudp::ManagedConnections::Listener {
  public:
   Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
-         const asymm::Keys& keys);
+         asymm::Keys our_keys);
+  Client() = delete;
   Client(const Client&) = delete;
   Client(Client&&) = delete;
   Client& operator=(const Client&) = delete;
@@ -74,38 +76,37 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   template <typename CompletionToken>
   RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
                                          CompletionToken token);
-  //
   Address OurId() const { return our_id_; }
 
  private:
   virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) override final;
   virtual void ConnectionLost(NodeId peer) override final;
 
-  void OnMessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
-  void HandleMessage(ConnectResponse connect_response);
-  void HandleMessage(GetDataResponse get_data_response);
-  void HandleMessage(PostMessage post);
-  void HandleMessage(RequestMessage request);
-  void HandleMessage(ResponseMessage response);
-
-  using unique_identifier = std::pair<SourceAddress, uint32_t>;
+  void HandleMessage(ConnectResponse&& connect_response);
+  void HandleMessage(GetDataResponse&& get_data_response);
+  void HandleMessage(PostMessage&& post_message);
+  void HandleMessage(RequestMessage&& request_message);
+  void HandleMessage(ResponseMessage&& response_message);
 
   asio::io_service& io_service_;
   Address our_id_;
-  asymm::Keys keys_;
+  asymm::Keys our_keys_;
+  boost::optional<Address> bootstrap_node_;
+  std::atomic<MessageId> message_id_;
   rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
-  LruCache<unique_identifier, void> filter_;
-  Accumulator<unique_identifier, SerialisedMessage> accumulator_;
+  LruCache<std::pair<Address, MessageId>, void> filter_;
+  Sentinel sentinel_;
 };
 
 template <typename CompletionToken>
 BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
+  auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, keys_,
                     handler);
   });
   return result.get();
@@ -115,8 +116,9 @@ template <typename CompletionToken>
 BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
+  auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), shared_from_this(), our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, keys_,
                     handler, local_endpoint);
   });
   return result.get();
@@ -126,7 +128,8 @@ template <typename CompletionToken>
 GetReturn<CompletionToken> Client::Get(Address data_key, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoGet(data_key, handler); });
+  auto this_ptr(shared_from_this());
+  io_service_.post([=] { this_ptr->DoGet(data_key, handler); });
   return result.get();
 }
 
@@ -135,7 +138,8 @@ PutReturn<CompletionToken> Client::Put(Address key, SerialisedMessage message,
                                        CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoPut(key, message, handler); });
+  auto this_ptr(shared_from_this());
+  io_service_.post([=] { this_ptr->DoPut(key, message, handler); });
   return result.get();
 }
 
@@ -144,7 +148,8 @@ PostReturn<CompletionToken> Client::Post(Address key, SerialisedMessage message,
                                          CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
-  io_service_.post([=] { DoPost(key, message, handler); });
+  auto this_ptr(shared_from_this());
+  io_service_.post([=] { this_ptr->DoPost(key, message, handler); });
   return result.get();
 }
 

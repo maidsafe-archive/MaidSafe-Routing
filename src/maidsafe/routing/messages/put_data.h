@@ -37,10 +37,10 @@ class PutData {
 
   template <typename T, typename U>
   PutData(T&& key, U&& data)
-      : tag_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
+      : tag_(std::forward<T>(key)), data_(std::forward<U>(data)) {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_{std::move(other.tag_)},
-                                               data_{std::move(other.data_)} {}
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+                                               data_(std::move(other.data_)) {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
     tag_ = std::move(other.tag_);
@@ -50,8 +50,6 @@ class PutData {
 
   PutData(const PutData&) = delete;
   PutData& operator=(const PutData&) = delete;
-
-  void operator()() {}
 
   template <typename Archive>
   void serialize(Archive& archive) {
