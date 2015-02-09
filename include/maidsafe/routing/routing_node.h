@@ -57,8 +57,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode(AsioService& io_service, boost::filesystem::path db_location,
-              const passport::Pmid& pmid);
+  RoutingNode(AsioService& io_service, boost::filesystem::path db_location);
   RoutingNode() = delete;
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
@@ -141,20 +140,19 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 };
 
 template <typename Child>
-RoutingNode<Child>::RoutingNode(AsioService& io_service, boost::filesystem::path db_location,
-                                const passport::Pmid& pmid)
+RoutingNode<Child>::RoutingNode(AsioService& io_service, boost::filesystem::path db_location)
     : io_service_(io_service),
-      our_fob_(pmid),
+      our_fob_(passport::Pmid(passport::Anpmid())),
       bootstrap_node_(boost::none),
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
-      connection_manager_(io_service, rudp_, Address(pmid.name()->string())),
+      connection_manager_(io_service, rudp_, Address(our_fob_.name()->string())),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service_),
       cache_(std::chrono::minutes(60)) {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
-  cache_.Add(pmid.name(), Serialise(passport::PublicPmid(our_fob_)));
+  cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
   // try an connect to any local nodes (5483) Expect to be told Node_Id
   auto temp_id(Address(RandomString(Address::kSize)));
   rudp_.Add(rudp::Contact(temp_id, rudp::EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},

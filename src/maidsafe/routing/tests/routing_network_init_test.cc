@@ -295,7 +295,6 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   // other async actions (same with the tests below).
   AsioService ios(1);
 
-  passport::Pmid pmid = passport::CreatePmidAndSigner().first;
 
   LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
 
@@ -303,7 +302,7 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
 
-  RoutingNode<VaultFacade> n(ios, *test_dir / "node.sqlite3", pmid);
+  RoutingNode<VaultFacade> n(ios, *test_dir / "node.sqlite3");
 
   auto value = NonEmptyString(RandomAlphaNumericString(65));
   Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
