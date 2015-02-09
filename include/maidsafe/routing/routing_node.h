@@ -57,7 +57,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode(AsioService& io_service, boost::filesystem::path db_location);
+  RoutingNode(boost::filesystem::path db_location);
   RoutingNode() = delete;
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
@@ -126,7 +126,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  AsioService& io_service_;
+  AsioService io_service_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -140,13 +140,13 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
 };
 
 template <typename Child>
-RoutingNode<Child>::RoutingNode(AsioService& io_service, boost::filesystem::path db_location)
-    : io_service_(io_service),
+RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location)
+    : io_service_(4),
       our_fob_(passport::Pmid(passport::Anpmid())),
       bootstrap_node_(boost::none),
       rudp_(),
       bootstrap_handler_(std::move(db_location)),
-      connection_manager_(io_service, rudp_, Address(our_fob_.name()->string())),
+      connection_manager_(io_service_, rudp_, Address(our_fob_.name()->string())),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service_),
       cache_(std::chrono::minutes(60)) {
