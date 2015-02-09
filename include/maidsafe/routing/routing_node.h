@@ -91,7 +91,9 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   // may be directly sent to a network Address
   void HandleMessage(GetData get_data, MessageHeader orig_header);
   // Each node wiht the data sends it back to the originator
-  void HandleMessage(GetDataResponse get_data_response, MessageHeader orig_header);
+  void HandleMessage(GetDataResponse get_data_response) {
+    static_cast<Child*>(this)->HandleGetDataResponse(get_data_response);
+  }
   // sent by a client to store data, client does information dispersal and sends a part to each of
   // its close group
   void HandleMessage(PutData put_data, MessageHeader orig_header);
@@ -284,25 +286,27 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
     auto data = Parse<GetDataResponse>(binary_input_stream);
-    cache_.Add(data.get_key(), data.get_data());
+    if (data.get_data())
+      cache_.Add(data.get_key(), *data.get_data());
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
     auto data = Parse<GetData>(binary_input_stream);
     auto test = cache_.Get(data.get_key());
-    if (test) {
-      GetDataResponse response(data.get_key(), test.value());
-      auto message(Serialise(MessageHeader(header.GetDestination(), OurSourceAddress(),
-                                           header.GetMessageId(), Authority::node),
-                             MessageTypeTag::GetDataResponse, response));
-      for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
-        rudp_.Send(target.id, message, [](asio::error_code error) {
-          if (error) {
-            LOG(kWarning) << "rudp cannot send" << error.message();
-          }
-        });
-      return;
-    }
+    // FIXME(dirvine) move to upper lauer :09/02/2015
+    // if (test) {
+    //   GetDataResponse response(data.get_key(), test);
+    //   auto message(Serialise(MessageHeader(header.GetDestination(), OurSourceAddress(),
+    //                                        header.GetMessageId(), Authority::node),
+    //                          MessageTypeTag::GetDataResponse, response));
+    //   for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
+    //     rudp_.Send(target.id, message, [](asio::error_code error) {
+    //       if (error) {
+    //         LOG(kWarning) << "rudp cannot send" << error.message();
+    //       }
+    //     });
+    //   return;
+    // }
   }
 
   // send to next node(s) even our close group (swarm mode)
@@ -338,10 +342,12 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
       HandleMessage(Parse<FindGroupResponse>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::GetData:
-      HandleMessage(Parse<GetData>(binary_input_stream), std::move(header));
+      static_cast<Child*>(this)
+          ->HandleMessage(Parse<GetData>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::GetDataResponse:
-      HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
+      // static_cast<Child*>(this)
+      //     ->HandleMessage(Parse<GetDataResponse>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::PutData:
       HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
@@ -499,10 +505,6 @@ void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
     // send back the data
   }
 }
-
-template <typename Child>
-void RoutingNode<Child>::HandleMessage(GetDataResponse /* get_data_response */,
-                                       MessageHeader /* orig_header */) {}
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(PutData /*put_data*/, MessageHeader /* orig_header */) {}

@@ -267,6 +267,7 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   //
   // default no post allowed unless implemented in upper layers
   bool HandlePost(const SerialisedMessage&) { return false; }
+  bool HandleGetResponse(const SerialisedMessage&) { return false; }
   // not in local cache do upper layers have it (called when we are in target group)
   // template <typename DataType>
   boost::expected<SerialisedMessage, maidsafe_error> HandleGet(Address) {
