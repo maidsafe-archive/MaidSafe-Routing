@@ -34,7 +34,7 @@ namespace routing {
 namespace test {
 
 TEST(RoutingVariantTest, BEH_ExpextedVariant) {
-  boost::expected<eggs::variant<int, std::string> const, maidsafe_error> v(42);
+  boost::expected<eggs::variant<int, std::string>, maidsafe_error> v(42);
   boost::expected<eggs::variant<int, std::string>, maidsafe_error> x(std::string("hello"));
   EXPECT_TRUE(bool(v));
   EXPECT_TRUE(bool(*v));
