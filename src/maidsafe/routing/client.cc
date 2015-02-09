@@ -45,7 +45,7 @@ Client::Client(asio::io_service& io_service, boost::filesystem::path db_location
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
-void Client::MessageReceived(NodeId peer_id, rudp::ReceivedMessage serialised_message) {
+void Client::MessageReceived(NodeId /*peer_id*/, rudp::ReceivedMessage serialised_message) {
   InputVectorStream binary_input_stream(std::move(serialised_message));
   MessageHeader header;
   MessageTypeTag tag;

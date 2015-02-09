@@ -106,7 +106,7 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
   auto result(handler);
   auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
                     handler);
   });
   return result.get();
@@ -118,38 +118,38 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, Comp
   auto result(handler);
   auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, keys_,
+    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
                     handler, local_endpoint);
   });
   return result.get();
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> Client::Get(Address data_key, CompletionToken token) {
+GetReturn<CompletionToken> Client::Get(Address /*data_key*/, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-  io_service_.post([=] { this_ptr->DoGet(data_key, handler); });
+//  io_service_.post([=] { this_ptr->DoGet(data_key, handler); });
   return result.get();
 }
 
 template <typename CompletionToken>
-PutReturn<CompletionToken> Client::Put(Address key, SerialisedMessage message,
+PutReturn<CompletionToken> Client::Put(Address /*key*/, SerialisedMessage /*message*/,
                                        CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-  io_service_.post([=] { this_ptr->DoPut(key, message, handler); });
+//  io_service_.post([=] { this_ptr->DoPut(key, message, handler); });
   return result.get();
 }
 
 template <typename CompletionToken>
-PostReturn<CompletionToken> Client::Post(Address key, SerialisedMessage message,
+PostReturn<CompletionToken> Client::Post(Address /*key*/, SerialisedMessage /*message*/,
                                          CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-  io_service_.post([=] { this_ptr->DoPost(key, message, handler); });
+//  io_service_.post([=] { this_ptr->DoPost(key, message, handler); });
   return result.get();
 }
 
