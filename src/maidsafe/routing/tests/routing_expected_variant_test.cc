@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2012 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,11 +16,16 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_
-#define MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_
+#include <vector>
+#include <string>
 
+#include "eggs/variant.hpp"
+#include "boost/expected/expected.hpp"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/routing/message_header.h"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -28,15 +33,31 @@ namespace routing {
 
 namespace test {
 
+TEST(RoutingVariantTest, BEH_ExpextedVariant) {
+  boost::expected<eggs::variant<int, std::string> const, maidsafe_error> v(42);
+  boost::expected<eggs::variant<int, std::string>, maidsafe_error> x(std::string("hello"));
+  EXPECT_TRUE(bool(v));
+  EXPECT_TRUE(bool(*v));
+  EXPECT_TRUE(bool(x));
+  *x = 32;
+  EXPECT_TRUE(bool(x));
+  ASSERT_EQ(*x->target<int>(), 32);
+  EXPECT_EQ(x->target_type(), typeid(int));  // NOLINT(dirvine>
+  *x = std::string("hello again");
+  EXPECT_EQ(x->target_type(), typeid(std::string));
 
-inline MessageHeader GenerateMessageHeader() {
-  return MessageHeader{
-      DestinationAddress{
-          std::make_pair(Destination(Address{RandomString(Address::kSize)}), boost::none)},
-      SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}), boost::none, boost::none},
-      MessageId{RandomUint32()}, Authority::client,
-      rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
-                asymm::GenerateKeyPair().private_key)};
+  ASSERT_EQ(*x->target<std::string>(), std::string("hello again"));
+
+  EXPECT_EQ(v->which(), 0u);
+  EXPECT_EQ(x->which(), 1u);
+  ASSERT_EQ(*v->target<int>(), 42);
+  ASSERT_EQ(*x->target<std::string>(), std::string("hello again"));
+
+  int const& ref = eggs::variants::get<0>(*v);
+
+  EXPECT_EQ(ref, 42);
+
+  EXPECT_THROW(eggs::variants::get<1>(*v), eggs::variants::bad_variant_access);
 }
 
 }  // namespace test
@@ -44,5 +65,3 @@ inline MessageHeader GenerateMessageHeader() {
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_MESSAGES_TESTS_GENERATE_MESSAGE_HEADER_H_

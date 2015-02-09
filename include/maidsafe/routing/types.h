@@ -26,6 +26,8 @@
 #include <vector>
 
 #include "boost/optional/optional.hpp"
+#include "boost/expected/expected.hpp"
+#include "eggs/variant.hpp"
 #include "asio/async_result.hpp"
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
@@ -33,6 +35,7 @@
 #include "maidsafe/passport/types.h"
 #include "maidsafe/passport/passport.h"
 #include "maidsafe/common/node_id.h"
+#include "maidsafe/common/data_types/data_type_values.h"
 #include "maidsafe/common/tagged_value.h"
 #include "maidsafe/routing/contact.h"
 #include "maidsafe/routing/endpoint_pair.h"
@@ -50,11 +53,18 @@ enum class FromType : int32_t {
   node_manager,
   managed_client,
   remote_client,
-  managed_node
+  managed_node,
+  node
 };
 
-enum class Authority : int32_t { client_manager, nae_manager, node_manager, managed_node };
-
+enum class Authority : int32_t {
+  client_manager,
+  nae_manager,
+  node_manager,
+  managed_node,
+  node,
+  client
+};
 
 using Address = NodeId;
 using MessageId = uint32_t;
@@ -76,6 +86,9 @@ void serialize(Archive& archive, SourceAddress& address) {
   archive(std::get<0>(address), std::get<1>(address), std::get<2>(address));
 }
 using FilterType = std::pair<NodeAddress, MessageId>;
+using HandleGetReturn =
+    boost::expected<eggs::variant<DestinationAddress, std::vector<byte>>, maidsafe_error>;
+using HandlePutPostReturn = boost::expected<DestinationAddress, maidsafe_error>;
 
 using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;

@@ -39,20 +39,23 @@ class MessageHeader {
   ~MessageHeader() = default;
 
   template <typename T, typename U>
-  MessageHeader(T&& destination, U&& source, MessageId message_id, asymm::Signature&& signature)
+  MessageHeader(T&& destination, U&& source, MessageId message_id, Authority our_authority,
+                asymm::Signature&& signature)
       : destination_{std::forward<T>(destination)},
         source_{std::forward<U>(source)},
         message_id_(message_id),
+        authority_(our_authority),
         signature_{std::forward<asymm::Signature>(signature)} {
     if (!ValidateHeader())
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
   }
 
   template <typename T, typename U>
-  MessageHeader(T&& destination, U&& source, MessageId message_id)
+  MessageHeader(T&& destination, U&& source, MessageId message_id, Authority our_authority)
       : destination_{std::forward<T>(destination)},
         source_{std::forward<U>(source)},
-        message_id_{message_id} {
+        message_id_{message_id},
+        authority_(our_authority) {
     if (!ValidateHeader())
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
   }
@@ -61,12 +64,14 @@ class MessageHeader {
       : destination_(std::move(other.destination_)),
         source_(std::move(other.source_)),
         message_id_(std::move(other.message_id_)),
+        authority_(std::move(other.authority_)),
         signature_(std::move(other.signature_)) {}
 
   MessageHeader& operator=(MessageHeader&& other) MAIDSAFE_NOEXCEPT {
     destination_ = std::move(other.destination_);
     source_ = std::move(other.source_);
     message_id_ = std::move(other.message_id_);
+    authority_ = std::move(other.authority_);
     signature_ = std::move(other.signature_);
     return *this;
   }
@@ -76,16 +81,16 @@ class MessageHeader {
 
   // regular
   bool operator==(const MessageHeader& other) const {
-    return std::tie(message_id_, destination_, source_) ==
-           std::tie(other.message_id_, other.destination_, other.source_);
+    return std::tie(message_id_, destination_, source_, authority_) ==
+           std::tie(other.message_id_, other.destination_, other.source_, other.authority_);
   }
 
   bool operator!=(const MessageHeader& other) const { return !operator==(other); }
 
   // fully ordered
   bool operator<(const MessageHeader& other) const {
-    return std::tie(message_id_, destination_, source_) <
-           std::tie(other.message_id_, other.destination_, other.source_);
+    return std::tie(message_id_, destination_, source_, authority_) <
+           std::tie(other.message_id_, other.destination_, other.source_, other.authority_);
   }
 
   bool operator>(const MessageHeader& other) const {
@@ -97,7 +102,7 @@ class MessageHeader {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(destination_, source_, message_id_, signature_);
+    archive(destination_, source_, message_id_, authority_, signature_);
   }
   // pair - Destination and reply to address (reply_to means this is a node not in routing tables)
   DestinationAddress GetDestination() const { return destination_; }
@@ -111,7 +116,7 @@ class MessageHeader {
   boost::optional<asymm::Signature> GetSignature() const { return signature_; }
   NodeAddress FromNode() const { return std::get<0>(source_); }
   boost::optional<GroupAddress> FromGroup() const { return std::get<1>(source_); }
-
+  Authority get_from_authority() { return authority_; }
   boost::optional<ReplyToAddress> RelayedMessage() const { return std::get<2>(source_); }
 
   Address FromAddress() const {
@@ -140,6 +145,7 @@ class MessageHeader {
   DestinationAddress destination_;
   SourceAddress source_;
   MessageId message_id_;
+  Authority authority_;
   boost::optional<asymm::Signature> signature_;
 };
 

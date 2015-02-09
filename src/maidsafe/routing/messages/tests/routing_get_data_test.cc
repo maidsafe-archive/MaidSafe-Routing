@@ -36,14 +36,20 @@ namespace test {
 
 TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
-  auto get_data_before(GetData{Address{RandomString(Address::kSize)}});
+  auto get_data_before(GetData{
+      Identity{RandomString(Address::kSize)},
+      std::make_tuple(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
+      DataTagValue::kPmidValue});
   auto header_before(GenerateMessageHeader());
   auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
   // Parse
-  auto get_data_after(GetData{Address{RandomString(Address::kSize)}});
+  auto get_data_after(GetData{
+      Identity{RandomString(Address::kSize)},
+      std::make_tuple(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
+      DataTagValue::kMpidValue});
   auto header_after(GenerateMessageHeader());
   auto tag_after(MessageTypeTag{});
 

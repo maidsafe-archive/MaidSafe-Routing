@@ -32,16 +32,22 @@ class GetData {
   GetData() = default;
   ~GetData() = default;
 
-  template <typename T>
-  explicit GetData(T&& key)
-      : key_(std::forward<T>(key)) {}
+  template <typename T, typename U, typename V>
+  GetData(T&& key, U&& requester, V&& tag)
+      : key_(std::forward<T>(key)),
+        requester_(std::forward<U>(requester)),
+        tag_(std::forward<V>(tag)) {}
 
 
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)} {}
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
+                                               requester_{std::move(other.requester_)},
+                                               tag_{std::move(other.tag_)} {}
 
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);
+    requester_ = std::move(other.requester_);
+    tag_ = std::move(other.tag_);
     return *this;
   }
 
@@ -52,12 +58,16 @@ class GetData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_);
+    archive(key_, requester_, tag_);
   }
-  Address get_key() { return key_; }
+  Identity get_key() { return key_; }
+  SourceAddress get_requester() { return requester_; }
+  DataTagValue get_tag() { return tag_; }
 
  private:
-  Address key_;
+  Identity key_;
+  SourceAddress requester_;
+  DataTagValue tag_;
 };
 
 }  // namespace routing

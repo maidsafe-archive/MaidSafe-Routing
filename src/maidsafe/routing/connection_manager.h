@@ -72,7 +72,6 @@ class ConnectionManager {
       : io_service_(ios),
         acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
         our_id_(our_id),
-        //routing_table_(our_id),
         peers_(Comparison(our_id)),
         current_close_group_()
   {
@@ -138,18 +137,14 @@ class ConnectionManager {
 
  private:
   void StartAccepting();
-
- private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
-  //asio::io_service& io_service_;
+ private:
   boost::asio::io_service& io_service_;
   crux::acceptor acceptor_;
   NodeId our_id_;
-  //RoutingTable routing_table_;
   std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
-  //std::function<void(CloseGroupDifference)> group_changed_functor_;
 };
 
 }  // namespace routing
