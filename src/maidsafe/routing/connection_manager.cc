@@ -64,7 +64,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
     NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
   rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
                              node_to_add.dht_fob.public_key());
-  asio::spawn(io_service_, [=](asio::yield_context yield) {
+  asio::spawn(io_service_.service(), [=](asio::yield_context yield) {
     asio::error_code error;
     rudp_.Add(std::move(rudp_contact), yield[error]);
 

@@ -34,8 +34,9 @@ inline MessageHeader GenerateMessageHeader() {
       DestinationAddress{
           std::make_pair(Destination(Address{RandomString(Address::kSize)}), boost::none)},
       SourceAddress{NodeAddress(Address{RandomString(Address::kSize)}), boost::none, boost::none},
-      MessageId{RandomUint32()}, rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
-                                           asymm::GenerateKeyPair().private_key)};
+      MessageId{RandomUint32()}, Authority::client,
+      rsa::Sign(rsa::PlainText{RandomString(Address::kSize)},
+                asymm::GenerateKeyPair().private_key)};
 }
 
 }  // namespace test

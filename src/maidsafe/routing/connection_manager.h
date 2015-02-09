@@ -58,7 +58,7 @@ namespace routing {
 
 class ConnectionManager {
  public:
-  ConnectionManager(asio::io_service& io_service, rudp::ManagedConnections& rudp, Address our_id)
+  ConnectionManager(AsioService& io_service, rudp::ManagedConnections& rudp, Address our_id)
       : mutex_(),
         io_service_(io_service),
         routing_table_(our_id),
@@ -103,7 +103,7 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> GroupChanged();
 
   std::mutex mutex_;
-  asio::io_service& io_service_;
+  AsioService& io_service_;
   RoutingTable routing_table_;
   rudp::ManagedConnections& rudp_;
   std::vector<Address> current_close_group_;

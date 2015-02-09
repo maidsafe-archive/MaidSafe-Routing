@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #include <vector>
-
+#include "boost/optional/optional.hpp"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -31,16 +31,18 @@ class GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  template <typename T, typename U>
-  GetDataResponse(T&& key, U&& data)
-      : key_(std::forward<T>(key)), data_(std::forward<U>(data)) {}
+  GetDataResponse(Identity&& key, SerialisedData&& data) : key_{key}, data_{data} {}
 
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
-                                                               data_(std::move(other.data_)) {}
+  GetDataResponse(Identity&& key, maidsafe_error error) : key_{key}, error_(error) {}
+
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
+                                                               data_{std::move(other.data_)},
+                                                               error_{std::move(other.error_)} {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);
     data_ = std::move(other.data_);
+    error_ = std::move(other.error_);
     return *this;
   }
 
@@ -51,15 +53,16 @@ class GetDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_, data_);
+    archive(key_, data_, error_);
   }
-
-  Address get_key() { return key_; }
-  std::vector<byte> get_data() { return data_; }
+  Identity get_key() { return key_; }
+  boost::optional<std::vector<byte>> get_data() { return data_; }
+  boost::optional<maidsafe_error> get_error() { return error_; }
 
  private:
-  Address key_;
-  std::vector<byte> data_;
+  Identity key_;
+  boost::optional<std::vector<byte>> data_;
+  boost::optional<maidsafe_error> error_;
 };
 
 }  // namespace routing
