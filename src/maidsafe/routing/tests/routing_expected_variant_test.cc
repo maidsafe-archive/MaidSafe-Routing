@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2012 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,12 +16,14 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
-#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+#include <vector>
+#include <string>
 
-#include <cstdint>
-
-#include "maidsafe/common/config.h"
+#include "eggs/variant.hpp"
+#include "boost/expected/expected.hpp"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/error.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -29,45 +31,37 @@ namespace maidsafe {
 
 namespace routing {
 
-class PutData {
- public:
-  PutData() = default;
-  ~PutData() = default;
+namespace test {
 
+TEST(RoutingVariantTest, BEH_ExpextedVariant) {
+  boost::expected<eggs::variant<int, std::string>, maidsafe_error> v(42);
+  boost::expected<eggs::variant<int, std::string>, maidsafe_error> x(std::string("hello"));
+  EXPECT_TRUE(bool(v));
+  EXPECT_TRUE(bool(*v));
+  EXPECT_TRUE(bool(x));
+  *x = 32;
+  EXPECT_TRUE(bool(x));
+  ASSERT_EQ(*x->target<int>(), 32);
+  EXPECT_EQ(x->target_type(), typeid(int));  // NOLINT(dirvine>
+  *x = std::string("hello again");
+  EXPECT_EQ(x->target_type(), typeid(std::string));
 
-  template <typename T, typename U>
-  PutData(T&& key, U&& data)
-      : tag_{std::forward<T>(key)}, data_{std::forward<U>(data)} {}
+  ASSERT_EQ(*x->target<std::string>(), std::string("hello again"));
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_{std::move(other.tag_)},
-                                               data_{std::move(other.data_)} {}
+  EXPECT_EQ(v->which(), 0u);
+  EXPECT_EQ(x->which(), 1u);
+  ASSERT_EQ(*v->target<int>(), 42);
+  ASSERT_EQ(*x->target<std::string>(), std::string("hello again"));
 
-  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
-    data_ = std::move(other.data_);
-    return *this;
-  }
+  int const& ref = eggs::variants::get<0>(*v);
 
-  PutData(const PutData&) = delete;
-  PutData& operator=(const PutData&) = delete;
+  EXPECT_EQ(ref, 42);
 
-  void operator()() {}
+  EXPECT_THROW(eggs::variants::get<1>(*v), eggs::variants::bad_variant_access);
+}
 
-  template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(tag_, data_);
-  }
-
-  DataTagValue get_tag() { return tag_; }
-  SerialisedData get_data() { return data_; }
-
- private:
-  DataTagValue tag_;
-  SerialisedData data_;
-};
+}  // namespace test
 
 }  // namespace routing
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
