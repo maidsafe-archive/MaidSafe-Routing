@@ -87,7 +87,8 @@ void serialize(Archive& archive, SourceAddress& address) {
 }
 using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
-    boost::expected<eggs::variant<DestinationAddress, std::vector<byte>>, maidsafe_error>;
+    boost::expected<eggs::variant<std::vector<DestinationAddress>, std::vector<byte>>,
+                    maidsafe_error>;
 using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
 
 using Endpoint = rudp::Endpoint;
