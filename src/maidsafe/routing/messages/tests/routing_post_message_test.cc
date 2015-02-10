@@ -39,8 +39,9 @@ namespace {
 PostMessage GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PostMessage{Address{RandomString(Address::kSize)},
-                     SerialisedData(serialised_data.begin(), serialised_data.end())};
+  return PostMessage{Identity{RandomString(Address::kSize)},
+                     SerialisedData(serialised_data.begin(), serialised_data.end()),
+                     DataTagValue::kImmutableDataValue};
 }
 
 }  // anonymous namespace

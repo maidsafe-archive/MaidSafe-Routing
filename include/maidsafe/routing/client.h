@@ -86,8 +86,7 @@ class Client : std::enable_shared_from_this<Client>, public rudp::ManagedConnect
   void HandleMessage(ConnectResponse connect_response);
   void HandleMessage(GetDataResponse get_data_response);
   void HandleMessage(PostMessage post);
-  void HandleMessage(RequestMessage request);
-  void HandleMessage(ResponseMessage response);
+  void HandleMessage(PostResponse post_response);
 
   using unique_identifier = std::pair<SourceAddress, uint32_t>;
 
