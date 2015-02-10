@@ -38,16 +38,18 @@ class PostMessage {
   PostMessage() = default;
   ~PostMessage() = default;
 
-  template <typename T, typename V>
-  PostMessage(T&& key_in, V&& data_in)
-      : key(std::forward<T>(key_in)), data(std::forward<V>(data_in)) {}
+  template <typename T, typename V, typename W>
+  PostMessage(T&& key, V&& data, W&& tag)
+      : key_(std::forward<T>(key)), data_(std::forward<V>(data)), tag_(std::forward<W>(tag)) {}
 
-  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key(std::move(other.key)),
-                                                       data(std::move(other.data)) {}
+  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
+                                                       data_(std::move(other.data_)),
+                                                       tag_(std::move(other.tag_)) {}
 
   PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
-    data = std::move(other.data);
+    key_ = std::move(other.key_);
+    data_ = std::move(other.data_);
+    tag_ = std::move(other.tag_);
     return *this;
   }
 
@@ -58,15 +60,17 @@ class PostMessage {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, data);
+    archive(key_, data_, tag_);
   }
 
-  Address get_key() { return key; }
-  SerialisedData get_data() { return data; }
+  Identity get_key() { return key_; }
+  SerialisedData get_data() { return data_; }
+  DataTagValue get_tag() { return tag_; }
 
  private:
-  Address key;
-  SerialisedData data;
+  Identity key_;
+  SerialisedData data_;
+  DataTagValue tag_;
 };
 
 }  // namespace routing

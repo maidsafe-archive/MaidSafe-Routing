@@ -35,20 +35,23 @@ namespace maidsafe {
 
 namespace routing {
 
-struct PutDataResponse {
+class PutDataResponse {
+ public:
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  template <typename T, typename U>
-  PutDataResponse(T&& key_in, U&& result_in)
-      : key{std::forward<T>(key_in)}, result{std::forward<U>(result_in)} {}
+  template <typename T, typename U, typename V>
+  PutDataResponse(T&& data, U&& tag, V&& error)
+      : data_{std::forward<T>(data)}, tag_{std::forward<U>(tag)}, error_{std::forward<V>(error)} {}
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : key{std::move(other.key)},
-                                                               result{std::move(other.result)} {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : data_{std::move(other.data_)},
+                                                               tag_{std::move(other.tag_)},
+                                                               error_{std::move(other.error_)} {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    key = std::move(other.key);
-    result = std::move(other.result);
+    data_ = std::move(other.data_);
+    tag_ = std::move(other.tag_);
+    error_ = std::move(other.error_);
     return *this;
   }
 
@@ -59,11 +62,17 @@ struct PutDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key, result);
-  }
+    archive(data_, tag_, error_);
+  };
 
-  Address key;
-  maidsafe_error result;
+  maidsafe_error get_error() { return error_; }
+  SerialisedData get_data() { return data_; }
+  DataTagValue get_tag() { return tag_; }
+
+ private:
+  SerialisedData data_;
+  DataTagValue tag_;
+  maidsafe_error error_;
 };
 
 }  // namespace routing

@@ -86,8 +86,7 @@ class Client : public std::enable_shared_from_this<Client>,
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetDataResponse&& get_data_response);
   void HandleMessage(PostMessage&& post_message);
-  void HandleMessage(RequestMessage&& request_message);
-  void HandleMessage(ResponseMessage&& response_message);
+  void HandleMessage(PostResponse&& post_response);
 
   asio::io_service& io_service_;
   Address our_id_;
