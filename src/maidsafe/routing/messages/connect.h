@@ -22,7 +22,6 @@
 #include "maidsafe/routing/types.h"
 #include "maidsafe/passport/passport.h"
 
-
 namespace maidsafe {
 
 namespace routing {
@@ -62,13 +61,13 @@ class Connect {
   void serialize(Archive& archive) {
     archive(requester_endpoints_, requester_id_, receiver_id_, requester_fob_);
   }
-  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints_; }
+  EndpointPair get_requester_endpoints() { return requester_endpoints_; }
   Address get_requester_id() { return requester_id_; }
   Address get_receiver_id() { return receiver_id_; }
   passport::PublicPmid get_requester_fob() { return requester_fob_; }
 
  private:
-  rudp::EndpointPair requester_endpoints_;
+  EndpointPair requester_endpoints_;
   Address requester_id_;
   Address receiver_id_;
   passport::PublicPmid requester_fob_;

@@ -32,8 +32,6 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/sentinel.h"
@@ -44,8 +42,7 @@ namespace maidsafe {
 
 namespace routing {
 
-class Client : public std::enable_shared_from_this<Client>,
-               public rudp::ManagedConnections::Listener {
+class Client : public std::enable_shared_from_this<Client> {
  public:
   Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
          asymm::Keys our_keys);
@@ -79,8 +76,8 @@ class Client : public std::enable_shared_from_this<Client>,
   Address OurId() const { return our_id_; }
 
  private:
-  virtual void MessageReceived(NodeId peer_id, rudp::ReceivedMessage message) override final;
-  virtual void ConnectionLost(NodeId peer) override final;
+  virtual void MessageReceived(NodeId peer_id, std::vector<unsigned char> message);
+  virtual void ConnectionLost(NodeId peer);
 
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   void HandleMessage(ConnectResponse&& connect_response);
@@ -93,7 +90,7 @@ class Client : public std::enable_shared_from_this<Client>,
   asymm::Keys our_keys_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_;
-  rudp::ManagedConnections rudp_;
+  //rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   LruCache<std::pair<Address, MessageId>, void> filter_;
   Sentinel sentinel_;
@@ -105,8 +102,9 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
   auto result(handler);
   auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
-                    handler);
+// TODO(PeterJ)
+//    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
+//                    handler);
   });
   return result.get();
 }
@@ -117,8 +115,9 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, Comp
   auto result(handler);
   auto this_ptr(shared_from_this());
   io_service_.post([=] {
-    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
-                    handler, local_endpoint);
+// TODO(PeterJ)
+//    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
+//                    handler, local_endpoint);
   });
   return result.get();
 }

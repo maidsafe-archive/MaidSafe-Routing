@@ -16,54 +16,45 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
-#define MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
+#ifndef MAIDSAFE_ROUTING_PEER_NODE_H_
+#define MAIDSAFE_ROUTING_PEER_NODE_H_
 
-#include <cstdint>
-#include <string>
-#include <memory>
-#include <vector>
-
-#include "boost/asio/ip/address.hpp"
-#include "boost/asio/ip/udp.hpp"
-
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/passport/passport.h"
-
-#include "maidsafe/routing/bootstrap_handler.h"
+#include "maidsafe/routing/node_info.h"
+#include "maidsafe/routing/boost_asio_conversions.h"
+#include "maidsafe/crux/socket.hpp"
 
 namespace maidsafe {
-
 namespace routing {
 
-class RoutingTable;
+class PeerNode {
+ public:
+  using PublicPmid = passport::PublicPmid;
 
-namespace test {
+  PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
+    : node_info_(std::move(node_info))
+    , socket(socket)
+  {}
 
-using address_v6 = asio::ip::address_v6;
-using address_v4 = asio::ip::address_v4;
-using address = asio::ip::address;
+  template<class Message, class Handler> void Send(Message msg, const Handler& handler) {
+    auto msg_ptr = std::make_shared<Message>(std::move(msg));
+    socket->async_send(boost::asio::buffer(*msg_ptr),
+                       [msg_ptr, handler](boost::system::error_code error, size_t) {
+                         handler(from_boost(error));
+                       });
+  }
 
-inline passport::PublicPmid PublicFob() {
-  return passport::PublicPmid{passport::Pmid(passport::Anpmid())};
-}
-BootstrapHandler::BootstrapContact CreateBootstrapContact(
-    asymm::PublicKey public_key = asymm::PublicKey());
+  const NodeInfo& node_info() const { return node_info_; }
+  bool connected() const { return connected_; }
 
-std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number);
-
-std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size);
-
-address_v4 GetRandomIPv4Address();
-
-address_v6 GetRandomIPv6Address();
-
-Endpoint GetRandomEndpoint();
-
-}  // namespace test
+ private:
+  NodeInfo node_info_;
+  std::shared_ptr<crux::socket> socket;
+  //int32_t rank;
+  bool connected_;
+};
 
 }  // namespace routing
-
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_TESTS_UTILS_TEST_UTILS_H_
+#endif  // MAIDSAFE_ROUTING_PEER_NODE_H_
+

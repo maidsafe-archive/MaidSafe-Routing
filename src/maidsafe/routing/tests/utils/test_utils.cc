@@ -78,8 +78,8 @@ address_v6 GetRandomIPv6Address() {
   return asio::ip::make_address_v6(address.str().c_str());
 }
 
-rudp::Endpoint GetRandomEndpoint() {
-  return rudp::Endpoint{GetRandomIPv4Address(), static_cast<Port>((RandomUint32() % 64512) + 1024)};
+Endpoint GetRandomEndpoint() {
+  return Endpoint{GetRandomIPv4Address(), static_cast<Port>((RandomUint32() % 64512) + 1024)};
 }
 
 }  // namespace test

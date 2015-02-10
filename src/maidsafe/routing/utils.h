@@ -26,10 +26,10 @@
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/rudp/contact.h"
-#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/endpoint_pair.h"
+#include "maidsafe/routing/contact.h"
 #include "maidsafe/routing/message_header.h"
 
 namespace maidsafe {
@@ -41,7 +41,7 @@ namespace routing {}  // namespace routing
 namespace cereal {
 
 template <typename Archive>
-void save(Archive& archive, const maidsafe::rudp::Endpoint& endpoint) {
+void save(Archive& archive, const maidsafe::routing::Endpoint& endpoint) {
   using address_v6 = asio::ip::address_v6;
   address_v6 ip_address;
   if (endpoint.address().is_v4()) {
@@ -54,7 +54,7 @@ void save(Archive& archive, const maidsafe::rudp::Endpoint& endpoint) {
 }
 
 template <typename Archive>
-void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
+void load(Archive& archive, maidsafe::routing::Endpoint& endpoint) {
   using address_v6 = asio::ip::address_v6;
   using address = asio::ip::address;
   address_v6::bytes_type bytes;
@@ -66,16 +66,16 @@ void load(Archive& archive, maidsafe::rudp::Endpoint& endpoint) {
     ip_address = ip_v6_address.to_v4();
   else
     ip_address = ip_v6_address;
-  endpoint = maidsafe::rudp::Endpoint(ip_address, port);
+  endpoint = maidsafe::routing::Endpoint(ip_address, port);
 }
 
 template <typename Archive>
-void serialize(Archive& archive, maidsafe::rudp::EndpointPair& endpoints) {
+void serialize(Archive& archive, maidsafe::routing::EndpointPair& endpoints) {
   archive(endpoints.local, endpoints.external);
 }
 
 template <typename Archive>
-void serialize(Archive& archive, maidsafe::rudp::Contact& contact) {
+void serialize(Archive& archive, maidsafe::routing::Contact& contact) {
   archive(contact.id, contact.endpoint_pair, contact.public_key);
 }
 

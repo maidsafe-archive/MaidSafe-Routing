@@ -23,11 +23,11 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/rudp/contact.h"
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
 #include "maidsafe/routing/messages/tests/generate_message_header.h"
+#include "maidsafe/routing/contact.h"
 
 namespace maidsafe {
 
@@ -39,7 +39,7 @@ namespace {
 
 
 Connect GenerateInstance() {
-  return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return Connect{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
                  Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
                  passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
 }

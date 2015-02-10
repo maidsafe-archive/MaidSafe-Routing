@@ -68,15 +68,15 @@ class ConnectResponse {
     archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_, receiver_fob_);
   }
 
-  rudp::EndpointPair get_requester_endpoints() { return requester_endpoints_; }
-  rudp::EndpointPair get_receiver_endpoints() { return receiver_endpoints_; }
+  EndpointPair get_requester_endpoints() { return requester_endpoints_; }
+  EndpointPair get_receiver_endpoints() { return receiver_endpoints_; }
   Address get_requester_id() { return requester_id_; }
   Address get_receiver_id() { return receiver_id_; }
   passport::PublicPmid get_receiver_fob() { return receiver_fob_; }
 
  private:
-  rudp::EndpointPair requester_endpoints_;
-  rudp::EndpointPair receiver_endpoints_;
+  EndpointPair requester_endpoints_;
+  EndpointPair receiver_endpoints_;
   Address requester_id_;
   Address receiver_id_;
   passport::PublicPmid receiver_fob_;
