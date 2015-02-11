@@ -97,10 +97,7 @@ void Client::HandleMessage(GetDataResponse&& /*get_data_response*/) {
 void Client::HandleMessage(PostMessage&& /*post_message*/) {
 }
 
-void Client::HandleMessage(RequestMessage&& /*request_message*/) {
-}
-
-void Client::HandleMessage(ResponseMessage&& /*response_message*/) {
+void Client::HandleMessage(PostResponse&& /*post_response*/) {
 }
 
 // void ConnectionLost(NodeId /* peer */) { /*LostNetworkConnection(peer);*/ }
