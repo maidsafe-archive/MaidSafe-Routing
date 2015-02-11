@@ -40,12 +40,12 @@ Client::Client(asio::io_service& io_service, boost::filesystem::path db_location
       our_keys_(std::move(our_keys)),
       bootstrap_node_(),
       message_id_(RandomUint32()),
-      rudp_(),
+      //rudp_(),
       bootstrap_handler_(std::move(db_location)),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
-void Client::MessageReceived(NodeId /*peer_id*/, rudp::ReceivedMessage serialised_message) {
+void Client::MessageReceived(NodeId /*peer_id*/, std::vector<byte> serialised_message) {
   InputVectorStream binary_input_stream(std::move(serialised_message));
   MessageHeader header;
   MessageTypeTag tag;
@@ -94,7 +94,7 @@ void Client::HandleMessage(ConnectResponse&& /*connect_response*/) {
 void Client::HandleMessage(GetDataResponse&& /*get_data_response*/) {
 }
 
-void Client::HandleMessage(PostMessage&& /*post_message*/) {
+void Client::HandleMessage(Post&& /*post_message*/) {
 }
 
 void Client::HandleMessage(PostResponse&& /*post_response*/) {

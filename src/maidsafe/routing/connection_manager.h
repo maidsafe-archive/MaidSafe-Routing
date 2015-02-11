@@ -73,8 +73,7 @@ class ConnectionManager {
         acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
         our_id_(our_id),
         peers_(Comparison(our_id)),
-        current_close_group_()
-  {
+        current_close_group_() {
     StartAccepting();
   }
 
@@ -125,7 +124,7 @@ class ConnectionManager {
 
   //bool CloseGroupMember(const Address& their_id);
   //uint32_t Size() { return routing_table_.Size(); }
-  uint32_t Size() { return peers_.size(); }
+  uint32_t Size() { return static_cast<uint32_t>(peers_.size()); }
 
   PeerNode* FindPeer(Address addr) {
     auto i = peers_.find(addr);

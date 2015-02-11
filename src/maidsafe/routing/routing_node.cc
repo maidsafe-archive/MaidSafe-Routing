@@ -182,8 +182,8 @@ namespace routing {
 //     case MessageTypeTag::PutData:
 //       HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
 //       break;
-//     case MessageTypeTag::PostMessage:
-//       HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
+//     case MessageTypeTag::Post:
+//       HandleMessage(Parse<Post>(binary_input_stream), std::move(header));
 //       break;
 //     default:
 //       LOG(kWarning) << "Received message of unknown type.";
@@ -306,7 +306,7 @@ namespace routing {
 // void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/,
 //                                 MessageHeader /* orig_header */) {}
 //
-// void RoutingNode::HandleMessage(PostMessage /* post */, MessageHeader /* orig_header */) {}
+// void RoutingNode::HandleMessage(Post /* post */, MessageHeader /* orig_header */) {}
 //
 // SourceAddress RoutingNode::OurSourceAddress() const {
 //   if (bootstrap_node_)

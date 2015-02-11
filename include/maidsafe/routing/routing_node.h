@@ -33,10 +33,11 @@
 #include "boost/expected/expected.hpp"
 #include "eggs/variant.hpp"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
-#include "maidsafe/passport/types.h"
 #include "maidsafe/crux/socket.hpp"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/connection_manager.h"
@@ -100,7 +101,7 @@ class RoutingNode {
   // filling in public key again.
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
-  void HandleMessage(PostMessage post, MessageHeader orig_header);
+  void HandleMessage(Post post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
   virtual void MessageReceived(NodeId peer_id,
@@ -126,7 +127,7 @@ class RoutingNode {
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  AsioService io_service_;
+  BoostAsioService io_service_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -242,7 +243,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
                              ++message_id_, Authority::node);
     PutData request(FunctorType::Tag::kValue, functor);
     // FIXME(dirvine) This needs signed :08/02/2015
-    auto message(Serialise(our_header, MessageToTag<PostMessage>::value(), request));
+    auto message(Serialise(our_header, MessageToTag<Post>::value(), request));
 
     for (const auto& target : connection_manager_.GetTarget(to)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
@@ -365,8 +366,8 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
     case MessageTypeTag::PutData:
       HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
       break;
-    case MessageTypeTag::PostMessage:
-      HandleMessage(Parse<PostMessage>(binary_input_stream), std::move(header));
+    case MessageTypeTag::Post:
+      HandleMessage(Parse<Post>(binary_input_stream), std::move(header));
       break;
     default:
       LOG(kWarning) << "Received message of unknown type.";
@@ -527,7 +528,7 @@ void RoutingNode<Child>::HandleMessage(PutDataResponse /*put_data_response*/,
                                        MessageHeader /* orig_header */) {}
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(PostMessage /* post */, MessageHeader /* orig_header */) {}
+void RoutingNode<Child>::HandleMessage(Post /* post */, MessageHeader /* orig_header */) {}
 
 template <typename Child>
 SourceAddress RoutingNode<Child>::OurSourceAddress() const {

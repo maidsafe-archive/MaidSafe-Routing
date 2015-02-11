@@ -42,11 +42,11 @@ bool ConnectionManager::IsManaged(const Address& node_id) const {
 
 std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(const Address& target_node) const {
   // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
-  auto result = std::set<Address, Comparison>(Comparison(target_node));
-  for (const auto& peer : peers_) {
-    result.insert(peer.first);
-  }
-  return result;
+  return std::set<Address, Comparison>(Comparison(target_node));
+  //for (const auto& peer : peers_) {
+  //  result.insert(peer.first);
+  //}
+  //return result;
   //auto nodes(routing_table_.TargetNodes(target_node));
   ////nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
   ////                           [](NodeInfo& node) { return !node.connected(); }),

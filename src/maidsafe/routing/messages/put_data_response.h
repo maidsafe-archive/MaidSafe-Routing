@@ -44,9 +44,9 @@ class PutDataResponse {
   PutDataResponse(T&& data, U&& tag, V&& error)
       : data_{std::forward<T>(data)}, tag_{std::forward<U>(tag)}, error_{std::forward<V>(error)} {}
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : data_{std::move(other.data_)},
-                                                               tag_{std::move(other.tag_)},
-                                                               error_{std::move(other.error_)} {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : data_(std::move(other.data_)),
+                                                               tag_(std::move(other.tag_)),
+                                                               error_(std::move(other.error_)) {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
     data_ = std::move(other.data_);

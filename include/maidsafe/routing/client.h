@@ -76,13 +76,13 @@ class Client : public std::enable_shared_from_this<Client> {
   Address OurId() const { return our_id_; }
 
  private:
-  virtual void MessageReceived(NodeId peer_id, std::vector<unsigned char> message);
+  virtual void MessageReceived(NodeId peer_id, std::vector<byte> message);
   virtual void ConnectionLost(NodeId peer);
 
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetDataResponse&& get_data_response);
-  void HandleMessage(PostMessage&& post_message);
+  void HandleMessage(Post&& post);
   void HandleMessage(PostResponse&& post_response);
 
   asio::io_service& io_service_;
@@ -90,7 +90,6 @@ class Client : public std::enable_shared_from_this<Client> {
   asymm::Keys our_keys_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_;
-  //rudp::ManagedConnections rudp_;
   BootstrapHandler bootstrap_handler_;
   LruCache<std::pair<Address, MessageId>, void> filter_;
   Sentinel sentinel_;

@@ -16,8 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
 
 #include <cstdint>
 #include <vector>
@@ -33,28 +33,28 @@ namespace maidsafe {
 
 namespace routing {
 
-class PostMessage {
+class Post {
  public:
-  PostMessage() = default;
-  ~PostMessage() = default;
+  Post() = default;
+  ~Post() = default;
 
   template <typename T, typename V, typename W>
-  PostMessage(T&& key, V&& data, W&& tag)
+  Post(T&& key, V&& data, W&& tag)
       : key_(std::forward<T>(key)), data_(std::forward<V>(data)), tag_(std::forward<W>(tag)) {}
 
-  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
-                                                       data_(std::move(other.data_)),
-                                                       tag_(std::move(other.tag_)) {}
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
+                                         data_(std::move(other.data_)),
+                                         tag_(std::move(other.tag_)) {}
 
-  PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
+  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);
     data_ = std::move(other.data_);
     tag_ = std::move(other.tag_);
     return *this;
   }
 
-  PostMessage(const PostMessage&) = default;
-  PostMessage& operator=(const PostMessage&) = default;
+  Post(const Post&) = default;
+  Post& operator=(const Post&) = default;
 
   void operator()() {}
 
@@ -77,4 +77,4 @@ class PostMessage {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_
