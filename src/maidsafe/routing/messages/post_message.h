@@ -42,9 +42,9 @@ class PostMessage {
   PostMessage(T&& key, V&& data, W&& tag)
       : key_(std::forward<T>(key)), data_(std::forward<V>(data)), tag_(std::forward<W>(tag)) {}
 
-  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
-                                                       data_{std::move(other.data_)},
-                                                       tag_{std::move(other.tag_)} {}
+  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
+                                                       data_(std::move(other.data_)),
+                                                       tag_(std::move(other.tag_)) {}
 
   PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
     key_ = std::move(other.key_);

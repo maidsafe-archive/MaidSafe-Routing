@@ -57,7 +57,7 @@ class RoutingNode : public std::enable_shared_from_this<RoutingNode<Child>>,
   using SendHandler = std::function<void(asio::error_code)>;
 
  public:
-  RoutingNode(boost::filesystem::path db_location);
+  explicit RoutingNode(boost::filesystem::path db_location);
   RoutingNode() = delete;
   RoutingNode(const RoutingNode&) = delete;
   RoutingNode(RoutingNode&&) = delete;
@@ -148,7 +148,7 @@ RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location)
       bootstrap_handler_(std::move(db_location)),
       connection_manager_(io_service_, rudp_, Address(our_fob_.name()->string())),
       filter_(std::chrono::minutes(20)),
-      sentinel_(io_service_),
+      sentinel_(io_service_.service()),
       cache_(std::chrono::minutes(60)) {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
@@ -272,7 +272,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
-    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information(true);
+    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
 

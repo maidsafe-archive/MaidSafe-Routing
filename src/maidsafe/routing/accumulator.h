@@ -28,8 +28,11 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
 #include "boost/optional/optional.hpp"
+
 #include "maidsafe/common/node_id.h"
+
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -41,7 +44,7 @@ namespace routing {
 template <typename KeyType, typename ValueType>
 class Accumulator {
  public:
-  explicit Accumulator(std::chrono::steady_clock::duration time_to_live, uint32_t quorum)
+  Accumulator(std::chrono::steady_clock::duration time_to_live, uint32_t quorum)
       : time_to_live_(time_to_live), quorum_(quorum) {}
 
   ~Accumulator() = default;
@@ -51,29 +54,29 @@ class Accumulator {
   Accumulator& operator=(Accumulator&&) = delete;
   using Map = std::map<NodeId, ValueType>;
 
-  bool HaveKey(KeyType key) { return (storage_.find(key) != std::end(storage_)); }
+  bool HaveKey(KeyType key) const { return (storage_.find(key) != std::end(storage_)); }
 
-  bool CheckQuorumReached(KeyType key) {
+  bool CheckQuorumReached(KeyType key) const {
     auto it = storage_.find(key);
     if (it == std::end(storage_))
       return false;
     return (std::get<0>(it->second).size() >= quorum_);
   }
+
   // returns true when the quorum has been reached. This will return Quorum times
-  // a tuple of of valuetype which should be Source Address signature tag tpye and value
-  boost::optional<std::pair<KeyType, Map>> Add(KeyType key, ValueType value, NodeId sender) {
+  // a tuple of valuetype which should be Source Address signature tag type and value
+  boost::optional<std::pair<KeyType, Map>> Add(const KeyType& key, ValueType value, NodeId sender) {
     auto it = storage_.find(key);
     if (it == std::end(storage_)) {
       AddNew(key, value, sender);
       it = storage_.find(key);
     }
 
-    std::get<0>(it->second).insert(std::make_pair(sender, value));
+    std::get<0>(it->second).insert(std::make_pair(std::move(sender), std::move(value)));
     ReOrder(key);
-    if (std::get<0>(it->second).size() >= quorum_) {
+    if (std::get<0>(it->second).size() >= quorum_)
       return std::make_pair(it->first, std::get<0>(it->second));
-    }
-    return {boost::none};
+    return boost::none;
   }
 
   // this is called when the return from Add returns a type that is incorrect
@@ -81,9 +84,8 @@ class Accumulator {
   // and we can attempt to identify the bad node.
   boost::optional<std::pair<KeyType, Map>> GetAll(const KeyType& key) const {
     auto it = storage_.find(key);
-    if (it == std::end(storage_)) {
-      return {boost::none};
-    }
+    if (it == std::end(storage_))
+      return boost::none;
     return std::make_pair(it->first, std::get<0>(it->second));
   }
 
