@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "asio/io_service.hpp"
+#include "asio/post.hpp"
 #include "asio/use_future.hpp"
 #include "asio/ip/udp.hpp"
 #include "boost/filesystem/path.hpp"
@@ -127,7 +128,8 @@ class RoutingNode {
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  BoostAsioService io_service_;
+  BoostAsioService crux_io_service_;
+  AsioService io_service_;
   passport::Pmid our_fob_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_{RandomUint32()};
@@ -141,12 +143,13 @@ class RoutingNode {
 
 template <typename Child>
 RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location)
-    : io_service_(4),
+    : crux_io_service_(1),
+      io_service_(4),
       our_fob_(passport::Pmid(passport::Anpmid())),
       bootstrap_node_(boost::none),
       //rudp_(),
       bootstrap_handler_(std::move(db_location)),
-      connection_manager_(io_service_, Address(our_fob_.name()->string())),
+      connection_manager_(crux_io_service_.service(), Address(our_fob_.name()->string())),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service_.service()),
       cache_(std::chrono::minutes(60)) {
@@ -184,11 +187,11 @@ RoutingNode<Child>::RoutingNode(boost::filesystem::path db_location)
 }
 
 template<typename Child> RoutingNode<Child>::~RoutingNode() {
-  work_.reset();
   // TODO(PeterJ): Not yet implemented in crux.
   //acceptor_.close();
   connection_manager_.Clear();
-  io_service_runner_.join();
+  crux_io_service_.Stop();
+  io_service_.Stop();
 }
 
 template <typename Child>
@@ -196,7 +199,7 @@ template <typename DataType, typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity key, CompletionToken token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  io_service_.post([=] {
+  asio::post(io_service_.service(), [=] {
     MessageHeader our_header(std::make_pair(Destination(Address(key.string())), boost::none),
                              OurSourceAddress(), ++message_id_, Authority::node);
     GetData request(key, OurSourceAddress(), DataType::Tag::kValue);

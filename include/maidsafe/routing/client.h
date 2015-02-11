@@ -32,6 +32,7 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/sentinel.h"
@@ -44,8 +45,9 @@ namespace routing {
 
 class Client : public std::enable_shared_from_this<Client> {
  public:
-  Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
-         asymm::Keys our_keys);
+  Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_keys);
+  Client(asio::io_service& io_service, const passport::Maid& maid);
+  Client(asio::io_service& io_service, const passport::Mpid& mpid);
   Client() = delete;
   Client(const Client&) = delete;
   Client(Client&&) = delete;
@@ -85,8 +87,8 @@ class Client : public std::enable_shared_from_this<Client> {
   void HandleMessage(PostResponse&& post_response);
 
   asio::io_service& io_service_;
-  Address our_id_;
-  asymm::Keys our_keys_;
+  const Address our_id_;
+  const asymm::Keys our_keys_;
   boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_;
   BootstrapHandler bootstrap_handler_;
