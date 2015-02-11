@@ -37,55 +37,17 @@ include(../../cmake_modules/standard_setup.cmake)
 
 
 #==================================================================================================#
-# Define MaidSafe libraries and executables                                                        #
+# Set up all files as GLOBs                                                                        #
 #==================================================================================================#
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
-set(RoutingLibApiFiles
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/client.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/node_info.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/routing_node.h
-    ${PROJECT_SOURCE_DIR}/include/maidsafe/routing/types.h
-    )
-source_group("Routing API Files" FILES ${RoutingLibApiFiles})
-set(RoutingLibHeaders
-    ${RoutingSourcesDir}/accumulator.h
-    ${RoutingSourcesDir}/bootstrap_handler.h
-    ${RoutingSourcesDir}/connection_manager.h
-    ${RoutingSourcesDir}/message_header.h
-    ${RoutingSourcesDir}/routing_table.h
-    ${RoutingSourcesDir}/sentinel.h
-    ${RoutingSourcesDir}/utils.h
-    )
-source_group("Routing Header Files" FILES ${RoutingLibHeaders})
-set(RoutingMessagesHeaders
-    ${RoutingSourcesDir}/messages/connect.h
-    ${RoutingSourcesDir}/messages/connect_response.h
-    ${RoutingSourcesDir}/messages/find_group.h
-    ${RoutingSourcesDir}/messages/find_group_response.h
-    ${RoutingSourcesDir}/messages/get_data.h
-    ${RoutingSourcesDir}/messages/get_data_response.h
-    ${RoutingSourcesDir}/messages/messages.h
-    ${RoutingSourcesDir}/messages/messages_fwd.h
-    ${RoutingSourcesDir}/messages/post_message.h
-    ${RoutingSourcesDir}/messages/put_data.h
-    ${RoutingSourcesDir}/messages/put_data_response.h
-    )
-source_group("Routing Messages Header Files" FILES ${RoutingMessagesHeaders})
-set(RoutingLibSources
-    ${RoutingSourcesDir}/bootstrap_handler.cc
-    ${RoutingSourcesDir}/client.cc
-    ${RoutingSourcesDir}/connection_manager.cc
-    ${RoutingSourcesDir}/routing_table.cc
-    ${RoutingSourcesDir}/routing_node.cc
-    ${RoutingSourcesDir}/sentinel.cc
-    )
-source_group("Routing Source Files" FILES ${RoutingLibSources})
-ms_add_static_library(maidsafe_routing
-    ${RoutingLibApiFiles}
-    ${RoutingLibHeaders}
-    ${RoutingMessagesHeaders}
-    ${RoutingLibSources}
-    )
+ms_glob_dir(Routing ${RoutingSourcesDir} Routing)
+ms_glob_dir(RoutingMessages ${RoutingSourcesDir}/messages "Routing Messages")
+
+
+#==================================================================================================#
+# Define MaidSafe libraries and executables                                                        #
+#==================================================================================================#
+ms_add_static_library(maidsafe_routing ${RoutingAllFiles} ${RoutingMessagesAllFiles})
 
 target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_routing maidsafe_crux maidsafe_passport ${BoostCoroutineLibs} ${BoostContextLibs})
