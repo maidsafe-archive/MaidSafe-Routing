@@ -16,7 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/messages/post_message.h"
+#include "maidsafe/routing/messages/post.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/serialisation.h"
@@ -35,12 +35,12 @@ namespace test {
 
 namespace {
 
-PostMessage GenerateInstance() {
+Post GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PostMessage{Identity{RandomString(Address::kSize)},
-                     SerialisedData(serialised_data.begin(), serialised_data.end()),
-                     DataTagValue::kImmutableDataValue};
+  return Post{Identity{RandomString(Address::kSize)},
+              SerialisedData(serialised_data.begin(), serialised_data.end()),
+              DataTagValue::kImmutableDataValue};
 }
 
 }  // anonymous namespace
@@ -49,7 +49,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
   auto header_before(GenerateMessageHeader());
-  auto tag_before(MessageToTag<PostMessage>::value());
+  auto tag_before(MessageToTag<Post>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 

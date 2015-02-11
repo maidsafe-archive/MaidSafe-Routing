@@ -42,7 +42,7 @@ class PutDataResponse {
 
   template <typename T, typename U, typename V>
   PutDataResponse(T&& data, U&& tag, V&& error)
-      : data_{std::forward<T>(data)}, tag_{std::forward<U>(tag)}, error_{std::forward<V>(error)} {}
+      : data_(std::forward<T>(data)), tag_(std::forward<U>(tag)), error_(std::forward<V>(error)) {}
 
   PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : data_(std::move(other.data_)),
                                                                tag_(std::move(other.tag_)),

@@ -65,7 +65,6 @@ class Client : public std::enable_shared_from_this<Client> {
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
-  // TODO(dirvine) Weird this hides the POst type below in HandlePost)  :06/01/2015
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
   PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
@@ -82,7 +81,7 @@ class Client : public std::enable_shared_from_this<Client> {
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   void HandleMessage(ConnectResponse&& connect_response);
   void HandleMessage(GetDataResponse&& get_data_response);
-  void HandleMessage(Post&& post);
+  void HandleMessage(routing::Post&& post);
   void HandleMessage(PostResponse&& post_response);
 
   asio::io_service& io_service_;

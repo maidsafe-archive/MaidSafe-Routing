@@ -94,7 +94,7 @@ void Client::HandleMessage(ConnectResponse&& /*connect_response*/) {
 void Client::HandleMessage(GetDataResponse&& /*get_data_response*/) {
 }
 
-void Client::HandleMessage(Post&& /*post_message*/) {
+void Client::HandleMessage(routing::Post&& /*post*/) {
 }
 
 void Client::HandleMessage(PostResponse&& /*post_response*/) {

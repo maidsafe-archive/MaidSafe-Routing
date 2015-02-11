@@ -300,8 +300,6 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   maidsafe::test::TestPath test_dir(
       maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
 
-  RoutingNode<VaultFacade> n(*test_dir / "node.sqlite3", pmid);
-
   RoutingNode<VaultFacade> n(*test_dir / "node.sqlite3");
 
   auto value = NonEmptyString(RandomAlphaNumericString(65));

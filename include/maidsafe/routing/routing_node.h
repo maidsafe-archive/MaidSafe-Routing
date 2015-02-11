@@ -101,7 +101,7 @@ class RoutingNode {
   // filling in public key again.
   // each member of a group needs to send this to the network Address (recieveing needs a Quorum)
   // filling in public key again.
-  void HandleMessage(Post post, MessageHeader orig_header);
+  void HandleMessage(routing::Post post, MessageHeader orig_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address data_key);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
   virtual void MessageReceived(NodeId peer_id,
@@ -243,7 +243,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
                              ++message_id_, Authority::node);
     PutData request(FunctorType::Tag::kValue, functor);
     // FIXME(dirvine) This needs signed :08/02/2015
-    auto message(Serialise(our_header, MessageToTag<Post>::value(), request));
+    auto message(Serialise(our_header, MessageToTag<routing::Post>::value(), request));
 
     for (const auto& target : connection_manager_.GetTarget(to)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
@@ -367,7 +367,7 @@ void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
       HandleMessage(Parse<PutData>(binary_input_stream), std::move(header));
       break;
     case MessageTypeTag::Post:
-      HandleMessage(Parse<Post>(binary_input_stream), std::move(header));
+      HandleMessage(Parse<routing::Post>(binary_input_stream), std::move(header));
       break;
     default:
       LOG(kWarning) << "Received message of unknown type.";
@@ -528,7 +528,7 @@ void RoutingNode<Child>::HandleMessage(PutDataResponse /*put_data_response*/,
                                        MessageHeader /* orig_header */) {}
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(Post /* post */, MessageHeader /* orig_header */) {}
+void RoutingNode<Child>::HandleMessage(routing::Post /* post */, MessageHeader /* orig_header */) {}
 
 template <typename Child>
 SourceAddress RoutingNode<Child>::OurSourceAddress() const {
