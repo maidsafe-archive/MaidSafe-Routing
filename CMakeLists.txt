@@ -108,3 +108,31 @@ if(INCLUDE_TESTS)
   ms_add_default_tests()
   ms_test_summary_output()
 endif()
+
+
+#==================================================================================================#
+# Check messages.h includes all message headers                                                    #
+#==================================================================================================#
+# Remove messages.h and messages_fwd.h from the previously globbed list since these won't be #included by messages.h
+list(REMOVE_ITEM RoutingMessagesHeaders "${RoutingSourcesDir}/messages/messages.h" "${RoutingSourcesDir}/messages/messages_fwd.h")
+
+# Change the paths to relative ones
+string(REPLACE "${PROJECT_SOURCE_DIR}/src/" "" RoutingMessagesHeaders "${RoutingMessagesHeaders}")
+
+# Gather list of #included files from messages.h
+file(STRINGS "${RoutingSourcesDir}/messages/messages.h" IncludedHeaders REGEX "#include.*")
+
+# Check each file has a corresponding #include "[file]" statement
+unset(WarningMessage)
+foreach(Header ${RoutingMessagesHeaders})
+  list(FIND IncludedHeaders "#include \"${Header}\"" Found)
+  if(Found EQUAL -1)
+    set(WarningMessage "${WarningMessage}\n#include \"${Header}\"")
+  endif()
+endforeach()
+
+# Output the warning message if any were missing
+if(WarningMessage)
+  set(WarningMessage "\n\nrouting/messages/messages.h doesn't #include all the message headers.  It is missing:${WarningMessage}\n\n")
+  message(AUTHOR_WARNING "${WarningMessage}")
+endif()
