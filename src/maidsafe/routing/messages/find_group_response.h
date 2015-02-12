@@ -37,11 +37,8 @@ class FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-
-  template <typename T, typename U>
-  FindGroupResponse(T&& target_id, U&& node_info)
-      : target_id_(std::forward<T>(target_id)), node_infos_(std::forward<U>(node_info)) {}
-
+  FindGroupResponse(Address target_id, std::vector<NodeInfo> node_info)
+      : target_id_(std::move(target_id)), node_infos_(std::move(node_info)) {}
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : target_id_(std::move(other.target_id_)),
@@ -56,15 +53,13 @@ class FindGroupResponse {
   FindGroupResponse(const FindGroupResponse&) = delete;
   FindGroupResponse& operator=(const FindGroupResponse&) = delete;
 
-  void operator()() {}
-
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(target_id_, node_infos_);
   }
 
-  Address get_target_id() { return target_id_; }
-  std::vector<NodeInfo> get_node_infos() { return node_infos_; }
+  Address target_id() const { return target_id_; }
+  std::vector<NodeInfo> node_infos() const { return node_infos_; }
 
  private:
   Address target_id_;

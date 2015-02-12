@@ -22,6 +22,7 @@
 #include "maidsafe/crux/endpoint.hpp"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct EndpointPair {
@@ -33,7 +34,7 @@ struct EndpointPair {
                                                          external(std::move(other.external)) {}
   EndpointPair& operator=(const EndpointPair&) = default;
   EndpointPair& operator=(EndpointPair&& other) {
-    local    = std::move(other.local);
+    local = std::move(other.local);
     external = std::move(other.external);
     return *this;
   }
@@ -54,10 +55,10 @@ inline bool operator==(const EndpointPair& lhs, const EndpointPair& rhs) {
 inline std::ostream& operator<<(std::ostream& os, const EndpointPair& ep) {
   return os << "(local: " << ep.local << "; external: " << ep.external << ")";
 }
-#endif // ifndef NDEBUG
+#endif  // ifndef NDEBUG
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_ENDPOINT_PAIR_H_
-

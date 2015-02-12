@@ -43,14 +43,13 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_CreateBoostrapDatabase) {
-  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
-  fs::path bootstrap_file_path(*test_path / "bootstrap");
-  EXPECT_NO_THROW(BootstrapHandler tmp(bootstrap_file_path));
+  EXPECT_NO_THROW(BootstrapHandler tmp);
   std::string file_content(RandomString(3000 + RandomUint32() % 1000));
+  auto bootstrap_file_path(GetBootstrapFilePath());
   ASSERT_TRUE(fs::exists(bootstrap_file_path));
   EXPECT_TRUE(WriteFile(bootstrap_file_path, file_content));
   EXPECT_TRUE(fs::exists(bootstrap_file_path));
-  EXPECT_THROW(BootstrapHandler tmp(bootstrap_file_path), std::exception);
+  EXPECT_THROW(BootstrapHandler tmp, std::exception);
 }
 
 }  // namespace test

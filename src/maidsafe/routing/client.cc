@@ -34,7 +34,8 @@ namespace maidsafe {
 namespace routing {
 
 Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_keys)
-    : io_service_(io_service),
+    : crux_asio_service_(1),
+      io_service_(io_service),
       our_id_(std::move(our_id)),
       our_keys_(std::move(our_keys)),
       bootstrap_node_(),
@@ -44,7 +45,8 @@ Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_ke
       sentinel_(io_service) {}
 
 Client::Client(asio::io_service& io_service, const passport::Maid& maid)
-    : io_service_(io_service),
+    : crux_asio_service_(1),
+      io_service_(io_service),
       our_id_(maid.name()->string()),
       our_keys_([&]() -> asymm::Keys {
         asymm::Keys keys;
@@ -59,7 +61,8 @@ Client::Client(asio::io_service& io_service, const passport::Maid& maid)
       sentinel_(io_service) {}
 
 Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
-    : io_service_(io_service),
+    : crux_asio_service_(1),
+      io_service_(io_service),
       our_id_(mpid.name()->string()),
       our_keys_([&]() -> asymm::Keys {
         asymm::Keys keys;
@@ -81,7 +84,7 @@ void Client::MessageReceived(NodeId /*peer_id*/, std::vector<byte> serialised_me
     Parse(binary_input_stream, header, tag);
   }
   catch (const std::exception&) {
-    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
+    LOG(kError) << "header failure: " << boost::current_exception_diagnostic_information();
     return;
   }
 

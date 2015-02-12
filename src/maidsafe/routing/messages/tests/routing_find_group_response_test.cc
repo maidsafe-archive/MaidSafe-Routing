@@ -69,7 +69,7 @@ TEST(FindGroupResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, find_grp_rsp_after);
 
-  EXPECT_EQ(find_grp_resp_before.get_target_id(), find_grp_rsp_after.get_target_id());
+  EXPECT_EQ(find_grp_resp_before.target_id(), find_grp_rsp_after.target_id());
 }
 }  // namespace test
 

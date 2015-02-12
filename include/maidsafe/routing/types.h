@@ -22,7 +22,6 @@
 #include <array>
 #include <cstdint>
 #include <utility>
-#include <tuple>
 #include <vector>
 
 #include "boost/optional/optional.hpp"
@@ -37,6 +36,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/data_types/data_type_values.h"
 #include "maidsafe/common/tagged_value.h"
+
 #include "maidsafe/routing/contact.h"
 #include "maidsafe/routing/endpoint_pair.h"
 
@@ -46,7 +46,7 @@ namespace routing {
 
 static const size_t GroupSize = 23;
 static const size_t QuorumSize = 19;
-// aghh please c++14 come on MSVC
+
 enum class FromType : int32_t {
   client_manager,
   nae_manager,
@@ -73,18 +73,12 @@ using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
 using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress>>;
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
-using SourceAddress =
-    std::tuple<NodeAddress, boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>;
 
 template <class Archive>
 void serialize(Archive& archive, DestinationAddress& address) {
   archive(address.first, address.second);
 }
 
-template <class Archive>
-void serialize(Archive& archive, SourceAddress& address) {
-  archive(std::get<0>(address), std::get<1>(address), std::get<2>(address));
-}
 using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
     boost::expected<eggs::variant<std::vector<DestinationAddress>, std::vector<byte>>,

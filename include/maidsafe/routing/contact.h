@@ -24,11 +24,10 @@
 #include "maidsafe/routing/endpoint_pair.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 struct Contact {
-  using Endpoint = EndpointPair::Endpoint;
-
   Contact() = default;
   Contact(const Contact&) = default;
   Contact(Contact&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
@@ -36,13 +35,13 @@ struct Contact {
                                                public_key(std::move(other.public_key)) {}
   Contact& operator=(const Contact&) = default;
   Contact& operator=(Contact&& other) {
-    id            = std::move(other.id);
+    id = std::move(other.id);
     endpoint_pair = std::move(other.endpoint_pair);
-    public_key    = std::move(other.public_key);
+    public_key = std::move(other.public_key);
     return *this;
   }
 
-  Contact(NodeId node_id, Endpoint both, asymm::PublicKey public_key_in)
+  Contact(NodeId node_id, EndpointPair::Endpoint both, asymm::PublicKey public_key_in)
       : id(std::move(node_id)),
         endpoint_pair(std::move(both)),
         public_key(std::move(public_key_in)) {}
@@ -58,14 +57,13 @@ struct Contact {
 };
 
 #ifndef NDEBUG
-inline
-std::ostream& operator<<(std::ostream& os, const Contact& c) {
+inline std::ostream& operator<<(std::ostream& os, const Contact& c) {
   return os << "(Contact " << c.id << " " << c.endpoint_pair << ")";
 }
-#endif // ifndef NDEBUG
+#endif
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_CONTACT_H_
-

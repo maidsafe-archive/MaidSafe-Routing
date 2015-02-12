@@ -44,9 +44,7 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
-  maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
-  fs::path bootstrap_file_path(*test_path / "bootstrap");
-  BootstrapHandler test_handler(bootstrap_file_path);
+  BootstrapHandler test_handler;
   for (int i = 0; i < 100; ++i) {
     EXPECT_NO_THROW(test_handler.AddBootstrapContacts(CreateBootstrapContacts(10)));
   }

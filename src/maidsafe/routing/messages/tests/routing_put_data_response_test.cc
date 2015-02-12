@@ -36,8 +36,7 @@ namespace test {
 PutDataResponse GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PutDataResponse{
-                         SerialisedData(serialised_data.begin(), serialised_data.end()),
+  return PutDataResponse{SerialisedData(serialised_data.begin(), serialised_data.end()),
                          DataTagValue::kAnpmidValue, MakeError(CommonErrors::unknown)};
 }
 
@@ -65,11 +64,10 @@ TEST(PutDataResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, put_data_rsp_after);
 
-  EXPECT_EQ(put_data_rsp_before.get_tag(), put_data_rsp_after.get_tag());
+  EXPECT_EQ(put_data_rsp_before.tag(), put_data_rsp_after.tag());
 
 
-  EXPECT_EQ(ErrorToInt(put_data_rsp_before.get_error()),
-            ErrorToInt(put_data_rsp_after.get_error()));
+  EXPECT_EQ(ErrorToInt(put_data_rsp_before.error()), ErrorToInt(put_data_rsp_after.error()));
 }
 
 }  // namespace test

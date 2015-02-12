@@ -33,14 +33,13 @@ class ConnectResponse {
   ConnectResponse() = default;
   ~ConnectResponse() = default;
 
-  template <typename T, typename U, typename V, typename W, typename X>
-  ConnectResponse(T&& requester_endpoints, U&& receiver_endpoints, V&& requester_id,
-                  W&& receiver_id, X&& receiver_fob)
-      : requester_endpoints_{std::forward<T>(requester_endpoints)},
-        receiver_endpoints_{std::forward<U>(receiver_endpoints)},
-        requester_id_{std::forward<V>(requester_id)},
-        receiver_id_{std::forward<W>(receiver_id)},
-        receiver_fob_{std::forward<X>(receiver_fob)} {}
+  ConnectResponse(EndpointPair requester_endpoints, EndpointPair receiver_endpoints,
+                  Address requester_id, Address receiver_id, passport::PublicPmid receiver_fob)
+      : requester_endpoints_(std::move(requester_endpoints)),
+        receiver_endpoints_(std::move(receiver_endpoints)),
+        requester_id_(std::move(requester_id)),
+        receiver_id_(std::move(receiver_id)),
+        receiver_fob_(std::move(receiver_fob)) {}
 
   ConnectResponse(ConnectResponse&& other) MAIDSAFE_NOEXCEPT
       : requester_endpoints_(std::move(other.requester_endpoints_)),
@@ -58,21 +57,19 @@ class ConnectResponse {
     return *this;
   }
 
-  ConnectResponse(const ConnectResponse&) = default;
-  ConnectResponse& operator=(const ConnectResponse&) = default;
-
-  void operator()() {}
+  ConnectResponse(const ConnectResponse&) = delete;
+  ConnectResponse& operator=(const ConnectResponse&) = delete;
 
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_, receiver_fob_);
   }
 
-  EndpointPair get_requester_endpoints() { return requester_endpoints_; }
-  EndpointPair get_receiver_endpoints() { return receiver_endpoints_; }
-  Address get_requester_id() { return requester_id_; }
-  Address get_receiver_id() { return receiver_id_; }
-  passport::PublicPmid get_receiver_fob() { return receiver_fob_; }
+  EndpointPair requester_endpoints() const { return requester_endpoints_; }
+  EndpointPair receiver_endpoints() const { return receiver_endpoints_; }
+  Address requester_id() const { return requester_id_; }
+  Address receiver_id() const { return receiver_id_; }
+  passport::PublicPmid receiver_fob() const { return receiver_fob_; }
 
  private:
   EndpointPair requester_endpoints_;

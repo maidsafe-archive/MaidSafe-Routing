@@ -28,6 +28,7 @@
 #include "boost/filesystem/path.hpp"
 #include "boost/optional/optional.hpp"
 
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
@@ -86,6 +87,7 @@ class Client : public std::enable_shared_from_this<Client> {
   void HandleMessage(routing::Post&& post);
   void HandleMessage(PostResponse&& post_response);
 
+  BoostAsioService crux_asio_service_;
   asio::io_service& io_service_;
   const Address our_id_;
   const asymm::Keys our_keys_;

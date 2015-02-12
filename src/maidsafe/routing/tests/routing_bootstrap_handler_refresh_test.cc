@@ -45,8 +45,7 @@ namespace test {
 TEST(BootstrapHandlerUnitTest, BEH_RefreshDatabase) {
   const size_t size(10);
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
-  boost::filesystem::path bootstrap_file_path(*test_path / "bootstrap.sqlite");
-  BootstrapHandler test_handler(bootstrap_file_path);
+  BootstrapHandler test_handler;
   std::vector<BootstrapHandler::BootstrapContact> write_first(CreateBootstrapContacts(size));
   std::vector<BootstrapHandler::BootstrapContact> write_second(CreateBootstrapContacts(size));
   EXPECT_EQ(write_first.size(), size);

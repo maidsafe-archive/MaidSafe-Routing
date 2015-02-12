@@ -31,16 +31,16 @@ class GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  GetDataResponse(Identity&& key, SerialisedData&& data) : key_{key}, data_{data} {}
+  GetDataResponse(Identity&& name, SerialisedData&& data) : name_(name), data_(data), error_() {}
 
-  GetDataResponse(Identity&& key, maidsafe_error error) : key_{key}, error_(error) {}
+  GetDataResponse(Identity&& name, maidsafe_error error) : name_(name), data_(), error_(error) {}
 
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
-                                                               data_{std::move(other.data_)},
-                                                               error_{std::move(other.error_)} {}
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : name_(std::move(other.name_)),
+                                                               data_(std::move(other.data_)),
+                                                               error_(std::move(other.error_)) {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    key_ = std::move(other.key_);
+    name_ = std::move(other.name_);
     data_ = std::move(other.data_);
     error_ = std::move(other.error_);
     return *this;
@@ -49,18 +49,17 @@ class GetDataResponse {
   GetDataResponse(const GetDataResponse&) = delete;
   GetDataResponse& operator=(const GetDataResponse&) = delete;
 
-  void operator()() {}
-
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_, data_, error_);
+    archive(name_, data_, error_);
   }
-  Identity get_key() { return key_; }
-  boost::optional<std::vector<byte>> get_data() { return data_; }
-  boost::optional<maidsafe_error> get_error() { return error_; }
+
+  Identity name() const { return name_; }
+  boost::optional<std::vector<byte>> data() const { return data_; }
+  boost::optional<maidsafe_error> error() const { return error_; }
 
  private:
-  Identity key_;
+  Identity name_;
   boost::optional<std::vector<byte>> data_;
   boost::optional<maidsafe_error> error_;
 };

@@ -120,14 +120,14 @@ namespace routing {
 //   // We add these to cache
 //   if (tag == MessageTypeTag::GetDataResponse) {
 //     auto data = Parse<GetDataResponse>(binary_input_stream);
-//     cache_.Add(data.get_key(), data.get_data());
+//     cache_.Add(data.name(), data.data());
 //   }
 //   // if we can satisfy request from cache we do
 //   if (tag == MessageTypeTag::GetData) {
 //     auto data = Parse<GetData>(binary_input_stream);
-//     auto test = cache_.Get(data.get_key());
+//     auto test = cache_.Get(data.name());
 //     if (test) {
-//       GetDataResponse response(data.get_key(), test.value());
+//       GetDataResponse response(data.name(), test.value());
 //       auto message(Serialise(
 //           MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
 //           MessageTypeTag::GetDataResponse, response));
@@ -197,12 +197,12 @@ namespace routing {
 //
 // // reply with our details;
 // void RoutingNode::HandleMessage(Connect connect, MessageHeader orig_header) {
-//   if (!connection_manager_.SuggestNodeToAdd(connect.get_requester_id()))
+//   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id()))
 //     return;
-//   auto targets(connection_manager_.GetTarget(connect.get_requester_id()));
-//   ConnectResponse respond(connect.get_requester_endpoints(), NextEndpointPair(),
-//                           connect.get_requester_id(), OurId(), passport::PublicPmid(our_fob_));
-//   assert(connect.get_receiver_id() == OurId());
+//   auto targets(connection_manager_.GetTarget(connect.requester_id()));
+//   ConnectResponse respond(connect.requester_endpoints(), NextEndpointPair(),
+//                           connect.requester_id(), OurId(), passport::PublicPmid(our_fob_));
+//   assert(connect.receiver_id() == OurId());
 //
 //   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
 //                        SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
@@ -218,15 +218,15 @@ namespace routing {
 //     });
 //   }
 //   auto added =
-//       connection_manager_.AddNode(NodeInfo(connect.get_requester_id(),
-//       connect.get_requester_fob()),
-//                                   connect.get_requester_endpoints());
+//       connection_manager_.AddNode(NodeInfo(connect.requester_id(),
+//       connect.requester_fob()),
+//                                   connect.requester_endpoints());
 //
-//   rudp_.Add(rudp::Contact(connect.get_requester_id(), connect.get_requester_endpoints(),
-//                           connect.get_requester_fob().public_key()),
+//   rudp_.Add(rudp::Contact(connect.requester_id(), connect.requester_endpoints(),
+//                           connect.requester_fob().public_key()),
 //             [connect, added, this](asio::error_code error) mutable {
 //     if (error) {
-//       auto target(connect.get_requester_id());
+//       auto target(connect.requester_id());
 //       this->connection_manager_.DropNode(target);
 //       return;
 //     }
@@ -236,16 +236,16 @@ namespace routing {
 // }
 //
 // void RoutingNode::HandleMessage(ConnectResponse connect_response) {
-//   if (!connection_manager_.SuggestNodeToAdd(connect_response.get_requester_id()))
+//   if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
 //     return;
 //   auto added = connection_manager_.AddNode(
-//       NodeInfo(connect_response.get_requester_id(), connect_response.get_receiver_fob()),
-//       connect_response.get_receiver_endpoints());
-//   auto target = connect_response.get_requester_id();
+//       NodeInfo(connect_response.requester_id(), connect_response.receiver_fob()),
+//       connect_response.receiver_endpoints());
+//   auto target = connect_response.requester_id();
 //   rudp_.Add(
-//       rudp::Contact(connect_response.get_receiver_id(),
-//       connect_response.get_receiver_endpoints(),
-//                     connect_response.get_receiver_fob().public_key()),
+//       rudp::Contact(connect_response.receiver_id(),
+//       connect_response.receiver_endpoints(),
+//                     connect_response.receiver_fob().public_key()),
 //       [target, added, this](asio::error_code error) {
 //         if (error) {
 //           this->connection_manager_.DropNode(target);
@@ -263,9 +263,9 @@ namespace routing {
 //   auto node_infos = std::move(connection_manager_.OurCloseGroup());
 //   // add ourselves
 //   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
-//   FindGroupResponse response(find_group.get_target_id(), node_infos);
+//   FindGroupResponse response(find_group.target_id(), node_infos);
 //   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
-//                        SourceAddress(OurSourceAddress(GroupAddress(find_group.get_target_id()))),
+//                        SourceAddress(OurSourceAddress(GroupAddress(find_group.target_id()))),
 //                        orig_header.GetMessageId(),
 //                        asymm::Sign(Serialise(response), our_fob_.private_key()));
 //   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
@@ -280,7 +280,7 @@ namespace routing {
 //   // Only other reason is to allow the sentinel to check signatures and those calls will just
 //   fall
 //   // through here.
-//   for (const auto node : find_group_reponse.get_node_infos()) {
+//   for (const auto node : find_group_reponse.node_infos()) {
 //     if (!connection_manager_.SuggestNodeToAdd(node.id))
 //       continue;
 //     Connect message(NextEndpointPair(), OurId(), node.id, passport::PublicPmid(our_fob_));

@@ -70,13 +70,11 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, connect_resp_after);
 
-  EXPECT_EQ(connect_resp_before.get_requester_endpoints(),
-            connect_resp_after.get_requester_endpoints());
-  EXPECT_EQ(connect_resp_before.get_receiver_endpoints(),
-            connect_resp_after.get_receiver_endpoints());
+  EXPECT_EQ(connect_resp_before.requester_endpoints(), connect_resp_after.requester_endpoints());
+  EXPECT_EQ(connect_resp_before.receiver_endpoints(), connect_resp_after.receiver_endpoints());
 
-  EXPECT_EQ(connect_resp_before.get_requester_id(), connect_resp_after.get_requester_id());
-  EXPECT_EQ(connect_resp_before.get_receiver_id(), connect_resp_after.get_receiver_id());
+  EXPECT_EQ(connect_resp_before.requester_id(), connect_resp_after.requester_id());
+  EXPECT_EQ(connect_resp_before.receiver_id(), connect_resp_after.receiver_id());
 }
 
 }  // namespace test
