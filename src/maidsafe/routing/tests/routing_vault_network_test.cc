@@ -117,7 +117,7 @@ class MaidManager {
   using account_type = MaidManagerAccount;
   template <typename T>
   HandlePutPostReturn HandlePut(SourceAddress from, Identity data_name, T data) {
-    auto found = static_cast<Child*>(this)->maid_account(std::get<0>(from));
+    auto found = static_cast<Child*>(this)->maid_account(from.node_address);
     if (!found)
       return boost::make_unexpected(MakeError(VaultErrors::no_such_account));
     found->stored += data.size();

@@ -113,7 +113,7 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
 }
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, CompletionToken token) {
+BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint /*local_endpoint*/, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());

@@ -35,6 +35,7 @@
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/types.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe/common/containers/lru_cache.h"
 #include "maidsafe/crux/socket.hpp"
 #include "maidsafe/passport/types.h"
@@ -74,7 +75,7 @@ class RoutingNode {
   template <typename FunctorType, typename CompletionToken>
   PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken token);
 
-  void AddBootstrapContact(crux::endpoint endpoint) {
+  void AddBootstrapContact(crux::endpoint /*endpoint*/) {
     // bootstrap_handler_.AddBootstrapContact(endpoint);
   }
 
@@ -128,8 +129,8 @@ class RoutingNode {
   BoostAsioService crux_asio_service_;
   AsioService asio_service_;
   passport::Pmid our_fob_;
+  std::atomic<MessageId> message_id_;
   boost::optional<Address> bootstrap_node_;
-  std::atomic<MessageId> message_id_{RandomUint32()};
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
@@ -143,13 +144,14 @@ RoutingNode<Child>::RoutingNode()
     : crux_asio_service_(1),
       asio_service_(4),
       our_fob_(passport::Pmid(passport::Anpmid())),
+      message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
-      // rudp_(),
       bootstrap_handler_(),
       connection_manager_(crux_asio_service_.service(), Address(our_fob_.name()->string())),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
-      cache_(std::chrono::minutes(60)) {
+      cache_(std::chrono::minutes(60)),
+      connected_nodes_() {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
@@ -218,7 +220,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address to, DataType data,
                                                    CompletionToken token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  asio_service_.post([=] {
+  asio::post(asio_service_.service(), [=] {
     MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
                              ++message_id_, Authority::client);
     PutData request(DataType::Tag::kValue, data.serialise());
@@ -238,7 +240,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
                                                      CompletionToken token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  asio_service_.post([=] {
+  asio::post(asio_service_.service(), [=] {
     MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
                              ++message_id_, Authority::node);
     PutData request(FunctorType::Tag::kValue, functor);
