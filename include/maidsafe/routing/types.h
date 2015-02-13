@@ -22,12 +22,11 @@
 #include <array>
 #include <cstdint>
 #include <utility>
-#include <tuple>
 #include <vector>
 
 #include "boost/optional/optional.hpp"
 #include "boost/expected/expected.hpp"
-#include "eggs/variant.hpp"
+#include "boost/variant/variant.hpp"
 #include "asio/async_result.hpp"
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
@@ -37,8 +36,9 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/data_types/data_type_values.h"
 #include "maidsafe/common/tagged_value.h"
-#include "maidsafe/rudp/contact.h"
-#include "maidsafe/rudp/types.h"
+
+#include "maidsafe/routing/contact.h"
+#include "maidsafe/routing/endpoint_pair.h"
 
 namespace maidsafe {
 
@@ -46,7 +46,7 @@ namespace routing {
 
 static const size_t GroupSize = 23;
 static const size_t QuorumSize = 19;
-// aghh please c++14 come on MSVC
+
 enum class FromType : int32_t {
   client_manager,
   nae_manager,
@@ -73,26 +73,19 @@ using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
 using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress>>;
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
-using SourceAddress =
-    std::tuple<NodeAddress, boost::optional<GroupAddress>, boost::optional<ReplyToAddress>>;
 
 template <class Archive>
 void serialize(Archive& archive, DestinationAddress& address) {
   archive(address.first, address.second);
 }
 
-template <class Archive>
-void serialize(Archive& archive, SourceAddress& address) {
-  archive(std::get<0>(address), std::get<1>(address), std::get<2>(address));
-}
 using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
-    boost::expected<eggs::variant<std::vector<DestinationAddress>, std::vector<byte>>,
+    boost::expected<boost::variant<std::vector<DestinationAddress>, std::vector<byte>>,
                     maidsafe_error>;
 using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
 
-using Endpoint = rudp::Endpoint;
-using EndpointPair = rudp::EndpointPair;
+using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
 using Checksum = crypto::SHA1Hash;
@@ -101,7 +94,7 @@ using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address
 
 template <typename CompletionToken>
 using BootstrapHandlerHandler =
-    typename asio::handler_type<CompletionToken, void(asio::error_code, rudp::Contact)>::type;
+    typename asio::handler_type<CompletionToken, void(asio::error_code, Contact)>::type;
 
 template <typename CompletionToken>
 using BootstrapReturn = typename asio::async_result<BootstrapHandlerHandler<CompletionToken>>::type;

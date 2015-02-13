@@ -29,21 +29,21 @@ boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageHeader h
     if (!header.FromGroup())  // "keys should always come from a group");
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     if (group_key_accumulator_.Add(*header.FromGroup(),
-                                   std::make_tuple(header.GetSource(), tag, std::move(message)),
+                                   std::make_tuple(header.Source(), tag, std::move(message)),
                                    header.FromNode())) {
       // get the other accumulator and go for it
     }
   } else {
-    if (header.FromGroup() && !group_accumulator_.HaveKey(*header.FromGroup())) {  // we need
+    if (header.FromGroup() && !group_accumulator_.HaveName(*header.FromGroup())) {  // we need
       // to send a findkey for this GroupAddress
 
-    } else if (!node_accumulator_.HaveKey(header.FromNode())) {  // we need
+    } else if (!node_accumulator_.HaveName(header.FromNode())) {  // we need
       // to send a findkey for this SourceAddress
     }
   }
 
-  if (node_key_accumulator_.HaveKey(header.FromNode())) {  // ok direct
-  } else if (header.FromGroup() && group_key_accumulator_.HaveKey(*header.FromGroup())) {  // ok dht
+  if (node_key_accumulator_.HaveName(header.FromNode())) {  // ok direct
+  } else if (header.FromGroup() && group_key_accumulator_.HaveName(*header.FromGroup())) {  // ok dht
   }
   return boost::none;
 }

@@ -22,11 +22,10 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,22 +36,22 @@ namespace test {
 PutDataResponse GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PutDataResponse{
+  return PutDataResponse(DataTagValue::kAnpmidValue,
                          SerialisedData(serialised_data.begin(), serialised_data.end()),
-                         DataTagValue::kAnpmidValue, MakeError(CommonErrors::unknown)};
+                         MakeError(CommonErrors::unknown));
 }
 
 TEST(PutDataResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto put_data_rsp_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<PutDataResponse>::value());
 
   auto serialised_put_data_rsp(Serialise(header_before, tag_before, put_data_rsp_before));
 
   // Parse
   auto put_data_rsp_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_put_data_rsp};
@@ -66,11 +65,10 @@ TEST(PutDataResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, put_data_rsp_after);
 
-  EXPECT_EQ(put_data_rsp_before.get_tag(), put_data_rsp_after.get_tag());
+  EXPECT_EQ(put_data_rsp_before.tag(), put_data_rsp_after.tag());
 
 
-  EXPECT_EQ(ErrorToInt(put_data_rsp_before.get_error()),
-            ErrorToInt(put_data_rsp_after.get_error()));
+  EXPECT_EQ(ErrorToInt(put_data_rsp_before.error()), ErrorToInt(put_data_rsp_after.error()));
 }
 
 }  // namespace test

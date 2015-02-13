@@ -33,19 +33,50 @@ namespace maidsafe {
 
 namespace routing {
 
-Client::Client(asio::io_service& io_service, boost::filesystem::path db_location, Identity our_id,
-               asymm::Keys our_keys)
-    : io_service_(io_service),
+Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_keys)
+    : crux_asio_service_(1),
+      io_service_(io_service),
       our_id_(std::move(our_id)),
       our_keys_(std::move(our_keys)),
       bootstrap_node_(),
       message_id_(RandomUint32()),
-      rudp_(),
-      bootstrap_handler_(std::move(db_location)),
+      bootstrap_handler_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
-void Client::MessageReceived(NodeId /*peer_id*/, rudp::ReceivedMessage serialised_message) {
+Client::Client(asio::io_service& io_service, const passport::Maid& maid)
+    : crux_asio_service_(1),
+      io_service_(io_service),
+      our_id_(maid.name()->string()),
+      our_keys_([&]() -> asymm::Keys {
+        asymm::Keys keys;
+        keys.private_key = maid.private_key();
+        keys.public_key = maid.public_key();
+        return keys;
+      }()),
+      bootstrap_node_(),
+      message_id_(RandomUint32()),
+      bootstrap_handler_(),
+      filter_(std::chrono::minutes(20)),
+      sentinel_(io_service) {}
+
+Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
+    : crux_asio_service_(1),
+      io_service_(io_service),
+      our_id_(mpid.name()->string()),
+      our_keys_([&]() -> asymm::Keys {
+        asymm::Keys keys;
+        keys.private_key = mpid.private_key();
+        keys.public_key = mpid.public_key();
+        return keys;
+      }()),
+      bootstrap_node_(),
+      message_id_(RandomUint32()),
+      bootstrap_handler_(),
+      filter_(std::chrono::minutes(20)),
+      sentinel_(io_service) {}
+
+void Client::MessageReceived(NodeId /*peer_id*/, std::vector<byte> serialised_message) {
   InputVectorStream binary_input_stream(std::move(serialised_message));
   MessageHeader header;
   MessageTypeTag tag;
@@ -53,7 +84,7 @@ void Client::MessageReceived(NodeId /*peer_id*/, rudp::ReceivedMessage serialise
     Parse(binary_input_stream, header, tag);
   }
   catch (const std::exception&) {
-    LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
+    LOG(kError) << "header failure: " << boost::current_exception_diagnostic_information();
     return;
   }
 
@@ -94,7 +125,7 @@ void Client::HandleMessage(ConnectResponse&& /*connect_response*/) {
 void Client::HandleMessage(GetDataResponse&& /*get_data_response*/) {
 }
 
-void Client::HandleMessage(PostMessage&& /*post_message*/) {
+void Client::HandleMessage(routing::Post&& /*post*/) {
 }
 
 void Client::HandleMessage(PostResponse&& /*post_response*/) {

@@ -22,11 +22,10 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -48,14 +47,14 @@ PutData GenerateInstance() {
 TEST(PutDataTest, BEH_SerialiseParse) {
   // Serialise
   auto put_data_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<PutData>::value());
 
   auto serialised_put_data(Serialise(header_before, tag_before, put_data_before));
 
   // Parse
   auto put_data_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_put_data};
@@ -69,10 +68,10 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, put_data_after);
 
-  EXPECT_EQ(put_data_before.get_tag(), put_data_after.get_tag());
+  EXPECT_EQ(put_data_before.tag(), put_data_after.tag());
 
-  EXPECT_EQ(put_data_before.get_data().size(), put_data_after.get_data().size());
-  EXPECT_EQ(put_data_before.get_data(), put_data_after.get_data());
+  EXPECT_EQ(put_data_before.data().size(), put_data_after.data().size());
+  EXPECT_EQ(put_data_before.data(), put_data_after.data());
 }
 
 }  // namespace test

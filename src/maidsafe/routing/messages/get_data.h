@@ -21,7 +21,11 @@
 
 #include "boost/optional.hpp"
 
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+
+#include "maidsafe/routing/source_address.h"
 
 namespace maidsafe {
 
@@ -32,42 +36,36 @@ class GetData {
   GetData() = default;
   ~GetData() = default;
 
-  template <typename T, typename U, typename V>
-  GetData(T&& key, U&& requester, V&& tag)
-      : key_(std::forward<T>(key)),
-        requester_(std::forward<U>(requester)),
-        tag_(std::forward<V>(tag)) {}
+  GetData(DataTagValue tag, Identity name, SourceAddress requester)
+      : tag_(tag), name_(std::move(name)), requester_(std::move(requester)) {}
 
-
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : key_{std::move(other.key_)},
-                                               requester_{std::move(other.requester_)},
-                                               tag_{std::move(other.tag_)} {}
-
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+                                               name_(std::move(other.name_)),
+                                               requester_(std::move(other.requester_)) {}
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
-    key_ = std::move(other.key_);
-    requester_ = std::move(other.requester_);
     tag_ = std::move(other.tag_);
+    name_ = std::move(other.name_);
+    requester_ = std::move(other.requester_);
     return *this;
   }
 
   GetData(const GetData&) = delete;
   GetData& operator=(const GetData&) = delete;
 
-  void operator()() {}
-
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_, requester_, tag_);
+    archive(tag_, name_, requester_);
   }
-  Identity get_key() { return key_; }
-  SourceAddress get_requester() { return requester_; }
-  DataTagValue get_tag() { return tag_; }
+
+  DataTagValue tag() const { return tag_; }
+  Identity name() const { return name_; }
+  SourceAddress requester() const { return requester_; }
 
  private:
-  Identity key_;
-  SourceAddress requester_;
   DataTagValue tag_;
+  Identity name_;
+  SourceAddress requester_;
 };
 
 }  // namespace routing

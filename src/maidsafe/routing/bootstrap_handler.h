@@ -34,29 +34,50 @@ This object in itself will very possibly end up in rudp itself.
 #include <vector>
 
 #include "asio/ip/udp.hpp"
+#include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
+#include "boost/preprocessor/stringize.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
-#include "maidsafe/rudp/contact.h"
-#include "maidsafe/rudp/types.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/contact.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+inline boost::filesystem::path GetBootstrapFilePath() {
+  static const std::string file_name("bootstrap.cache");
+  boost::filesystem::path file_path(boost::filesystem::initial_path() / file_name);
+  if (boost::filesystem::exists(file_path))
+    return file_path;
+#if defined(BOOTSTRAP_FILE_PATH)
+  file_path = BOOST_PP_STRINGIZE(BOOTSTRAP_FILE_PATH);
+#elif defined(MAIDSAFE_WIN32)
+  file_path = boost::filesystem::path(std::getenv("ALLUSERSPROFILE")) / "MaidSafe" / file_name;
+#elif defined(MAIDSAFE_APPLE)
+  file_path = boost::filesystem::path("/Library/Application Support/") / "MaidSafe" / file_name;
+#elif defined(MAIDSAFE_LINUX)
+  file_path = boost::filesystem::path("/opt/") / "maidsafe" / "sbin" / file_name;
+#else
+  LOG(kError) << "Cannot deduce system wide application directory path";
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+#endif
+  return file_path;
+}
+
 class BootstrapHandler {
  public:
-  using BootstrapContact = rudp::Contact;
+  using BootstrapContact = Contact;
   using BootstrapContacts = std::vector<BootstrapContact>;
 
   static const int MaxListSize = 1500;
   static const std::chrono::steady_clock::duration UpdateDuration;
 
-  explicit BootstrapHandler(boost::filesystem::path bootstrap_filename);
+  BootstrapHandler();
   BootstrapHandler(const BootstrapHandler&) = delete;
   BootstrapHandler(BootstrapHandler&&) = delete;
   ~BootstrapHandler() = default;
@@ -81,7 +102,6 @@ class BootstrapHandler {
   // MaxListSize or exhausted the list we replace the current list with the
   void CheckBootstrapContacts();
 
-  boost::filesystem::path bootstrap_filename_;
   sqlite::Database database_;
   std::chrono::steady_clock::time_point last_updated_;
 };

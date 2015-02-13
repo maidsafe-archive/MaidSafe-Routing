@@ -35,8 +35,8 @@ const int BootstrapHandler::MaxListSize;
 #endif
 const std::chrono::steady_clock::duration BootstrapHandler::UpdateDuration = std::chrono::hours(4);
 
-BootstrapHandler::BootstrapHandler(boost::filesystem::path bootstrap_filename)
-    : database_(std::move(bootstrap_filename), sqlite::Mode::kReadWriteCreate),
+BootstrapHandler::BootstrapHandler()
+    : database_(GetBootstrapFilePath(), sqlite::Mode::kReadWriteCreate),
       last_updated_(std::chrono::steady_clock::now()) {
   sqlite::Statement statement{database_,
                               "CREATE TABLE IF NOT EXISTS BOOTSTRAP_CONTACTS(NODEID BLOB PRIMARY "
@@ -58,7 +58,8 @@ std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapC
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow) {
     bootstrap_contacts.push_back(BootstrapContact{
-        Parse<NodeId>(statement.ColumnBlob(0)), Parse<Endpoint>(statement.ColumnBlob(2)),
+        Parse<NodeId>(statement.ColumnBlob(0)),
+        Parse<asio::ip::udp::endpoint>(statement.ColumnBlob(2)),
         Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
   }
   return bootstrap_contacts;

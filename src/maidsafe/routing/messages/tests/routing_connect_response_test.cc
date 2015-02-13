@@ -22,11 +22,11 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
+#include "maidsafe/routing/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,8 +37,8 @@ namespace test {
 namespace {
 
 ConnectResponse GenerateInstance() {
-  return ConnectResponse{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-                         rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return ConnectResponse{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+                         EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
                          Address{RandomString(Address::kSize)},
                          Address{RandomString(Address::kSize)},
                          passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
@@ -49,14 +49,14 @@ ConnectResponse GenerateInstance() {
 TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_resp_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<ConnectResponse>::value());
 
   auto serialised_connect_rsp(Serialise(header_before, tag_before, connect_resp_before));
 
   // Parse
   auto connect_resp_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_connect_rsp};
@@ -70,13 +70,11 @@ TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, connect_resp_after);
 
-  EXPECT_EQ(connect_resp_before.get_requester_endpoints(),
-            connect_resp_after.get_requester_endpoints());
-  EXPECT_EQ(connect_resp_before.get_receiver_endpoints(),
-            connect_resp_after.get_receiver_endpoints());
+  EXPECT_EQ(connect_resp_before.requester_endpoints(), connect_resp_after.requester_endpoints());
+  EXPECT_EQ(connect_resp_before.receiver_endpoints(), connect_resp_after.receiver_endpoints());
 
-  EXPECT_EQ(connect_resp_before.get_requester_id(), connect_resp_after.get_requester_id());
-  EXPECT_EQ(connect_resp_before.get_receiver_id(), connect_resp_after.get_receiver_id());
+  EXPECT_EQ(connect_resp_before.requester_id(), connect_resp_after.requester_id());
+  EXPECT_EQ(connect_resp_before.receiver_id(), connect_resp_after.receiver_id());
 }
 
 }  // namespace test

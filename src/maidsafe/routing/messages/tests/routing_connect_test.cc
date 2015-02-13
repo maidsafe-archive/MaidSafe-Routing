@@ -23,11 +23,11 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/contact.h"
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -37,9 +37,8 @@ namespace test {
 
 namespace {
 
-
 Connect GenerateInstance() {
-  return Connect{rudp::EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
+  return Connect{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
                  Address{RandomString(Address::kSize)}, Address{RandomString(Address::kSize)},
                  passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
 }
@@ -50,14 +49,14 @@ Connect GenerateInstance() {
 TEST(ConnectTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 
   // Parse
   auto connect_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_connect};
@@ -71,22 +70,22 @@ TEST(ConnectTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, connect_after);
 
-  EXPECT_EQ(connect_before.get_requester_endpoints(), connect_after.get_requester_endpoints());
-  EXPECT_EQ(connect_before.get_requester_id(), connect_after.get_requester_id());
-  EXPECT_EQ(connect_before.get_receiver_id(), connect_after.get_receiver_id());
-  EXPECT_EQ(connect_before.get_requester_fob().validation_token(),
-            connect_after.get_requester_fob().validation_token());
-  EXPECT_TRUE(asymm::MatchingKeys(connect_before.get_requester_fob().public_key(),
-                                  connect_after.get_requester_fob().public_key()));
+  EXPECT_EQ(connect_before.requester_endpoints(), connect_after.requester_endpoints());
+  EXPECT_EQ(connect_before.requester_id(), connect_after.requester_id());
+  EXPECT_EQ(connect_before.receiver_id(), connect_after.receiver_id());
+  EXPECT_EQ(connect_before.requester_fob().validation_token(),
+            connect_after.requester_fob().validation_token());
+  EXPECT_TRUE(asymm::MatchingKeys(connect_before.requester_fob().public_key(),
+                                  connect_after.requester_fob().public_key()));
   auto moved_connect(std::move(connect_after));
-  EXPECT_EQ(connect_before.get_requester_endpoints(), moved_connect.get_requester_endpoints());
-  EXPECT_EQ(connect_before.get_requester_endpoints(), moved_connect.get_requester_endpoints());
-  EXPECT_EQ(connect_before.get_requester_id(), moved_connect.get_requester_id());
-  EXPECT_EQ(connect_before.get_receiver_id(), moved_connect.get_receiver_id());
-  EXPECT_EQ(connect_before.get_requester_fob().validation_token(),
-            moved_connect.get_requester_fob().validation_token());
-  EXPECT_TRUE(asymm::MatchingKeys(connect_before.get_requester_fob().public_key(),
-                                  moved_connect.get_requester_fob().public_key()));
+  EXPECT_EQ(connect_before.requester_endpoints(), moved_connect.requester_endpoints());
+  EXPECT_EQ(connect_before.requester_endpoints(), moved_connect.requester_endpoints());
+  EXPECT_EQ(connect_before.requester_id(), moved_connect.requester_id());
+  EXPECT_EQ(connect_before.receiver_id(), moved_connect.receiver_id());
+  EXPECT_EQ(connect_before.requester_fob().validation_token(),
+            moved_connect.requester_fob().validation_token());
+  EXPECT_TRUE(asymm::MatchingKeys(connect_before.requester_fob().public_key(),
+                                  moved_connect.requester_fob().public_key()));
 }
 
 }  // namespace test

@@ -16,17 +16,16 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/messages/post_message.h"
+#include "maidsafe/routing/messages/post.h"
 
 #include "maidsafe/common/serialisation/binary_archive.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -36,12 +35,12 @@ namespace test {
 
 namespace {
 
-PostMessage GenerateInstance() {
+Post GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PostMessage{Identity{RandomString(Address::kSize)},
-                     SerialisedData(serialised_data.begin(), serialised_data.end()),
-                     DataTagValue::kImmutableDataValue};
+  return Post(DataTagValue::kImmutableDataValue,
+              Identity(RandomString(Address::kSize)),
+              SerialisedData(serialised_data.begin(), serialised_data.end()));
 }
 
 }  // anonymous namespace
@@ -49,14 +48,14 @@ PostMessage GenerateInstance() {
 TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
-  auto tag_before(MessageToTag<PostMessage>::value());
+  auto header_before(GetRandomMessageHeader());
+  auto tag_before(MessageToTag<Post>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 
   // Parse
   auto post_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_post};
@@ -70,10 +69,10 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, post_after);
 
-  EXPECT_EQ(post_before.get_key(), post_after.get_key());
+  EXPECT_EQ(post_before.name(), post_after.name());
 
-  EXPECT_EQ(post_before.get_data().size(), post_after.get_data().size());
-  EXPECT_EQ(post_before.get_data(), post_after.get_data());
+  EXPECT_EQ(post_before.data().size(), post_after.data().size());
+  EXPECT_EQ(post_before.data(), post_after.data());
 }
 
 }  // namespace test

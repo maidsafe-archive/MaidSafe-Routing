@@ -38,12 +38,12 @@ TEST(RoutingTest, BEH_AccumulatorAdd) {
   Accumulator<int, uint32_t> accumulator(std::chrono::milliseconds(10), quorum);
   auto test_address(Address{RandomString(Address::kSize)});
   EXPECT_TRUE(!!accumulator.Add(2, 3UL, test_address));
-  EXPECT_FALSE(accumulator.HaveKey(1));
-  EXPECT_TRUE(accumulator.HaveKey(2));
+  EXPECT_FALSE(accumulator.HaveName(1));
+  EXPECT_TRUE(accumulator.HaveName(2));
   EXPECT_FALSE(accumulator.CheckQuorumReached(1));
   EXPECT_TRUE(accumulator.CheckQuorumReached(2));
   EXPECT_TRUE(!!accumulator.Add(1, 3UL, Address{RandomString(Address::kSize)}));
-  EXPECT_TRUE(accumulator.HaveKey(1));
+  EXPECT_TRUE(accumulator.HaveName(1));
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
   EXPECT_TRUE(!!accumulator.Add(1, 3UL, Address{RandomString(Address::kSize)}));
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
@@ -51,19 +51,19 @@ TEST(RoutingTest, BEH_AccumulatorAdd) {
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
   EXPECT_TRUE(!!accumulator.GetAll(1));
-  EXPECT_TRUE(accumulator.HaveKey(1));
+  EXPECT_TRUE(accumulator.HaveName(1));
   EXPECT_TRUE(accumulator.CheckQuorumReached(2));
   EXPECT_TRUE(!!accumulator.GetAll(2));
-  EXPECT_TRUE(accumulator.HaveKey(2));
+  EXPECT_TRUE(accumulator.HaveName(2));
   //  this Add will check timers of all other keys and should remove them as they are now timed
   //  out
   EXPECT_TRUE(!!accumulator.Add(3, 3UL, test_address));
   EXPECT_FALSE(accumulator.CheckQuorumReached(1));
   EXPECT_FALSE(!!accumulator.GetAll(1));
-  EXPECT_FALSE(accumulator.HaveKey(1));
+  EXPECT_FALSE(accumulator.HaveName(1));
   EXPECT_FALSE(accumulator.CheckQuorumReached(2));
   EXPECT_FALSE(!!accumulator.GetAll(2));
-  EXPECT_FALSE(accumulator.HaveKey(2));
+  EXPECT_FALSE(accumulator.HaveName(2));
 }
 
 }  // namespace test

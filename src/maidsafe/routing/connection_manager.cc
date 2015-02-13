@@ -23,76 +23,95 @@
 #include <utility>
 #include <vector>
 
-#include "asio/spawn.hpp"
 #include "asio/use_future.hpp"
+#include "boost/asio/spawn.hpp"
 
-#include "maidsafe/rudp/managed_connections.h"
-#include "maidsafe/rudp/contact.h"
+#include "maidsafe/common/convert.h"
 
+#include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
-  return routing_table_.CheckNode(node_to_add);
+bool ConnectionManager::IsManaged(const Address& node_id) const {
+  return peers_.find(node_id) != peers_.end();
+  //return routing_table_.CheckNode(node_to_add);
 }
 
-std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
-  auto nodes(routing_table_.TargetNodes(target_node));
-  nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
-                             [](NodeInfo& node) { return !node.connected; }),
-              std::end(nodes));
-  return nodes;
+std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(const Address& target_node) const {
+  // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
+  return std::set<Address, Comparison>(Comparison(target_node));
+  //for (const auto& peer : peers_) {
+  //  result.insert(peer.first);
+  //}
+  //return result;
+  //auto nodes(routing_table_.TargetNodes(target_node));
+  ////nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+  ////                           [](NodeInfo& node) { return !node.connected(); }),
+  ////            std::end(nodes));
+  //return nodes;
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
-    const Address& node) {
-  routing_table_.DropNode(node);
-  return GroupChanged();
-}
+//boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+//    const Address& node) {
+//  routing_table_.DropNode(node);
+//  return GroupChanged();
+//}
 
 boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
-  routing_table_.DropNode(their_id);
+  //routing_table_.DropNode(their_id);
+  peers_.erase(their_id);
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
-    NodeInfo node_to_add, rudp::EndpointPair their_endpoint_pair) {
-  rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
-                             node_to_add.dht_fob.public_key());
-  asio::spawn(io_service_.service(), [=](asio::yield_context yield) {
-    asio::error_code error;
-    rudp_.Add(std::move(rudp_contact), yield[error]);
+void ConnectionManager::StartAccepting() {
+  auto socket = std::make_shared<crux::socket>(io_service_);
+  acceptor_.async_accept(*socket, [this, socket](boost::system::error_code error) {
+      if (error) {
+        if (error == boost::asio::error::operation_aborted) {
+          return;
+        }
+        return StartAccepting();
+      }
+      // TODO: Exchange node info and add the socket to the peers_ map.
+      StartAccepting();
+      });
+}
+
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
+  boost::asio::spawn(io_service_, [=](boost::asio::yield_context yield) {
+    boost::system::error_code error;
+    static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+    auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
+
+    // TODO(PeterJ): Try both endpoints, choose the first one that connects.
+    socket->async_connect(convert::ToBoost(eps.external), yield[error]);
 
     if (!error) {
-      auto added = routing_table_.AddNode(node_to_add);
-      if (!added.first) {
-        rudp_.Remove(node_to_add.id, asio::use_future);  // become invalid for us
-      } else if (added.second) {
-        rudp_.Remove(added.second->id, asio::use_future);  // a sacrificlal node was found
-      }
+      peers_.insert(std::make_pair(node_info.id, PeerNode(node_info, socket)));
     }
   });
+  // FIXME: The above stuff happens inside io_service, the GroupChanged() function
+  // always returns 'no change' in here. The result should be returned
+  // in form of an argument to callback.
   return GroupChanged();
 }
 
-bool ConnectionManager::CloseGroupMember(const Address& their_id) {
-  auto close_group(routing_table_.OurCloseGroup());
-  return std::any_of(std::begin(close_group), std::end(close_group),
-                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
-}
+//bool ConnectionManager::CloseGroupMember(const Address& their_id) {
+//  auto close_group(routing_table_.OurCloseGroup());
+//  return std::any_of(std::begin(close_group), std::end(close_group),
+//                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
+//}
 
 boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
-  auto new_nodeinfo_group(routing_table_.OurCloseGroup());
+  auto new_nodeinfo_group(OurCloseGroup());
   std::vector<Address> new_group;
   for (const auto& nodes : new_nodeinfo_group)
     new_group.push_back(nodes.id);
 
-  std::lock_guard<std::mutex> lock(mutex_);
   if (new_group != current_close_group_) {
     auto changed = std::make_pair(new_group, current_close_group_);
     current_close_group_ = new_group;

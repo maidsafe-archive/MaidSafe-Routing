@@ -39,16 +39,12 @@ struct NodeInfo {
   NodeInfo(const NodeInfo&) = default;
 
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
-                                                 dht_fob(std::move(other.dht_fob)),
-                                                 rank(std::move(other.rank)),
-                                                 connected(std::move(other.connected)) {}
+                                                 dht_fob(std::move(other.dht_fob)) {}
   NodeInfo& operator=(const NodeInfo&) = default;
 
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     dht_fob = std::move(other.dht_fob);
-    rank = std::move(other.rank);
-    connected = std::move(other.connected);
     return *this;
   }
 
@@ -75,8 +71,6 @@ struct NodeInfo {
 
   Address id;
   passport::PublicPmid dht_fob;
-  int32_t rank;
-  bool connected;
 };
 
 }  // namespace routing

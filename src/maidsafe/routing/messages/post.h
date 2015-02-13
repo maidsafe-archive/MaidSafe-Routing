@@ -16,65 +16,57 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
-
-#include <cstdint>
-#include <vector>
+#ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
+#define MAIDSAFE_ROUTING_MESSAGES_POST_H_
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-class PostMessage {
+class Post {
  public:
-  PostMessage() = default;
-  ~PostMessage() = default;
+  Post() = default;
+  ~Post() = default;
 
-  template <typename T, typename V, typename W>
-  PostMessage(T&& key, V&& data, W&& tag)
-      : key_(std::forward<T>(key)), data_(std::forward<V>(data)), tag_(std::forward<W>(tag)) {}
+  Post(DataTagValue tag, Identity name, SerialisedData data)
+      : tag_(tag), name_(std::move(name)), data_(std::move(data)) {}
 
-  PostMessage(PostMessage&& other) MAIDSAFE_NOEXCEPT : key_(std::move(other.key_)),
-                                                       data_(std::move(other.data_)),
-                                                       tag_(std::move(other.tag_)) {}
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+                                         name_(std::move(other.name_)),
+                                         data_(std::move(other.data_)) {}
 
-  PostMessage& operator=(PostMessage&& other) MAIDSAFE_NOEXCEPT {
-    key_ = std::move(other.key_);
-    data_ = std::move(other.data_);
+  Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
     tag_ = std::move(other.tag_);
+    name_ = std::move(other.name_);
+    data_ = std::move(other.data_);
     return *this;
   }
 
-  PostMessage(const PostMessage&) = default;
-  PostMessage& operator=(const PostMessage&) = default;
-
-  void operator()() {}
+  Post(const Post&) = delete;
+  Post& operator=(const Post&) = delete;
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(key_, data_, tag_);
+    archive(tag_, name_, data_);
   }
 
-  Identity get_key() { return key_; }
-  SerialisedData get_data() { return data_; }
-  DataTagValue get_tag() { return tag_; }
+  DataTagValue tag() const { return tag_; }
+  Identity name() const { return name_; }
+  SerialisedData data() const { return data_; }
 
  private:
-  Identity key_;
-  SerialisedData data_;
   DataTagValue tag_;
+  Identity name_;
+  SerialisedData data_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_MESSAGE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_POST_H_

@@ -26,7 +26,6 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/expected/expected.hpp"
-#include "eggs/variant.hpp"
 
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
@@ -118,7 +117,7 @@ class MaidManager {
   using account_type = MaidManagerAccount;
   template <typename T>
   HandlePutPostReturn HandlePut(SourceAddress from, Identity data_name, T data) {
-    auto found = static_cast<Child*>(this)->maid_account(std::get<0>(from));
+    auto found = static_cast<Child*>(this)->maid_account(from.node_address);
     if (!found)
       return boost::make_unexpected(MakeError(VaultErrors::no_such_account));
     found->stored += data.size();
@@ -129,7 +128,7 @@ class MaidManager {
         });
   }
   void HandleChurn(CloseGroupDifference) {
-    // send all account info to the group of each key and delete it - wait for refreshed accounts
+    // send all account info to the group of each name and delete it - wait for refreshed accounts
   }
 };
 template <typename Child>
@@ -145,7 +144,7 @@ class DataManager {
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
   void HandleChurn(CloseGroupDifference) {
-    // send all account info to the group of each key and delete it - wait for refreshed accounts
+    // send all account info to the group of each name and delete it - wait for refreshed accounts
   }
 };
 template <typename DataManagerType, typename VersionManagerType>
@@ -170,7 +169,7 @@ class PmidManager {
   template <typename T>
   void HandlePut(SourceAddress /* from */, Identity /* data_name */, DataType /* data */) {}
   void HandleChurn(CloseGroupDifference) {
-    // send all account info to the group of each key and delete it - wait for refreshed accounts
+    // send all account info to the group of each name and delete it - wait for refreshed accounts
   }
 };
 template <typename Child>
@@ -297,22 +296,18 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
 
   LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
 
-  maidsafe::test::TestPath test_dir(
-      maidsafe::test::CreateTestPath("RoutingNetworkInit_BEH_ConstructNode"));
-
-
-  RoutingNode<VaultFacade> n(*test_dir / "node.sqlite3");
+  RoutingNode<VaultFacade> n;
 
   auto value = NonEmptyString(RandomAlphaNumericString(65));
-  Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
-  MutableData a{MutableData::Name(key), value};
+  Identity name{Identity(crypto::Hash<crypto::SHA512>(value))};
+  MutableData a{MutableData::Name(name), value};
   ImmutableData b{value};
 
   Address from(Address(RandomString(Address::kSize)));
   Address to(Address(RandomString(Address::kSize)));
 
-  n.Get<ImmutableData>(key, [](asio::error_code /* error */) {});
-  n.Get<MutableData>(key, [](asio::error_code /* error */) {});
+  n.Get<ImmutableData>(name, [](asio::error_code /* error */) {});
+  n.Get<MutableData>(name, [](asio::error_code /* error */) {});
 
   // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
   // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});

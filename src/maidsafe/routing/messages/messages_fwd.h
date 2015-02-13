@@ -36,11 +36,11 @@ enum class MessageTypeTag : uint16_t {
   GetKeyResponse,
   GetGroupKey,
   GetGroupKeyResponse,
-  PutData,
-  PutKey,
-  PutDataResponse,
-  PostMessage,
+  Post,
   PostResponse,
+  PutData,
+  PutDataResponse,
+  PutKey
 };
 
 class Connect;
@@ -49,49 +49,59 @@ class FindGroup;
 class FindGroupResponse;
 class GetData;
 class GetDataResponse;
+class Post;
+class PostResponse;
 class PutData;
 class PutDataResponse;
-class PostMessage;
-class PostResponse;
 
 template <class T>
 struct MessageToTag;
+
 template <>
 struct MessageToTag<Connect> {
   static MessageTypeTag value() { return MessageTypeTag::Connect; }
 };
+
 template <>
 struct MessageToTag<ConnectResponse> {
   static MessageTypeTag value() { return MessageTypeTag::ConnectResponse; }
 };
+
 template <>
 struct MessageToTag<FindGroup> {
   static MessageTypeTag value() { return MessageTypeTag::FindGroup; }
 };
+
 template <>
 struct MessageToTag<FindGroupResponse> {
   static MessageTypeTag value() { return MessageTypeTag::FindGroupResponse; }
 };
+
 template <>
 struct MessageToTag<GetData> {
   static MessageTypeTag value() { return MessageTypeTag::GetData; }
 };
+
 template <>
 struct MessageToTag<GetDataResponse> {
   static MessageTypeTag value() { return MessageTypeTag::GetDataResponse; }
 };
+
 template <>
 struct MessageToTag<PutData> {
   static MessageTypeTag value() { return MessageTypeTag::PutData; }
 };
+
 template <>
 struct MessageToTag<PutDataResponse> {
   static MessageTypeTag value() { return MessageTypeTag::PutDataResponse; }
 };
+
 template <>
-struct MessageToTag<PostMessage> {
-  static MessageTypeTag value() { return MessageTypeTag::PostMessage; }
+struct MessageToTag<Post> {
+  static MessageTypeTag value() { return MessageTypeTag::Post; }
 };
+
 template <>
 struct MessageToTag<PostResponse> {
   static MessageTypeTag value() { return MessageTypeTag::PostResponse; }

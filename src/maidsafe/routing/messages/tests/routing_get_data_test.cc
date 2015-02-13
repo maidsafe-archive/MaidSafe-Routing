@@ -22,11 +22,10 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -34,24 +33,21 @@ namespace routing {
 
 namespace test {
 
-
 TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
-  auto get_data_before(GetData{
-      Identity{RandomString(Address::kSize)},
-      std::make_tuple(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
-      DataTagValue::kPmidValue});
-  auto header_before(GenerateMessageHeader());
+  auto get_data_before(GetData(
+      DataTagValue::kPmidValue, Identity(RandomString(Address::kSize)),
+      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
   // Parse
-  auto get_data_after(GetData{
-      Identity{RandomString(Address::kSize)},
-      std::make_tuple(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
-      DataTagValue::kMpidValue});
-  auto header_after(GenerateMessageHeader());
+  auto get_data_after(GetData(
+      DataTagValue::kMpidValue, Identity(RandomString(Address::kSize)),
+      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_get_data};
@@ -65,7 +61,7 @@ TEST(GetDataTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, get_data_after);
 
-  EXPECT_EQ(get_data_before.get_key(), get_data_after.get_key());
+  EXPECT_EQ(get_data_before.name(), get_data_after.name());
 }
 
 }  // namespace test

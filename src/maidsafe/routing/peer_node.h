@@ -16,52 +16,49 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <vector>
-#include <string>
+#ifndef MAIDSAFE_ROUTING_PEER_NODE_H_
+#define MAIDSAFE_ROUTING_PEER_NODE_H_
 
-#include "eggs/variant.hpp"
+#include <memory>
 
-#include "maidsafe/common/test.h"
-#include "maidsafe/common/utils.h"
+#include "maidsafe/common/convert.h"
+#include "maidsafe/crux/socket.hpp"
+#include "maidsafe/passport/types.h"
 
-#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-namespace test {
+class PeerNode {
+ public:
+  using PublicPmid = passport::PublicPmid;
 
-TEST(RoutingVariantTest, BEH_Variant) {
-  eggs::variant<int, std::string> const v(42);
-  eggs::variant<int, std::string> const x(std::string("hello"));
-  eggs::variant<int, std::string> z;
-  EXPECT_TRUE(bool(v));
-  EXPECT_TRUE(bool(x));
-  EXPECT_FALSE(bool(z));
-  z = 32;
-  EXPECT_TRUE(bool(z));
-  ASSERT_EQ(*z.target<int>(), 32);
-  EXPECT_EQ(z.target_type(), typeid(int));  // NOLINT
-  z = std::string("hello again");
-  EXPECT_EQ(z.target_type(), typeid(std::string));
+  PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
+      : node_info_(std::move(node_info)), socket(socket) {}
 
-  ASSERT_EQ(*z.target<std::string>(), std::string("hello again"));
+  template <typename Message, typename Handler>
+  void Send(Message msg, const Handler& handler) {
+    auto msg_ptr = std::make_shared<Message>(std::move(msg));
+    socket->async_send(boost::asio::buffer(*msg_ptr),
+                       [msg_ptr, handler](boost::system::error_code error, size_t) {
+      handler(convert::ToStd(error));
+    });
+  }
 
-  EXPECT_EQ(v.which(), 0u);
-  EXPECT_EQ(x.which(), 1u);
-  ASSERT_EQ(*v.target<int>(), 42);
-  ASSERT_EQ(*x.target<std::string>(), std::string("hello"));
+  const NodeInfo& node_info() const { return node_info_; }
+  bool connected() const { return connected_; }
 
-  int const& ref = eggs::variants::get<0>(v);
-
-  EXPECT_EQ(ref, 42);
-
-  EXPECT_THROW(eggs::variants::get<1>(v), eggs::variants::bad_variant_access);
-}
-
-}  // namespace test
+ private:
+  NodeInfo node_info_;
+  std::shared_ptr<crux::socket> socket;
+  // int32_t rank;
+  bool connected_;
+};
 
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_PEER_NODE_H_

@@ -19,9 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
 #define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
 
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/config.h"
 
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
@@ -32,14 +32,11 @@ class FindGroup {
   FindGroup() = default;
   ~FindGroup() = default;
 
+  FindGroup(NodeAddress requester_id, Address target_id)
+      : requester_id_(std::move(requester_id)), target_id_(std::move(target_id)) {}
 
-  template <typename T, typename U>
-  FindGroup(T&& requester_id, U&& target_id)
-      : requester_id_{std::forward<T>(requester_id)}, target_id_{std::forward<U>(target_id)} {}
-
-
-  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : requester_id_{std::move(other.requester_id_)},
-                                                   target_id_{std::move(other.target_id_)} {}
+  FindGroup(FindGroup&& other) MAIDSAFE_NOEXCEPT : requester_id_(std::move(other.requester_id_)),
+                                                   target_id_(std::move(other.target_id_)) {}
 
   FindGroup& operator=(FindGroup&& other) MAIDSAFE_NOEXCEPT {
     requester_id_ = std::move(other.requester_id_);
@@ -50,15 +47,13 @@ class FindGroup {
   FindGroup(const FindGroup&) = delete;
   FindGroup& operator=(const FindGroup&) = delete;
 
-  void operator()() {}
-
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(requester_id_, target_id_);
   }
 
-  NodeAddress get_requester_id() { return requester_id_; }
-  Address get_target_id() { return target_id_; }
+  NodeAddress requester_id() const { return requester_id_; }
+  Address target_id() const { return target_id_; }
 
  private:
   NodeAddress requester_id_;

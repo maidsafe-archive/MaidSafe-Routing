@@ -22,11 +22,10 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/rudp/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -46,14 +45,14 @@ FindGroup GenerateInstance() {
 TEST(FindGroupTest, BEH_SerialiseParse) {
   // Serialise
   auto find_group_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<FindGroup>::value());
 
   auto serialised_find_grp(Serialise(header_before, tag_before, find_group_before));
 
   // Parse
   auto find_group_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_find_grp};
@@ -67,8 +66,8 @@ TEST(FindGroupTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, find_group_after);
 
-  EXPECT_EQ(find_group_before.get_target_id(), find_group_after.get_target_id());
-  EXPECT_EQ(find_group_before.get_requester_id(), find_group_after.get_requester_id());
+  EXPECT_EQ(find_group_before.target_id(), find_group_after.target_id());
+  EXPECT_EQ(find_group_before.requester_id(), find_group_after.requester_id());
 }
 
 }  // namespace test

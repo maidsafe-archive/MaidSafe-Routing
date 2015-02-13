@@ -19,11 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 
-#include <cstdint>
-
 #include "maidsafe/common/config.h"
-
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 
@@ -34,10 +32,7 @@ class PutData {
   PutData() = default;
   ~PutData() = default;
 
-
-  template <typename T, typename U>
-  PutData(T&& key, U&& data)
-      : tag_(std::forward<T>(key)), data_(std::forward<U>(data)) {}
+  PutData(DataTagValue tag, SerialisedData data) : tag_(tag), data_(std::move(data)) {}
 
   PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
                                                data_(std::move(other.data_)) {}
@@ -56,8 +51,8 @@ class PutData {
     archive(tag_, data_);
   }
 
-  DataTagValue get_tag() { return tag_; }
-  SerialisedData get_data() { return data_; }
+  DataTagValue tag() const { return tag_; }
+  SerialisedData data() const { return data_; }
 
  private:
   DataTagValue tag_;

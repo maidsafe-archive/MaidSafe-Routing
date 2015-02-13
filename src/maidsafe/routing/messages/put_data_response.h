@@ -19,17 +19,10 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 
-#include <cstdint>
-#include "boost/optional/optional.hpp"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/messages/put_data.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 
@@ -40,17 +33,16 @@ class PutDataResponse {
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  template <typename T, typename U, typename V>
-  PutDataResponse(T&& data, U&& tag, V&& error)
-      : data_{std::forward<T>(data)}, tag_{std::forward<U>(tag)}, error_{std::forward<V>(error)} {}
+  PutDataResponse(DataTagValue tag, SerialisedData data, maidsafe_error error)
+      : tag_(tag), data_(std::move(data)), error_(std::move(error)) {}
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : data_{std::move(other.data_)},
-                                                               tag_{std::move(other.tag_)},
-                                                               error_{std::move(other.error_)} {}
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+                                                               data_(std::move(other.data_)),
+                                                               error_(std::move(other.error_)) {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    data_ = std::move(other.data_);
     tag_ = std::move(other.tag_);
+    data_ = std::move(other.data_);
     error_ = std::move(other.error_);
     return *this;
   }
@@ -58,20 +50,18 @@ class PutDataResponse {
   PutDataResponse(const PutDataResponse&) = delete;
   PutDataResponse& operator=(const PutDataResponse&) = delete;
 
-  void operator()() {}
-
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(data_, tag_, error_);
+    archive(tag_, data_, error_);
   };
 
-  maidsafe_error get_error() { return error_; }
-  SerialisedData get_data() { return data_; }
-  DataTagValue get_tag() { return tag_; }
+  DataTagValue tag() const { return tag_; }
+  SerialisedData data() const { return data_; }
+  maidsafe_error error() const { return error_; }
 
  private:
-  SerialisedData data_;
   DataTagValue tag_;
+  SerialisedData data_;
   maidsafe_error error_;
 };
 
