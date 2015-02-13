@@ -53,7 +53,7 @@ class PutDataResponse {
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(tag_, data_, error_);
-  };
+  }
 
   DataTagValue tag() const { return tag_; }
   SerialisedData data() const { return data_; }

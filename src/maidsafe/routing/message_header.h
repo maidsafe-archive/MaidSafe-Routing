@@ -118,7 +118,7 @@ class MessageHeader {
   boost::optional<GroupAddress> FromGroup() const { return source_.group_address; }
   Authority FromAuthority() { return authority_; }
   bool RelayedMessage() const { return static_cast<bool>(source_.reply_to_address); }
-  boost::optional<ReplyToAddress> ReplyToAddress() const { return source_.reply_to_address; }
+  boost::optional<routing::ReplyToAddress> ReplyToAddress() const { return source_.reply_to_address; }
 
   Address FromAddress() const {
     if (FromGroup())
