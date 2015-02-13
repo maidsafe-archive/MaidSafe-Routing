@@ -23,6 +23,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
 

@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "asio/io_service.hpp"
 #include "boost/filesystem/path.hpp"

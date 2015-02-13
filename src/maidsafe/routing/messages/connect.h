@@ -55,8 +55,8 @@ class Connect {
     return *this;
   }
 
-  Connect(const Connect&) = delete;
-  Connect& operator=(const Connect&) = delete;
+  Connect(const Connect&) = default;
+  Connect& operator=(const Connect&) = default;
 
   template <typename Archive>
   void serialize(Archive& archive) {

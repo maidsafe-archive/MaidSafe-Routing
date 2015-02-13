@@ -65,7 +65,8 @@ class Accumulator {
 
   // returns true when the quorum has been reached. This will return Quorum times
   // a tuple of valuetype which should be Source Address signature tag type and value
-  boost::optional<std::pair<NameType, Map>> Add(const NameType& name, ValueType value, NodeId sender) {
+  boost::optional<std::pair<NameType, Map>> Add(const NameType& name, ValueType value,
+                                                NodeId sender) {
     auto it = storage_.find(name);
     if (it == std::end(storage_)) {
       AddNew(name, value, sender);
@@ -136,7 +137,7 @@ class Accumulator {
   uint32_t quorum_;
   std::list<NameType> name_order_;
   std::map<NameType, std::tuple<Map, typename std::list<NameType>::iterator,
-                               std::chrono::steady_clock::time_point>> storage_;
+                                std::chrono::steady_clock::time_point>> storage_;
 };
 
 }  // namespace routing

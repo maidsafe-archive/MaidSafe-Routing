@@ -26,7 +26,7 @@
 
 #include "boost/optional/optional.hpp"
 #include "boost/expected/expected.hpp"
-#include "eggs/variant.hpp"
+#include "boost/variant/variant.hpp"
 #include "asio/async_result.hpp"
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
@@ -81,7 +81,7 @@ void serialize(Archive& archive, DestinationAddress& address) {
 
 using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
-    boost::expected<eggs::variant<std::vector<DestinationAddress>, std::vector<byte>>,
+    boost::expected<boost::variant<std::vector<DestinationAddress>, std::vector<byte>>,
                     maidsafe_error>;
 using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
 
