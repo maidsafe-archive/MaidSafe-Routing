@@ -24,9 +24,9 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/routing/contact.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -49,14 +49,14 @@ ConnectResponse GenerateInstance() {
 TEST(ConnectResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_resp_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<ConnectResponse>::value());
 
   auto serialised_connect_rsp(Serialise(header_before, tag_before, connect_resp_before));
 
   // Parse
   auto connect_resp_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_connect_rsp};

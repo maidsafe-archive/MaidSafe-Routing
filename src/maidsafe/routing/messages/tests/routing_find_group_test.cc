@@ -23,9 +23,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -45,14 +45,14 @@ FindGroup GenerateInstance() {
 TEST(FindGroupTest, BEH_SerialiseParse) {
   // Serialise
   auto find_group_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<FindGroup>::value());
 
   auto serialised_find_grp(Serialise(header_before, tag_before, find_group_before));
 
   // Parse
   auto find_group_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_find_grp};

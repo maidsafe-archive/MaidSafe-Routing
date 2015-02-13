@@ -41,7 +41,7 @@ namespace routing {
 
 // Accumulate data parts with time_to_live LRU-replacement cache
 // requires sender id to ensure parts are delivered from different senders
-template <typename KeyType, typename ValueType>
+template <typename NameType, typename ValueType>
 class Accumulator {
  public:
   Accumulator(std::chrono::steady_clock::duration time_to_live, uint32_t quorum)
@@ -54,10 +54,10 @@ class Accumulator {
   Accumulator& operator=(Accumulator&&) = delete;
   using Map = std::map<NodeId, ValueType>;
 
-  bool HaveKey(KeyType key) const { return (storage_.find(key) != std::end(storage_)); }
+  bool HaveName(NameType name) const { return (storage_.find(name) != std::end(storage_)); }
 
-  bool CheckQuorumReached(KeyType key) const {
-    auto it = storage_.find(key);
+  bool CheckQuorumReached(NameType name) const {
+    auto it = storage_.find(name);
     if (it == std::end(storage_))
       return false;
     return (std::get<0>(it->second).size() >= quorum_);
@@ -65,15 +65,15 @@ class Accumulator {
 
   // returns true when the quorum has been reached. This will return Quorum times
   // a tuple of valuetype which should be Source Address signature tag type and value
-  boost::optional<std::pair<KeyType, Map>> Add(const KeyType& key, ValueType value, NodeId sender) {
-    auto it = storage_.find(key);
+  boost::optional<std::pair<NameType, Map>> Add(const NameType& name, ValueType value, NodeId sender) {
+    auto it = storage_.find(name);
     if (it == std::end(storage_)) {
-      AddNew(key, value, sender);
-      it = storage_.find(key);
+      AddNew(name, value, sender);
+      it = storage_.find(name);
     }
 
     std::get<0>(it->second).insert(std::make_pair(std::move(sender), std::move(value)));
-    ReOrder(key);
+    ReOrder(name);
     if (std::get<0>(it->second).size() >= quorum_)
       return std::make_pair(it->first, std::get<0>(it->second));
     return boost::none;
@@ -82,8 +82,8 @@ class Accumulator {
   // this is called when the return from Add returns a type that is incorrect
   // this means a node sent bad data, this method allows all parts to be collected
   // and we can attempt to identify the bad node.
-  boost::optional<std::pair<KeyType, Map>> GetAll(const KeyType& key) const {
-    auto it = storage_.find(key);
+  boost::optional<std::pair<NameType, Map>> GetAll(const NameType& name) const {
+    auto it = storage_.find(name);
     if (it == std::end(storage_))
       return boost::none;
     return std::make_pair(it->first, std::get<0>(it->second));
@@ -92,50 +92,50 @@ class Accumulator {
   size_t size() const { return storage_.size(); }
 
  private:
-  void AddNew(KeyType key, ValueType value, NodeId sender) {
+  void AddNew(NameType name, ValueType value, NodeId sender) {
     // check if we have entries with time expired
     while (CheckTimeExpired())  // any old entries at beginning of the list
       RemoveOldestElement();
 
-    // Record key as most-recently-used key
-    auto it = key_order_.insert(std::end(key_order_), key);
+    // Record name as most-recently-used name
+    auto it = name_order_.insert(std::end(name_order_), name);
 
-    // Create the key-value entry,
+    // Create the name-value entry,
     // linked to the usage record.
     Map map;
     map.insert(std::make_pair(sender, value));
     storage_.insert(
-        std::make_pair(key, std::make_tuple(map, it, std::chrono::steady_clock::now())));
+        std::make_pair(name, std::make_tuple(map, it, std::chrono::steady_clock::now())));
   }
 
   void RemoveOldestElement() {
-    assert(!key_order_.empty());
-    // Identify least recently used key
-    const auto it = storage_.find(key_order_.front());
+    assert(!name_order_.empty());
+    // Identify least recently used name
+    const auto it = storage_.find(name_order_.front());
     assert(it != storage_.end());
     // Erase both elements in both containers
     storage_.erase(it);
-    key_order_.pop_front();
+    name_order_.pop_front();
   }
 
   bool CheckTimeExpired() const {
     if (time_to_live_ == std::chrono::steady_clock::duration::zero() || storage_.empty())
       return false;
-    auto key = storage_.find(key_order_.front());
-    assert(key != std::end(storage_) && "cannot find element - should not happen");
-    return ((std::get<2>(key->second) + time_to_live_) < (std::chrono::steady_clock::now()));
+    auto name = storage_.find(name_order_.front());
+    assert(name != std::end(storage_) && "cannot find element - should not happen");
+    return ((std::get<2>(name->second) + time_to_live_) < (std::chrono::steady_clock::now()));
   }
 
-  void ReOrder(const KeyType& key) {
-    const auto it = storage_.find(key);
+  void ReOrder(const NameType& name) {
+    const auto it = storage_.find(name);
     assert(it != storage_.end());
-    key_order_.splice(key_order_.end(), key_order_, std::get<1>(it->second));
+    name_order_.splice(name_order_.end(), name_order_, std::get<1>(it->second));
   }
 
   std::chrono::steady_clock::duration time_to_live_;
   uint32_t quorum_;
-  std::list<KeyType> key_order_;
-  std::map<KeyType, std::tuple<Map, typename std::list<KeyType>::iterator,
+  std::list<NameType> name_order_;
+  std::map<NameType, std::tuple<Map, typename std::list<NameType>::iterator,
                                std::chrono::steady_clock::time_point>> storage_;
 };
 

@@ -25,8 +25,9 @@
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/types.h"
-
 #include "maidsafe/passport/passport.h"
+
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/routing_table.h"
 
 namespace maidsafe {
@@ -80,6 +81,16 @@ address_v6 GetRandomIPv6Address() {
 
 Endpoint GetRandomEndpoint() {
   return Endpoint{GetRandomIPv4Address(), static_cast<Port>((RandomUint32() % 64512) + 1024)};
+}
+
+MessageHeader GetRandomMessageHeader() {
+  return MessageHeader(
+      DestinationAddress(
+          std::make_pair(Destination(Address(RandomString(Address::kSize))), boost::none)),
+      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
+      MessageId(RandomUint32()), Authority::client,
+      asymm::Sign(asymm::PlainText(RandomString(Address::kSize)),
+                  asymm::GenerateKeyPair().private_key));
 }
 
 }  // namespace test

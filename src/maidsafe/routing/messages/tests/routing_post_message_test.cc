@@ -23,9 +23,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -38,9 +38,9 @@ namespace {
 Post GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return Post{Identity{RandomString(Address::kSize)},
-              SerialisedData(serialised_data.begin(), serialised_data.end()),
-              DataTagValue::kImmutableDataValue};
+  return Post(DataTagValue::kImmutableDataValue,
+              Identity(RandomString(Address::kSize)),
+              SerialisedData(serialised_data.begin(), serialised_data.end()));
 }
 
 }  // anonymous namespace
@@ -48,14 +48,14 @@ Post GenerateInstance() {
 TEST(PostTest, BEH_SerialiseParse) {
   // Serialise
   auto post_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<Post>::value());
 
   auto serialised_post(Serialise(header_before, tag_before, post_before));
 
   // Parse
   auto post_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_post};

@@ -23,13 +23,14 @@
 #include <utility>
 #include <vector>
 
-#include "boost/asio/spawn.hpp"
 #include "asio/use_future.hpp"
+#include "boost/asio/spawn.hpp"
 
+#include "maidsafe/common/convert.h"
+
+#include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/peer_node.h"
-#include "maidsafe/routing/boost_asio_conversions.h"
 
 namespace maidsafe {
 
@@ -87,7 +88,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_i
     auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
 
     // TODO(PeterJ): Try both endpoints, choose the first one that connects.
-    socket->async_connect(to_boost(eps.external), yield[error]);
+    socket->async_connect(convert::ToBoost(eps.external), yield[error]);
 
     if (!error) {
       peers_.insert(std::make_pair(node_info.id, PeerNode(node_info, socket)));

@@ -25,7 +25,6 @@
 
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -36,21 +35,22 @@ namespace test {
 PutDataResponse GenerateInstance() {
   const auto serialised_data(RandomString(Address::kSize));
 
-  return PutDataResponse{SerialisedData(serialised_data.begin(), serialised_data.end()),
-                         DataTagValue::kAnpmidValue, MakeError(CommonErrors::unknown)};
+  return PutDataResponse(DataTagValue::kAnpmidValue,
+                         SerialisedData(serialised_data.begin(), serialised_data.end()),
+                         MakeError(CommonErrors::unknown));
 }
 
 TEST(PutDataResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto put_data_rsp_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<PutDataResponse>::value());
 
   auto serialised_put_data_rsp(Serialise(header_before, tag_before, put_data_rsp_before));
 
   // Parse
   auto put_data_rsp_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_put_data_rsp};

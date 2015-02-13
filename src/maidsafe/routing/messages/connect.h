@@ -19,8 +19,10 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 #define MAIDSAFE_ROUTING_MESSAGES_CONNECT_H_
 
-#include "maidsafe/routing/types.h"
 #include "maidsafe/passport/passport.h"
+
+#include "maidsafe/routing/endpoint_pair.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 

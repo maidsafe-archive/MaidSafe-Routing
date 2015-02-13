@@ -49,8 +49,7 @@ class MessageHeader {
         message_id_(message_id),
         authority_(our_authority),
         signature_(std::move(signature)) {
-    if (!ValidateHeader())
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    Validate();
   }
 
   MessageHeader(DestinationAddress destination, SourceAddress source, MessageId message_id,
@@ -60,8 +59,7 @@ class MessageHeader {
         message_id_(message_id),
         authority_(our_authority),
         signature_() {
-    if (!ValidateHeader())
-      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    Validate();
   }
 
   MessageHeader(MessageHeader&& other) MAIDSAFE_NOEXCEPT
@@ -138,16 +136,29 @@ class MessageHeader {
           std::make_pair(routing::Destination(source_.node_address), boost::none));
   }
 
-  bool ValidateHeader() const {
-    return (source_.node_address->IsValid() ||
-            ((FromGroup() && FromGroup()->data.IsValid()) ||
-             (RelayedMessage() && ReplyToAddress()->data.IsValid())) ||
-            (FromGroup() && RelayedMessage()));
-  }
-
   FilterType FilterValue() const { return std::make_pair(source_.node_address, message_id_); }
 
  private:
+  void Validate() const {
+    if (source_.node_address->IsValid() ||
+        ((FromGroup() && FromGroup()->data.IsValid()) ||
+         (RelayedMessage() && ReplyToAddress()->data.IsValid())) ||
+        (FromGroup() && RelayedMessage())) {
+      return;
+    } else {
+      LOG(kWarning) << std::boolalpha << "Header is invalid:\n\tsource_.node_address->IsValid(): "
+                    << source_.node_address->IsValid()
+                    << "\n\tFromGroup(): " << static_cast<bool>(FromGroup())
+                    << "\n\tFromGroup()->data.IsValid(): "
+                    << (FromGroup() ? (FromGroup()->data.IsValid() ? "true" : "false") : "N/A")
+                    << "\n\tRelayedMessage(): " << static_cast<bool>(RelayedMessage())
+                    << "\n\tReplyToAddress()->data.IsValid(): "
+                    << (RelayedMessage() ? (ReplyToAddress()->data.IsValid() ? "true" : "false")
+                                         : "N/A");
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+  }
+
   DestinationAddress destination_;
   SourceAddress source_;
   routing::MessageId message_id_;

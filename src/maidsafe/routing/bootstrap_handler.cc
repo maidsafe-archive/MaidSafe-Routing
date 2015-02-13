@@ -25,7 +25,6 @@
 #include "maidsafe/common/serialisation/serialisation.h"
 
 #include "maidsafe/routing/utils.h"
-#include "maidsafe/routing/boost_asio_conversions.h"
 
 namespace maidsafe {
 

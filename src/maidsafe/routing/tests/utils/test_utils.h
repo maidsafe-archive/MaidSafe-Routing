@@ -36,6 +36,7 @@ namespace maidsafe {
 
 namespace routing {
 
+class MessageHeader;
 class RoutingTable;
 
 namespace test {
@@ -59,6 +60,8 @@ address_v4 GetRandomIPv4Address();
 address_v6 GetRandomIPv6Address();
 
 Endpoint GetRandomEndpoint();
+
+MessageHeader GetRandomMessageHeader();
 
 }  // namespace test
 

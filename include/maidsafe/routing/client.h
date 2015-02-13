@@ -64,16 +64,16 @@ class Client : public std::enable_shared_from_this<Client> {
   BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken token);
   // will return with the data
   template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(Address data_key, CompletionToken token);
+  GetReturn<CompletionToken> Get(Address name, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
-  PutReturn<CompletionToken> Put(Address key, SerialisedMessage message, CompletionToken token);
+  PutReturn<CompletionToken> Put(Address name, SerialisedMessage message, CompletionToken token);
   // will return with allowed or not (error_code only)
   template <typename CompletionToken>
-  PostReturn<CompletionToken> Post(Address key, SerialisedMessage message, CompletionToken token);
+  PostReturn<CompletionToken> Post(Address name, SerialisedMessage message, CompletionToken token);
   // will return with response message
   template <typename CompletionToken>
-  RequestReturn<CompletionToken> Request(Address key, SerialisedMessage message,
+  RequestReturn<CompletionToken> Request(Address name, SerialisedMessage message,
                                          CompletionToken token);
   Address OurId() const { return our_id_; }
 
@@ -125,31 +125,31 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint, Comp
 }
 
 template <typename CompletionToken>
-GetReturn<CompletionToken> Client::Get(Address /*data_key*/, CompletionToken token) {
+GetReturn<CompletionToken> Client::Get(Address /*name*/, CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoGet(data_key, handler); });
+//  io_service_.post([=] { this_ptr->DoGet(name, handler); });
   return result.get();
 }
 
 template <typename CompletionToken>
-PutReturn<CompletionToken> Client::Put(Address /*key*/, SerialisedMessage /*message*/,
+PutReturn<CompletionToken> Client::Put(Address /*name*/, SerialisedMessage /*message*/,
                                        CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoPut(key, message, handler); });
+//  io_service_.post([=] { this_ptr->DoPut(name, message, handler); });
   return result.get();
 }
 
 template <typename CompletionToken>
-PostReturn<CompletionToken> Client::Post(Address /*key*/, SerialisedMessage /*message*/,
+PostReturn<CompletionToken> Client::Post(Address /*name*/, SerialisedMessage /*message*/,
                                          CompletionToken token) {
   auto handler(std::forward<decltype(token)>(token));
   auto result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoPost(key, message, handler); });
+//  io_service_.post([=] { this_ptr->DoPost(name, message, handler); });
   return result.get();
 }
 

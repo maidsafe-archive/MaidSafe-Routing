@@ -19,11 +19,16 @@
 #ifndef MAIDSAFE_ROUTING_PEER_NODE_H_
 #define MAIDSAFE_ROUTING_PEER_NODE_H_
 
-#include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/boost_asio_conversions.h"
+#include <memory>
+
+#include "maidsafe/common/convert.h"
 #include "maidsafe/crux/socket.hpp"
+#include "maidsafe/passport/types.h"
+
+#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
+
 namespace routing {
 
 class PeerNode {
@@ -31,16 +36,15 @@ class PeerNode {
   using PublicPmid = passport::PublicPmid;
 
   PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
-    : node_info_(std::move(node_info))
-    , socket(socket)
-  {}
+      : node_info_(std::move(node_info)), socket(socket) {}
 
-  template<class Message, class Handler> void Send(Message msg, const Handler& handler) {
+  template <typename Message, typename Handler>
+  void Send(Message msg, const Handler& handler) {
     auto msg_ptr = std::make_shared<Message>(std::move(msg));
     socket->async_send(boost::asio::buffer(*msg_ptr),
                        [msg_ptr, handler](boost::system::error_code error, size_t) {
-                         handler(from_boost(error));
-                       });
+      handler(convert::ToStd(error));
+    });
   }
 
   const NodeInfo& node_info() const { return node_info_; }
@@ -49,12 +53,12 @@ class PeerNode {
  private:
   NodeInfo node_info_;
   std::shared_ptr<crux::socket> socket;
-  //int32_t rank;
+  // int32_t rank;
   bool connected_;
 };
 
 }  // namespace routing
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_PEER_NODE_H_
-

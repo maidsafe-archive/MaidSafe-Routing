@@ -42,6 +42,7 @@ include(../../cmake_modules/standard_setup.cmake)
 set(RoutingSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/routing)
 ms_glob_dir(Routing ${RoutingSourcesDir} Routing)
 ms_glob_dir(RoutingMessages ${RoutingSourcesDir}/messages "Routing Messages")
+ms_glob_dir(RoutingTestUtils ${RoutingSourcesDir}/tests/utils "Routing Test Utils")
 
 
 #==================================================================================================#
@@ -53,20 +54,14 @@ target_include_directories(maidsafe_routing PUBLIC ${PROJECT_SOURCE_DIR}/include
 target_link_libraries(maidsafe_routing maidsafe_crux maidsafe_passport ${BoostCoroutineLibs} ${BoostContextLibs})
 
 if(INCLUDE_TESTS)
-  ms_add_static_library(maidsafe_test_routing
-        ${RoutingSourcesDir}/tests/utils/test_main.cc
-        ${RoutingSourcesDir}/tests/utils/test_utils.h
-        ${RoutingSourcesDir}/tests/utils/test_utils.cc
-        ${RoutingSourcesDir}/tests/utils/routing_table_unit_test.h
-        ${RoutingSourcesDir}/tests/utils/routing_table_unit_test.cc
-        )
+  ms_add_static_library(maidsafe_test_routing ${RoutingTestUtilsAllFiles})
   target_include_directories(maidsafe_test_routing PUBLIC ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(maidsafe_test_routing maidsafe_routing maidsafe_test)
 
   file(GLOB TestFiles ${RoutingSourcesDir}/tests/*.cc)
   file(GLOB MessagesTestFiles ${RoutingSourcesDir}/messages/tests/*.cc)
   file(GLOB MessagesTestFileHeaders ${RoutingSourcesDir}/messages/tests/*.h)
-  foreach(TestFile ${TestFiles}  ${MessagesTestFiles})
+  foreach(TestFile ${TestFiles} ${MessagesTestFiles})
     get_filename_component(TestName ${TestFile} NAME_WE)
     ms_add_executable(${TestName} "Tests/Routing" ${TestFile})
     target_link_libraries(${TestName} maidsafe_test_routing)

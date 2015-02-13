@@ -23,9 +23,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -33,13 +33,12 @@ namespace routing {
 
 namespace test {
 
-
 TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
   auto get_data_before(GetData(
       DataTagValue::kPmidValue, Identity(RandomString(Address::kSize)),
       SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
@@ -48,7 +47,7 @@ TEST(GetDataTest, BEH_SerialiseParse) {
   auto get_data_after(GetData(
       DataTagValue::kMpidValue, Identity(RandomString(Address::kSize)),
       SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_get_data};

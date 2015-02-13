@@ -24,10 +24,10 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/passport/passport.h"
 
+#include "maidsafe/routing/contact.h"
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
-#include "maidsafe/routing/contact.h"
 
 namespace maidsafe {
 
@@ -36,7 +36,6 @@ namespace routing {
 namespace test {
 
 namespace {
-
 
 Connect GenerateInstance() {
   return Connect{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
@@ -50,14 +49,14 @@ Connect GenerateInstance() {
 TEST(ConnectTest, BEH_SerialiseParse) {
   // Serialise
   auto connect_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<Connect>::value());
 
   auto serialised_connect(Serialise(header_before, tag_before, connect_before));
 
   // Parse
   auto connect_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_connect};

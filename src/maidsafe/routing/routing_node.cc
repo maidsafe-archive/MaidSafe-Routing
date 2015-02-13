@@ -129,7 +129,7 @@ namespace routing {
 //     if (test) {
 //       GetDataResponse response(data.name(), test.value());
 //       auto message(Serialise(
-//           MessageHeader(header.GetDestination(), OurSourceAddress(), header.GetMessageId()),
+//           MessageHeader(header.Destination(), OurSourceAddress(), header.MessageId()),
 //           MessageTypeTag::GetDataResponse, response));
 //       for (const auto& target : connection_manager_.GetTarget(header.FromNode()))
 //         rudp_.Send(target.id, message, [](asio::error_code error) {
@@ -142,7 +142,7 @@ namespace routing {
 //   }
 //
 //   // send to next node(s) even our close group (swarm mode)
-//   for (const auto& target : connection_manager_.GetTarget(header.GetDestination().first))
+//   for (const auto& target : connection_manager_.GetTarget(header.Destination().first))
 //     rudp_.Send(target.id, serialised_message, [](asio::error_code error) {
 //       if (error) {
 //         LOG(kWarning) << "rudp cannot send" << error.message();
@@ -156,7 +156,7 @@ namespace routing {
 //     return;
 //   }
 //
-//   if (!connection_manager_.AddressInCloseGroupRange(header.GetDestination().first))
+//   if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first))
 //     return;  // not for us
 //
 //   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
@@ -196,7 +196,7 @@ namespace routing {
 // }
 //
 // // reply with our details;
-// void RoutingNode::HandleMessage(Connect connect, MessageHeader orig_header) {
+// void RoutingNode::HandleMessage(Connect connect, MessageHeader original_header) {
 //   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id()))
 //     return;
 //   auto targets(connection_manager_.GetTarget(connect.requester_id()));
@@ -204,8 +204,8 @@ namespace routing {
 //                           connect.requester_id(), OurId(), passport::PublicPmid(our_fob_));
 //   assert(connect.receiver_id() == OurId());
 //
-//   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
-//                        SourceAddress(OurSourceAddress()), orig_header.GetMessageId(),
+//   MessageHeader header(DestinationAddress(original_header.ReturnDestinationAddress()),
+//                        SourceAddress(OurSourceAddress()), original_header.MessageId(),
 //                        asymm::Sign(Serialise(respond), our_fob_.private_key()));
 //   // FIXME(dirvine) Do we need to pass a shared_from_this type object or this may segfault on
 //   // shutdown
@@ -259,23 +259,23 @@ namespace routing {
 //         }
 //       });
 // }
-// void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader orig_header) {
+// void RoutingNode::HandleMessage(FindGroup find_group, MessageHeader original_header) {
 //   auto node_infos = std::move(connection_manager_.OurCloseGroup());
 //   // add ourselves
 //   node_infos.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
 //   FindGroupResponse response(find_group.target_id(), node_infos);
-//   MessageHeader header(DestinationAddress(orig_header.ReturnDestinationAddress()),
+//   MessageHeader header(DestinationAddress(original_header.ReturnDestinationAddress()),
 //                        SourceAddress(OurSourceAddress(GroupAddress(find_group.target_id()))),
-//                        orig_header.GetMessageId(),
+//                        original_header.MessageId(),
 //                        asymm::Sign(Serialise(response), our_fob_.private_key()));
 //   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
-//   for (const auto& node : connection_manager_.GetTarget(orig_header.FromNode())) {
+//   for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
 //     rudp_.Send(node.id, message, asio::use_future).get();
 //   }
 // }
 //
 // void RoutingNode::HandleMessage(FindGroupResponse find_group_reponse,
-//                                 MessageHeader /* orig_header */) {
+//                                 MessageHeader /* original_header */) {
 //   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
 //   // Only other reason is to allow the sentinel to check signatures and those calls will just
 //   fall
@@ -296,17 +296,17 @@ namespace routing {
 //   }
 // }
 //
-// void RoutingNode::HandleMessage(GetData /*get_data*/, MessageHeader /* orig_header */) {}
+// void RoutingNode::HandleMessage(GetData /*get_data*/, MessageHeader /* original_header */) {}
 //
 // void RoutingNode::HandleMessage(GetDataResponse /* get_data_response */,
-//                                 MessageHeader /* orig_header */) {}
+//                                 MessageHeader /* original_header */) {}
 //
-// void RoutingNode::HandleMessage(PutData /*put_data*/, MessageHeader /* orig_header */) {}
+// void RoutingNode::HandleMessage(PutData /*put_data*/, MessageHeader /* original_header */) {}
 //
 // void RoutingNode::HandleMessage(PutDataResponse /*put_data_response*/,
-//                                 MessageHeader /* orig_header */) {}
+//                                 MessageHeader /* original_header */) {}
 //
-// void RoutingNode::HandleMessage(Post /* post */, MessageHeader /* orig_header */) {}
+// void RoutingNode::HandleMessage(Post /* post */, MessageHeader /* original_header */) {}
 //
 // SourceAddress RoutingNode::OurSourceAddress() const {
 //   if (bootstrap_node_)

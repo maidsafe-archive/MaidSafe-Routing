@@ -23,9 +23,9 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/message_header.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
-#include "maidsafe/routing/messages/tests/generate_message_header.h"
 
 namespace maidsafe {
 
@@ -47,14 +47,14 @@ GetDataResponse GenerateInstance() {
 TEST(GetDataResponseTest, BEH_SerialiseParse) {
   // Serialise
   auto get_data_rsp_before(GenerateInstance());
-  auto header_before(GenerateMessageHeader());
+  auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<GetDataResponse>::value());
 
   auto serialised_get_data_rsp(Serialise(header_before, tag_before, get_data_rsp_before));
 
   // Parse
   auto get_data_rsp_after(GenerateInstance());
-  auto header_after(GenerateMessageHeader());
+  auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
   InputVectorStream binary_input_stream{serialised_get_data_rsp};

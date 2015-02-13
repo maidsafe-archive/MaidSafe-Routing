@@ -19,7 +19,7 @@
 #ifndef MAIDSAFE_ROUTING_ENDPOINT_PAIR_H_
 #define MAIDSAFE_ROUTING_ENDPOINT_PAIR_H_
 
-#include "maidsafe/crux/endpoint.hpp"
+#include "asio/ip/udp.hpp"
 
 namespace maidsafe {
 
