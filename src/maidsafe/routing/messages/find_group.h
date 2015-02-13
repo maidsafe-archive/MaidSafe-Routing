@@ -19,9 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
 #define MAIDSAFE_ROUTING_MESSAGES_FIND_GROUP_H_
 
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/config.h"
 
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 

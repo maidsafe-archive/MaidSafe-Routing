@@ -18,9 +18,13 @@
 
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_DATA_RESPONSE_H_
-#include <vector>
+
 #include "boost/optional/optional.hpp"
-#include "maidsafe/routing/types.h"
+
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/error.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 
@@ -31,9 +35,11 @@ class GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  GetDataResponse(Identity&& name, SerialisedData&& data) : name_(name), data_(data), error_() {}
+  GetDataResponse(Identity&& name, SerialisedData&& data)
+      : name_(std::move(name)), data_(std::move(data)), error_() {}
 
-  GetDataResponse(Identity&& name, maidsafe_error error) : name_(name), data_(), error_(error) {}
+  GetDataResponse(Identity&& name, maidsafe_error error)
+      : name_(std::move(name)), data_(), error_(error) {}
 
   GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : name_(std::move(other.name_)),
                                                                data_(std::move(other.data_)),
@@ -55,12 +61,12 @@ class GetDataResponse {
   }
 
   Identity name() const { return name_; }
-  boost::optional<std::vector<byte>> data() const { return data_; }
+  boost::optional<SerialisedData> data() const { return data_; }
   boost::optional<maidsafe_error> error() const { return error_; }
 
  private:
   Identity name_;
-  boost::optional<std::vector<byte>> data_;
+  boost::optional<SerialisedData> data_;
   boost::optional<maidsafe_error> error_;
 };
 

@@ -19,11 +19,9 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 
-#include <cstdint>
-
 #include "maidsafe/common/config.h"
-
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 

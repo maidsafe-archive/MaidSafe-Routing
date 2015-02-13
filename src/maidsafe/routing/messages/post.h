@@ -19,15 +19,10 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_POST_H_
 #define MAIDSAFE_ROUTING_MESSAGES_POST_H_
 
-#include <cstdint>
-#include <vector>
-
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 

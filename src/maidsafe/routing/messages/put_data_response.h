@@ -19,17 +19,10 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_RESPONSE_H_
 
-#include <cstdint>
-#include "boost/optional/optional.hpp"
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/routing/message_header.h"
-#include "maidsafe/routing/types.h"
-#include "maidsafe/routing/messages/messages_fwd.h"
-#include "maidsafe/routing/messages/put_data.h"
+#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 

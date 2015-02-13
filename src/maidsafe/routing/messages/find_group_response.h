@@ -21,12 +21,10 @@
 
 #include <vector>
 
-#include "maidsafe/common/rsa.h"
+#include "maidsafe/common/config.h"
+
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/node_info.h"
-#include "maidsafe/routing/messages/find_group.h"
-#include "maidsafe/passport/types.h"
-#include "maidsafe/passport/passport.h"
 
 namespace maidsafe {
 

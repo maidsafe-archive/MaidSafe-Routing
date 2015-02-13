@@ -19,7 +19,11 @@
 #ifndef MAIDSAFE_ROUTING_ENDPOINT_PAIR_H_
 #define MAIDSAFE_ROUTING_ENDPOINT_PAIR_H_
 
+#include <ostream>
+
 #include "asio/ip/udp.hpp"
+
+#include "maidsafe/common/config.h"
 
 namespace maidsafe {
 
