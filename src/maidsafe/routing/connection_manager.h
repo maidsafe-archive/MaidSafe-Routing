@@ -45,11 +45,14 @@ destiations. In that case request a close_group message for this node.
 #include "asio/io_service.hpp"
 #include "boost/optional.hpp"
 
+#include "maidsafe/common/convert.h"
+#include "maidsafe/common/utils.h"
+#include "maidsafe/crux/socket.hpp"
+#include "maidsafe/crux/acceptor.hpp"
+
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"
-#include "maidsafe/crux/socket.hpp"
-#include "maidsafe/crux/acceptor.hpp"
 
 namespace maidsafe {
 
@@ -70,7 +73,16 @@ class ConnectionManager {
  public:
   ConnectionManager(boost::asio::io_service& ios, Address our_id)
       : io_service_(ios),
-        acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
+        acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), kLivePort)),
+        our_id_(our_id),
+        peers_(Comparison(our_id)),
+        current_close_group_() {
+    StartAccepting();
+  }
+
+  ConnectionManager(boost::asio::io_service& ios, Address our_id, const Endpoint& local_endpoint)
+      : io_service_(ios),
+        acceptor_(io_service_, convert::ToBoost(local_endpoint)),
         our_id_(our_id),
         peers_(Comparison(our_id)),
         current_close_group_() {

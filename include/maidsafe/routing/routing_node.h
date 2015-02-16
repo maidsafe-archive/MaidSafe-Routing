@@ -123,7 +123,6 @@ class RoutingNode {
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
-
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
   BoostAsioService crux_asio_service_;
@@ -204,7 +203,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity name, CompletionToke
     GetData request(DataType::Tag::kValue, name, OurSourceAddress());
     auto message(Serialise(our_header, MessageToTag<GetData>::value(), request));
     for (const auto& target : connection_manager_.GetTarget(Address(name.string()))) {
-      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
     }
   });
   return result.get();
@@ -228,7 +227,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address to, DataType data,
     // fixme data should serialise properly and not require the above call to serialse()
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
     }
   });
   return result.get();
@@ -249,7 +248,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
 
     for (const auto& target : connection_manager_.GetTarget(to)) {
       // FIXME(PeterJ) Call the above handler when all send handlers finish.
-      connection_manager_.FindPeer(target)->Send(std::move(message), [](asio::error_code) {});
+      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
     }
   });
   return result.get();
