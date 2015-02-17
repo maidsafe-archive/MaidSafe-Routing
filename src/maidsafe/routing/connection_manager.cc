@@ -31,6 +31,7 @@
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/async_exchange.h"
 
 namespace maidsafe {
 
@@ -67,37 +68,105 @@ boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address&
   return GroupChanged();
 }
 
-void ConnectionManager::StartAccepting() {
+        //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
+void ConnectionManager::StartAccepting(unsigned short port) {
+  auto acceptor_i = acceptors_.find(port);
+
+  if (acceptor_i == acceptors_.end()) {
+    crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
+    auto acceptor = std::unique_ptr<crux::acceptor>(new crux::acceptor(io_service_, endpoint));
+    auto pair = acceptors_.insert(std::make_pair(port, std::move(acceptor)));
+    acceptor_i = pair.first;
+  }
+
   auto socket = std::make_shared<crux::socket>(io_service_);
-  acceptor_.async_accept(*socket, [this, socket](boost::system::error_code error) {
+
+  auto& acceptor = acceptor_i->second;
+
+  acceptor->async_accept(*socket, [this, port, socket](boost::system::error_code error) {
       if (error) {
         if (error == boost::asio::error::operation_aborted) {
           return;
         }
-        return StartAccepting();
       }
-      // TODO: Exchange node info and add the socket to the peers_ map.
-      StartAccepting();
+      StartAccepting(port);
+
+      NodeInfo our_node_info(our_id_, our_fob_);
+
+      AsyncExchange(*socket, Serialise(our_node_info),
+        [=](boost::system::error_code error, std::vector<unsigned char> data) {
+          if (error) {
+            return;
+          }
+
+          InputVectorStream data_stream(std::move(data));
+          auto his_node_info = maidsafe::Parse<NodeInfo>(data_stream);
+          InsertPeer(PeerNode(his_node_info, socket));
+        });
       });
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
-  boost::asio::spawn(io_service_, [=](boost::asio::yield_context yield) {
-    boost::system::error_code error;
-    static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+void ConnectionManager::AddNode(boost::optional<NodeInfo> assumend_node_info, EndpointPair eps) {
+  using boost::optional;
+
+  static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+
+  // TODO(PeterJ): Try the internal endpoint as well
+  auto endpoint = convert::ToBoost(eps.external);
+
+  auto pair_i = being_connected_.find(endpoint);
+
+  if (pair_i == being_connected_.end()) {
+    bool inserted = false;
     auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
+    std::tie(pair_i, inserted) = being_connected_.insert(std::make_pair(endpoint, socket));
+  }
 
-    // TODO(PeterJ): Try both endpoints, choose the first one that connects.
-    socket->async_connect(convert::ToBoost(eps.external), yield[error]);
+  auto socket = pair_i->second;
+  std::weak_ptr<crux::socket> weak_socket = socket;
 
-    if (!error) {
-      peers_.insert(std::make_pair(node_info.id, PeerNode(node_info, socket)));
-    }
-  });
-  // FIXME: The above stuff happens inside io_service, the GroupChanged() function
-  // always returns 'no change' in here. The result should be returned
-  // in form of an argument to callback.
-  return GroupChanged();
+  socket->async_connect
+      (convert::ToBoost(eps.external),
+       [=](boost::system::error_code error) {
+         auto socket = weak_socket.lock();
+
+         if (!socket) return;
+
+         if (error) {
+           being_connected_.erase(endpoint);
+           return;
+         }
+
+         NodeInfo our_node_info(our_id_, our_fob_);
+
+         AsyncExchange(*socket, Serialise(our_node_info),
+           [=](boost::system::error_code error, std::vector<unsigned char> data) {
+             auto socket = weak_socket.lock();
+             if(!socket) return;
+
+             being_connected_.erase(endpoint);
+
+             if (error) {
+               return;
+             }
+
+             InputVectorStream data_stream(std::move(data));
+             auto his_node_info = maidsafe::Parse<NodeInfo>(data_stream);
+
+             if (assumend_node_info && *assumend_node_info != his_node_info) {
+               return;
+             }
+
+             InsertPeer(PeerNode(his_node_info, socket));
+           });
+       });
+}
+
+void ConnectionManager::InsertPeer(PeerNode node) {
+  auto pair = peers_.insert(std::make_pair(node.node_info().id, std::move(node)));
+  if (pair.second /* = inserted */ && on_connection_added_) {
+    on_connection_added_(pair.first->second.node_info().id);
+  }
 }
 
 //bool ConnectionManager::CloseGroupMember(const Address& their_id) {

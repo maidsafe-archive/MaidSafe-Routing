@@ -56,6 +56,8 @@ namespace maidsafe {
 namespace routing {
 
 class ConnectionManager {
+  using PublicPmid = passport::PublicPmid;
+
   class Comparison {
    public:
     explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
@@ -68,13 +70,19 @@ class ConnectionManager {
     const Address our_id_;
   };
  public:
-  ConnectionManager(boost::asio::io_service& ios, Address our_id)
+  //ConnectionManager(boost::asio::io_service& ios, Address our_id)
+  //    : io_service_(ios),
+  //      //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
+  //      our_id_(our_id),
+  //      peers_(Comparison(our_id)),
+  //      current_close_group_() {
+  ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
       : io_service_(ios),
-        acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
-        our_id_(our_id),
-        peers_(Comparison(our_id)),
+        //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
+        our_fob_(std::move(our_fob)),
+        our_id_(our_fob_.name()->string()),
+        peers_(Comparison(our_id_)),
         current_close_group_() {
-    StartAccepting();
   }
 
   ConnectionManager(const ConnectionManager&) = delete;
@@ -88,7 +96,7 @@ class ConnectionManager {
   //boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add, EndpointPair);
+  void AddNode(boost::optional<NodeInfo> node_to_add, EndpointPair);
 
   std::vector<NodeInfo> OurCloseGroup() const {
     std::vector<NodeInfo> result;
@@ -134,14 +142,29 @@ class ConnectionManager {
 
   void Clear() { peers_.clear(); }
 
+  void StartAccepting(unsigned short port);
+
+  template<class Handler /* void(NodeId) */>
+  void SetOnConnectionAdded(Handler handler) {
+    on_connection_added_ = std::move(handler);
+  }
+
+  void Shutdown() {
+    // TODO(PeterJ): Stop acceptors
+    Clear();
+  }
+
  private:
-  void StartAccepting();
   boost::optional<CloseGroupDifference> GroupChanged();
+  void InsertPeer(PeerNode);
 
  private:
   boost::asio::io_service& io_service_;
-  crux::acceptor acceptor_;
+  std::function<void(NodeId)> on_connection_added_;
+  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
+  PublicPmid our_fob_;
   NodeId our_id_;
+  std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
   std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
 };

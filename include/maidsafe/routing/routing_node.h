@@ -53,7 +53,7 @@ namespace maidsafe {
 namespace routing {
 
 template <typename Child>
-class RoutingNode {
+class RoutingNode : public Child {
  private:
   using SendHandler = std::function<void(asio::error_code)>;
 
@@ -77,6 +77,25 @@ class RoutingNode {
 
   void AddBootstrapContact(crux::endpoint /*endpoint*/) {
     // bootstrap_handler_.AddBootstrapContact(endpoint);
+  }
+
+  void AddContact(asio::ip::udp::endpoint endpoint) {
+    connection_manager_.AddNode(boost::none, EndpointPair(endpoint));
+  }
+
+  void Join() {
+    crux_asio_service_.Join();
+    asio_service_.Join();
+  }
+
+  void StartAccepting(unsigned short port) {
+    connection_manager_.StartAccepting(port);
+  }
+
+  void Shutdown() override {
+    connection_manager_.Shutdown();
+    crux_asio_service_.Stop();
+    asio_service_.Stop();
   }
 
  private:
@@ -123,7 +142,6 @@ class RoutingNode {
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
-
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
   BoostAsioService crux_asio_service_;
@@ -131,7 +149,8 @@ class RoutingNode {
   passport::Pmid our_fob_;
   std::atomic<MessageId> message_id_;
   boost::optional<Address> bootstrap_node_;
-  BootstrapHandler bootstrap_handler_;
+  // This crashes for me (PeterJ) on linux.
+  //BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
@@ -146,8 +165,9 @@ RoutingNode<Child>::RoutingNode()
       our_fob_(passport::Pmid(passport::Anpmid())),
       message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
-      bootstrap_handler_(),
-      connection_manager_(crux_asio_service_.service(), Address(our_fob_.name()->string())),
+      //bootstrap_handler_(),
+      connection_manager_(crux_asio_service_.service(),
+                          passport::PublicPmid(our_fob_)),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
@@ -157,6 +177,10 @@ RoutingNode<Child>::RoutingNode()
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
   // try an connect to any local nodes (5483) Expect to be told Node_Id
   auto temp_id(Address(RandomString(Address::kSize)));
+
+  connection_manager_.SetOnConnectionAdded([=](Address addr) {
+      static_cast<Child*>(this)->HandleConnectionAdded(addr);
+      });
 
   // PeterJ: Start listening on ports 5483 and 5433 (why two though?)
   // rudp_.Add(rudp::Contact(temp_id, EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
@@ -186,11 +210,7 @@ RoutingNode<Child>::RoutingNode()
 
 template <typename Child>
 RoutingNode<Child>::~RoutingNode() {
-  // TODO(PeterJ): Not yet implemented in crux.
-  // acceptor_.close();
-  connection_manager_.Clear();
-  crux_asio_service_.Stop();
-  asio_service_.Stop();
+  Shutdown();
 }
 
 template <typename Child>
@@ -429,31 +449,25 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
             return;
         });
   }
-  auto added = connection_manager_.AddNode(
-      NodeInfo(connect.requester_id(), connect.requester_fob()), connect.requester_endpoints());
 
-  // TODO(PeterJ):
-  // rudp_.Add(rudp::Contact(connect.requester_id(), connect.requester_endpoints(),
-  //                        connect.requester_fob().public_key()),
-  //          [connect, added, this](asio::error_code error) mutable {
-  //  if (error) {
-  //    auto target(connect.requester_id());
-  //    this->connection_manager_.DropNode(target);
-  //    return;
-  //  }
-  //});
-  if (added)
-    static_cast<Child*>(this)->HandleChurn(*added);
+  connection_manager_.AddNode(NodeInfo(connect.requester_id(),
+                                       connect.requester_fob()),
+                              connect.requester_endpoints());
+
+  //if (added)
+  //  static_cast<Child*>(this)->HandleChurn(*added);
 }
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   if (!connection_manager_.IsManaged(connect_response.requester_id()))
     return;
-  auto added = connection_manager_.AddNode(
-      NodeInfo(connect_response.requester_id(), connect_response.receiver_fob()),
-      connect_response.receiver_endpoints());
-  auto target = connect_response.requester_id();
+
+  connection_manager_.AddNode(NodeInfo(connect_response.requester_id(),
+                                       connect_response.receiver_fob()),
+                              connect_response.receiver_endpoints());
+
+  //auto target = connect_response.requester_id();
   // TODO(PeterJ):
   // rudp_.Add(
   //    rudp::Contact(connect_response.receiver_id(), connect_response.receiver_endpoints(),
