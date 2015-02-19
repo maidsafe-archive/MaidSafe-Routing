@@ -42,19 +42,15 @@ namespace routing {
 
 namespace test {
 
-struct MultiHandler {
-  virtual void Shutdown() = 0;
-
-  void HandleMessage(GetData, MessageHeader) {
-    std::cout << "HandleMessage\n";
-  }
-  void HandleConnectionAdded(NodeId) {
-    std::cout << "HandleConnectionAdded\n";
-    Shutdown();
-  }
-};
-
 TEST(NetworkInitTest, FUNC_TwoNodes) {
+  struct MultiHandler {
+    virtual void Shutdown() = 0;
+    void HandleMessage(GetData, MessageHeader) {}
+    void HandleConnectionAdded(NodeId) {
+      Shutdown();
+    }
+  };
+
   RoutingNode<MultiHandler> n1;
   RoutingNode<MultiHandler> n2;
 
@@ -62,18 +58,6 @@ TEST(NetworkInitTest, FUNC_TwoNodes) {
 
   n1.StartAccepting(port);
   n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
-
-  std::cout << "aaaaaaaaaaaaaaaaaaaaa 1\n";
-  n1.Join();
-  n2.Join();
-  std::cout << "aaaaaaaaaaaaaaaaaaaaa 2\n";
-  //auto value = NonEmptyString(RandomAlphaNumericString(65));
-  //Identity key{Identity(crypto::Hash<crypto::SHA512>(value))};
-  //MutableData a{MutableData::Name(key), value};
-  //ImmutableData b{value};
-
-  //Address from(Address(RandomString(Address::kSize)));
-  //Address to(Address(RandomString(Address::kSize)));
 }
 
 

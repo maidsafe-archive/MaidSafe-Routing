@@ -80,22 +80,21 @@ class RoutingNode : public Child {
   }
 
   void AddContact(asio::ip::udp::endpoint endpoint) {
-    connection_manager_.AddNode(boost::none, EndpointPair(endpoint));
-  }
-
-  void Join() {
-    crux_asio_service_.Join();
-    asio_service_.Join();
+    crux_asio_service_.service().post([=]() {
+      connection_manager_.AddNode(boost::none, EndpointPair(endpoint));
+      });
   }
 
   void StartAccepting(unsigned short port) {
-    connection_manager_.StartAccepting(port);
+    crux_asio_service_.service().post([=]() {
+      connection_manager_.StartAccepting(port);
+      });
   }
 
   void Shutdown() override {
-    connection_manager_.Shutdown();
-    crux_asio_service_.Stop();
-    asio_service_.Stop();
+    crux_asio_service_.service().post([=]() {
+        connection_manager_.Shutdown();
+        });
   }
 
  private:
@@ -210,7 +209,7 @@ RoutingNode<Child>::RoutingNode()
 
 template <typename Child>
 RoutingNode<Child>::~RoutingNode() {
-  Shutdown();
+  crux_asio_service_.Stop();
 }
 
 template <typename Child>

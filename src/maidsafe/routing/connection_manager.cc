@@ -162,9 +162,15 @@ void ConnectionManager::AddNode(boost::optional<NodeInfo> assumend_node_info, En
        });
 }
 
-void ConnectionManager::InsertPeer(PeerNode node) {
+void ConnectionManager::InsertPeer(PeerNode&& node) {
   auto pair = peers_.insert(std::make_pair(node.node_info().id, std::move(node)));
-  if (pair.second /* = inserted */ && on_connection_added_) {
+  if (!pair.second /* = inserted */) {
+    return;
+  }
+
+  //node.Receive();
+
+  if (on_connection_added_) {
     on_connection_added_(pair.first->second.node_info().id);
   }
 }

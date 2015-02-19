@@ -70,12 +70,6 @@ class ConnectionManager {
     const Address our_id_;
   };
  public:
-  //ConnectionManager(boost::asio::io_service& ios, Address our_id)
-  //    : io_service_(ios),
-  //      //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
-  //      our_id_(our_id),
-  //      peers_(Comparison(our_id)),
-  //      current_close_group_() {
   ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
       : io_service_(ios),
         //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
@@ -140,8 +134,6 @@ class ConnectionManager {
     return &i->second;
   }
 
-  void Clear() { peers_.clear(); }
-
   void StartAccepting(unsigned short port);
 
   template<class Handler /* void(NodeId) */>
@@ -150,13 +142,15 @@ class ConnectionManager {
   }
 
   void Shutdown() {
-    // TODO(PeterJ): Stop acceptors
-    Clear();
+    acceptors_.clear();
+    being_connected_.clear();
+    peers_.clear();
+    test_.clear();
   }
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
-  void InsertPeer(PeerNode);
+  void InsertPeer(PeerNode&&);
 
  private:
   boost::asio::io_service& io_service_;
@@ -164,6 +158,7 @@ class ConnectionManager {
   std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
   PublicPmid our_fob_;
   NodeId our_id_;
+  std::list<std::shared_ptr<crux::socket>> test_;
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
   std::map<Address, PeerNode, Comparison> peers_;
   std::vector<Address> current_close_group_;
