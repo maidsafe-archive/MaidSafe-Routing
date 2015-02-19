@@ -83,8 +83,9 @@ using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
     boost::expected<boost::variant<std::vector<DestinationAddress>, std::vector<byte>>,
                     maidsafe_error>;
-using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
-
+using HandlePutPostReturn =
+    boost::expected<std::vector<DestinationAddress>,
+                    std::pair<maidsafe_error, boost::optional<Address>>>;
 using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
