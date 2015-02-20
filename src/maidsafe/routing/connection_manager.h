@@ -150,6 +150,8 @@ class ConnectionManager {
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
   void InsertPeer(PeerNode&&);
+  std::weak_ptr<boost::none_t> DestroyGuard() { return destroy_indicator_; }
+  void StartReceiving(PeerNode&);
 
  private:
   boost::asio::io_service& io_service_;

@@ -48,18 +48,19 @@ class PeerNode {
       : node_info_(std::move(node_info)),
         connected_(true),
         receive_buffer_(std::make_shared<Bytes>(MaxMessageSize())),
-        socket(std::move(socket))
+        socket(std::move(socket)),
+        destroy_indicator_(new boost::none_t)
   {}
 
   template <typename Message, typename Handler>
   void Send(Message msg, const Handler& handler) {
 
     auto msg_ptr = std::make_shared<Message>(std::move(msg));
-    std::weak_ptr<crux::socket> weak_socket = socket;
+    auto guard = DestroyGuard();
 
     socket->async_send(boost::asio::buffer(*msg_ptr),
-                       [this, msg_ptr, handler, weak_socket](error_code error, size_t) {
-      if (!weak_socket.lock()) {
+                       [this, msg_ptr, handler, guard](error_code error, size_t) {
+      if (!guard.lock()) {
         // This object was destroyed.
         return handler(asio::error::operation_aborted);
       }
@@ -72,7 +73,7 @@ class PeerNode {
 
   template <typename Handler>
   void Receive(const Handler& handler) {
-    std::weak_ptr<crux::socket> weak_socket = socket;
+    auto guard = DestroyGuard();
 
     // Make a shared copy to make sure the buffer is valid
     // even if this object is destroyed.
@@ -80,8 +81,8 @@ class PeerNode {
 
     assert(buffer);
     socket->async_receive(boost::asio::buffer(*buffer),
-        [weak_socket, buffer, handler](error_code error, size_t) {
-          if (!weak_socket.lock()) {
+        [guard, buffer, handler](error_code error, size_t) {
+          if (!guard.lock()) {
             // This object was destroyed.
             return handler(asio::error::operation_aborted, *buffer);
           }
@@ -92,8 +93,13 @@ class PeerNode {
         });
   }
 
+  const NodeId& id() const { return node_info_.id; }
   const NodeInfo& node_info() const { return node_info_; }
   bool connected() const { return connected_; }
+
+  std::weak_ptr<boost::none_t> DestroyGuard() {
+    return destroy_indicator_;
+  }
 
   // TODO: This should be in some global scope config file or something.
   static size_t MaxMessageSize() { return 1048576; }
@@ -103,7 +109,8 @@ class PeerNode {
   // int32_t rank;
   bool connected_;
   std::shared_ptr<Bytes> receive_buffer_;
-  std::shared_ptr<crux::socket> socket;
+  std::shared_ptr<crux::socket> socket; // TODO: ditch shared_ptr
+  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 }  // namespace routing

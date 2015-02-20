@@ -38,6 +38,7 @@ namespace maidsafe {
 namespace routing {
 
 using std::weak_ptr;
+using std::make_shared;
 using std::move;
 using boost::none_t;
 using boost::optional;
@@ -94,7 +95,7 @@ void ConnectionManager::StartAccepting(unsigned short port) {
     acceptor_i = pair.first;
   }
 
-  auto socket = std::make_shared<crux::socket>(io_service_);
+  auto socket = make_shared<crux::socket>(io_service_);
 
   auto& acceptor = acceptor_i->second;
 
@@ -123,7 +124,7 @@ void ConnectionManager::StartAccepting(unsigned short port) {
 
           InputVectorStream data_stream(std::move(data));
           auto his_node_info = maidsafe::Parse<NodeInfo>(data_stream);
-          InsertPeer(PeerNode(his_node_info, socket));
+          InsertPeer(PeerNode(move(his_node_info), move(socket)));
         });
       });
 }
@@ -138,7 +139,7 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumend_node_info, EndpointP
 
   if (pair_i == being_connected_.end()) {
     bool inserted = false;
-    auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
+    auto socket = make_shared<crux::socket>(io_service_, unspecified_ep);
     std::tie(pair_i, inserted) = being_connected_.insert(std::make_pair(endpoint, socket));
   }
 
@@ -178,41 +179,47 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumend_node_info, EndpointP
                return;
              }
 
-             InsertPeer(PeerNode(his_node_info, socket));
+             InsertPeer(PeerNode(move(his_node_info), move(socket)));
            });
        });
 }
 
-void ConnectionManager::InsertPeer(PeerNode&& node) {
-  const auto& id = node.node_info().id;
-  const auto pair = peers_.insert(std::make_pair(id, std::move(node)));
+void ConnectionManager::InsertPeer(PeerNode&& node_arg) {
+  const auto& id = node_arg.id();
+  const auto pair = peers_.insert(std::make_pair(id, std::move(node_arg)));
 
   if (!pair.second /* = inserted */) {
     return;
   }
 
-  auto node_i = pair.first;
-  weak_ptr<none_t> destroy_guard = destroy_indicator_;
+  auto& node = pair.first->second;
 
-  node_i->second.Receive([=](asio::error_code error, const Bytes& bytes) {
-      if (!destroy_guard.lock()) return;
+  StartReceiving(node);
+
+  if (on_connection_added_) {
+    on_connection_added_(node.id());
+  }
+}
+
+void ConnectionManager::StartReceiving(PeerNode& node) {
+  auto node_guard = node.DestroyGuard();
+
+  node.Receive([=, &node](asio::error_code error, const Bytes& bytes) {
+      if (!node_guard.lock()) return;
       if (error) return;
       if (!on_receive_) return;
       // Complex handler invocation to be safe in cases where the
       // handler destroys this object or in case where the handler
       // invocation resets the handler to something else.
-      if (!on_receive_) return;
       auto h = move(on_receive_);
-      h(id, bytes);
-      if (!destroy_guard.lock()) return;
+      h(node.id(), bytes);
+      if (!node_guard.lock()) return;
       if (!on_receive_) {
         on_receive_ = move(h);
       }
+      StartReceiving(node);
       });
 
-  if (on_connection_added_) {
-    on_connection_added_(pair.first->second.node_info().id);
-  }
 }
 
 //bool ConnectionManager::CloseGroupMember(const Address& their_id) {
