@@ -33,8 +33,8 @@ namespace routing {
 class PeerNode {
  private:
    using error_code = boost::system::error_code;
- public:
-   static const size_t MaxMessageSize = 1048576;
+   using Bytes = std::vector<unsigned char>;
+
 
  public:
   using PublicPmid = passport::PublicPmid;
@@ -47,7 +47,7 @@ class PeerNode {
   PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
       : node_info_(std::move(node_info)),
         connected_(true),
-        receive_buffer_(MaxMessageSize),
+        receive_buffer_(std::make_shared<Bytes>(MaxMessageSize())),
         socket(std::move(socket))
   {}
 
@@ -74,27 +74,35 @@ class PeerNode {
   void Receive(const Handler& handler) {
     std::weak_ptr<crux::socket> weak_socket = socket;
 
-    socket->async_receive(boost::asio::buffer(receive_buffer_),
-        [=](error_code error, size_t) {
+    // Make a shared copy to make sure the buffer is valid
+    // even if this object is destroyed.
+    auto buffer = receive_buffer_;
+
+    assert(buffer);
+    socket->async_receive(boost::asio::buffer(*buffer),
+        [weak_socket, buffer, handler](error_code error, size_t) {
           if (!weak_socket.lock()) {
             // This object was destroyed.
-            return handler(asio::error::operation_aborted, std::vector<unsigned char>());
+            return handler(asio::error::operation_aborted, *buffer);
           }
 
-          if (error) { return handler(error, receive_buffer_); }
+          if (error) { return handler(convert::ToStd(error), *buffer); }
 
-          handler(error, receive_buffer_);
+          handler(convert::ToStd(error), *buffer);
         });
   }
 
   const NodeInfo& node_info() const { return node_info_; }
   bool connected() const { return connected_; }
 
+  // TODO: This should be in some global scope config file or something.
+  static size_t MaxMessageSize() { return 1048576; }
+
  private:
-  NodeInfo node_info_;
+  const NodeInfo node_info_;
   // int32_t rank;
   bool connected_;
-  std::vector<unsigned char> receive_buffer_;
+  std::shared_ptr<Bytes> receive_buffer_;
   std::shared_ptr<crux::socket> socket;
 };
 

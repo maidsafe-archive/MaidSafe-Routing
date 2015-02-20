@@ -57,6 +57,7 @@ namespace routing {
 
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
+  using Bytes = std::vector<unsigned char>;
 
   class Comparison {
    public:
@@ -69,15 +70,9 @@ class ConnectionManager {
    private:
     const Address our_id_;
   };
+
  public:
-  ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
-      : io_service_(ios),
-        //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
-        our_fob_(std::move(our_fob)),
-        our_id_(our_fob_.name()->string()),
-        peers_(Comparison(our_id_)),
-        current_close_group_() {
-  }
+  ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -125,7 +120,7 @@ class ConnectionManager {
   }
 
   //bool CloseGroupMember(const Address& their_id);
-  //uint32_t Size() { return routing_table_.Size(); }
+
   uint32_t Size() { return static_cast<uint32_t>(peers_.size()); }
 
   PeerNode* FindPeer(Address addr) {
@@ -141,11 +136,15 @@ class ConnectionManager {
     on_connection_added_ = std::move(handler);
   }
 
+  template<class Handler /* void(NodeId, Bytes) */>
+  void SetOnReceive(Handler handler) {
+    on_receive_ = std::move(handler);
+  }
+
   void Shutdown() {
     acceptors_.clear();
     being_connected_.clear();
     peers_.clear();
-    test_.clear();
   }
 
  private:
@@ -154,14 +153,20 @@ class ConnectionManager {
 
  private:
   boost::asio::io_service& io_service_;
+
   std::function<void(NodeId)> on_connection_added_;
-  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
+  std::function<void(NodeId, const Bytes&)> on_receive_;
+
   PublicPmid our_fob_;
   NodeId our_id_;
-  std::list<std::shared_ptr<crux::socket>> test_;
+
+  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
   std::map<Address, PeerNode, Comparison> peers_;
+
   std::vector<Address> current_close_group_;
+
+  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 }  // namespace routing
