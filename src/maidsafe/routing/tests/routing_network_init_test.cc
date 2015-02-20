@@ -43,16 +43,15 @@ namespace routing {
 namespace test {
 
 TEST(NetworkInitTest, FUNC_TwoNodes) {
-  struct MultiHandler {
-    virtual void Shutdown() = 0;
+  struct Node : public RoutingNode<Node> {
     void HandleMessage(GetData, MessageHeader) {}
     void HandleConnectionAdded(NodeId) {
       Shutdown();
     }
   };
 
-  RoutingNode<MultiHandler> n1;
-  RoutingNode<MultiHandler> n2;
+  Node n1;
+  Node n2;
 
   unsigned short port = 8080;
 

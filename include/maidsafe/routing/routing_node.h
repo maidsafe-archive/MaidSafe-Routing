@@ -53,7 +53,7 @@ namespace maidsafe {
 namespace routing {
 
 template <typename Child>
-class RoutingNode : public Child {
+class RoutingNode {
  private:
   using SendHandler = std::function<void(asio::error_code)>;
 
@@ -91,7 +91,7 @@ class RoutingNode : public Child {
       });
   }
 
-  void Shutdown() override {
+  void Shutdown() {
     crux_asio_service_.service().post([=]() {
         connection_manager_.Shutdown();
         });
