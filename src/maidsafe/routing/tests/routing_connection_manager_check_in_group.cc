@@ -38,9 +38,9 @@ namespace test {
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   boost::asio::io_service io_service;
-  auto our_id(Address(RandomString(Address::kSize)));
-
-  ConnectionManager connection_manager(io_service, our_id);
+  passport::PublicPmid our_public_pmid(passport::CreatePmidAndSigner().first);
+  auto our_id(Address(our_public_pmid.name()->string()));
+  ConnectionManager connection_manager(io_service, our_public_pmid);
   asymm::Keys key(asymm::GenerateKeyPair());
   std::vector<Address> addresses(60, Address(RandomString(Address::kSize)));
   // iterate and fill routing table

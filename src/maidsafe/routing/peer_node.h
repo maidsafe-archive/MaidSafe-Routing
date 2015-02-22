@@ -24,7 +24,6 @@
 #include "maidsafe/common/convert.h"
 #include "maidsafe/crux/socket.hpp"
 #include "maidsafe/passport/types.h"
-
 #include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
@@ -32,29 +31,86 @@ namespace maidsafe {
 namespace routing {
 
 class PeerNode {
+ private:
+   using error_code = boost::system::error_code;
+   using Bytes = std::vector<unsigned char>;
+
+
  public:
   using PublicPmid = passport::PublicPmid;
 
+  PeerNode(const PeerNode&) = delete;
+  PeerNode& operator=(const PeerNode&) = delete;
+  PeerNode(PeerNode&&) = default;
+  PeerNode& operator=(PeerNode&&) = default;
+
   PeerNode(NodeInfo node_info, std::shared_ptr<crux::socket> socket)
-      : node_info_(std::move(node_info)), socket(socket) {}
+      : node_info_(std::move(node_info)),
+        connected_(true),
+        receive_buffer_(std::make_shared<Bytes>(MaxMessageSize())),
+        socket(std::move(socket)),
+        destroy_indicator_(new boost::none_t)
+  {}
 
   template <typename Message, typename Handler>
   void Send(Message msg, const Handler& handler) {
+
     auto msg_ptr = std::make_shared<Message>(std::move(msg));
+    auto guard = DestroyGuard();
+
     socket->async_send(boost::asio::buffer(*msg_ptr),
-                       [msg_ptr, handler](boost::system::error_code error, size_t) {
+                       [this, msg_ptr, handler, guard](error_code error, size_t) {
+      if (!guard.lock()) {
+        // This object was destroyed.
+        return handler(asio::error::operation_aborted);
+      }
+
+      if (error) { connected_ = false; }
+
       handler(convert::ToStd(error));
     });
   }
 
+  template <typename Handler>
+  void Receive(const Handler& handler) {
+    auto guard = DestroyGuard();
+
+    // Make a shared copy to make sure the buffer is valid
+    // even if this object is destroyed.
+    auto buffer = receive_buffer_;
+
+    assert(buffer);
+    socket->async_receive(boost::asio::buffer(*buffer),
+        [guard, buffer, handler](error_code error, size_t) {
+          if (!guard.lock()) {
+            // This object was destroyed.
+            return handler(asio::error::operation_aborted, *buffer);
+          }
+
+          if (error) { return handler(convert::ToStd(error), *buffer); }
+
+          handler(convert::ToStd(error), *buffer);
+        });
+  }
+
+  const NodeId& id() const { return node_info_.id; }
   const NodeInfo& node_info() const { return node_info_; }
   bool connected() const { return connected_; }
 
+  std::weak_ptr<boost::none_t> DestroyGuard() {
+    return destroy_indicator_;
+  }
+
+  // TODO: This should be in some global scope config file or something.
+  static size_t MaxMessageSize() { return 1048576; }
+
  private:
-  NodeInfo node_info_;
-  std::shared_ptr<crux::socket> socket;
+  const NodeInfo node_info_;
   // int32_t rank;
   bool connected_;
+  std::shared_ptr<Bytes> receive_buffer_;
+  std::shared_ptr<crux::socket> socket; // TODO: ditch shared_ptr
+  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 }  // namespace routing
