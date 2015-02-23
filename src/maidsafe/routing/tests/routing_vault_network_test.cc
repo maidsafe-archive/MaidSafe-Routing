@@ -45,7 +45,7 @@ namespace routing {
 
 namespace test {
 enum class DataType;
-class VaultFacade;
+//class VaultFacade;
 
 struct MaidManagerAccount {
   MaidManagerAccount() = default;
@@ -276,6 +276,9 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   bool HandlePut(Address, SerialisedMessage) { return true; }
   // if the implementation allows any put of data in unauthenticated mode
   bool HandleUnauthenticatedPut(Address, SerialisedMessage) { return true; }
+  void HandleConnectionAdded(NodeId) {
+  }
+
   void HandleChurn(CloseGroupDifference diff) {
     MaidManager::HandleChurn(diff);
     DataManager::HandleChurn(diff);

@@ -31,10 +31,27 @@
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/async_exchange.h"
 
 namespace maidsafe {
 
 namespace routing {
+
+using std::weak_ptr;
+using std::make_shared;
+using std::move;
+using boost::none_t;
+using boost::optional;
+
+ConnectionManager::ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
+    : io_service_(ios),
+      our_fob_(std::move(our_fob)),
+      our_id_(our_fob_.name()->string()),
+      peers_(Comparison(our_id_)),
+      current_close_group_(),
+      destroy_indicator_(new boost::none_t())
+{
+}
 
 bool ConnectionManager::IsManaged(const Address& node_id) const {
   return peers_.find(node_id) != peers_.end();
@@ -61,43 +78,148 @@ std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(co
 //  return GroupChanged();
 //}
 
-boost::optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
+optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
   //routing_table_.DropNode(their_id);
   peers_.erase(their_id);
   return GroupChanged();
 }
 
-void ConnectionManager::StartAccepting() {
-  auto socket = std::make_shared<crux::socket>(io_service_);
-  acceptor_.async_accept(*socket, [this, socket](boost::system::error_code error) {
+        //acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
+void ConnectionManager::StartAccepting(unsigned short port) {
+  auto acceptor_i = acceptors_.find(port);
+
+  if (acceptor_i == acceptors_.end()) {
+    crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
+    auto acceptor = std::unique_ptr<crux::acceptor>(new crux::acceptor(io_service_, endpoint));
+    auto pair = acceptors_.insert(std::make_pair(port, std::move(acceptor)));
+    acceptor_i = pair.first;
+  }
+
+  auto socket = make_shared<crux::socket>(io_service_);
+
+  auto& acceptor = acceptor_i->second;
+
+  weak_ptr<none_t> destroy_guard = destroy_indicator_;
+
+  acceptor->async_accept(*socket, [=](boost::system::error_code error) {
+      if (!destroy_guard.lock()) return;
+
       if (error) {
         if (error == boost::asio::error::operation_aborted) {
           return;
         }
-        return StartAccepting();
       }
-      // TODO: Exchange node info and add the socket to the peers_ map.
-      StartAccepting();
+
+      StartAccepting(port);
+
+      NodeInfo our_node_info(our_id_, our_fob_);
+
+      AsyncExchange(*socket, Serialise(our_node_info),
+        [=](boost::system::error_code error, std::vector<unsigned char> data) {
+          if (!destroy_guard.lock()) return;
+
+          if (error) {
+            return;
+          }
+
+          InputVectorStream data_stream(std::move(data));
+          auto his_node_info = maidsafe::Parse<NodeInfo>(data_stream);
+          InsertPeer(PeerNode(move(his_node_info), move(socket)));
+        });
       });
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_info, EndpointPair eps) {
-  boost::asio::spawn(io_service_, [=](boost::asio::yield_context yield) {
-    boost::system::error_code error;
-    static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
-    auto socket = std::make_shared<crux::socket>(io_service_, unspecified_ep);
+void ConnectionManager::AddNode(optional<NodeInfo> assumend_node_info, EndpointPair eps) {
+  static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
 
-    // TODO(PeterJ): Try both endpoints, choose the first one that connects.
-    socket->async_connect(convert::ToBoost(eps.external), yield[error]);
+  // TODO(PeterJ): Try the internal endpoint as well
+  auto endpoint = convert::ToBoost(eps.external);
 
-    if (!error) {
-      peers_.insert(std::make_pair(node_info.id, PeerNode(node_info, socket)));
-    }
-  });
-  // FIXME: The above stuff happens inside io_service, the GroupChanged() function
-  // always returns 'no change' in here. The result should be returned
-  // in form of an argument to callback.
-  return GroupChanged();
+  auto pair_i = being_connected_.find(endpoint);
+
+  if (pair_i == being_connected_.end()) {
+    bool inserted = false;
+    auto socket = make_shared<crux::socket>(io_service_, unspecified_ep);
+    std::tie(pair_i, inserted) = being_connected_.insert(std::make_pair(endpoint, socket));
+  }
+
+  auto socket = pair_i->second;
+  weak_ptr<crux::socket> weak_socket = socket;
+
+  socket->async_connect
+      (convert::ToBoost(eps.external),
+       [=](boost::system::error_code error) {
+         auto socket = weak_socket.lock();
+
+         if (!socket) return;
+
+         if (error) {
+           being_connected_.erase(endpoint);
+           return;
+         }
+
+         NodeInfo our_node_info(our_id_, our_fob_);
+
+         AsyncExchange(*socket, Serialise(our_node_info),
+           [=](boost::system::error_code error, Bytes data) {
+             auto socket = weak_socket.lock();
+
+             if(!socket) return;
+
+             being_connected_.erase(endpoint);
+
+             if (error) {
+               return;
+             }
+
+             InputVectorStream data_stream(std::move(data));
+             auto his_node_info = maidsafe::Parse<NodeInfo>(data_stream);
+
+             if (assumend_node_info && *assumend_node_info != his_node_info) {
+               return;
+             }
+
+             InsertPeer(PeerNode(move(his_node_info), move(socket)));
+           });
+       });
+}
+
+void ConnectionManager::InsertPeer(PeerNode&& node_arg) {
+  const auto& id = node_arg.id();
+  const auto pair = peers_.insert(std::make_pair(id, std::move(node_arg)));
+
+  if (!pair.second /* = inserted */) {
+    return;
+  }
+
+  auto& node = pair.first->second;
+
+  StartReceiving(node);
+
+  if (on_connection_added_) {
+    on_connection_added_(node.id());
+  }
+}
+
+void ConnectionManager::StartReceiving(PeerNode& node) {
+  auto node_guard = node.DestroyGuard();
+
+  node.Receive([=, &node](asio::error_code error, const Bytes& bytes) {
+      if (!node_guard.lock()) return;
+      if (error) return;
+      if (!on_receive_) return;
+      // Complex handler invocation to be safe in cases where the
+      // handler destroys this object or in case where the handler
+      // invocation resets the handler to something else.
+      auto h = move(on_receive_);
+      h(node.id(), bytes);
+      if (!node_guard.lock()) return;
+      if (!on_receive_) {
+        on_receive_ = move(h);
+      }
+      StartReceiving(node);
+      });
+
 }
 
 //bool ConnectionManager::CloseGroupMember(const Address& their_id) {
@@ -106,7 +228,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_i
 //                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
 //}
 
-boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
+optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   auto new_nodeinfo_group(OurCloseGroup());
   std::vector<Address> new_group;
   for (const auto& nodes : new_nodeinfo_group)
@@ -117,6 +239,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
     current_close_group_ = new_group;
     return changed;
   }
+
   return boost::none;
 }
 
