@@ -93,6 +93,21 @@ MessageHeader GetRandomMessageHeader() {
                   asymm::GenerateKeyPair().private_key));
 }
 
+CreateBootstrapFile::CreateBootstrapFile(boost::filesystem::path path)
+    : kPath_(std::move(path)) {
+  if (boost::filesystem::exists(kPath_))
+    boost::filesystem::remove(kPath_);
+
+  std::fstream file(kPath_.string(), std::ios::out);
+  if (!file)
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
+}
+
+CreateBootstrapFile::~CreateBootstrapFile() {
+  if (boost::filesystem::exists(kPath_))
+    boost::filesystem::remove(kPath_);
+}
+
 }  // namespace test
 
 }  // namespace routing

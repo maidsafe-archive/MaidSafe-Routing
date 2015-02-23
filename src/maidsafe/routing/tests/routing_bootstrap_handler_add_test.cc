@@ -44,6 +44,7 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
+  CreateBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   BootstrapHandler test_handler;
   for (int i = 0; i < 100; ++i) {
     EXPECT_NO_THROW(test_handler.AddBootstrapContacts(CreateBootstrapContacts(10)));
