@@ -37,9 +37,8 @@ namespace {
 
 FindGroupResponse GenerateInstance() {
   passport::PublicPmid public_fob{passport::Pmid(passport::Anpmid())};
-  NodeInfo test_info(Address(public_fob.name()->string()), public_fob);
-  std::vector<NodeInfo> vec;
-  vec.push_back(test_info);
+  std::vector<passport::PublicPmid> vec(
+      1, passport::PublicPmid(passport::CreatePmidAndSigner().first));
   return FindGroupResponse{Address{RandomString(Address::kSize)}, vec};
 }
 

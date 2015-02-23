@@ -39,7 +39,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/connection_manager.h"
+#include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
@@ -82,8 +82,8 @@ class Client : public std::enable_shared_from_this<Client> {
   Address OurId() const { return our_id_; }
 
  private:
-  virtual void MessageReceived(NodeId peer_id, std::vector<byte> message);
-  virtual void ConnectionLost(NodeId peer);
+  void MessageReceived(const Address& peer_id, SerialisedMessage message);
+  void ConnectionLost(const Address& peer_id);
 
   SourceAddress OurSourceAddress() const;
 
@@ -100,7 +100,7 @@ class Client : public std::enable_shared_from_this<Client> {
   std::atomic<MessageId> message_id_;
   boost::optional<Address> bootstrap_node_;
   BootstrapHandler bootstrap_handler_;
-  std::unique_ptr<ConnectionManager> connection_manager_;
+  std::vector<PeerNode> connected_peers_;
   LruCache<std::pair<Address, MessageId>, void> filter_;
   Sentinel sentinel_;
 };

@@ -19,32 +19,25 @@
 #ifndef MAIDSAFE_ROUTING_ASYNC_EXCHANGE_H_
 #define MAIDSAFE_ROUTING_ASYNC_EXCHANGE_H_
 
-#include <boost/optional.hpp>
+#include "boost/optional/optional.hpp"
+
 #include "maidsafe/crux/socket.hpp"
+
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-template<class Handler /* void(error_code, vector<uchar>) */>
-void AsyncExchange(crux::socket&              socket, 
-                   std::vector<unsigned char> our_data,
-                   Handler                    handler)
-{
-  using std::vector;
-  using std::shared_ptr;
-  using std::make_shared;
-  using boost::optional;
-  using boost::system::error_code;
-  using data_type = vector<unsigned char>;
-
-  // TODO: Use some predefined constant for buffer size.
+template <class Handler /* void(boost::system::error_code, SerialisedMessage) */>
+void AsyncExchange(crux::socket& socket, SerialisedMessage our_data, Handler handler) {
+  // TODO(Team): Use some predefined constant for buffer size.
   static const std::size_t max_buffer_size = 262144;
 
   struct State {
-    optional<error_code> first_error;
-    data_type rx_buffer;
-    data_type tx_buffer;
+    boost::optional<boost::system::error_code> first_error;
+    SerialisedMessage rx_buffer;
+    SerialisedMessage tx_buffer;
   };
 
   auto state = make_shared<State>();
@@ -52,45 +45,40 @@ void AsyncExchange(crux::socket&              socket,
   state->rx_buffer.resize(max_buffer_size);
   state->tx_buffer = std::move(our_data);
 
-  socket.async_send(
-      boost::asio::buffer(state->tx_buffer),
-      [state, handler](error_code error, std::size_t) {
-        if (state->first_error) {
-          if (*state->first_error) {
-            return handler(*state->first_error, data_type());
-          }
-          if (error) {
-            return handler(error, data_type());
-          }
-          return handler(error, std::move(state->rx_buffer));
-        }
-        else {
-          state->first_error = error;
-        }
-      });
+  socket.async_send(boost::asio::buffer(state->tx_buffer),
+                    [state, handler](boost::system::error_code error, std::size_t) {
+    if (state->first_error) {
+      if (*state->first_error) {
+        return handler(*state->first_error, SerialisedMessage());
+      }
+      if (error) {
+        return handler(error, SerialisedMessage());
+      }
+      return handler(error, std::move(state->rx_buffer));
+    } else {
+      state->first_error = error;
+    }
+  });
 
-  socket.async_receive(
-      boost::asio::buffer(state->rx_buffer),
-      [state, handler](error_code error, std::size_t size) {
-        if (state->first_error) {
-          if (*state->first_error) {
-            return handler(*state->first_error, data_type());
-          }
-          if (error) {
-            return handler(error, data_type());
-          }
-          state->rx_buffer.resize(size);
-          return handler(error, std::move(state->rx_buffer));
-        }
-        else {
-          state->first_error = error;
-        }
-      });
+  socket.async_receive(boost::asio::buffer(state->rx_buffer),
+                       [state, handler](boost::system::error_code error, std::size_t size) {
+    if (state->first_error) {
+      if (*state->first_error) {
+        return handler(*state->first_error, SerialisedMessage());
+      }
+      if (error) {
+        return handler(error, SerialisedMessage());
+      }
+      state->rx_buffer.resize(size);
+      return handler(error, std::move(state->rx_buffer));
+    } else {
+      state->first_error = error;
+    }
+  });
 }
 
-} // namespace routing
+}  // namespace routing
 
-} // namespace maidsafe
+}  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_ASYNC_EXCHANGE_H_
-
+#endif  // MAIDSAFE_ROUTING_ASYNC_EXCHANGE_H_

@@ -45,7 +45,6 @@ namespace routing {
 
 namespace test {
 enum class DataType;
-//class VaultFacade;
 
 struct MaidManagerAccount {
   MaidManagerAccount() = default;

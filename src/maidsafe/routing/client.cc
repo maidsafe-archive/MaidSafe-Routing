@@ -41,7 +41,7 @@ Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_ke
       message_id_(RandomUint32()),
       bootstrap_node_(),
       bootstrap_handler_(),
-      connection_manager_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
@@ -58,7 +58,7 @@ Client::Client(asio::io_service& io_service, const passport::Maid& maid)
       message_id_(RandomUint32()),
       bootstrap_node_(),
       bootstrap_handler_(),
-      connection_manager_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
@@ -75,12 +75,12 @@ Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
       message_id_(RandomUint32()),
       bootstrap_node_(),
       bootstrap_handler_(),
-      connection_manager_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
-void Client::MessageReceived(NodeId /*peer_id*/, std::vector<byte> serialised_message) {
-  InputVectorStream binary_input_stream(std::move(serialised_message));
+void Client::MessageReceived(const Address& /*peer_id*/, SerialisedMessage message) {
+  InputVectorStream binary_input_stream(std::move(message));
   MessageHeader header;
   MessageTypeTag tag;
   try {
