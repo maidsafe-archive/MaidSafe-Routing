@@ -43,6 +43,7 @@
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/messages/get_data.h"
 
 namespace maidsafe {
 
@@ -110,9 +111,7 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken&& token) {
   BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-  asio::post(asio_service_.service(), [=] {
-    connection_manager_ =
-        maidsafe::make_unique<ConnectionManager>(crux_asio_service_.service(), our_id_);
+  asio::post(io_service_, [=] {
     // TODO(PeterJ)
     //    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
     //                    handler);
@@ -121,14 +120,12 @@ BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken&& token) {
 }
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint local_endpoint,
+BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint /*local_endpoint*/,
                                                    CompletionToken&& token) {
   BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-  asio::post(asio_service_.service(), [=] {
-    connection_manager_ = maidsafe::make_unique<ConnectionManager>(crux_asio_service_.service(),
-                                                                   our_id_, local_endpoint);
+  asio::post(io_service_, [=] {
     // TODO(PeterJ)
     //    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
     //                    handler, local_endpoint);
@@ -141,14 +138,14 @@ GetReturn<CompletionToken> Client::Get(Name name, CompletionToken&& token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-  asio::post(asio_service_.service(), [=] {
+  asio::post(io_service_, [=] {
     MessageHeader our_header(std::make_pair(Destination(name.value), boost::none),
                              OurSourceAddress(), ++message_id_, Authority::client);
-    GetData request(name::data_type::Tag::kValue, name.value, OurSourceAddress());
+    GetData request(Name::data_type::Tag::kValue, name.value, OurSourceAddress());
     auto message(Serialise(our_header, MessageToTag<GetData>::value(), request));
-    auto targets(connection_manager_.GetTarget(name.value));
-    for (const auto& target : targets)
-      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
+//    auto targets(connection_manager_.GetTarget(name.value));
+//    for (const auto& target : targets)
+//      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
   });
   return result.get();
 }

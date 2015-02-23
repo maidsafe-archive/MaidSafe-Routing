@@ -40,7 +40,7 @@ void AsyncExchange(crux::socket& socket, SerialisedMessage our_data, Handler han
     SerialisedMessage tx_buffer;
   };
 
-  auto state = make_shared<State>();
+  auto state = std::make_shared<State>();
 
   state->rx_buffer.resize(max_buffer_size);
   state->tx_buffer = std::move(our_data);

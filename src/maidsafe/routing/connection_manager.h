@@ -107,7 +107,8 @@ class ConnectionManager {
   bool AddressInCloseGroupRange(const Address& address) const {
     if (peers_.size() < GroupSize)
       return true;
-    return (std::distance(peers_.begin(), peers_.upper_bound(address)) < GroupSize);
+    return (static_cast<std::size_t>(std::distance(peers_.begin(), peers_.upper_bound(address))) <
+            GroupSize);
   }
 
   const Address& OurId() const { return our_id_; }
