@@ -93,7 +93,7 @@ MessageHeader GetRandomMessageHeader() {
                   asymm::GenerateKeyPair().private_key));
 }
 
-CreateBootstrapFile::CreateBootstrapFile(boost::filesystem::path path)
+ScopedBootstrapFile::ScopedBootstrapFile(boost::filesystem::path path)
     : kPath_(std::move(path)) {
   if (boost::filesystem::exists(kPath_))
     boost::filesystem::remove(kPath_);
@@ -103,7 +103,7 @@ CreateBootstrapFile::CreateBootstrapFile(boost::filesystem::path path)
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::filesystem_io_error));
 }
 
-CreateBootstrapFile::~CreateBootstrapFile() {
+ScopedBootstrapFile::~ScopedBootstrapFile() {
   if (boost::filesystem::exists(kPath_))
     boost::filesystem::remove(kPath_);
 }

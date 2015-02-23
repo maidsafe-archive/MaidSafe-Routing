@@ -63,10 +63,9 @@ Endpoint GetRandomEndpoint();
 
 MessageHeader GetRandomMessageHeader();
 
-class CreateBootstrapFile {
- public:
-  explicit CreateBootstrapFile(boost::filesystem::path path);
-  ~CreateBootstrapFile();
+struct ScopedBootstrapFile {
+  explicit ScopedBootstrapFile(boost::filesystem::path path);
+  ~ScopedBootstrapFile();
 
  private:
   const boost::filesystem::path kPath_;

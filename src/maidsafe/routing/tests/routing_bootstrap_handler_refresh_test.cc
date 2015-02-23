@@ -45,7 +45,7 @@ namespace test {
 
 TEST(BootstrapHandlerUnitTest, BEH_RefreshDatabase) {
   const size_t size(10);
-  CreateBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
+  ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
   BootstrapHandler test_handler;
   std::vector<BootstrapHandler::BootstrapContact> write_first(CreateBootstrapContacts(size));

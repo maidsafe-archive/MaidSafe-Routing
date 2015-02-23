@@ -44,7 +44,7 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_CreateBoostrapDatabase) {
-  CreateBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
+  ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   EXPECT_NO_THROW(BootstrapHandler tmp);
   std::string file_content(RandomString(3000 + RandomUint32() % 1000));
   auto bootstrap_file_path(GetBootstrapFilePath());
