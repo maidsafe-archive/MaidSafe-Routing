@@ -480,7 +480,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 }
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader original_header) {
-  auto group = std::move(connection_manager_.OurCloseGroup());
+  auto group = connection_manager_.OurCloseGroup();
   // add ourselves
   group.push_back(passport::PublicPmid(our_fob_));
   FindGroupResponse response(find_group.target_id(), std::move(group));
