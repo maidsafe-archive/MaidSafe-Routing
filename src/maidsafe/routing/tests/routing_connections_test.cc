@@ -41,13 +41,16 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
 
   unsigned short port = 8080;
 
-  c1.Accept(port, [&](asio::error_code, asio::ip::udp::endpoint, NodeId) {
-      c1.Shutdown();
+  c1.Accept(port,
+      [&](asio::error_code, asio::ip::udp::endpoint, NodeId his_id) {
+        std::cerr << "His id = " << his_id << "\n";
+        c1.Shutdown();
       });
 
   c1.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code, NodeId) {
-      c2.Shutdown();
+      [&](asio::error_code, NodeId his_id) {
+        std::cerr << "His id = " << his_id << "\n";
+        c2.Shutdown();
       });
 
   ios.run();
