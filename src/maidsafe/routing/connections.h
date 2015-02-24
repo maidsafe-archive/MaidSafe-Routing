@@ -23,12 +23,13 @@
 #include <map>
 #include <vector>
 
-
 #include "asio/io_service.hpp"
 #include "boost/optional.hpp"
 
 #include "maidsafe/common/convert.h"
 #include "maidsafe/common/asio_service.h"
+
+#include "async_queue.h"
 
 #include "maidsafe/crux/socket.hpp"
 #include "maidsafe/crux/acceptor.hpp"
@@ -42,39 +43,48 @@ class Connections {
   using Bytes = std::vector<unsigned char>;
 
  public:
-  template<class ReceiveHandler /* void (NodeId, Bytes) */,
-           class DropHandler    /* void (NodeId) */>
-  Connections(const NodeId& our_node_id, ReceiveHandler, DropHandler);
+  Connections(boost::asio::io_service&, const NodeId& our_node_id);
 
   Connections(const Connections&) = delete;
   Connections(Connections&&)      = delete;
+
   Connections& operator=(const Connections&) = delete;
   Connections& operator=(Connections&&)      = delete;
+
   ~Connections();
+
+  template<class Handler /* void (error_code) */>
+  void Send(const NodeId&, Handler);
+
+  template<class Handler /* void (error_code, NodeId, const Bytes&) */>
+  void Receive(Handler);
 
   template<class Handler /* void (error_code, NodeId) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
-  void Drop(const NodeId& their_id);
-
   template<class Handler /* void (endpoint, NodeId) */>
   void Accept(unsigned short port, const Handler);
+
+  void Drop(const NodeId& their_id);
+
+  void Shutdown();
 
   const NodeId& OurId() const { return our_id_; }
 
   std::size_t max_message_size() { return 1048576; }
 
- private:
-  void StartReceiving(const NodeId&,
-                      const std::shared_ptr<Bytes>&,
-                      const std::shared_ptr<crux::socket>&);
-
   boost::asio::io_service& get_io_service();
 
- private:
-  BoostAsioService service_;
 
-  NodeId    our_id_;
+ private:
+  void StartReceiving(const NodeId&,
+                      const crux::endpoint&,
+                      const std::shared_ptr<crux::socket>&);
+
+ private:
+  boost::asio::io_service& service_;
+
+  NodeId our_id_;
 
   std::function<void(NodeId, const Bytes&)> on_receive_;
   std::function<void(NodeId)>               on_drop_;
@@ -83,41 +93,31 @@ class Connections {
   std::map<crux::endpoint, std::shared_ptr<crux::socket>>   connections_;
   std::map<NodeId, crux::endpoint>                          id_to_endpoint_map_;
 
-  std::shared_ptr<boost::none_t> destroy_indicator_;
+  async_queue<asio::error_code, NodeId, Bytes> receive_queue_;
 };
 
-template<class ReceiveHandler /* void (NodeId, Bytes) */,
-         class DropHandler    /* void (NodeId) */>
-Connections::Connections(const NodeId&  our_node_id,
-                         ReceiveHandler on_receive,
-                         DropHandler    on_drop)
-  : service_(1),
-    our_id_(our_node_id),
-    on_receive_(std::move(on_receive)),
-    on_drop_(std::move(on_drop))
+inline Connections::Connections(boost::asio::io_service& ios, const NodeId&  our_node_id)
+  : service_(ios),
+    our_id_(our_node_id)
 {
 }
 
-inline boost::asio::io_service& Connections::get_io_service() {
-  return service_.service();
+template <typename Handler /* void (error_code, NodeId, Bytes) */>
+void Connections::Receive(Handler handler) {
+  service_.post([=]() {
+    receive_queue_.async_pop(std::move(handler));
+  });
 }
 
 inline Connections::~Connections() {
-  get_io_service().post([=]() {
-      // TODO(PeterJ): Uncommenting this causes crash in the TwoConnections test
-      //acceptors_.clear();
-      //connections_.clear();
-      //id_to_endpoint_map_.clear();
-      });
-
-  service_.Stop();
+  Shutdown();
 }
 
 template<class Handler /* void (error_code, NodeId) */>
 void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
-  get_io_service().post([=]() {
+  service_.post([=]() {
     crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
-    auto socket = std::make_shared<crux::socket>(get_io_service(), unspecified_ep);
+    auto socket = std::make_shared<crux::socket>(service_, unspecified_ep);
     std::weak_ptr<crux::socket> weak_socket = socket;
 
     socket->async_connect(convert::ToBoost(endpoint), [=](boost::system::error_code error) {
@@ -136,19 +136,19 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
 
 template<class Handler /* void (error_code, endpoint, NodeId) */>
 void Connections::Accept(unsigned short port, const Handler on_accept) {
-  get_io_service().post([=]() {
+  service_.post([=]() {
     auto find_result = acceptors_.insert(std::make_pair(port, std::shared_ptr<crux::acceptor>()));
 
     auto& acceptor = find_result.first->second;
 
     if (!acceptor) {
       crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
-      acceptor.reset(new crux::acceptor(get_io_service(), endpoint));
+      acceptor.reset(new crux::acceptor(service_, endpoint));
     }
 
     std::weak_ptr<crux::acceptor> weak_acceptor = acceptor;
 
-    auto socket = std::make_shared<crux::socket>(get_io_service());
+    auto socket = std::make_shared<crux::socket>(service_);
 
     acceptor->async_accept(*socket, [=](boost::system::error_code error) {
       if (!weak_acceptor.lock()) {
@@ -168,7 +168,7 @@ void Connections::Accept(unsigned short port, const Handler on_accept) {
 
       NodeId id; // TODO: Exchange this id with him.
 
-      StartReceiving(id, std::make_shared<Bytes>(max_message_size()), socket);
+      StartReceiving(id, socket->remote_endpoint(), socket);
 
       on_accept(asio::error_code(),
                 convert::ToAsio(socket->remote_endpoint()),
@@ -178,33 +178,44 @@ void Connections::Accept(unsigned short port, const Handler on_accept) {
 }
 
 inline void Connections::StartReceiving(const NodeId& id,
-                                        const std::shared_ptr<Bytes>& buffer,
+                                        const crux::endpoint& remote_endpoint,
                                         const std::shared_ptr<crux::socket>& socket) {
   std::weak_ptr<crux::socket> weak_socket = socket;
 
+  // TODO(PeterJ): Buffer reuse
+  auto buffer = std::make_shared<Bytes>(max_message_size());
+
   socket->async_receive(boost::asio::buffer(*buffer),
                         [=](boost::system::error_code error, size_t) {
-    if (!weak_socket.lock()) {
-      // This object has been destroyed.
-      return;
+    auto socket = weak_socket.lock();
+
+    if (!socket) {
+      return receive_queue_.push(asio::error::operation_aborted, id, std::move(*buffer));
     }
 
     if (error) {
-      return StartReceiving(id, buffer, socket);
+      id_to_endpoint_map_.erase(id);
+      connections_.erase(remote_endpoint);
     }
 
-    auto on_receive = std::move(on_receive_);
+    receive_queue_.push(convert::ToStd(error), id, std::move(*buffer));
 
-    on_receive(id, *buffer);
+    if (error) return;
 
-    if (!weak_socket.lock()) {
-      return;
-    }
-
-    on_receive_ = std::move(on_receive);
-
-    StartReceiving(id, buffer, socket);
+    StartReceiving(id, remote_endpoint, socket);
   });
+}
+
+inline boost::asio::io_service& Connections::get_io_service() {
+  return service_;
+}
+
+inline void Connections::Shutdown() {
+  service_.post([=]() {
+      acceptors_.clear();
+      connections_.clear();
+      id_to_endpoint_map_.clear();
+      });
 }
 
 }  // namespace routing

@@ -31,23 +31,26 @@ namespace routing {
 namespace test {
 
 TEST(ConnectionsTest, FUNC_TwoConnections) {
+  boost::asio::io_service ios;
+
   NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
   NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
 
-  Connections c1(c1_id, [](NodeId, const std::vector<unsigned char>&){},
-                        [](NodeId){});
-
-  Connections c2(c2_id, [](NodeId, const std::vector<unsigned char>&){},
-                        [](NodeId){});
+  Connections c1(ios, c1_id);
+  Connections c2(ios, c2_id);
 
   unsigned short port = 8080;
 
-  c1.Accept(port, [=](asio::error_code error, asio::ip::udp::endpoint, NodeId) {
+  c1.Accept(port, [&](asio::error_code, asio::ip::udp::endpoint, NodeId) {
+      c1.Shutdown();
       });
 
   c1.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [=](asio::error_code error, NodeId) {
+      [&](asio::error_code, NodeId) {
+      c2.Shutdown();
       });
+
+  ios.run();
 }
 
 }  // namespace test
