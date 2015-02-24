@@ -31,22 +31,24 @@ namespace routing {
 namespace test {
 
 TEST(ConnectionsTest, FUNC_TwoConnections) {
-  //struct Node : public RoutingNode<Node> {
-  //  void HandleMessage(GetData, MessageHeader) {}
-  //  void HandleConnectionAdded(NodeId) {
-  //    Shutdown();
-  //  }
-  //};
+  NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
+  NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
 
-  //Node n1;
-  //Node n2;
+  Connections c1(c1_id, [](NodeId, const std::vector<unsigned char>&){},
+                        [](NodeId){});
 
-  //unsigned short port = 8080;
+  Connections c2(c2_id, [](NodeId, const std::vector<unsigned char>&){},
+                        [](NodeId){});
 
-  //n1.StartAccepting(port);
-  //n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
+  unsigned short port = 8080;
+
+  c1.Accept(port, [=](asio::error_code error, asio::ip::udp::endpoint, NodeId) {
+      });
+
+  c1.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
+      [=](asio::error_code error, NodeId) {
+      });
 }
-
 
 }  // namespace test
 
