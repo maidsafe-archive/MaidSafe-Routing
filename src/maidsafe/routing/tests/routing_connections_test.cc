@@ -17,23 +17,11 @@
     use of the MaidSafe Software.                                                                 */
 
 
-#include <chrono>
-
-#include "asio/use_future.hpp"
-#include "asio/ip/udp.hpp"
-#include "boost/filesystem/operations.hpp"
-#include "boost/filesystem/path.hpp"
-
 #include "maidsafe/common/node_id.h"
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/data_types/immutable_data.h"
-#include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/routing_node.h"
-#include "maidsafe/routing/bootstrap_handler.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/connections.h"
 #include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {
@@ -42,21 +30,21 @@ namespace routing {
 
 namespace test {
 
-TEST(NetworkInitTest, FUNC_TwoNodes) {
-  struct Node : public RoutingNode<Node> {
-    void HandleMessage(GetData, MessageHeader) {}
-    void HandleConnectionAdded(NodeId) {
-      Shutdown();
-    }
-  };
+TEST(ConnectionsTest, FUNC_TwoConnections) {
+  //struct Node : public RoutingNode<Node> {
+  //  void HandleMessage(GetData, MessageHeader) {}
+  //  void HandleConnectionAdded(NodeId) {
+  //    Shutdown();
+  //  }
+  //};
 
-  Node n1;
-  Node n2;
+  //Node n1;
+  //Node n2;
 
-  unsigned short port = 8080;
+  //unsigned short port = 8080;
 
-  n1.StartAccepting(port);
-  n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
+  //n1.StartAccepting(port);
+  //n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
 }
 
 
