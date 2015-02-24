@@ -40,16 +40,18 @@ destiations. In that case request a close_group message for this node.
 
 #include <functional>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "asio/io_service.hpp"
 #include "boost/optional.hpp"
 
+#include "maidsafe/crux/socket.hpp"
+#include "maidsafe/crux/acceptor.hpp"
+
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"
-#include "maidsafe/crux/socket.hpp"
-#include "maidsafe/crux/acceptor.hpp"
 
 namespace maidsafe {
 
@@ -57,7 +59,6 @@ namespace routing {
 
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
-  using Bytes = std::vector<unsigned char>;
 
   class Comparison {
    public:
@@ -87,13 +88,14 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
   void AddNode(boost::optional<NodeInfo> node_to_add, EndpointPair);
 
-  std::vector<NodeInfo> OurCloseGroup() const {
-    std::vector<NodeInfo> result;
+  std::vector<PublicPmid> OurCloseGroup() const {
+    std::vector<PublicPmid> result;
     result.reserve(GroupSize);
     size_t i = 0;
     for (const auto& pair : peers_) {
-      if (++i > GroupSize) break;
-      result.push_back(pair.second.node_info());
+      if (++i > GroupSize)
+        break;
+      result.push_back(pair.second.node_info().dht_fob);
     }
     return result;
   }
@@ -103,12 +105,10 @@ class ConnectionManager {
   //}
 
   bool AddressInCloseGroupRange(const Address& address) const {
-    if (peers_.size() < GroupSize) {
+    if (peers_.size() < GroupSize)
       return true;
-    }
-    //return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
-    //                              routing_table_.OurId());
-    return NodeId::CloserToTarget(address, OurCloseGroup().back().id, our_id_);
+    return (static_cast<std::size_t>(std::distance(peers_.begin(), peers_.upper_bound(address))) <
+            GroupSize);
   }
 
   const Address& OurId() const { return our_id_; }
@@ -125,7 +125,8 @@ class ConnectionManager {
 
   PeerNode* FindPeer(Address addr) {
     auto i = peers_.find(addr);
-    if (i == peers_.end()) return nullptr;
+    if (i == peers_.end())
+      return nullptr;
     return &i->second;
   }
 
@@ -136,7 +137,7 @@ class ConnectionManager {
     on_connection_added_ = std::move(handler);
   }
 
-  template<class Handler /* void(NodeId, Bytes) */>
+  template<class Handler /* void(NodeId, SerialisedMessage) */>
   void SetOnReceive(Handler handler) {
     on_receive_ = std::move(handler);
   }
@@ -157,7 +158,7 @@ class ConnectionManager {
   boost::asio::io_service& io_service_;
 
   std::function<void(NodeId)> on_connection_added_;
-  std::function<void(NodeId, const Bytes&)> on_receive_;
+  std::function<void(NodeId, const SerialisedMessage&)> on_receive_;
 
   PublicPmid our_fob_;
   NodeId our_id_;

@@ -41,7 +41,7 @@ TEST(RoutingTableTest, FUNC_AddCheckMultipleNodes) {
   // iterate and try to add each node to each other node
   for (auto& node : routing_tables) {
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob);
+      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob, true);
       if (node->CheckNode(nodeinfo_to_add.id)) {
         auto removed_node = node->AddNode(nodeinfo_to_add);
         EXPECT_TRUE(removed_node.first);

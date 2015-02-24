@@ -38,9 +38,10 @@ Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_ke
       io_service_(io_service),
       our_id_(std::move(our_id)),
       our_keys_(std::move(our_keys)),
-      bootstrap_node_(),
       message_id_(RandomUint32()),
+      bootstrap_node_(),
       bootstrap_handler_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
@@ -54,9 +55,10 @@ Client::Client(asio::io_service& io_service, const passport::Maid& maid)
         keys.public_key = maid.public_key();
         return keys;
       }()),
-      bootstrap_node_(),
       message_id_(RandomUint32()),
+      bootstrap_node_(),
       bootstrap_handler_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
@@ -70,14 +72,15 @@ Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
         keys.public_key = mpid.public_key();
         return keys;
       }()),
-      bootstrap_node_(),
       message_id_(RandomUint32()),
+      bootstrap_node_(),
       bootstrap_handler_(),
+      connected_peers_(),
       filter_(std::chrono::minutes(20)),
       sentinel_(io_service) {}
 
-void Client::MessageReceived(NodeId /*peer_id*/, std::vector<byte> serialised_message) {
-  InputVectorStream binary_input_stream(std::move(serialised_message));
+void Client::MessageReceived(const Address& /*peer_id*/, SerialisedMessage message) {
+  InputVectorStream binary_input_stream(std::move(message));
   MessageHeader header;
   MessageTypeTag tag;
   try {
@@ -133,5 +136,11 @@ void Client::HandleMessage(PostResponse&& /*post_response*/) {
 
 // void ConnectionLost(NodeId /* peer */) { /*LostNetworkConnection(peer);*/ }
 
+SourceAddress Client::OurSourceAddress() const {
+  assert(bootstrap_node_);
+  return SourceAddress(NodeAddress(*bootstrap_node_), boost::none, ReplyToAddress(OurId()));
+}
+
 }  // namespace routing
+
 }  // namespace maidsafe

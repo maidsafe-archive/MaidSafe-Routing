@@ -70,7 +70,7 @@ RoutingTableUnitTest::RoutingTableUnitTest()
       public_fob_(passport::PublicPmid(fob_)),
       table_(our_id_),
       buckets_(InitialiseBuckets()),
-      info_(our_id_, passport::PublicPmid{passport::Pmid(passport::Anpmid())}),
+      info_(our_id_, passport::PublicPmid{passport::Pmid(passport::Anpmid())}, true),
       initial_count_((RandomUint32() % (GroupSize - 1)) + 1),
       added_ids_() {
   for (int i = 0; i < 99; ++i) {

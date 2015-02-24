@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/node_info.h"
 
 namespace maidsafe {
 
@@ -35,16 +35,16 @@ class FindGroupResponse {
   FindGroupResponse() = default;
   ~FindGroupResponse() = default;
 
-  FindGroupResponse(Address target_id, std::vector<NodeInfo> node_info)
-      : target_id_(std::move(target_id)), node_infos_(std::move(node_info)) {}
+  FindGroupResponse(Address target_id, std::vector<passport::PublicPmid> group)
+      : target_id_(std::move(target_id)), group_(std::move(group)) {}
 
   FindGroupResponse(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT
       : target_id_(std::move(other.target_id_)),
-        node_infos_(std::move(other.node_infos_)) {}
+        group_(std::move(other.group_)) {}
 
   FindGroupResponse& operator=(FindGroupResponse&& other) MAIDSAFE_NOEXCEPT {
     target_id_ = std::move(other.target_id_);
-    node_infos_ = std::move(other.node_infos_);
+    group_ = std::move(other.group_);
     return *this;
   }
 
@@ -52,16 +52,33 @@ class FindGroupResponse {
   FindGroupResponse& operator=(const FindGroupResponse&) = delete;
 
   template <typename Archive>
-  void serialize(Archive& archive) {
-    archive(target_id_, node_infos_);
+  Archive& load(Archive& archive) {
+    group_.clear();
+    std::size_t group_size(0);
+    archive(target_id_, group_size);
+    for (std::size_t i = 0; i < group_size; ++i) {
+      typename passport::PublicPmid::Name name;
+      typename passport::PublicPmid::serialised_type data;
+      archive(name, data);
+      group_.emplace_back(name, data);
+    }
+    return archive;
+  }
+
+  template <typename Archive>
+  Archive& save(Archive& archive) const {
+    archive(target_id_, group_.size());
+    for (const auto& member : group_)
+      archive(member.name(), member.Serialise());
+    return archive;
   }
 
   Address target_id() const { return target_id_; }
-  std::vector<NodeInfo> node_infos() const { return node_infos_; }
+  std::vector<passport::PublicPmid> group() const { return group_; }
 
  private:
   Address target_id_;
-  std::vector<NodeInfo> node_infos_;
+  std::vector<passport::PublicPmid> group_;
 };
 
 }  // namespace routing

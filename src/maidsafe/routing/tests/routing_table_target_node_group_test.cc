@@ -45,7 +45,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
   for (auto& node : routing_tables) {
     addresses.push_back(node->OurId());
     for (const auto& node_to_add : routing_tables) {
-      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob);
+      NodeInfo nodeinfo_to_add(node_to_add->OurId(), fob, true);
       node->AddNode(nodeinfo_to_add);
     }
   }

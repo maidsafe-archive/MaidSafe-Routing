@@ -34,43 +34,36 @@ namespace routing {
 struct NodeInfo {
   using PublicPmid = passport::PublicPmid;
 
-  NodeInfo(NodeId id, PublicPmid dht_fob) : id(id), dht_fob(std::move(dht_fob)) {}
-  NodeInfo() = default;
+  NodeInfo(NodeId id_in, PublicPmid dht_fob_in, bool connected_in)
+      : id(id_in), dht_fob(std::move(dht_fob_in)), connected(connected_in) {}
+
+  NodeInfo() : id(), dht_fob(), connected(false) {}
+
   NodeInfo(const NodeInfo&) = default;
 
   NodeInfo(NodeInfo&& other) MAIDSAFE_NOEXCEPT : id(std::move(other.id)),
-                                                 dht_fob(std::move(other.dht_fob)) {}
+                                                 dht_fob(std::move(other.dht_fob)),
+                                                 connected(std::move(other.connected)) {}
+
   NodeInfo& operator=(const NodeInfo&) = default;
 
   NodeInfo& operator=(NodeInfo&& other) MAIDSAFE_NOEXCEPT {
     id = std::move(other.id);
     dht_fob = std::move(other.dht_fob);
+    connected = std::move(other.connected);
     return *this;
   }
 
   bool operator==(const NodeInfo& other) const { return id == other.id; }
-  bool operator!=(const NodeInfo& other) const { return !operator==(other); }
+  bool operator!=(const NodeInfo& other) const { return id != other.id; }
   bool operator<(const NodeInfo& other) const { return id < other.id; }
   bool operator>(const NodeInfo& other) const { return id > other.id; }
-  bool operator<=(const NodeInfo& other) const { return !operator>(other); }
-  bool operator>=(const NodeInfo& other) const { return !operator<(other); }
-
-  template <typename Archive>
-  Archive& load(Archive& archive) {
-    typename PublicPmid::Name name;
-    typename PublicPmid::serialised_type data;
-    archive(id, name, data);
-    dht_fob = PublicPmid(name, data);
-    return archive;
-  }
-
-  template <typename Archive>
-  Archive& save(Archive& archive) const {
-    return archive(id, dht_fob.name(), dht_fob.Serialise());
-  }
+  bool operator<=(const NodeInfo& other) const { return id <= other.id; }
+  bool operator>=(const NodeInfo& other) const { return id >= other.id; }
 
   Address id;
-  passport::PublicPmid dht_fob;
+  PublicPmid dht_fob;
+  bool connected;
 };
 
 }  // namespace routing
