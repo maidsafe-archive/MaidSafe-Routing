@@ -16,94 +16,87 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_CONNECTIOS_H_
-#define MAIDSAFE_ROUTING_CONNECTIOS_H_
+#ifndef MAIDSAFE_ROUTING_CONNECTIONS_H_
+#define MAIDSAFE_ROUTING_CONNECTIONS_H_
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "asio/io_service.hpp"
 #include "boost/optional.hpp"
 
-#include "maidsafe/common/convert.h"
 #include "maidsafe/common/asio_service.h"
-
-#include "async_queue.h"
-#include "async_exchange.h"
-
-#include "maidsafe/crux/socket.hpp"
+#include "maidsafe/common/convert.h"
 #include "maidsafe/crux/acceptor.hpp"
+#include "maidsafe/crux/socket.hpp"
+
+#include "maidsafe/routing/async_queue.h"
+#include "maidsafe/routing/async_exchange.h"
+#include "maidsafe/routing/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
 class Connections {
- private:
-  using Bytes = std::vector<unsigned char>;
-
  public:
-  Connections(boost::asio::io_service&, const NodeId& our_node_id);
+  Connections(boost::asio::io_service&, const Address& our_node_id);
 
+  Connections() = delete;
   Connections(const Connections&) = delete;
-  Connections(Connections&&)      = delete;
+  Connections(Connections&&) = delete;
 
   Connections& operator=(const Connections&) = delete;
-  Connections& operator=(Connections&&)      = delete;
+  Connections& operator=(Connections&&) = delete;
 
   ~Connections();
 
-  template<class Handler /* void (error_code) */>
-  void Send(const NodeId&, const Bytes&, Handler);
+  template <class Handler /* void (error_code) */>
+  void Send(const Address&, const SerialisedMessage&, Handler);
 
-  template<class Handler /* void (error_code, NodeId, const Bytes&) */>
+  template <class Handler /* void (error_code, Address, const SerialisedMessage&) */>
   void Receive(Handler);
 
-  template<class Handler /* void (error_code, NodeId) */>
+  template <class Handler /* void (error_code, Address) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
-  template<class Handler /* void (endpoint, NodeId) */>
+  template <class Handler /* void (endpoint, Address) */>
   void Accept(unsigned short port, const Handler);
 
-  void Drop(const NodeId& their_id);
+  void Drop(const Address& their_id);
 
   void Shutdown();
 
-  const NodeId& OurId() const { return our_id_; }
+  const Address& OurId() const { return our_id_; }
 
-  std::size_t max_message_size() { return 1048576; }
+  std::size_t max_message_size() const { return 1048576; }
 
   boost::asio::io_service& get_io_service();
 
  private:
-  void StartReceiving(const NodeId&,
-                      const crux::endpoint&,
-                      const std::shared_ptr<crux::socket>&);
+  void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
 
- private:
   boost::asio::io_service& service_;
 
-  NodeId our_id_;
+  Address our_id_;
 
-  std::function<void(NodeId, const Bytes&)> on_receive_;
-  std::function<void(NodeId)>               on_drop_;
+  std::function<void(Address, const SerialisedMessage&)> on_receive_;
+  std::function<void(Address)> on_drop_;
 
-  std::map<unsigned short, std::shared_ptr<crux::acceptor>> acceptors_;
-  std::map<crux::endpoint, std::shared_ptr<crux::socket>>   connections_;
-  std::map<NodeId, crux::endpoint>                          id_to_endpoint_map_;
+  std::map<unsigned short, std::shared_ptr<crux::acceptor>> acceptors_;  // NOLINT
+  std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
+  std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
-  async_queue<asio::error_code, NodeId, Bytes> receive_queue_;
+  AsyncQueue<asio::error_code, Address, SerialisedMessage> receive_queue_;
 };
 
-inline Connections::Connections(boost::asio::io_service& ios, const NodeId&  our_node_id)
-  : service_(ios),
-    our_id_(our_node_id)
-{
-}
+inline Connections::Connections(boost::asio::io_service& ios, const Address& our_node_id)
+    : service_(ios), our_id_(our_node_id) {}
 
-template<class Handler /* void (error_code) */>
-void Connections::Send(const NodeId& remote_id, const Bytes& bytes, Handler handler) {
+template <class Handler /* void (error_code) */>
+void Connections::Send(const Address& remote_id, const SerialisedMessage& bytes, Handler handler) {
   service_.post([=]() {
     auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
 
@@ -116,38 +109,34 @@ void Connections::Send(const NodeId& remote_id, const Bytes& bytes, Handler hand
     assert(socket_i != connections_.end());
 
     auto& socket = socket_i->second;
-    auto  buffer = std::make_shared<Bytes>(std::move(bytes));
+    auto buffer = std::make_shared<SerialisedMessage>(std::move(bytes));
 
     std::weak_ptr<crux::socket> weak_socket = socket;
-    
+
     socket->async_send(boost::asio::buffer(*buffer),
                        [=](boost::system::error_code error, std::size_t) {
-      static_cast<void>(buffer);
+                         static_cast<void>(buffer);
 
-      if (!weak_socket.lock()) {
-        return handler(asio::error::operation_aborted);
-      }
-      if (error) {
-        id_to_endpoint_map_.erase(remote_id);
-        connections_.erase(remote_endpoint);
-      }
-      handler(convert::ToStd(error));
-    });
+                         if (!weak_socket.lock()) {
+                           return handler(asio::error::operation_aborted);
+                         }
+                         if (error) {
+                           id_to_endpoint_map_.erase(remote_id);
+                           connections_.erase(remote_endpoint);
+                         }
+                         handler(convert::ToStd(error));
+                       });
   });
 }
 
-template <typename Handler /* void (error_code, NodeId, Bytes) */>
+template <typename Handler /* void (error_code, Address, SerialisedMessage) */>
 void Connections::Receive(Handler handler) {
-  service_.post([=]() {
-    receive_queue_.async_pop(std::move(handler));
-  });
+  service_.post([=]() { receive_queue_.AsyncPop(std::move(handler)); });
 }
 
-inline Connections::~Connections() {
-  Shutdown();
-}
+inline Connections::~Connections() { Shutdown(); }
 
-template<class Handler /* void (error_code, NodeId) */>
+template <class Handler /* void (error_code, Address) */>
 void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
   service_.post([=]() {
     crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
@@ -156,7 +145,7 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
     auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
 
     if (!insert_result.second) {
-      return handler(asio::error::already_started, NodeId());
+      return handler(asio::error::already_started, Address());
     }
 
     std::weak_ptr<crux::socket> weak_socket = socket;
@@ -165,42 +154,43 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
       auto socket = weak_socket.lock();
 
       if (!socket) {
-        return handler(asio::error::operation_aborted, NodeId());
+        return handler(asio::error::operation_aborted, Address());
       }
       if (error) {
-        return handler(convert::ToStd(error), NodeId());
+        return handler(convert::ToStd(error), Address());
       }
 
       auto remote_endpoint = socket->remote_endpoint();
 
       connections_[remote_endpoint] = socket;
 
-      AsyncExchange(*socket, Serialise(our_id_), [=](boost::system::error_code error, Bytes data) {
-        auto socket = weak_socket.lock();
+      AsyncExchange(*socket, Serialise(our_id_),
+                    [=](boost::system::error_code error, SerialisedMessage data) {
+                      auto socket = weak_socket.lock();
 
-        if (!socket) {
-          return handler(asio::error::operation_aborted, NodeId());
-        }
+                      if (!socket) {
+                        return handler(asio::error::operation_aborted, Address());
+                      }
 
-        if (error) {
-          connections_.erase(remote_endpoint);
-          return handler(convert::ToStd(error), NodeId());
-        }
+                      if (error) {
+                        connections_.erase(remote_endpoint);
+                        return handler(convert::ToStd(error), Address());
+                      }
 
-        InputVectorStream stream(data);
-        NodeId his_id;
-        Parse(stream, his_id);
+                      InputVectorStream stream(data);
+                      Address his_id;
+                      Parse(stream, his_id);
 
-        id_to_endpoint_map_[his_id] = remote_endpoint;
-        StartReceiving(his_id, remote_endpoint, socket);
+                      id_to_endpoint_map_[his_id] = remote_endpoint;
+                      StartReceiving(his_id, remote_endpoint, socket);
 
-        handler(convert::ToStd(error), his_id);
-      });
+                      handler(convert::ToStd(error), his_id);
+                    });
     });
   });
 }
 
-template<class Handler /* void (error_code, endpoint, NodeId) */>
+template <class Handler /* void (error_code, endpoint, Address) */>
 void Connections::Accept(unsigned short port, const Handler handler) {
   service_.post([=]() {
     auto find_result = acceptors_.insert(std::make_pair(port, std::shared_ptr<crux::acceptor>()));
@@ -218,15 +208,11 @@ void Connections::Accept(unsigned short port, const Handler handler) {
 
     acceptor->async_accept(*socket, [=](boost::system::error_code error) {
       if (!weak_acceptor.lock()) {
-        return handler(asio::error::operation_aborted,
-                       asio::ip::udp::endpoint(),
-                       NodeId());
+        return handler(asio::error::operation_aborted, asio::ip::udp::endpoint(), Address());
       }
 
       if (error) {
-        return handler(asio::error::operation_aborted,
-                       asio::ip::udp::endpoint(),
-                       NodeId());
+        return handler(asio::error::operation_aborted, asio::ip::udp::endpoint(), Address());
       }
 
       acceptors_.erase(port);
@@ -235,24 +221,22 @@ void Connections::Accept(unsigned short port, const Handler handler) {
 
       std::weak_ptr<crux::socket> weak_socket = socket;
 
-      AsyncExchange(*socket, Serialise(our_id_), [=](boost::system::error_code error, Bytes data) {
+      AsyncExchange(*socket, Serialise(our_id_), [=](boost::system::error_code error,
+                                                     SerialisedMessage data) {
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return handler(asio::error::operation_aborted,
-                         convert::ToAsio(remote_endpoint),
-                         NodeId());
+          return handler(asio::error::operation_aborted, convert::ToAsio(remote_endpoint),
+                         Address());
         }
 
         if (error) {
           connections_.erase(remote_endpoint);
-          return handler(convert::ToStd(error),
-                         convert::ToAsio(remote_endpoint),
-                         NodeId());
+          return handler(convert::ToStd(error), convert::ToAsio(remote_endpoint), Address());
         }
 
         InputVectorStream stream(data);
-        NodeId his_id;
+        Address his_id;
         Parse(stream, his_id);
 
         id_to_endpoint_map_[his_id] = remote_endpoint;
@@ -264,51 +248,48 @@ void Connections::Accept(unsigned short port, const Handler handler) {
   });
 }
 
-inline void Connections::StartReceiving(const NodeId& id,
-                                        const crux::endpoint& remote_endpoint,
+inline void Connections::StartReceiving(const Address& id, const crux::endpoint& remote_endpoint,
                                         const std::shared_ptr<crux::socket>& socket) {
   std::weak_ptr<crux::socket> weak_socket = socket;
 
   // TODO(PeterJ): Buffer reuse
-  auto buffer = std::make_shared<Bytes>(max_message_size());
+  auto buffer = std::make_shared<SerialisedMessage>(max_message_size());
 
-  socket->async_receive(boost::asio::buffer(*buffer),
-                        [=](boost::system::error_code error, size_t size) {
-    auto socket = weak_socket.lock();
+  socket->async_receive(
+      boost::asio::buffer(*buffer), [=](boost::system::error_code error, size_t size) {
+        auto socket = weak_socket.lock();
 
-    if (!socket) {
-      return receive_queue_.push(asio::error::operation_aborted, id, std::move(*buffer));
-    }
+        if (!socket) {
+          return receive_queue_.Push(asio::error::operation_aborted, id, std::move(*buffer));
+        }
 
-    if (error) {
-      id_to_endpoint_map_.erase(id);
-      connections_.erase(remote_endpoint);
-    }
+        if (error) {
+          id_to_endpoint_map_.erase(id);
+          connections_.erase(remote_endpoint);
+        }
 
-    buffer->resize(size);
-    receive_queue_.push(convert::ToStd(error), id, std::move(*buffer));
+        buffer->resize(size);
+        receive_queue_.Push(convert::ToStd(error), id, std::move(*buffer));
 
-    if (error) return;
+        if (error)
+          return;
 
-    StartReceiving(id, remote_endpoint, socket);
-  });
+        StartReceiving(id, remote_endpoint, socket);
+      });
 }
 
-inline boost::asio::io_service& Connections::get_io_service() {
-  return service_;
-}
+inline boost::asio::io_service& Connections::get_io_service() { return service_; }
 
 inline void Connections::Shutdown() {
   service_.post([=]() {
-      acceptors_.clear();
-      connections_.clear();
-      id_to_endpoint_map_.clear();
-      });
+    acceptors_.clear();
+    connections_.clear();
+    id_to_endpoint_map_.clear();
+  });
 }
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_CONNECTIOS_H_
-
+#endif  // MAIDSAFE_ROUTING_CONNECTIONS_H_

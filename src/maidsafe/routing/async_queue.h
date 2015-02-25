@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,51 +16,61 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_RUDP_ASYNC_QUEUE_H_
-#define MAIDSAFE_RUDP_ASYNC_QUEUE_H_
+#ifndef MAIDSAFE_ROUTING_ASYNC_QUEUE_H_
+#define MAIDSAFE_ROUTING_ASYNC_QUEUE_H_
 
 #include <mutex>
 #include <queue>
+#include <tuple>
+
 #include "asio/async_result.hpp"
+
+#include "maidsafe/common/config.h"
 
 namespace maidsafe {
 
-namespace __detail {
-  namespace helper {
-    template <int... Is>
-    struct index {};
+namespace routing {
 
-    template <int N, int... Is>
-    struct gen_seq : gen_seq<N - 1, N - 1, Is...> {};
+namespace detail {
 
-    template <int... Is>
-    struct gen_seq<0, Is...> : index<Is...> {};
-  }
+namespace helper {
 
-  template <class F, typename... Args, int... Is>
-  inline constexpr auto
-  apply_tuple(F&& f, const std::tuple<Args...>& tup, helper::index<Is...>)
+template <int... Is>
+struct Index {};
+
+template <int N, int... Is>
+struct GeneratedSequence : GeneratedSequence<N - 1, N - 1, Is...> {};
+
+template <int... Is>
+struct GeneratedSequence<0, Is...> : Index<Is...> {};
+
+}  // namespace helper
+
+template <class F, typename... Args, int... Is>
+inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup,
+                                          helper::Index<Is...>)
     -> decltype(f(std::get<Is>(tup)...)) {
-    return f(std::get<Is>(tup)...);
-  }
+  return f(std::get<Is>(tup)...);
+}
 
-  template <class F, typename... Args>
-  inline constexpr auto
-  apply_tuple(F&& f, const std::tuple<Args...>& tup)
-    -> decltype(apply_tuple(f, tup, helper::gen_seq<sizeof...(Args)>{})) {
-    return apply_tuple( std::forward<F>(f), tup
-                      , helper::gen_seq<sizeof...(Args)>{});
-  }
-}  // namespace __detail
+template <class F, typename... Args>
+inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup)
+    -> decltype(ApplyTuple(f, tup, helper::GeneratedSequence<sizeof...(Args)>{})) {
+  return ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{});
+}
 
-template<class... Args> class async_queue {
-  using handler_type = std::function<void(Args...)>;
-  using tuple_type   = std::tuple<Args...>;
+}  // namespace detail
+
+template <class... Args>
+class AsyncQueue {
+ private:
+  using Handler = std::function<void(Args...)>;
+  using Tuple = std::tuple<Args...>;
 
  public:
-  template<class... Params>
-  void push(Params&&... args) {
-    handler_type handler;
+  template <class... Params>
+  void Push(Params&&... args) {
+    Handler handler;
 
     {
       std::lock_guard<std::mutex> lock(mutex);
@@ -77,22 +87,17 @@ template<class... Args> class async_queue {
   }
 
   template <typename CompletionToken>
-  typename asio::async_result
-            <typename asio::handler_type
-              < typename std::decay<CompletionToken>::type
-              , void(Args...)>::type
-            >::type
-  async_pop(CompletionToken&& token) {
-    using HT = typename asio::handler_type
-                 < typename std::decay<CompletionToken>::type
-                 , void(Args...)
-                 >::type;
+  typename asio::async_result<typename asio::handler_type<
+      typename std::decay<CompletionToken>::type, void(Args...)>::type>::type
+      AsyncPop(CompletionToken&& token) {
+    using AsioHandler = typename asio::handler_type<typename std::decay<CompletionToken>::type,
+                                                    void(Args...)>::type;
 
-    HT handler = std::forward<decltype(token)>(token);
+    AsioHandler handler = std::forward<decltype(token)>(token);
 
-    asio::async_result<HT> result(handler);
+    asio::async_result<AsioHandler> result(handler);
 
-    tuple_type tuple;
+    Tuple tuple;
 
     {
       std::lock_guard<std::mutex> lock(mutex);
@@ -106,17 +111,19 @@ template<class... Args> class async_queue {
       values.pop();
     }
 
-    __detail::apply_tuple(std::move(handler), tuple);
+    detail::ApplyTuple(std::move(handler), tuple);
 
     return result.get();
   }
 
  private:
-  std::mutex               mutex;
-  std::queue<handler_type> handlers;
-  std::queue<tuple_type>   values;
+  std::mutex mutex;
+  std::queue<Handler> handlers;
+  std::queue<Tuple> values;
 };
+
+}  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_RUDP_ASYNC_QUEUE_H_
+#endif  // MAIDSAFE_ROUTING_ASYNC_QUEUE_H_
