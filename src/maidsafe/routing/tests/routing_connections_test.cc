@@ -17,7 +17,6 @@
     use of the MaidSafe Software.                                                                 */
 
 
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -41,19 +40,44 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
 
   unsigned short port = 8080;
 
+  bool c1_finished = false;
+  bool c2_finished = false;
+
   c1.Accept(port,
-      [&](asio::error_code, asio::ip::udp::endpoint, NodeId his_id) {
-        std::cerr << "His id = " << his_id << "\n";
-        c1.Shutdown();
+      [&](asio::error_code error, asio::ip::udp::endpoint, NodeId his_id) {
+        ASSERT_FALSE(error);
+        ASSERT_EQ(his_id, c2.OurId());
+        std::string msg = "hello";
+
+        c1.Send(his_id,
+                std::vector<unsigned char>(msg.begin(), msg.end()),
+                [&](asio::error_code error) {
+                  ASSERT_FALSE(error);
+                  c1.Shutdown();
+                  c1_finished = true;
+                });
       });
 
-  c1.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code, NodeId his_id) {
-        std::cerr << "His id = " << his_id << "\n";
-        c2.Shutdown();
+  c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
+      [&](asio::error_code error, NodeId his_id) {
+        ASSERT_FALSE(error);
+        ASSERT_EQ(his_id, c1.OurId());
+
+        c2.Receive([&, his_id](asio::error_code error,
+                       NodeId sender_id,
+                       const std::vector<unsigned char>& bytes) {
+          ASSERT_FALSE(error);
+          ASSERT_EQ(sender_id, his_id);
+          ASSERT_EQ(std::string(bytes.begin(), bytes.end()), "hello");
+
+          c2.Shutdown();
+          c2_finished = true;
+        });
       });
 
   ios.run();
+
+  ASSERT_TRUE(c1_finished && c2_finished);
 }
 
 }  // namespace test

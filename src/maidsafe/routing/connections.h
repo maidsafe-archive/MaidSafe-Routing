@@ -76,7 +76,6 @@ class Connections {
 
   boost::asio::io_service& get_io_service();
 
-
  private:
   void StartReceiving(const NodeId&,
                       const crux::endpoint&,
@@ -101,6 +100,40 @@ inline Connections::Connections(boost::asio::io_service& ios, const NodeId&  our
   : service_(ios),
     our_id_(our_node_id)
 {
+}
+
+template<class Handler /* void (error_code) */>
+void Connections::Send(const NodeId& remote_id, const Bytes& bytes, Handler handler) {
+  service_.post([=]() {
+    auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
+
+    if (remote_endpoint_i == id_to_endpoint_map_.end()) {
+      return handler(asio::error::bad_descriptor);
+    }
+
+    auto remote_endpoint = remote_endpoint_i->second;
+    auto socket_i = connections_.find(remote_endpoint);
+    assert(socket_i != connections_.end());
+
+    auto& socket = socket_i->second;
+    auto  buffer = std::make_shared<Bytes>(std::move(bytes));
+
+    std::weak_ptr<crux::socket> weak_socket = socket;
+    
+    socket->async_send(boost::asio::buffer(*buffer),
+                       [=](boost::system::error_code error, std::size_t) {
+      static_cast<void>(buffer);
+
+      if (!weak_socket.lock()) {
+        return handler(asio::error::operation_aborted);
+      }
+      if (error) {
+        id_to_endpoint_map_.erase(remote_id);
+        connections_.erase(remote_endpoint);
+      }
+      handler(convert::ToStd(error));
+    });
+  });
 }
 
 template <typename Handler /* void (error_code, NodeId, Bytes) */>
@@ -141,7 +174,6 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
       auto remote_endpoint = socket->remote_endpoint();
 
       connections_[remote_endpoint] = socket;
-
 
       AsyncExchange(*socket, Serialise(our_id_), [=](boost::system::error_code error, Bytes data) {
         auto socket = weak_socket.lock();
@@ -241,7 +273,7 @@ inline void Connections::StartReceiving(const NodeId& id,
   auto buffer = std::make_shared<Bytes>(max_message_size());
 
   socket->async_receive(boost::asio::buffer(*buffer),
-                        [=](boost::system::error_code error, size_t) {
+                        [=](boost::system::error_code error, size_t size) {
     auto socket = weak_socket.lock();
 
     if (!socket) {
@@ -253,6 +285,7 @@ inline void Connections::StartReceiving(const NodeId& id,
       connections_.erase(remote_endpoint);
     }
 
+    buffer->resize(size);
     receive_queue_.push(convert::ToStd(error), id, std::move(*buffer));
 
     if (error) return;
