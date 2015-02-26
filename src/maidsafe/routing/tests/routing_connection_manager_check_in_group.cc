@@ -46,7 +46,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   // iterate and fill routing table
   auto fob(PublicFob());
   for (auto& node : addresses) {
-    NodeInfo nodeinfo_to_add(node, fob);
+    NodeInfo nodeinfo_to_add(node, fob, true);
     EXPECT_TRUE(connection_manager.IsManaged(nodeinfo_to_add.id));
     EndpointPair endpoint_pair;
     endpoint_pair.local = (GetRandomEndpoint());

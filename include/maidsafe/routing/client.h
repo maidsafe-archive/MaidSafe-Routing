@@ -26,10 +26,12 @@
 #include <vector>
 
 #include "asio/io_service.hpp"
+#include "asio/post.hpp"
 #include "boost/filesystem/path.hpp"
 #include "boost/optional/optional.hpp"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/make_unique.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
@@ -37,9 +39,11 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/routing/bootstrap_handler.h"
+#include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/messages/messages_fwd.h"
+#include "maidsafe/routing/messages/get_data.h"
 
 namespace maidsafe {
 
@@ -59,28 +63,30 @@ class Client : public std::enable_shared_from_this<Client> {
 
   // normal bootstrap mechanism
   template <typename CompletionToken>
-  BootstrapReturn<CompletionToken> Bootstrap(CompletionToken token);
+  BootstrapReturn<CompletionToken> Bootstrap(CompletionToken&& token);
   // used where we wish to pass a specific node to bootstrap from
   template <typename CompletionToken>
-  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken token);
+  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
   // will return with the data
-  template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(Address name, CompletionToken token);
+  template <typename CompletionToken, typename Name>
+  GetReturn<CompletionToken> Get(Name name, CompletionToken&& token);
   // will return with allowed or not (error_code only)
-  template <typename CompletionToken>
-  PutReturn<CompletionToken> Put(Address name, SerialisedMessage message, CompletionToken token);
+  template <typename CompletionToken, typename Name>
+  PutReturn<CompletionToken> Put(Name name, SerialisedMessage message, CompletionToken&& token);
   // will return with allowed or not (error_code only)
-  template <typename CompletionToken>
-  PostReturn<CompletionToken> Post(Address name, SerialisedMessage message, CompletionToken token);
+  template <typename CompletionToken, typename Name>
+  PostReturn<CompletionToken> Post(Name name, SerialisedMessage message, CompletionToken&& token);
   // will return with response message
-  template <typename CompletionToken>
-  RequestReturn<CompletionToken> Request(Address name, SerialisedMessage message,
-                                         CompletionToken token);
+  template <typename CompletionToken, typename Name>
+  RequestReturn<CompletionToken> Request(Name name, SerialisedMessage message,
+                                         CompletionToken&& token);
   Address OurId() const { return our_id_; }
 
  private:
-  virtual void MessageReceived(NodeId peer_id, std::vector<byte> message);
-  virtual void ConnectionLost(NodeId peer);
+  void MessageReceived(const Address& peer_id, SerialisedMessage message);
+  void ConnectionLost(const Address& peer_id);
+
+  SourceAddress OurSourceAddress() const;
 
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   void HandleMessage(ConnectResponse&& connect_response);
@@ -92,65 +98,85 @@ class Client : public std::enable_shared_from_this<Client> {
   asio::io_service& io_service_;
   const Address our_id_;
   const asymm::Keys our_keys_;
-  boost::optional<Address> bootstrap_node_;
   std::atomic<MessageId> message_id_;
+  boost::optional<Address> bootstrap_node_;
   BootstrapHandler bootstrap_handler_;
+  std::vector<PeerNode> connected_peers_;
   LruCache<std::pair<Address, MessageId>, void> filter_;
   Sentinel sentinel_;
 };
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+BootstrapReturn<CompletionToken> Client::Bootstrap(CompletionToken&& token) {
+  BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-  io_service_.post([=] {
-// TODO(PeterJ)
-//    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
-//                    handler);
+  asio::post(io_service_, [=] {
+    // TODO(PeterJ)
+    //    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
+    //                    handler);
   });
   return result.get();
 }
 
 template <typename CompletionToken>
-BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint /*local_endpoint*/, CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+BootstrapReturn<CompletionToken> Client::Bootstrap(Endpoint /*local_endpoint*/,
+                                                   CompletionToken&& token) {
+  BootstrapHandlerHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-  io_service_.post([=] {
-// TODO(PeterJ)
-//    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
-//                    handler, local_endpoint);
+  asio::post(io_service_, [=] {
+    // TODO(PeterJ)
+    //    rudp_.Bootstrap(bootstrap_handler_.ReadBootstrapContacts(), this_ptr, our_id_, our_keys_,
+    //                    handler, local_endpoint);
   });
   return result.get();
 }
 
-template <typename CompletionToken>
-GetReturn<CompletionToken> Client::Get(Address /*name*/, CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+template <typename CompletionToken, typename Name>
+GetReturn<CompletionToken> Client::Get(Name name, CompletionToken&& token) {
+  GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoGet(name, handler); });
+  asio::post(io_service_, [=] {
+    MessageHeader our_header(std::make_pair(Destination(name.value), boost::none),
+                             OurSourceAddress(), ++message_id_, Authority::client);
+    GetData request(Name::data_type::Tag::kValue, name.value, OurSourceAddress());
+    auto message(Serialise(our_header, MessageToTag<GetData>::value(), request));
+//    auto targets(connection_manager_.GetTarget(name.value));
+//    for (const auto& target : targets)
+//      connection_manager_.FindPeer(target)->Send(message, [](asio::error_code) {});
+  });
   return result.get();
 }
 
-template <typename CompletionToken>
-PutReturn<CompletionToken> Client::Put(Address /*name*/, SerialisedMessage /*message*/,
-                                       CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+template <typename CompletionToken, typename Name>
+PutReturn<CompletionToken> Client::Put(Name /*name*/, SerialisedMessage /*message*/,
+                                       CompletionToken&& token) {
+  PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoPut(name, message, handler); });
+  //  io_service_.post([=] { this_ptr->DoPut(name, message, handler); });
   return result.get();
 }
 
-template <typename CompletionToken>
-PostReturn<CompletionToken> Client::Post(Address /*name*/, SerialisedMessage /*message*/,
-                                         CompletionToken token) {
-  auto handler(std::forward<decltype(token)>(token));
-  auto result(handler);
+template <typename CompletionToken, typename Name>
+PostReturn<CompletionToken> Client::Post(Name /*name*/, SerialisedMessage /*message*/,
+                                         CompletionToken&& token) {
+  PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
   auto this_ptr(shared_from_this());
-//  io_service_.post([=] { this_ptr->DoPost(name, message, handler); });
+  //  io_service_.post([=] { this_ptr->DoPost(name, message, handler); });
+  return result.get();
+}
+
+template <typename CompletionToken, typename Name>
+RequestReturn<CompletionToken> Client::Request(Name /*name*/, SerialisedMessage /*message*/,
+                                               CompletionToken&& token) {
+  RequestHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
+  asio::async_result<decltype(handler)> result(handler);
+  auto this_ptr(shared_from_this());
+  //  io_service_.post([=] { this_ptr->DoRequest(name, message, handler); });
   return result.get();
 }
 

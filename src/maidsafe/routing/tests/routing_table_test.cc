@@ -45,7 +45,7 @@ TEST(RoutingTableTest, BEH_AddCloseNodes) {
   // everything should be set to go now
   auto fob(PublicFob());
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    NodeInfo node{Address(RandomString(Address::kSize)), fob};
+    NodeInfo node(Address(RandomString(Address::kSize)), fob, true);
     EXPECT_TRUE(routing_table.AddNode(node).first);
   }
   EXPECT_EQ(GroupSize, routing_table.Size());
