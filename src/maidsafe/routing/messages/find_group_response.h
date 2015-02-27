@@ -57,10 +57,8 @@ class FindGroupResponse {
     std::size_t group_size(0);
     archive(target_id_, group_size);
     for (std::size_t i = 0; i < group_size; ++i) {
-      typename passport::PublicPmid::Name name;
-      typename passport::PublicPmid::serialised_type data;
-      archive(name, data);
-      group_.emplace_back(name, data);
+      group_.emplace_back();
+      archive(group_.back());
     }
     return archive;
   }
@@ -68,8 +66,8 @@ class FindGroupResponse {
   template <typename Archive>
   Archive& save(Archive& archive) const {
     archive(target_id_, group_.size());
-    for (const auto& member : group_)
-      archive(member.name(), member.Serialise());
+    for (const auto& public_pmid : group_)
+      archive(public_pmid);
     return archive;
   }
 

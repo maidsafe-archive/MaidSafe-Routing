@@ -113,7 +113,7 @@ void ConnectionManager::StartAccepting(unsigned short port) {
 
     StartAccepting(port);
 
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
+    AsyncExchange(*socket, Serialise(our_fob_),
                   [=](boost::system::error_code error, SerialisedMessage data) {
       if (!destroy_guard.lock())
         return;
@@ -121,13 +121,10 @@ void ConnectionManager::StartAccepting(unsigned short port) {
       if (error)
         return;
 
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
-      InsertPeer(PeerNode(std::move(their_node_info), std::move(socket)));
+      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
+      Address their_id(their_public_pmid.name()->string());
+      InsertPeer(PeerNode(NodeInfo(std::move(their_id), std::move(their_public_pmid), true),
+                          std::move(socket)));
     });
   });
 }
@@ -160,7 +157,7 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPa
       return;
     }
 
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
+    AsyncExchange(*socket, Serialise(our_fob_),
                   [=](boost::system::error_code error, SerialisedMessage data) {
       auto socket = weak_socket.lock();
 
@@ -172,12 +169,9 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPa
       if (error)
         return;
 
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
+      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
+      Address their_id(their_public_pmid.name()->string());
+      NodeInfo their_node_info(std::move(their_id), std::move(their_public_pmid), true);
 
       if (assumed_node_info && *assumed_node_info != their_node_info)
         return;
