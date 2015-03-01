@@ -35,49 +35,6 @@ namespace maidsafe {
 
 namespace routing {
 //
-// RoutingNode::RoutingNode(asio::io_service& io_service, boost::filesystem::path db_location,
-//                          const passport::Pmid& pmid, std::shared_ptr<Listener> listener_ptr)
-//     : io_service_(io_service),
-//       our_fob_(pmid),
-//       bootstrap_node_(boost::none),
-//       rudp_(),
-//       bootstrap_handler_(std::move(db_location)),
-//       connection_manager_(io_service, rudp_, Address(pmid.name()->string())),
-//       listener_ptr_(listener_ptr),
-//       filter_(std::chrono::minutes(20)),
-//       sentinel_(io_service_),
-//       cache_(std::chrono::minutes(60)) {
-//   // store this to allow other nodes to get our ID on startup. IF they have full routing tables
-//   they
-//   // need Quorum number of these signed anyway.
-//   cache_.Add(Address(pmid.name()->string()), Serialise(passport::PublicPmid(our_fob_)));
-//   // try an connect to any local nodes (5483) Expect to be told Node_Id
-//   auto temp_id(Address(RandomString(Address::kSize)));
-//   rudp_.Add(rudp::Contact(temp_id, rudp::EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
-//                                                       rudp::Endpoint{GetLocalIp(), 5433}},
-//                           our_fob_.public_key()),
-//             [this, temp_id](asio::error_code error) {
-//     if (!error) {
-//       bootstrap_node_ = temp_id;
-//       ConnectToCloseGroup();
-//       return;
-//     }
-//   });
-//   for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
-//     rudp_.Add(node, [node, this](asio::error_code error) {
-//       if (!error) {
-//         bootstrap_node_ = node.id;
-//         ConnectToCloseGroup();
-//         return;
-//       }
-//     });
-//     if (bootstrap_node_)
-//       break;
-//   }
-// }
-//
-// RoutingNode::~RoutingNode() {}
-//
 // void RoutingNode::ConnectToCloseGroup() {
 //   FindGroup message(NodeAddress(OurId()), OurId());
 //   MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),

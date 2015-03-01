@@ -44,208 +44,74 @@ using std::move;
 using boost::none_t;
 using boost::optional;
 
-ConnectionManager::ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
-    : io_service_(ios),
-      our_fob_(std::move(our_fob)),
-      our_id_(our_fob_.name()->string()),
-      peers_(Comparison(our_id_)),
-      current_close_group_(),
-      destroy_indicator_(new boost::none_t()) {}
+ConnectionManager::ConnectionManager(boost::asio::io_service& ios, Address our_id)
+    : mutex_(),
+      io_service_(ios),
+      routing_table_(our_id),
+      current_close_group_() {}
 
-bool ConnectionManager::IsManaged(const Address& node_id) const {
-  return peers_.find(node_id) != peers_.end();
-  // return routing_table_.CheckNode(node_to_add);
+bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
+  return routing_table_.CheckNode(node_to_add);
 }
 
-std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(
-    const Address& target_node) const {
-  // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
-  return std::set<Address, Comparison>(Comparison(target_node));
-  // for (const auto& peer : peers_) {
-  //  result.insert(peer.first);
-  //}
-  // return result;
-  // auto nodes(routing_table_.TargetNodes(target_node));
-  ////nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
-  ////                           [](NodeInfo& node) { return !node.connected(); }),
-  ////            std::end(nodes));
-  // return nodes;
+std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
+  auto nodes(routing_table_.TargetNodes(target_node));
+  nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+                             [](NodeInfo& node) { return !node.connected; }),
+              std::end(nodes));
+  return nodes;
 }
 
-// boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
-//    const Address& node) {
-//  routing_table_.DropNode(node);
-//  return GroupChanged();
-//}
-
-optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
-  // routing_table_.DropNode(their_id);
-  peers_.erase(their_id);
+ boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+    const Address& node) {
+  routing_table_.DropNode(node);
   return GroupChanged();
 }
 
-// acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
-void ConnectionManager::StartAccepting(unsigned short port) {
-  auto acceptor_i = acceptors_.find(port);
-
-  if (acceptor_i == acceptors_.end()) {
-    crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
-    auto acceptor = std::unique_ptr<crux::acceptor>(new crux::acceptor(io_service_, endpoint));
-    auto pair = acceptors_.insert(std::make_pair(port, std::move(acceptor)));
-    acceptor_i = pair.first;
-  }
-
-  auto socket = make_shared<crux::socket>(io_service_);
-
-  auto& acceptor = acceptor_i->second;
-
-  weak_ptr<none_t> destroy_guard = destroy_indicator_;
-
-  acceptor->async_accept(*socket, [=](boost::system::error_code error) {
-    if (!destroy_guard.lock())
-      return;
-
-    if (error) {
-      if (error == boost::asio::error::operation_aborted) {
-        return;
-      }
-    }
-
-    StartAccepting(port);
-
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
-                  [=](boost::system::error_code error, SerialisedMessage data) {
-      if (!destroy_guard.lock())
-        return;
-
-      if (error)
-        return;
-
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
-      InsertPeer(PeerNode(std::move(their_node_info), std::move(socket)));
-    });
-  });
+optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
+  routing_table_.DropNode(their_id);
+  // FIXME(Prakash) remove connection ?
+  return GroupChanged();
 }
 
-void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPair eps) {
-  static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
+    NodeInfo /*node_to_add*/, EndpointPair /*their_endpoint_pair*/) { // FIXME(Prakash)
+//  rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
+//                             node_to_add.dht_fob.public_key());
+//  asio::spawn(io_service_, [=](asio::yield_context yield) {
+//      asio::error_code error;
+//      rudp_.Add(std::move(rudp_contact), yield[error]);
 
-  // TODO(PeterJ): Try the internal endpoint as well
-  auto endpoint = convert::ToBoost(eps.external);
-
-  auto pair_i = being_connected_.find(endpoint);
-
-  if (pair_i == being_connected_.end()) {
-    bool inserted = false;
-    auto socket = make_shared<crux::socket>(io_service_, unspecified_ep);
-    std::tie(pair_i, inserted) = being_connected_.insert(std::make_pair(endpoint, socket));
-  }
-
-  auto socket = pair_i->second;
-  weak_ptr<crux::socket> weak_socket = socket;
-
-  socket->async_connect(convert::ToBoost(eps.external), [=](boost::system::error_code error) {
-    auto socket = weak_socket.lock();
-
-    if (!socket)
-      return;
-
-    if (error) {
-      being_connected_.erase(endpoint);
-      return;
-    }
-
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
-                  [=](boost::system::error_code error, SerialisedMessage data) {
-      auto socket = weak_socket.lock();
-
-      if (!socket)
-        return;
-
-      being_connected_.erase(endpoint);
-
-      if (error)
-        return;
-
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
-
-      if (assumed_node_info && *assumed_node_info != their_node_info)
-        return;
-
-      InsertPeer(PeerNode(std::move(their_node_info), std::move(socket)));
-    });
-  });
+//      if (!error) {
+//        auto added = routing_table_.AddNode(node_to_add);
+//        if (!added.first) {
+//          rudp_.Remove(node_to_add.id, asio::use_future); // become invalid for us
+//        } else if (added.second) {
+//          rudp_.Remove(added.second->id, asio::use_future); // a sacrificlal node was found
+//        }
+//      }
+//  });
+  return GroupChanged();
 }
 
-void ConnectionManager::InsertPeer(PeerNode&& node_arg) {
-  const auto& id = node_arg.id();
-  const auto pair = peers_.insert(std::make_pair(id, std::move(node_arg)));
+bool ConnectionManager::CloseGroupMember(const Address& their_id) {
+  auto close_group(routing_table_.OurCloseGroup());
+  return std::any_of(std::begin(close_group), std::end(close_group),
+                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
 
-  if (!pair.second /* = inserted */) {
-    return;
-  }
-
-  auto& node = pair.first->second;
-
-  StartReceiving(node);
-
-  if (on_connection_added_) {
-    on_connection_added_(node.id());
-  }
 }
 
-void ConnectionManager::StartReceiving(PeerNode& node) {
-  auto node_guard = node.DestroyGuard();
-
-  node.Receive([=, &node](asio::error_code error, const SerialisedMessage& bytes) {
-    if (!node_guard.lock())
-      return;
-    if (error)
-      return;
-    if (!on_receive_)
-      return;
-    // Complex handler invocation to be safe in cases where the
-    // handler destroys this object or in case where the handler
-    // invocation resets the handler to something else.
-    auto h = move(on_receive_);
-    h(node.id(), bytes);
-    if (!node_guard.lock())
-      return;
-    if (!on_receive_) {
-      on_receive_ = move(h);
-    }
-    StartReceiving(node);
-  });
-}
-
-// bool ConnectionManager::CloseGroupMember(const Address& their_id) {
-//  auto close_group(routing_table_.OurCloseGroup());
-//  return std::any_of(std::begin(close_group), std::end(close_group),
-//                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
-//}
-
-optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
-  auto new_group(OurCloseGroup());
-  std::vector<Address> new_group_ids;
-  for (const auto& group_member_public_pmid : new_group)
-    new_group_ids.push_back(Address(group_member_public_pmid.name()->string()));
-
-  if (new_group_ids != current_close_group_) {
-    auto changed = std::make_pair(new_group_ids, current_close_group_);
-    current_close_group_ = new_group_ids;
+boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
+  auto new_nodeinfo_group(routing_table_.OurCloseGroup());
+  std::vector<Address> new_group;
+  for (const auto& nodes : new_nodeinfo_group)
+    new_group.push_back(nodes.id);
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (new_group != current_close_group_) {
+    auto changed = std::make_pair(new_group, current_close_group_);
+    current_close_group_ = new_group;
     return changed;
   }
-
   return boost::none;
 }
 

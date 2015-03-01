@@ -43,20 +43,20 @@ namespace routing {
 namespace test {
 
 TEST(NetworkInitTest, FUNC_TwoNodes) {
-  struct Node : public RoutingNode<Node> {
-    void HandleMessage(GetData, MessageHeader) {}
-    void HandleConnectionAdded(NodeId) {
-      Shutdown();
-    }
-  };
+//  struct Node : public RoutingNode<Node> {
+//    void HandleMessage(GetData, MessageHeader) {}
+//    void HandleConnectionAdded(NodeId) {
+//      Shutdown();
+//    }
+//  };
 
-  Node n1;
-  Node n2;
+//  Node n1;
+//  Node n2;
 
-  unsigned short port = 8080;
+//  unsigned short port = 8080;
 
-  n1.StartAccepting(port);
-  n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
+//  n1.StartAccepting(port);
+//  n2.AddContact(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port));
 }
 
 

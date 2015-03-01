@@ -60,20 +60,8 @@ namespace routing {
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
-  class Comparison {
-   public:
-    explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
-
-    bool operator()(const Address& lhs, const Address& rhs) const {
-      return Address::CloserToTarget(lhs, rhs, our_id_);
-    }
-
-   private:
-    const Address our_id_;
-  };
-
  public:
-  ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob);
+  ConnectionManager(boost::asio::io_service& ios, Address our_id);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -81,95 +69,46 @@ class ConnectionManager {
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-  bool IsManaged(const Address& node_to_add) const;
-  std::set<Address, Comparison> GetTarget(const Address& target_node) const;
-  //boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+  bool SuggestNodeToAdd(const Address& node_to_add) const;
+  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
+  boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  void AddNode(boost::optional<NodeInfo> node_to_add, EndpointPair);
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
+                                                EndpointPair their_endpoint_pair);
+  std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
 
-  std::vector<PublicPmid> OurCloseGroup() const {
-    std::vector<PublicPmid> result;
-    result.reserve(GroupSize);
-    size_t i = 0;
-    for (const auto& pair : peers_) {
-      if (++i > GroupSize)
-        break;
-      result.push_back(pair.second.node_info().dht_fob);
-    }
-    return result;
+  size_t CloseGroupBucketDistance() const {
+    return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
-
-  //size_t CloseGroupBucketDistance() const {
-  //  return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
-  //}
 
   bool AddressInCloseGroupRange(const Address& address) const {
-    if (peers_.size() < GroupSize)
+    if (routing_table_.Size() < GroupSize) {
       return true;
-    return (static_cast<std::size_t>(std::distance(peers_.begin(), peers_.upper_bound(address))) <
-            GroupSize);
+    }
+    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+                                  routing_table_.OurId());
   }
 
-  const Address& OurId() const { return our_id_; }
+  const Address& OurId() const { return routing_table_.OurId(); }
 
   boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
-    auto found_i = peers_.find(node);
-    if (found_i == peers_.end()) { return boost::none; }
-    return found_i->second.node_info().dht_fob.public_key();
+    return routing_table_.GetPublicKey(node);
   }
 
-  //bool CloseGroupMember(const Address& their_id);
+  bool CloseGroupMember(const Address& their_id);
 
-  uint32_t Size() { return static_cast<uint32_t>(peers_.size()); }
-
-  PeerNode* FindPeer(Address addr) {
-    auto i = peers_.find(addr);
-    if (i == peers_.end())
-      return nullptr;
-    return &i->second;
-  }
-
-  void StartAccepting(unsigned short port);
-
-  template<class Handler /* void(NodeId) */>
-  void SetOnConnectionAdded(Handler handler) {
-    on_connection_added_ = std::move(handler);
-  }
-
-  template<class Handler /* void(NodeId, SerialisedMessage) */>
-  void SetOnReceive(Handler handler) {
-    on_receive_ = std::move(handler);
-  }
-
-  void Shutdown() {
-    acceptors_.clear();
-    being_connected_.clear();
-    peers_.clear();
-  }
+  uint32_t Size() { return routing_table_.Size(); }
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
-  void InsertPeer(PeerNode&&);
-  std::weak_ptr<boost::none_t> DestroyGuard() { return destroy_indicator_; }
-  void StartReceiving(PeerNode&);
 
- private:
+  std::mutex mutex_;
   boost::asio::io_service& io_service_;
-
-  std::function<void(NodeId)> on_connection_added_;
-  std::function<void(NodeId, const SerialisedMessage&)> on_receive_;
-
-  PublicPmid our_fob_;
-  NodeId our_id_;
-
-  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
-  std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
-  std::map<Address, PeerNode, Comparison> peers_;
-
+  RoutingTable routing_table_;
   std::vector<Address> current_close_group_;
-
-  std::shared_ptr<boost::none_t> destroy_indicator_;
+  std::function<void(CloseGroupDifference)> group_changed_functor_;
 };
 
 }  // namespace routing
