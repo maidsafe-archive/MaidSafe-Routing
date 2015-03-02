@@ -56,11 +56,11 @@ class Sentinel {
 
  private:
   asio::io_service& io_service_;
-  Accumulator<NodeAddress, ResultType> node_accumulator_{std::chrono::minutes(20), 1U};
-  Accumulator<GroupAddress, ResultType> group_accumulator_{std::chrono::minutes(20), QuorumSize};
-  Accumulator<GroupAddress, ResultType> group_key_accumulator_{std::chrono::minutes(20),
+  Accumulator<std::pair<NodeAddress, MessageId>, ResultType> node_accumulator_{std::chrono::minutes(20), 1U};
+  // Accumulator<NodeAddress, ResultType> node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
+  Accumulator<std::pair<GroupAddress, MessageId>, ResultType> group_accumulator_{std::chrono::minutes(20), QuorumSize};
+  Accumulator<std::pair<GroupAddress, MessageId>, ResultType> group_key_accumulator_{std::chrono::minutes(20),
                                                                QuorumSize};
-  Accumulator<NodeAddress, ResultType> node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
 };
 
 }  // namespace routing

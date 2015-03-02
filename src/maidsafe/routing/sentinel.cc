@@ -32,6 +32,7 @@ boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageHeader h
                                    std::make_tuple(header.Source(), tag, std::move(message)),
                                    header.FromNode())) {
       // get the other accumulator and go for it
+
     }
   } else {
     if (header.FromGroup() && !group_accumulator_.HaveName(*header.FromGroup())) {  // we need

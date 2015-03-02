@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,19 +16,12 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
-#define MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
 
-#include "maidsafe/routing/messages/connect.h"
-#include "maidsafe/routing/messages/connect_response.h"
-#include "maidsafe/routing/messages/find_group.h"
-#include "maidsafe/routing/messages/find_group_response.h"
-#include "maidsafe/routing/messages/get_data.h"
-#include "maidsafe/routing/messages/get_data_response.h"
-#include "maidsafe/routing/messages/get_group_key.h"
-#include "maidsafe/routing/messages/get_group_key_response.h"
-#include "maidsafe/routing/messages/post.h"
-#include "maidsafe/routing/messages/put_data.h"
-#include "maidsafe/routing/messages/put_data_response.h"
+#include "maidsafe/common/config.h"
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_MESSAGES_H_
+#include "maidsafe/routing/types.h"
+
+
+#endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
