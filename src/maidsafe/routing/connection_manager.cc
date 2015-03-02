@@ -62,7 +62,7 @@ std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) c
   return nodes;
 }
 
- boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
     const Address& node) {
   routing_table_.DropNode(node);
   return GroupChanged();
@@ -75,7 +75,7 @@ optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_
 }
 
 boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
-    NodeInfo /*node_to_add*/, EndpointPair /*their_endpoint_pair*/) { // FIXME(Prakash)
+    NodeInfo /*node_to_add*/, EndpointPair /*their_endpoint_pair*/) {  // FIXME(Prakash)
 //  rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
 //                             node_to_add.dht_fob.public_key());
 //  asio::spawn(io_service_, [=](asio::yield_context yield) {
@@ -98,7 +98,6 @@ bool ConnectionManager::CloseGroupMember(const Address& their_id) {
   auto close_group(routing_table_.OurCloseGroup());
   return std::any_of(std::begin(close_group), std::end(close_group),
                      [&their_id](const NodeInfo& node) { return node.id == their_id; });
-
 }
 
 boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {

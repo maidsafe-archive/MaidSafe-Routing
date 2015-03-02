@@ -65,12 +65,12 @@ class RoutingNode {
   RoutingNode& operator=(RoutingNode&&) = delete;
   ~RoutingNode();
 
-   // normal bootstrap mechanism
-   template <typename CompletionToken>
-   BootstrapReturn<CompletionToken> Bootstrap(CompletionToken token);
-   // used where we wish to pass a specific node to bootstrap from
-   template <typename CompletionToken>
-   BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
+  // normal bootstrap mechanism
+  template <typename CompletionToken>
+  BootstrapReturn<CompletionToken> Bootstrap(CompletionToken token);
+  // used where we wish to pass a specific node to bootstrap from
+  template <typename CompletionToken>
+  BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
 
   // // will return with the data
   template <typename T, typename CompletionToken>
@@ -178,7 +178,7 @@ RoutingNode<Child>::RoutingNode()
   //    ConnectToCloseGroup();
   //    return;
   //  }
-  //});
+  //  });
 
   // for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
   //  rudp_.Add(node, [node, this](asio::error_code error) {
@@ -190,7 +190,7 @@ RoutingNode<Child>::RoutingNode()
   //  });
   //  if (bootstrap_node_)
   //    break;
-  //}
+  //  }
 }
 
 template <typename Child>
@@ -265,7 +265,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),
                        SourceAddress{OurSourceAddress()}, ++message_id_, Authority::node);
   if (bootstrap_node_) {
-    // this is special case , so probably have special function in connection manager to send to bootstrap node
+    // this is special case , so probably have special function in connection manager to send to
+    // bootstrap node
     Connections_Send(*bootstrap_node_, Serialise(header, MessageToTag<FindGroup>::value(), message),
                [](asio::error_code error) {
       if (error) {
@@ -407,7 +408,7 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 // template <typename Child>
 // void RoutingNode<Child>::ConnectionLost(NodeId peer) {
 //  connection_manager_.LostNetworkConnection(peer);
-//}
+// }
 
 // reply with our details;
 template <typename Child>
@@ -449,7 +450,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
       connect_response.receiver_endpoints());
 
   auto target = connect_response.requester_id();
-  // TODO(Prakash): below may not be required if connecting socket also takes place in connection mgr
+  // TODO(Prakash): below may not be reqd if connecting socket also takes place in connection mgr
   // rudp_.Add(
   //    rudp::Contact(connect_response.receiver_id(), connect_response.receiver_endpoints(),
   //                  connect_response.receiver_fob().public_key()),

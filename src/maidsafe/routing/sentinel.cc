@@ -43,7 +43,8 @@ boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageHeader h
   }
 
   if (node_key_accumulator_.HaveName(header.FromNode())) {  // ok direct
-  } else if (header.FromGroup() && group_key_accumulator_.HaveName(*header.FromGroup())) {  // ok dht
+  } else if (header.FromGroup() && group_key_accumulator_.HaveName(*header.FromGroup())) {
+    // ok dht
   }
   return boost::none;
 }
