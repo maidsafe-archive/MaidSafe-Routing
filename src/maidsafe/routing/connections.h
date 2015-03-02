@@ -62,7 +62,7 @@ class Connections {
   template <class Handler /* void (error_code, Address) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
-  template <class Handler /* void (endpoint, Address) */>
+  template <class Handler /* void (error_code, endpoint, Address) */>
   void Accept(unsigned short port, const Handler);
 
   void Drop(const Address& their_id);
@@ -285,6 +285,21 @@ inline void Connections::Shutdown() {
     acceptors_.clear();
     connections_.clear();
     id_to_endpoint_map_.clear();
+  });
+}
+
+inline void Connections::Drop(const Address& their_id) {
+  service_.post([=]() {
+    // TODO: Migth it be that it is in connections_ but not in the id_to_endpoint_map_?
+    // I.e. that above layers would wan't to remove by ID nodes which were not
+    // yet connected?
+    auto i = id_to_endpoint_map_.find(their_id);
+
+    if (i == id_to_endpoint_map_.end()) {
+      return;
+    }
+
+    connections_.erase(i->second);
   });
 }
 

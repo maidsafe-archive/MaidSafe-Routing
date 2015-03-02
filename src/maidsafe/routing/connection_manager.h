@@ -52,6 +52,7 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"
+#include "maidsafe/routing/connections.h"
 
 namespace maidsafe {
 
@@ -75,8 +76,11 @@ class ConnectionManager {
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
+  boost::optional<CloseGroupDifference> AddNodeConnect(NodeInfo node_to_add,
                                                 EndpointPair their_endpoint_pair);
+  boost::optional<CloseGroupDifference> AddNodeAccept(NodeInfo node_to_add,
+                                                EndpointPair their_endpoint_pair);
+
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
 
   size_t CloseGroupBucketDistance() const {
@@ -102,6 +106,9 @@ class ConnectionManager {
   uint32_t Size() { return routing_table_.Size(); }
 
  private:
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add);
+
+ private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
   std::mutex mutex_;
@@ -109,6 +116,7 @@ class ConnectionManager {
   RoutingTable routing_table_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
+  std::shared_ptr<Connections> connections_;
 };
 
 }  // namespace routing

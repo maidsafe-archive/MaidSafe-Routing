@@ -434,7 +434,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
                      });
   }
 
-  auto added = connection_manager_.AddNode(NodeInfo(connect.requester_id(), connect.requester_fob(),
+  auto added = connection_manager_.AddNodeAccept(NodeInfo(connect.requester_id(), connect.requester_fob(),
                                                     true), connect.requester_endpoints());
 
   if (added)
@@ -445,7 +445,7 @@ template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
     return;
-  auto added = connection_manager_.AddNode(
+  auto added = connection_manager_.AddNodeConnect(
       NodeInfo(connect_response.requester_id(), connect_response.receiver_fob(), true),
       connect_response.receiver_endpoints());
 

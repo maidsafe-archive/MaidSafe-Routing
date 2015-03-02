@@ -74,23 +74,74 @@ optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
-    NodeInfo /*node_to_add*/, EndpointPair /*their_endpoint_pair*/) {  // FIXME(Prakash)
-//  rudp::Contact rudp_contact(node_to_add.id, std::move(their_endpoint_pair),
-//                             node_to_add.dht_fob.public_key());
-//  asio::spawn(io_service_, [=](asio::yield_context yield) {
-//      asio::error_code error;
-//      rudp_.Add(std::move(rudp_contact), yield[error]);
+boost::optional<CloseGroupDifference> ConnectionManager::AddNodeConnect(
+    NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
 
-//      if (!error) {
-//        auto added = routing_table_.AddNode(node_to_add);
-//        if (!added.first) {
-//          rudp_.Remove(node_to_add.id, asio::use_future); // become invalid for us
-//        } else if (added.second) {
-//          rudp_.Remove(added.second->id, asio::use_future); // a sacrificlal node was found
-//        }
-//      }
-//  });
+  std::weak_ptr<Connections> weak_connections = connections_;
+
+  // TODO(PeterJ): Use local endpoint as well
+  connections_->Connect(their_endpoint_pair.external, [=](asio::error_code error, Address addr) {
+    if (!weak_connections.lock()) {
+      return;
+    }
+
+    if (error || (addr != node_to_add.id)) {
+      return;
+    }
+
+    AddNode(node_to_add);
+  });
+
+  return GroupChanged();
+}
+
+template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_connections,
+                                            NodeInfo node_to_add, EndpointPair node_eps,
+                                            Handler handler) {
+  auto connections = weak_connections.lock();
+
+  if (!connections) {
+    return;
+  }
+
+  connections->Accept(6378, [=](asio::error_code error, asio::ip::udp::endpoint, Address addr) {
+    if (error) {
+      return;
+    }
+
+    if (node_to_add.id != addr) {
+      // Restart
+      StartAccepting(weak_connections, std::move(node_to_add), std::move(node_eps),
+                     std::move(handler));
+      return;
+    }
+
+    handler();
+  });
+}
+
+boost::optional<CloseGroupDifference> ConnectionManager::AddNodeAccept(
+    NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
+
+  StartAccepting(connections_, node_to_add, their_endpoint_pair, [=]() {
+    AddNode(node_to_add);
+  });
+
+  return GroupChanged();
+}
+
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add) {
+  auto added = routing_table_.AddNode(node_to_add);
+
+  if (!added.first) {
+    connections_->Drop(node_to_add.id);
+  } else if (added.second) {
+    connections_->Drop(node_to_add.id);
+  }
+
+  // FIXME: It is incorrect to assume the GroupChanged will reflect changes made
+  // by the previous Drop command because that command will execute its business
+  // in a separate thread (Same in the AddNodeAccept function and others).
   return GroupChanged();
 }
 
