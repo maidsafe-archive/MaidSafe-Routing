@@ -76,7 +76,7 @@ class ConnectionManager {
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNodeConnect(NodeInfo node_to_add,
+  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
                                                 EndpointPair their_endpoint_pair);
   boost::optional<CloseGroupDifference> AddNodeAccept(NodeInfo node_to_add,
                                                 EndpointPair their_endpoint_pair);
@@ -106,7 +106,7 @@ class ConnectionManager {
   uint32_t Size() { return routing_table_.Size(); }
 
  private:
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add);
+  boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();

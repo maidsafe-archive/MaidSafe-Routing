@@ -74,7 +74,7 @@ optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNodeConnect(
+boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
     NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
 
   std::weak_ptr<Connections> weak_connections = connections_;
@@ -89,7 +89,7 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNodeConnect(
       return;
     }
 
-    AddNode(node_to_add);
+    AddToRoutingTable(node_to_add);
   });
 
   return GroupChanged();
@@ -124,13 +124,13 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNodeAccept(
     NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
 
   StartAccepting(connections_, node_to_add, their_endpoint_pair, [=]() {
-    AddNode(node_to_add);
+    AddToRoutingTable(node_to_add);
   });
 
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(NodeInfo node_to_add) {
+boost::optional<CloseGroupDifference> ConnectionManager::AddToRoutingTable(NodeInfo node_to_add) {
   auto added = routing_table_.AddNode(node_to_add);
 
   if (!added.first) {
