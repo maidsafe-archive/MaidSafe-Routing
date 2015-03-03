@@ -65,7 +65,7 @@ class ConnectionManager {
   using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
 
  public:
-  ConnectionManager(boost::asio::io_service& ios, Address our_id, OnReceive on_receive);
+  ConnectionManager(Address our_id, OnReceive on_receive);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -116,7 +116,6 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> GroupChanged();
 
   std::mutex mutex_;
-  boost::asio::io_service& io_service_;
   BoostAsioService boost_io_service_;
   RoutingTable routing_table_;
   OnReceive on_receive_;

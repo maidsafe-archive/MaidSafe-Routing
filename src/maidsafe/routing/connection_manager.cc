@@ -44,10 +44,8 @@ using std::move;
 using boost::none_t;
 using boost::optional;
 
-ConnectionManager::ConnectionManager(boost::asio::io_service& ios, Address our_id,
-                                     OnReceive on_receive)
+ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive)
     : mutex_(),
-      io_service_(ios),
       boost_io_service_(1),
       routing_table_(our_id),
       on_receive_(std::move(on_receive)),

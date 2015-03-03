@@ -132,7 +132,6 @@ class RoutingNode {
 
  private:
   using unique_identifier = std::pair<Address, uint32_t>;
-  BoostAsioService crux_asio_service_;
   AsioService asio_service_;
   passport::Pmid our_fob_;
   std::atomic<MessageId> message_id_;
@@ -152,13 +151,12 @@ void Connections_Send(const Address&, const SerialisedMessage&, Handler) {}
 
 template <typename Child>
 RoutingNode<Child>::RoutingNode()
-    : crux_asio_service_(1),
-      asio_service_(4),
+    : asio_service_(4),
       our_fob_(passport::CreatePmidAndSigner().first),
       message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
       bootstrap_handler_(),
-      connection_manager_(crux_asio_service_.service(), Address(our_fob_.name()->string()),
+      connection_manager_(Address(our_fob_.name()->string()),
                           ConnectionManager::OnReceive()),
                           //[=](asio::error_code error, Address address, SerialisedMessage msg) {
                           //MessageReceived(error, std::move(address), std::move(msg));
@@ -199,7 +197,6 @@ RoutingNode<Child>::RoutingNode()
 
 template <typename Child>
 RoutingNode<Child>::~RoutingNode() {
-  crux_asio_service_.Stop();
 }
 
 template <typename Child>
