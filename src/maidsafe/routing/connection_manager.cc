@@ -78,8 +78,8 @@ optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_
   return GroupChanged();
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
-    NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
+void ConnectionManager::AddNode(
+    NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode on_node_added) {
 
   std::weak_ptr<Connections> weak_connections = connections_;
 
@@ -93,10 +93,8 @@ boost::optional<CloseGroupDifference> ConnectionManager::AddNode(
       return;
     }
 
-    AddToRoutingTable(node_to_add);
+    on_node_added(AddToRoutingTable(node_to_add));
   });
-
-  return GroupChanged();
 }
 
 template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_connections,
@@ -124,14 +122,12 @@ template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_conn
   });
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::AddNodeAccept(
-    NodeInfo node_to_add, EndpointPair their_endpoint_pair) {
+void ConnectionManager::AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair,
+                                      OnAddNode on_node_added) {
 
   StartAccepting(connections_, node_to_add, their_endpoint_pair, [=]() {
-    AddToRoutingTable(node_to_add);
+    on_node_added(AddToRoutingTable(node_to_add));
   });
-
-  return GroupChanged();
 }
 
 boost::optional<CloseGroupDifference> ConnectionManager::AddToRoutingTable(NodeInfo node_to_add) {

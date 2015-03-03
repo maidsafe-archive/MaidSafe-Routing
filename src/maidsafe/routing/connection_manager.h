@@ -63,6 +63,7 @@ class ConnectionManager {
 
  public:
   using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
+  using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>)>;
 
  public:
   ConnectionManager(Address our_id, OnReceive on_receive);
@@ -79,10 +80,8 @@ class ConnectionManager {
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  boost::optional<CloseGroupDifference> AddNode(NodeInfo node_to_add,
-                                                EndpointPair their_endpoint_pair);
-  boost::optional<CloseGroupDifference> AddNodeAccept(NodeInfo node_to_add,
-                                                EndpointPair their_endpoint_pair);
+  void AddNode(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
+  void AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
 
   std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
 

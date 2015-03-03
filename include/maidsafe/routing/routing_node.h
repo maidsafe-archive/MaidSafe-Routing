@@ -142,6 +142,8 @@ class RoutingNode {
   Sentinel sentinel_;
   LruCache<Identity, SerialisedMessage> cache_;
   std::vector<Address> connected_nodes_;
+
+  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 // FIXME(Prakash) temporary code. To be replaced by connections::Send()
@@ -164,7 +166,8 @@ RoutingNode<Child>::RoutingNode()
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
-      connected_nodes_() {
+      connected_nodes_(),
+      destroy_indicator_(new boost::none_t) {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
@@ -436,37 +439,48 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
                      });
   }
 
-  auto added = connection_manager_.AddNodeAccept(NodeInfo(connect.requester_id(), connect.requester_fob(),
-                                                    true), connect.requester_endpoints());
+  std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
 
-  if (added)
-    static_cast<Child*>(this)->HandleChurn(*added);
+  connection_manager_.AddNodeAccept
+    (NodeInfo(connect.requester_id(), connect.requester_fob(), true),
+     connect.requester_endpoints(),
+     [=](boost::optional<CloseGroupDifference> added) {
+      if (!destroy_guard.lock()) return;
+      if (added)
+        static_cast<Child*>(this)->HandleChurn(*added);
+     });
 }
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
     return;
-  auto added = connection_manager_.AddNode(
-      NodeInfo(connect_response.requester_id(), connect_response.receiver_fob(), true),
-      connect_response.receiver_endpoints());
 
-  auto target = connect_response.requester_id();
-  // TODO(Prakash): below may not be reqd if connecting socket also takes place in connection mgr
-  // rudp_.Add(
-  //    rudp::Contact(connect_response.receiver_id(), connect_response.receiver_endpoints(),
-  //                  connect_response.receiver_fob().public_key()),
-  //    [target, added, this](asio::error_code error) {
-  //      if (error) {
-  //        this->connection_manager_.DropNode(target);
-  //        return;
-  //      }
-  if (added)
-    static_cast<Child*>(this)->HandleChurn(*added);
-  if (connection_manager_.Size() >= QuorumSize) {
-//    rudp_.Remove(*bootstrap_node_, asio::use_future).get(); // FIXME (Prakash)
-    bootstrap_node_ = boost::none;
-  }
+  std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
+
+  connection_manager_.AddNode(
+      NodeInfo(connect_response.requester_id(), connect_response.receiver_fob(), true),
+      connect_response.receiver_endpoints(), [=](boost::optional<CloseGroupDifference> added) {
+        if (!destroy_guard.lock()) return;
+
+        auto target = connect_response.requester_id();
+        // TODO(Prakash): below may not be reqd if connecting socket also takes place in connection mgr
+        // rudp_.Add(
+        //    rudp::Contact(connect_response.receiver_id(), connect_response.receiver_endpoints(),
+        //                  connect_response.receiver_fob().public_key()),
+        //    [target, added, this](asio::error_code error) {
+        //      if (error) {
+        //        this->connection_manager_.DropNode(target);
+        //        return;
+        //      }
+        if (added)
+          static_cast<Child*>(this)->HandleChurn(*added);
+        if (connection_manager_.Size() >= QuorumSize) {
+          // rudp_.Remove(*bootstrap_node_, asio::use_future).get(); // FIXME (Prakash)
+          bootstrap_node_ = boost::none;
+        }
+      });
+
 }
 
 template <typename Child>
