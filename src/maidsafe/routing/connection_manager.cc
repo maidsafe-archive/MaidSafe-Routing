@@ -44,11 +44,17 @@ using std::move;
 using boost::none_t;
 using boost::optional;
 
-ConnectionManager::ConnectionManager(boost::asio::io_service& ios, Address our_id)
+ConnectionManager::ConnectionManager(boost::asio::io_service& ios, Address our_id,
+                                     OnReceive on_receive)
     : mutex_(),
       io_service_(ios),
+      boost_io_service_(1),
       routing_table_(our_id),
-      current_close_group_() {}
+      on_receive_(std::move(on_receive)),
+      current_close_group_(),
+      connections_(new Connections(boost_io_service_.service(), our_id)) {
+  StartReceiving();
+}
 
 bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
   return routing_table_.CheckNode(node_to_add);
@@ -163,6 +169,20 @@ boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
     return changed;
   }
   return boost::none;
+}
+
+void ConnectionManager::StartReceiving() {
+  std::weak_ptr<Connections> weak_connections = connections_;
+
+  connections_->Receive([=](asio::error_code error, Address address,
+                            const SerialisedMessage& message) {
+    if (!weak_connections.lock()) return;
+    auto h = std::move(on_receive_);
+    h(error, std::move(address), std::move(message));
+    if (!weak_connections.lock()) return;
+    on_receive_ = std::move(h);
+    StartReceiving();
+  });
 }
 
 }  // namespace routing

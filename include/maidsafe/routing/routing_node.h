@@ -112,7 +112,7 @@ class RoutingNode {
   void HandleMessage(routing::Post post, MessageHeader original_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address name);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
-  void MessageReceived(Address peer_id, SerialisedMessage serialised_message);
+  void MessageReceived(asio::error_code, Address peer_id, SerialisedMessage serialised_message);
   void ConnectionLost(Address peer);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
@@ -158,7 +158,11 @@ RoutingNode<Child>::RoutingNode()
       message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
       bootstrap_handler_(),
-      connection_manager_(crux_asio_service_.service(), Address(our_fob_.name()->string())),
+      connection_manager_(crux_asio_service_.service(), Address(our_fob_.name()->string()),
+                          ConnectionManager::OnReceive()),
+                          //[=](asio::error_code error, Address address, SerialisedMessage msg) {
+                          //MessageReceived(error, std::move(address), std::move(msg));
+                          //}),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
@@ -286,7 +290,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 }
 
 template <typename Child>
-void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
+void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
+                                         NodeId /* peer_id */,
                                          SerialisedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;

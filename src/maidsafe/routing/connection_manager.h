@@ -62,7 +62,10 @@ class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
  public:
-  ConnectionManager(boost::asio::io_service& ios, Address our_id);
+  using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
+
+ public:
+  ConnectionManager(boost::asio::io_service& ios, Address our_id, OnReceive on_receive);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -107,13 +110,16 @@ class ConnectionManager {
 
  private:
   boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
+  void StartReceiving();
 
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
   std::mutex mutex_;
   boost::asio::io_service& io_service_;
+  BoostAsioService boost_io_service_;
   RoutingTable routing_table_;
+  OnReceive on_receive_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
   std::shared_ptr<Connections> connections_;
