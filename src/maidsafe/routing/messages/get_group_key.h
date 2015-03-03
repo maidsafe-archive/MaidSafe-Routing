@@ -36,11 +36,32 @@ class GetGroupKey {
 
   GetGroupKey(SourceAddress requester, Identity target_id)
       : requester_(std::move(requester)),
-        target_id_(std::move[(target_id)){}
+        target_id_(std::move(target_id)) {}
+
+  GetGroupKey(GetGroupKey&& other) MAIDSAFE_NOEXCEPT
+      : requester_(std::move(other.requester_)),
+        target_id_(std::move(other.target_id_)) {}
+
+  GetGroupKey& operator=(GetGroupKey&& other) MAIDSAFE_NOEXCEPT {
+    requester_ = std::move(other.requester_);
+    target_id_ = std::move(other.target_id_);
+    return *this;
+  }
+
+  GetGroupKey(const GetGroupKey&) = delete;
+  GetGroupKey& operator=(const GetGroupKey&) = delete;
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+      archive(requester_, target_id_);
+  }
+
+  SourceAddress requester() const { return requester_id; }
+  Address target_id() const { return target_id_; }
 
  private:
-  Identity target_id_;
   SourceAddress requester_;
+  Identity target_id_;
 };
 
 }  // namespace routing

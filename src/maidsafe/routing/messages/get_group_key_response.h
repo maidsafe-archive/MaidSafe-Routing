@@ -22,6 +22,50 @@
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/source_address.h"
+
+namespace maidsafe {
+
+namespace routing {
+
+class GetGroupKeyResponse {
+ public:
+  GetGroupKeyResponse() = default;
+  ~GetGroupKeyResponse() = default;
+
+  GetGroupKeyResponse(SourceAddress requester, Identity target_id)
+      : requester_(std::move(requester)),
+        target_id_(std::move(target_id)) {}
+
+  GetGroupKeyResponse(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT
+      : requester_(std::move(other.requester_)),
+        target_id_(std::move(other.target_id_)) {}
+
+  GetGroupKeyResponse& operator=(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT {
+    requester_ = std::move(other.requester_);
+    target_id_ = std::move(other.target_id_);
+    return *this;
+  }
+
+  GetGroupKeyResponse(const GetGroupKeyResponse&) = delete;
+  GetGroupKeyResponse& operator=(const GetGroupKeyResponse&) = delete;
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+      archive(requester_, target_id_);
+  }
+
+  SourceAddress requester() const { return requester_id; }
+  Address target_id() const { return target_id_; }
+
+ private:
+  SourceAddress requester_;
+  Identity target_id_;
+};
+
+}  // namespace routing
+
+}  // namespace maidsafe
 
 
 #endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
