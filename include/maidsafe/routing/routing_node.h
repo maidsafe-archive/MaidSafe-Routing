@@ -159,10 +159,9 @@ RoutingNode<Child>::RoutingNode()
       bootstrap_node_(boost::none),
       bootstrap_handler_(),
       connection_manager_(Address(our_fob_.name()->string()),
-                          ConnectionManager::OnReceive()),
-                          //[=](asio::error_code error, Address address, SerialisedMessage msg) {
-                          //MessageReceived(error, std::move(address), std::move(msg));
-                          //}),
+                          [=](asio::error_code error, Address address, SerialisedMessage msg) {
+                            MessageReceived(error, std::move(address), std::move(msg));
+                          }),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
@@ -458,12 +457,15 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
 
+  // Workaround because ConnectResponse isn't copyconstructibe.
+  auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
+
   connection_manager_.AddNode(
-      NodeInfo(connect_response.requester_id(), connect_response.receiver_fob(), true),
-      connect_response.receiver_endpoints(), [=](boost::optional<CloseGroupDifference> added) {
+      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
+      response_ptr->receiver_endpoints(), [=](boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock()) return;
 
-        auto target = connect_response.requester_id();
+        auto target = response_ptr->requester_id();
         // TODO(Prakash): below may not be reqd if connecting socket also takes place in connection mgr
         // rudp_.Add(
         //    rudp::Contact(connect_response.receiver_id(), connect_response.receiver_endpoints(),
@@ -485,9 +487,14 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader original_header) {
-  auto group = connection_manager_.OurCloseGroup();
+  auto close_group = connection_manager_.OurCloseGroup();
   // add ourselves
-  group.emplace_back(NodeInfo(OurId(), passport::PublicPmid(our_fob_)));
+  std::vector<passport::PublicPmid> group;
+  group.reserve(close_group.size() + 1);
+  for (auto& node_info : close_group) {
+    group.push_back(std::move(node_info.dht_fob));
+  }
+  group.emplace_back(passport::PublicPmid(our_fob_));
   FindGroupResponse response(find_group.target_id(), std::move(group));
   MessageHeader header(DestinationAddress(original_header.ReturnDestinationAddress()),
                        SourceAddress(OurSourceAddress(GroupAddress(find_group.target_id()))),
@@ -514,7 +521,7 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
                          SourceAddress{OurSourceAddress()}, ++message_id_, Authority::nae_manager);
     for (const auto& target : connection_manager_.GetTarget(node_id))
       Connections_Send(
-          Serialise(header, MessageToTag<Connect>::value(), message), [](asio::error_code) {});
+          target.id, Serialise(header, MessageToTag<Connect>::value(), message), [](asio::error_code) {});
   }
 }
 
