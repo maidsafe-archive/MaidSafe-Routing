@@ -71,10 +71,13 @@ boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
   return GroupChanged();
 }
 
-optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
-  routing_table_.DropNode(their_id);
-  // FIXME(Prakash) remove connection ?
-  return GroupChanged();
+//optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
+//  routing_table_.DropNode(their_id);
+//  // FIXME(Prakash) remove connection ?
+//  return GroupChanged();
+//}
+void ConnectionManager::DropNode(const Address& their_id) {
+  connections_->Drop(their_id);
 }
 
 void ConnectionManager::AddNode(

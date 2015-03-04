@@ -136,6 +136,7 @@ class RoutingNode {
   passport::Pmid our_fob_;
   std::atomic<MessageId> message_id_;
   boost::optional<Address> bootstrap_node_;
+  boost::optional<Endpoint> bootstrap_endpoint_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
@@ -178,6 +179,24 @@ RoutingNode<Child>::RoutingNode()
   //    return;
   //  }
   //  });
+
+  auto bootstrap_contacts = bootstrap_handler_.ReadBootstrapContacts();
+
+  for (const auto& contact : bootstrap_contacts) {
+    connection_manager_.Connect(contact.endpoint_pair.external,
+                                [=](asio::error_code error, Address addr, Endpoint our_endpoint) {
+      if (error) {
+        return;
+      }
+      if (addr != contact.id) {
+        return;
+      }
+      // FIXME(Team): Thread safety.
+      bootstrap_node_ = contact.id;
+      bootstrap_endpoint_ = our_endpoint;
+      ConnectToCloseGroup();
+    });
+  }
 
   // for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
   //  rudp_.Add(node, [node, this](asio::error_code error) {

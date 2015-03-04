@@ -79,7 +79,9 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
+  //boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
+  void DropNode(const Address& their_id);
+
   void AddNode(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
   void AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
 
@@ -110,6 +112,9 @@ class ConnectionManager {
   template <class Handler /* void (error_code) */>
   void Send(const Address&, const SerialisedMessage&, Handler);
 
+  template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
+  void Connect(asio::ip::udp::endpoint, Handler);
+
  private:
   boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
   void StartReceiving();
@@ -130,6 +135,11 @@ template <class Handler /* void (error_code) */>
 void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
                              Handler handler) {
   connections_->Send(addr, message, std::move(handler));
+}
+
+template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
+void ConnectionManager::Connect(asio::ip::udp::endpoint remote_endpoint, Handler handler) {
+  connections_->Connect(remote_endpoint, std::move(handler));
 }
 
 }  // namespace routing
