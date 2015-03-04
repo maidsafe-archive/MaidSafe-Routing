@@ -44,9 +44,10 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   bool c2_finished = false;
 
   c1.Accept(port,
-      [&](asio::error_code error, asio::ip::udp::endpoint, NodeId his_id) {
+      [&](asio::error_code error, asio::ip::udp::endpoint, NodeId his_id, Endpoint my_ep) {
         ASSERT_FALSE(error);
         ASSERT_EQ(his_id, c2.OurId());
+        ASSERT_EQ(my_ep.port(), port);
         std::string msg = "hello";
 
         c1.Send(his_id,
@@ -59,7 +60,7 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
       });
 
   c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, NodeId his_id) {
+      [&](asio::error_code error, NodeId his_id, Endpoint /*my_ep*/) {
         ASSERT_FALSE(error);
         ASSERT_EQ(his_id, c1.OurId());
 

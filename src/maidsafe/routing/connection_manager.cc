@@ -32,7 +32,6 @@
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/async_exchange.h"
 
 namespace maidsafe {
 
@@ -84,7 +83,8 @@ void ConnectionManager::AddNode(
   std::weak_ptr<Connections> weak_connections = connections_;
 
   // TODO(PeterJ): Use local endpoint as well
-  connections_->Connect(their_endpoint_pair.external, [=](asio::error_code error, Address addr) {
+  connections_->Connect(their_endpoint_pair.external,
+                        [=](asio::error_code error, Address addr, Endpoint) {
     if (!weak_connections.lock()) {
       return;
     }
@@ -106,7 +106,8 @@ template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_conn
     return;
   }
 
-  connections->Accept(6378, [=](asio::error_code error, asio::ip::udp::endpoint, Address addr) {
+  connections->Accept(6378,
+    [=](asio::error_code error, asio::ip::udp::endpoint, Address addr, Endpoint /*our_endpoint*/) {
     if (error) {
       return;
     }
