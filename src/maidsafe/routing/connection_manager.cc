@@ -84,7 +84,7 @@ void ConnectionManager::AddNode(
 
   // TODO(PeterJ): Use local endpoint as well
   connections_->Connect(their_endpoint_pair.external,
-                        [=](asio::error_code error, Address addr, Endpoint) {
+                        [=](asio::error_code error, Address addr, Endpoint our_endpoint) {
     if (!weak_connections.lock()) {
       return;
     }
@@ -93,7 +93,7 @@ void ConnectionManager::AddNode(
       return;
     }
 
-    on_node_added(AddToRoutingTable(node_to_add));
+    on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
   });
 }
 
@@ -106,8 +106,9 @@ template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_conn
     return;
   }
 
+  // TODO(Team): What endpoint should we accept on?
   connections->Accept(6378,
-    [=](asio::error_code error, asio::ip::udp::endpoint, Address addr, Endpoint /*our_endpoint*/) {
+    [=](asio::error_code error, asio::ip::udp::endpoint, Address addr, Endpoint our_endpoint) {
     if (error) {
       return;
     }
@@ -119,15 +120,15 @@ template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_conn
       return;
     }
 
-    handler();
+    handler(our_endpoint);
   });
 }
 
 void ConnectionManager::AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair,
                                       OnAddNode on_node_added) {
 
-  StartAccepting(connections_, node_to_add, their_endpoint_pair, [=]() {
-    on_node_added(AddToRoutingTable(node_to_add));
+  StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
+    on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
   });
 }
 

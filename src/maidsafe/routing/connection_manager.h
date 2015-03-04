@@ -63,7 +63,7 @@ class ConnectionManager {
 
  public:
   using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
-  using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>)>;
+  using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>, Endpoint)>;
 
  public:
   ConnectionManager(Address our_id, OnReceive on_receive);
