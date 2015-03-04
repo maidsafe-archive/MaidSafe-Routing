@@ -284,8 +284,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   if (bootstrap_node_) {
     // this is special case , so probably have special function in connection manager to send to
     // bootstrap node
-    auto message = Serialise(header, MessageToTag<FindGroup>::value(), message);
-    connection_manager_.Send(*bootstrap_node_, std::move(message), [](asio::error_code error) {
+    auto msg_data = Serialise(header, MessageToTag<FindGroup>::value(), message);
+    connection_manager_.Send(*bootstrap_node_, std::move(msg_data), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
       }
@@ -293,8 +293,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
     return;
   }
   for (const auto& target : connection_manager_.GetTarget(OurId())) {
-    auto message = Serialise(header, MessageToTag<Connect>::value(), message);
-    connection_manager_.Send(target.id, std::move(message), [](asio::error_code error) {
+    auto msg_data = Serialise(header, MessageToTag<Connect>::value(), message);
+    connection_manager_.Send(target.id, std::move(msg_data), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "rudp cannot send" << error.message();
       }
