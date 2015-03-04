@@ -49,6 +49,8 @@ class FindGroup;
 class FindGroupResponse;
 class GetData;
 class GetDataResponse;
+class GetKey;
+class GetKeyResponse;
 class GetGroupKey;
 class GetGroupKeyResponse;
 class Post;
@@ -87,6 +89,16 @@ struct MessageToTag<GetData> {
 template <>
 struct MessageToTag<GetDataResponse> {
   static MessageTypeTag value() { return MessageTypeTag::GetDataResponse; }
+};
+
+template <>
+struct MessageToTag<GetKey> {
+  static MessageTypeTag value() { return MessageTypeTag::GetKey; }
+};
+
+template <>
+struct MessageToTag<GetKeyResponse> {
+  static MessageTypeTag value() { return MessageTypeTag::GetKeyResponse; }
 };
 
 template <>

@@ -49,13 +49,13 @@ class Sentinel {
   Sentinel& operator=(Sentinel&&) = delete;
   // at some stage this will return a valid answer when all data is accumulated
   // and signatures checked
-  boost::optional<std::future<ResultType>> Add(MessageHeader, MessageTypeTag, SerialisedMessage);
+  boost::optional<ResultType> Add(MessageHeader, MessageTypeTag, SerialisedMessage);
+
+ private:
   ResultType AccumulateDirectValue(NodeAddress);
   ResultType AccumulateDhtValue(GroupAddress);
   std::vector<std::pair<asymm::PublicKey, Address>> AccumulateKeys(GroupAddress);
 
- private:
-  asio::io_service& io_service_;
   Accumulator<std::pair<NodeAddress, MessageId>, ResultType> node_accumulator_{std::chrono::minutes(20), 1U};
   // Accumulator<NodeAddress, ResultType> node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
   Accumulator<std::pair<GroupAddress, MessageId>, ResultType> group_accumulator_{std::chrono::minutes(20), QuorumSize};
