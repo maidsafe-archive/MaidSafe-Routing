@@ -22,28 +22,62 @@ namespace maidsafe {
 
 namespace routing {
 
-boost::optional<std::future<Sentinel::ResultType>> Sentinel::Add(MessageHeader header,
-                                                                 MessageTypeTag tag,
-                                                                 SerialisedMessage message) {
+boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
+                                                    MessageTypeTag tag,
+                                                    SerialisedMessage message) {
   if (tag == MessageTypeTag::GetKeyResponse) {
-    if (!header.FromGroup())  // "keys should always come from a group");
+    if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    if (group_key_accumulator_.Add(*header.FromGroup(),
-                                   std::make_tuple(header.Source(), tag, std::move(message)),
-                                   header.FromNode())) {
-      // get the other accumulator and go for it
+    auto keys(node_key_accumulator_.Add(*header.FromGroup(),
+                                        std::make_tuple(header, tag, std::move(message)),
+                                        header.FromNode()));
+    if (keys) {
+      if (node_accumulator_.HaveName(std::make_pair(header.FromNode(), header.MessageId()))) {
+        auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
+                                            std::make_tuple(header, tag, std::move(message)),
+                                            header.FromNode()));
+        if (!messages)
+          return Validate<NodeAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
+      }
+    }
+  } else if (tag == MessageTypeTag::GetGroupKeyResponse) {
+    if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    auto keys(group_key_accumulator_.Add(*header.FromGroup(),
+                                   std::make_tuple(header, tag, std::move(message)),
+                                   header.FromNode()));
+    if (keys) {
+      if (group_accumulator_.HaveName(std::make_pair(*header.FromGroup(), header.MessageId()))) {
+        auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(),
+                                                            header.MessageId()),
+                                           std::make_tuple(header, tag, std::move(message)),
+                                           header.FromNode()));
+        if (!messages)
+          return Validate<GroupAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
+      }
     }
   } else {
-    if (header.FromGroup() && !group_accumulator_.HaveName(*header.FromGroup())) {  // we need
-      // to send a findkey for this GroupAddress
-
-    } else if (!node_accumulator_.HaveName(header.FromNode())) {  // we need
-      // to send a findkey for this SourceAddress
+    if (header.FromGroup()) {
+      if (!group_accumulator_.HaveName(std::make_pair(*header.FromGroup(), header.MessageId())))
+        get_group_key_(*header.FromGroup());
+      auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
+                                           std::make_tuple(header, tag, std::move(message)),
+                                           header.FromNode()));
+      if (!messages) {
+        auto keys(group_accumulator_.GetAll(messages->first));
+        return Validate<GroupAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
+      }
+    } else {
+      if (!node_accumulator_.HaveName(std::make_pair(header.FromNode(), header.MessageId())))
+        get_key_(header.FromNode());
+      auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
+                                          std::make_tuple(header, tag, std::move(message)),
+                                          header.FromNode()));
+      if (!messages) {
+        auto keys(node_accumulator_.GetAll(messages->first));
+        return Validate<NodeAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
+      }
     }
-  }
-
-  if (node_key_accumulator_.HaveName(header.FromNode())) {  // ok direct
-  } else if (header.FromGroup() && group_key_accumulator_.HaveName(*header.FromGroup())) {  // ok dht
   }
   return boost::none;
 }

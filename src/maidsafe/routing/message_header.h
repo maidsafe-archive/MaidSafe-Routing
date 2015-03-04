@@ -78,8 +78,8 @@ class MessageHeader {
     return *this;
   }
 
-  MessageHeader(const MessageHeader&) = delete;
-  MessageHeader& operator=(const MessageHeader&) = delete;
+  MessageHeader(const MessageHeader&) = default;
+  MessageHeader& operator=(const MessageHeader&) = default;
 
   bool operator==(const MessageHeader& other) const {
     return std::tie(message_id_, destination_, source_, authority_, signature_) ==
