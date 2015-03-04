@@ -57,7 +57,7 @@ class GetGroupKey {
   }
 
   SourceAddress requester() const { return requester_id; }
-  Address target_id() const { return target_id_; }
+  Identity target_id() const { return target_id_; }
 
  private:
   SourceAddress requester_;

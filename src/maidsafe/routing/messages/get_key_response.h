@@ -33,7 +33,7 @@ class GetKeyResponse {
   GetKeyResponse() = default;
   ~GetKeyResponse() = default;
 
-  GetKeyResponse(SourceAddress requester, Identity target_id)
+  GetKeyResponse(Identity requester, Identity target_id)
       : requester_(std::move(requester)),
         target_id_(std::move(target_id)) {}
 
@@ -55,11 +55,11 @@ class GetKeyResponse {
       archive(requester_, target_id_);
   }
 
-  SourceAddress requester() const { return requester_id; }
-  Address target_id() const { return target_id_; }
+  Identity requester() const { return requester_id; }
+  Identity target_id() const { return target_id_; }
 
  private:
-  SourceAddress requester_;
+  Identity requester_;
   Identity target_id_;
 };
 
