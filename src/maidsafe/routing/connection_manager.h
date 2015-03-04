@@ -107,6 +107,9 @@ class ConnectionManager {
 
   uint32_t Size() { return routing_table_.Size(); }
 
+  template <class Handler /* void (error_code) */>
+  void Send(const Address&, const SerialisedMessage&, Handler);
+
  private:
   boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
   void StartReceiving();
@@ -122,6 +125,12 @@ class ConnectionManager {
   std::function<void(CloseGroupDifference)> group_changed_functor_;
   std::shared_ptr<Connections> connections_;
 };
+
+template <class Handler /* void (error_code) */>
+void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
+                             Handler handler) {
+  connections_->Send(addr, message, std::move(handler));
+}
 
 }  // namespace routing
 

@@ -146,11 +146,6 @@ class RoutingNode {
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
-// FIXME(Prakash) temporary code. To be replaced by connections::Send()
-// Alternatively, All Send go via Connection manager to stop misuse of Send functionality here
-template <class Handler /* void (error_code) */>
-void Connections_Send(const Address&, const SerialisedMessage&, Handler) {}
-
 template <typename Child>
 RoutingNode<Child>::RoutingNode()
     : asio_service_(4),
@@ -212,7 +207,7 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Identity name, CompletionToke
     GetData request(DataType::Tag::kValue, name, OurSourceAddress());
     auto message(Serialise(our_header, MessageToTag<GetData>::value(), request));
     for (const auto& target : connection_manager_.GetTarget(Address(name.string()))) {
-      Connections_Send(target.id, message, [](asio::error_code) {});  // FIXME(Prakash)
+      connection_manager_.Send(target.id, message, [](asio::error_code) {});
     }
   });
   return result.get();
@@ -236,7 +231,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(Address to, DataType data,
     // fixme data should serialise properly and not require the above call to serialse()
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      Connections_Send(target.id, message, [](asio::error_code) {});
+      connection_manager_.Send(target.id, message, [](asio::error_code) {});
     }
   });
   return result.get();
@@ -256,7 +251,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
     auto message(Serialise(our_header, MessageToTag<routing::Post>::value(), request));
 
     for (const auto& target : connection_manager_.GetTarget(to)) {
-      Connections_Send(target.id, message, [](asio::error_code) {});
+      connection_manager_.Send(target.id, message, [](asio::error_code) {});
     }
   });
   return result.get();
@@ -270,8 +265,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   if (bootstrap_node_) {
     // this is special case , so probably have special function in connection manager to send to
     // bootstrap node
-    Connections_Send(*bootstrap_node_, Serialise(header, MessageToTag<FindGroup>::value(), message),
-               [](asio::error_code error) {
+    auto message = Serialise(header, MessageToTag<FindGroup>::value(), message);
+    connection_manager_.Send(*bootstrap_node_, std::move(message), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
       }
@@ -279,8 +274,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
     return;
   }
   for (const auto& target : connection_manager_.GetTarget(OurId())) {
-    Connections_Send(target.id, Serialise(header, MessageToTag<Connect>::value(), message),
-               [](asio::error_code error) {
+    auto message = Serialise(header, MessageToTag<Connect>::value(), message);
+    connection_manager_.Send(target.id, std::move(message), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "rudp cannot send" << error.message();
       }
@@ -336,7 +331,7 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
 
   // send to next node(s) even our close group (swarm mode)
   for (const auto& target : connection_manager_.GetTarget(header.Destination().first)) {
-    Connections_Send(target.id, serialised_message, [](asio::error_code error) {
+    connection_manager_.Send(target.id, serialised_message, [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "cannot send" << error.message();
       }
@@ -431,11 +426,9 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
   // shutdown
   // :24/01/2015
   for (auto& target : targets) {
-    Connections_Send(target.id, Serialise(header, MessageToTag<ConnectResponse>::value(), respond),
-                     [connect, this](asio::error_code error_code) {
-                       if (error_code)
-                       return;
-                     });
+    // FIXME(Team): Do we need to serialize this for each target?
+    auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
+    connection_manager_.Send(target.id, std::move(message), [](asio::error_code) {});
   }
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
@@ -503,7 +496,7 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
                        asymm::Sign(Serialise(response), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
   for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
-    Connections_Send(node.id, message, [](asio::error_code) {});
+    connection_manager_.Send(node.id, message, [](asio::error_code) {});
   }
 }
 
@@ -520,9 +513,11 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     Connect message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
     MessageHeader header(DestinationAddress(std::make_pair(Destination(node_id), boost::none)),
                          SourceAddress{OurSourceAddress()}, ++message_id_, Authority::nae_manager);
-    for (const auto& target : connection_manager_.GetTarget(node_id))
-      Connections_Send(
-          target.id, Serialise(header, MessageToTag<Connect>::value(), message), [](asio::error_code) {});
+    for (const auto& target : connection_manager_.GetTarget(node_id)) {
+      // FIXME(Team): Do the serialisation only once as it doesn't depend on the target.
+      auto message_data = Serialise(header, MessageToTag<Connect>::value(), message);
+      connection_manager_.Send(target.id, std::move(message_data), [](asio::error_code) {});
+    }
   }
 }
 
