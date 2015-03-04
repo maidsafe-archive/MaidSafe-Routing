@@ -63,6 +63,14 @@ Endpoint GetRandomEndpoint();
 
 MessageHeader GetRandomMessageHeader();
 
+struct ScopedBootstrapFile {
+  explicit ScopedBootstrapFile(boost::filesystem::path path);
+  ~ScopedBootstrapFile();
+
+ private:
+  const boost::filesystem::path kPath_;
+};
+
 }  // namespace test
 
 }  // namespace routing
