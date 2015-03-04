@@ -32,6 +32,7 @@
 #include "maidsafe/routing/source_address.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 namespace maidsafe {
 
@@ -166,6 +167,7 @@ class MessageHeader {
   routing::MessageId message_id_;
   Authority authority_;
   boost::optional<asymm::Signature> signature_;
+  MessageTypeTag message_tag_;
 };
 
 }  // namespace routing

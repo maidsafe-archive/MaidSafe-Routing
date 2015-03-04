@@ -52,7 +52,7 @@ class Accumulator {
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
-  using Map = std::map<NodeId, ValueType>; // should NodeId not be nametype?
+  using Map = std::map<NodeId, ValueType>;
 
   bool HaveName(NameType name) const { return (storage_.find(name) != std::end(storage_)); }
 

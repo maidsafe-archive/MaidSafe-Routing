@@ -29,7 +29,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     if (!header.FromGroup())  // "keys should always come from a group");
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     if (group_key_accumulator_.Add(*header.FromGroup(),
-                                   std::make_tuple(std::pair(header.Source(), tag, std::move(message)),
+                                   std::make_tuple(header.Source(), tag, std::move(message)),
                                    header.FromNode())) {
       // get the other accumulator and go for it
 
