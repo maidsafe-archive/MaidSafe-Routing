@@ -40,8 +40,10 @@ namespace routing {
 
 class Sentinel {
  public:
-  using ResultType = std::tuple<SourceAddress, MessageTypeTag, SerialisedMessage>;
-  explicit Sentinel(asio::io_service& io_service) : io_service_(io_service) {}
+  // TODO(mmoadeli): ResultType below may have extra information which could be removed later
+  using ResultType = std::tuple<MessageHeader, MessageTypeTag, SerialisedMessage>;
+  Sentinel(GetKey get_key, GetGroupKey get_group_key)
+      : get_key_(get_key), get_group_key_(get_group_key) {}
   Sentinel(const Sentinel&) = delete;
   Sentinel(Sentinel&&) = delete;
   ~Sentinel() = default;
@@ -49,18 +51,27 @@ class Sentinel {
   Sentinel& operator=(Sentinel&&) = delete;
   // at some stage this will return a valid answer when all data is accumulated
   // and signatures checked
-  boost::optional<std::future<ResultType>> Add(MessageHeader, MessageTypeTag, SerialisedMessage);
-  ResultType AccumulateDirectValue(NodeAddress);
-  ResultType AccumulateDhtValue(GroupAddress);
-  std::vector<std::pair<asymm::PublicKey, Address>> AccumulateKeys(GroupAddress);
+  boost::optional<ResultType> Add(MessageHeader, MessageTypeTag, SerialisedMessage);
 
  private:
-  asio::io_service& io_service_;
-  Accumulator<NodeAddress, ResultType> node_accumulator_{std::chrono::minutes(20), 1U};
-  Accumulator<GroupAddress, ResultType> group_accumulator_{std::chrono::minutes(20), QuorumSize};
-  Accumulator<GroupAddress, ResultType> group_key_accumulator_{std::chrono::minutes(20),
-                                                               QuorumSize};
-  Accumulator<NodeAddress, ResultType> node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
+  using NodeKeyType = std::pair<NodeAddress, routing::MessageId>;
+  using GroupKeyType = std::pair<GroupAddress, routing::MessageId>;
+  using NodeAccumulatorType = Accumulator<NodeKeyType, ResultType>;
+  using GroupAccumulatorType = Accumulator<GroupKeyType, ResultType>;
+  using KeyAccumulatorType = Accumulator<GroupAddress, ResultType>;
+
+  template <typename AccumulatorType, typename AccumulatorKeyType>
+  boost::optional<ResultType> Validate(const typename AccumulatorType::Map& messages,
+                                       const typename AccumulatorKeyType::Map& /*keys*/) {
+    return messages.begin()->second;
+  }
+
+  GetKey get_key_;
+  GetGroupKey get_group_key_;
+  NodeAccumulatorType node_accumulator_{std::chrono::minutes(20), 1U};
+  GroupAccumulatorType group_accumulator_{std::chrono::minutes(20), QuorumSize};
+  KeyAccumulatorType group_key_accumulator_{std::chrono::minutes(20), QuorumSize};
+  KeyAccumulatorType node_key_accumulator_{std::chrono::minutes(20), 1U};
 };
 
 }  // namespace routing
