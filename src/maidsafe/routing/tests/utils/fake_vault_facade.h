@@ -28,22 +28,54 @@ namespace vault {
 namespace test {
 
 template <typename Facade>
+class MaidManager {
+ public:
+  MaidManager() {}
+
+  template <typename Data>
+  routing::HandlePutPostReturn HandlePut(const routing::SourceAddress& from, const Data& data);
+};
+
+template <typename Facade> template <typename Data>
+routing::HandlePutPostReturn MaidManager<Facade>::HandlePut(
+    const routing::SourceAddress& /*source_address*/, const Data& data) {
+  std::vector<routing::DestinationAddress> result;
+  result.push_back(std::make_pair(routing::Destination(routing::Address(data.name())),
+                                  boost::none));
+  return routing::HandlePutPostReturn(result);
+}
+
+
+template <typename Facade>
 class DataManager {
  public:
   DataManager() {}
 
-  template <typename DataType>
+  template <typename Data>
+  routing::HandlePutPostReturn HandlePut(const routing::SourceAddress& from, const Data& data);
+  template <typename Data>
   routing::HandleGetReturn HandleGet(const routing::SourceAddress& from, const Identity& name);
 
  private:
+  std::vector<std::string> data_;
   routing::CloseGroupDifference close_group_;
 };
 
-template <typename Facade> template <typename DataType>
+template <typename Facade> template <typename Data>
+routing::HandlePutPostReturn DataManager<Facade>::HandlePut(
+    const routing::SourceAddress& /*from*/, const Data& data) {
+  if (std::find(std::begin(data_), std::end(data_), data.name().value.string()) == std::end(data_))
+    data_.emplace_back(data.name().value.string());
+  return boost::make_unexpected(MakeError(CommonErrors::success));
+}
+
+template <typename Facade> template <typename Data>
 routing::HandleGetReturn DataManager<Facade>::HandleGet(
-    const routing::SourceAddress& /*from*/, const Identity& /*name*/) {
-  std::cout << "DataManager::HandleGet called" << std::endl;
-  return routing::HandleGetReturn();
+    const routing::SourceAddress& /*from*/, const Identity& name) {
+  auto it(std::find(std::begin(data_), std::end(data_), name.string()));
+  if (it != std::end(data_))
+    return routing::HandleGetReturn(std::vector<byte>(it->begin(), it->end()));
+  return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
 }
 
 // Helper function to parse data name and contents
@@ -57,16 +89,19 @@ ParsedType ParseData(const SerialisedData& serialised_data) {
   return ParsedType(name, contents);
 }
 
-class FakeVaultFacade : public DataManager<FakeVaultFacade>,
+template <>
+ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data);
+
+class FakeVaultFacade : public MaidManager<FakeVaultFacade>,
+                        public DataManager<FakeVaultFacade>,
                         public routing::RoutingNode<FakeVaultFacade> {
  public:
   FakeVaultFacade()
-    : DataManager<FakeVaultFacade>(),
+    : MaidManager<FakeVaultFacade>(),
+      DataManager<FakeVaultFacade>(),
       routing::RoutingNode<FakeVaultFacade>() {}
 
   ~FakeVaultFacade() = default;
-
-  enum class FunctorType { FunctionOne, FunctionTwo };
 
   void HandleConnectionAdded(routing::Address /*address*/) {}
 

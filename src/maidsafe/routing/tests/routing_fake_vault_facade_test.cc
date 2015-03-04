@@ -29,24 +29,35 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   ASSERT_NO_THROW(vault::test::FakeVaultFacade vault);
 }
 
-TEST(RoutingFakeVaultFacadeTest, FUNC_Put) {
-  std::vector<std::pair<vault::test::FakeVaultFacade, unsigned short>> vaults(3);
+TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {
+  using endpoint = asio::ip::udp::endpoint;
+  using address = asio::ip::address_v4;
+
+  std::vector<std::pair<vault::test::FakeVaultFacade, unsigned short>> vaults(16);
   unsigned short port(5483);
   for (auto& vault : vaults)
     vault.second = port++;
   for (auto& vault : vaults)
     ASSERT_NO_THROW(vault.first.StartAccepting(vault.second));
 
-  for (size_t i = 0; i != vaults.size(); ++i) {
-    for (size_t j = 0; j != vaults.size(); ++j) {
-      if (j > i) {
-        asio::ip::udp::endpoint endpoint(asio::ip::udp::v4(), vaults[j].second);
-        vaults[i].first.AddContact(endpoint);
-      }
-    }
-  }
-  Sleep(std::chrono::seconds(10));
-  std::cout << "test end" << std::endl;
+  ASSERT_GE(vaults.size(), 2);
+
+  for (size_t i = 0; i != vaults.size() - 1; ++i)
+  for (size_t j = i + 1; j != vaults.size(); ++j)
+    ASSERT_NO_THROW(vaults[j].first.AddContact(endpoint(address::loopback(), vaults[i].second)));
+
+  auto vault_index(RandomUint32() % vaults.size());
+  ImmutableData data(NonEmptyString(RandomAlphaNumericString(RandomUint32() % 1000)));
+
+  vaults[vault_index].first.Put(NodeId(RandomString(NodeId::kSize)), data,
+      [](maidsafe_error error) {
+        ASSERT_EQ(error.code(), make_error_code(CommonErrors::success));
+      });
+
+  vaults[vault_index].first.Get<ImmutableData>(data.name(),
+      [](maidsafe_error error) {
+        ASSERT_EQ(error.code(), make_error_code(CommonErrors::success));
+      });
 }
 
 }  // namespace test

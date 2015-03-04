@@ -24,6 +24,42 @@ namespace vault {
 
 namespace test {
 
+template <>
+ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data) {
+  auto digest_size(crypto::SHA512::DIGESTSIZE);
+  std::string name(serialised_data.begin(), serialised_data.begin() + digest_size);
+  std::string content(serialised_data.begin() + digest_size, serialised_data.end());
+  return ImmutableData(ImmutableData::Name(Identity(name)),
+                       ImmutableData::serialised_type(NonEmptyString(content)));
+}
+
+routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
+    routing::Authority from_authority, routing::Authority authority, DataTagValue data_type,
+    SerialisedData serialised_data) {
+  switch (authority) {
+    case routing::Authority::client_manager:
+      if (from_authority != routing::Authority::client)
+        break;
+      if (data_type == DataTagValue::kImmutableDataValue)
+        return MaidManager::HandlePut(from, ParseData<ImmutableData>(serialised_data));
+      else if (data_type == DataTagValue::kMutableDataValue)
+        return MaidManager::HandlePut(from, ParseData<MutableData>(serialised_data));
+      else if (data_type == DataTagValue::kPmidValue)
+        return MaidManager::HandlePut(from, ParseData<passport::PublicPmid>(serialised_data));
+    case routing::Authority::nae_manager:
+      if (from_authority != routing::Authority::client_manager)
+        break;
+      if (data_type == DataTagValue::kImmutableDataValue)
+        return DataManager::HandlePut(from, ParseData<ImmutableData>(serialised_data));
+      else if (data_type == DataTagValue::kMutableDataValue)
+        return DataManager::HandlePut(from, ParseData<MutableData>(serialised_data));
+      break;
+    default:
+      break;
+  }
+  return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
+}
+
 routing::HandleGetReturn FakeVaultFacade::HandleGet(routing::SourceAddress from,
       routing::Authority authority, DataTagValue data_type, Identity data_name) {
   switch (authority) {
