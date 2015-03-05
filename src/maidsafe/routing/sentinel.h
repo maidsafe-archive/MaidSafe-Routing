@@ -62,17 +62,27 @@ class Sentinel {
 
   template <typename AccumulatorType, typename AccumulatorKeyType>
   boost::optional<ResultType> Validate(const typename AccumulatorType::Map& messages,
-                                       const typename AccumulatorKeyType::Map& /*keys*/) {
-    return messages.begin()->second;
-  }
+                                       const typename AccumulatorKeyType::Map& keys);
 
   GetKey get_key_;
   GetGroupKey get_group_key_;
   NodeAccumulatorType node_accumulator_{std::chrono::minutes(20), 1U};
   GroupAccumulatorType group_accumulator_{std::chrono::minutes(20), QuorumSize};
   KeyAccumulatorType group_key_accumulator_{std::chrono::minutes(20), QuorumSize};
-  KeyAccumulatorType node_key_accumulator_{std::chrono::minutes(20), 1U};
+  KeyAccumulatorType node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
 };
+
+template <>
+boost::optional<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename Sentinel::NodeAccumulatorType::Map& messages,
+    const typename Sentinel::KeyAccumulatorType::Map& keys);
+
+template <>
+boost::optional<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename Sentinel::GroupAccumulatorType::Map& messages,
+    const typename Sentinel::KeyAccumulatorType::Map& keys);
 
 }  // namespace routing
 

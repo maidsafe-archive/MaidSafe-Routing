@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include "maidsafe/common/rsa.h"
+
 #include "maidsafe/routing/sentinel.h"
 
 namespace maidsafe {
@@ -79,6 +81,51 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       }
     }
   }
+  return boost::none;
+}
+
+template <>
+boost::optional<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename NodeAccumulatorType::Map& messages,
+    const typename KeyAccumulatorType::Map& keys) {
+  assert(messages.size() >= 1);
+  assert(keys.size() >= QuorumSize);
+  // Following checks that returned public keys from all nodes are identical. This could be
+  // changed in futute. And lying node to be reported.
+  auto& raw_public_key(std::get<2>(keys.begin()->second));
+  assert(keys.size() == static_cast<typename KeyAccumulatorType::Map::size_type>(
+                            std::count_if(keys.begin(), keys.end(),
+                            [&](const std::pair<NodeId, ResultType>& entry) {
+                              return raw_public_key == std::get<2>(entry.second);
+                            })));
+  auto signature(std::get<0>(messages.begin()->second).Signature());
+  if (!signature)
+    return boost::none;
+
+  std::string public_key_string;
+  std::copy(raw_public_key.begin(), raw_public_key.end(), std::back_inserter(public_key_string));
+  asymm::PublicKey public_key;
+  try {
+    public_key = asymm::DecodeKey(asymm::EncodedPublicKey(public_key_string));
+  }
+  catch (const std::exception& /*error*/) {
+    return boost::none;
+  }
+
+  if (asymm::CheckSignature(std::get<2>(messages.begin()->second), *signature, public_key))
+    return messages.begin()->second;
+
+  return boost::none;
+}
+
+template <>
+boost::optional<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename GroupAccumulatorType::Map& messages,
+    const typename KeyAccumulatorType::Map& keys) {
+  assert(messages.size() >= QuorumSize);
+  assert(keys.size() >= QuorumSize);
   return boost::none;
 }
 
