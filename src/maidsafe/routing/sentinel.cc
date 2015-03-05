@@ -36,7 +36,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
         auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                             std::make_tuple(header, tag, std::move(message)),
                                             header.FromNode()));
-        if (!messages)
+        if (messages)
           return Validate<NodeAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
       }
     }
@@ -52,7 +52,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                                             header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
-        if (!messages)
+        if (messages)
           return Validate<GroupAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
       }
     }
@@ -63,7 +63,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
-      if (!messages) {
+      if (messages) {
         auto keys(group_accumulator_.GetAll(messages->first));
         return Validate<GroupAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
       }
@@ -73,7 +73,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                           std::make_tuple(header, tag, std::move(message)),
                                           header.FromNode()));
-      if (!messages) {
+      if (messages) {
         auto keys(node_accumulator_.GetAll(messages->first));
         return Validate<NodeAccumulatorType, KeyAccumulatorType>(messages->second, keys->second);
       }
