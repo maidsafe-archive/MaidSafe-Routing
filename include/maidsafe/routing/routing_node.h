@@ -122,7 +122,7 @@ class RoutingNode {
 
   template <class Message>
   void SendDirect(NodeId, Message, SendHandler);
-  EndpointPair NextEndpointPair() {  // TODO(dirvine)   :23/01/2015
+  EndpointPair NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
     return EndpointPair();
   }
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
@@ -330,8 +330,8 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
-    auto data = Parse<GetData>(binary_input_stream);
-    auto test = cache_.Get(data.name());
+    auto get_data = Parse<GetData>(binary_input_stream);
+    auto test = cache_.Get(get_data.name());
     // FIXME(dirvine) move to upper lauer :09/02/2015
     // if (test) {
     //   GetDataResponse response(data.name(), test);
@@ -367,7 +367,17 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
   if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first))
     return;  // not for us
 
+  // Drop message if it is a direct message type (Connect, ConnectResponse) and this node is in the
+  // group but the message destination is another group member node.
+  // Dropping this before Sentinel check
+  if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
+    if (header.Destination() != connection_manager_.OurId())  // not for me
+      return;
+  }
+
   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
+
+
   switch (tag) {
     case MessageTypeTag::Connect:
       HandleMessage(Parse<Connect>(binary_input_stream), std::move(header));
