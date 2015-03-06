@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_TESTS_UTILS_FAKE_VAULT_FACADE_H_
 #define MAIDSAFE_ROUTING_TESTS_UTILS_FAKE_VAULT_FACADE_H_
 
+#include <map>
+
 #include "maidsafe/routing/routing_node.h"
 
 namespace maidsafe {
@@ -57,24 +59,24 @@ class DataManager {
   routing::HandleGetReturn HandleGet(const routing::SourceAddress& from, const Identity& name);
 
  private:
-  std::vector<std::string> data_;
+  std::map<std::string, std::string> data_;
   routing::CloseGroupDifference close_group_;
 };
 
 template <typename Facade> template <typename Data>
 routing::HandlePutPostReturn DataManager<Facade>::HandlePut(
     const routing::SourceAddress& /*from*/, const Data& data) {
-  if (std::find(std::begin(data_), std::end(data_), data.name().value.string()) == std::end(data_))
-    data_.emplace_back(data.name().value.string());
+  if (data_.find(data.name().value.string()) == std::end(data_))
+    data_.insert(std::make_pair(data.name().value.string(), data.data().string()));
   return boost::make_unexpected(MakeError(CommonErrors::success));
 }
 
 template <typename Facade> template <typename Data>
 routing::HandleGetReturn DataManager<Facade>::HandleGet(
     const routing::SourceAddress& /*from*/, const Identity& name) {
-  auto it(std::find(std::begin(data_), std::end(data_), name.string()));
+  auto it(data_.find(name.string()));
   if (it != std::end(data_))
-    return routing::HandleGetReturn(std::vector<byte>(it->begin(), it->end()));
+    return routing::HandleGetReturn(std::vector<byte>(it->second.begin(), it->second.end()));
   return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
 }
 
