@@ -188,7 +188,7 @@ Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messa
 
   for (size_t index(0); index < verified_messages->size(); ++index) {
     auto& serialised_message(std::get<2>(verified_messages->at(index)));
-    if (static_cast<typename KeyAccumulatorType::Map::size_type>(
+    if (static_cast<typename std::vector<ResultType>::size_type>(
             std::count_if(verified_messages->begin(), verified_messages->end(),
                           [&](const ResultType& result) {
                             return std::get<2>(result) == serialised_message;
