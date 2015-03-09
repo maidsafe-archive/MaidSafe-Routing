@@ -180,7 +180,7 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
 
 boost::optional<Sentinel::ResultType>
 Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messages, GroupMessage) {
-  if (verified_messages)
+  if (!verified_messages)
     return boost::none;
 
   // TODO(mmoadeli): below is only for non-account transfer message types, where exact match is
@@ -202,7 +202,7 @@ Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messa
 boost::optional<Sentinel::ResultType>
 Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messages,
                   SingleMessage) {
-  if (verified_messages)
+  if (!verified_messages)
     return boost::none;
 
   return verified_messages->at(0);
