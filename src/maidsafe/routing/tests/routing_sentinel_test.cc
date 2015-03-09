@@ -33,10 +33,58 @@ namespace routing {
 
 namespace test {
 
-TEST(RoutingTest, BEH_SentinelAdd) {
+
+// structure to track messages sent to sentinel and what sentinel result should be
+class SignatureGroup {
+ public:
+  SignatureGroup(GroupAddress, size_t);
+
+ private:
+  GroupAddress group_address_;
+  std::vector<std::pair<Identity, PublicPmid>> nodes_;
+};
+
+// persistent sentinel throughout all sentinel tests
+//
+class SentinelMessageSimulation : public testing::Test {
+ public:
+  SentinelMessageSimulation()
+    : sentinel_(SendGetClientKey, SendGetGroupKey) {}
+
+  void SendGetClientKey(Address node_address);
+  void SendGetGroupKey(GroupAddress group_address);
+
+  // Add a correct, cooperative group of indictated total size and responsive quorum
+  void AddCorrectGroup(GroupAddress group_address, size_t group_size = GroupSize,
+                       size_t active_quorum = QuorumSize);
+
+ protected:
+  Sentinel sentinel_;
+  mutable std::mutex sentinel_mutex_;
+
+ private:
+  std::vector<SignatureGroup> groups_;
+};
+
+void SentinelMessageSimulation::SendGetClientKey(Address node_address) {
 
 }
 
+void SentinelMessageSimulation::SendGetGroupKey(GroupAddress group_address) {
+  //std::lock_guard<std::mutex> lock(mutex_);
+  auto itr = std::find_if(std::begin(groups_), std::end(groups_), );
+}
+
+// first try for specific message type, generalise later
+// PutData is chosen as fundamental type with data payload.
+TEST(RoutingTest, BEH_SentinelSimpleAdd) {
+
+  NonEmptyString data(RandomString(100));
+  SerialisedData message_data(std::begin(data.string()), std::end(data.string()));
+  PutData put_message(ImmutableData, message_data);
+
+
+}
 
 }  // namespacce test
 

@@ -74,7 +74,7 @@ using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
 
-using SendGetKey = std::function<void(Address)>;
+using SendGetClientKey = std::function<void(Address)>;
 using SendGetGroupKey = std::function<void(GroupAddress)>;
 
 template <class Archive>
