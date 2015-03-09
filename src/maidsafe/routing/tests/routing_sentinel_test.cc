@@ -24,7 +24,11 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
+
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/message_header.h"
+#include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/routing/messages/messages_fwd.h"
 
 
 namespace maidsafe {
@@ -46,11 +50,12 @@ class SignatureGroup {
 };
 
 // persistent sentinel throughout all sentinel tests
-class SentinelMessageSimulation : public testing::Test {
+class SentinelMessageSimulation : public testing::Test,
+                                  public std::enable_shared_from_this<SentinelMessageSimulation> {
  public:
   SentinelMessageSimulation()
-    : sentinel_(&SentinelMessageSimulation::SendGetClientKey,
-                &SentinelMessageSimulation::SendGetGroupKey) {}
+    : sentinel_([this](Address address) { SendGetClientKey(address); },
+                [this](GroupAddress group_address) { SendGetGroupKey(group_address); }) {}
 
   // Add a correct, cooperative group of indictated total size and responsive quorum
   void AddCorrectGroup(GroupAddress group_address, size_t group_size,
@@ -67,24 +72,26 @@ class SentinelMessageSimulation : public testing::Test {
   std::vector<SignatureGroup> groups_;
 };
 
-void SentinelMessageSimulation::SendGetClientKey(Address node_address) {
+void SentinelMessageSimulation::SendGetClientKey(Address /*node_address*/) {
 
 }
 
 void SentinelMessageSimulation::SendGetGroupKey(GroupAddress group_address) {
   //std::lock_guard<std::mutex> lock(mutex_);
   auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](const SignatureGroup group_)
-                          { return group_.Address() == group_address.Address();});
+                          [group_address](SignatureGroup group_)
+                          { return group_.Address() == group_address; });
+  static_cast<void>(itr);
 }
 
 // first try for specific message type, generalise later
 // PutData is chosen as fundamental type with data payload.
 TEST(RoutingTest, BEH_SentinelSimpleAdd) {
 
-  NonEmptyString data(RandomString(100));
-  SerialisedData message_data(std::begin(data.string()), std::end(data.string()));
-  PutData put_message(ImmutableData, message_data);
+  const auto serialised_data(RandomString(100));
+  PutData put_message(DataTagValue::kImmutableDataValue,
+                      std::vector<byte>(serialised_data.begin(),
+                                        serialised_data.end()));
 
 
 }

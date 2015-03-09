@@ -42,7 +42,7 @@ class Sentinel {
  public:
   // TODO(mmoadeli): ResultType below may have extra information which could be removed later
   using ResultType = std::tuple<MessageHeader, MessageTypeTag, SerialisedMessage>;
-  Sentinel(SendGetClientKey& send_get_client_key, SendGetGroupKey& send_get_group_key)
+  Sentinel(SendGetClientKey send_get_client_key, SendGetGroupKey send_get_group_key)
       : send_get_client_key_(send_get_client_key), send_get_group_key_(send_get_group_key) {}
   Sentinel(const Sentinel&) = delete;
   Sentinel(Sentinel&&) = delete;
