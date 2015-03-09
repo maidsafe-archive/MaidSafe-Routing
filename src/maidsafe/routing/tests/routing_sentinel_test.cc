@@ -37,7 +37,9 @@ namespace test {
 // structure to track messages sent to sentinel and what sentinel result should be
 class SignatureGroup {
  public:
-  SignatureGroup(GroupAddress, size_t);
+  SignatureGroup(GroupAddress group_address, size_t group_size, size_t active_quorum);
+
+  GroupAddress Address() { return group_address_; }
 
  private:
   GroupAddress group_address_;
@@ -55,8 +57,8 @@ class SentinelMessageSimulation : public testing::Test {
   void SendGetGroupKey(GroupAddress group_address);
 
   // Add a correct, cooperative group of indictated total size and responsive quorum
-  void AddCorrectGroup(GroupAddress group_address, size_t group_size = GroupSize,
-                       size_t active_quorum = QuorumSize);
+  void AddCorrectGroup(GroupAddress group_address, size_t group_size,
+                       size_t active_quorum);
 
  protected:
   Sentinel sentinel_;
@@ -72,7 +74,9 @@ void SentinelMessageSimulation::SendGetClientKey(Address node_address) {
 
 void SentinelMessageSimulation::SendGetGroupKey(GroupAddress group_address) {
   //std::lock_guard<std::mutex> lock(mutex_);
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_), );
+  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
+                          [group_address](const SignatureGroup group_)
+                          { return group_.Address() == group_address.Address();});
 }
 
 // first try for specific message type, generalise later
