@@ -43,11 +43,14 @@ using std::move;
 using boost::none_t;
 using boost::optional;
 
-ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive)
+ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive,
+                                     OnConnectionLost on_connection_lost)
     : mutex_(),
       boost_io_service_(1),
       routing_table_(our_id),
+      connected_non_routing_nodes_(),
       on_receive_(std::move(on_receive)),
+      on_connection_lost_(std::move(on_connection_lost)),
       current_close_group_(),
       connections_(new Connections(boost_io_service_.service(), our_id)) {
   StartReceiving();
@@ -63,6 +66,11 @@ std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) c
                              [](NodeInfo& node) { return !node.connected; }),
               std::end(nodes));
   return nodes;
+}
+
+std::vector<Address> ConnectionManager::GetNonRoutingNodes() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return connected_non_routing_nodes_;
 }
 
 boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
@@ -182,6 +190,12 @@ void ConnectionManager::StartReceiving() {
     on_receive_ = std::move(h);
     StartReceiving();
   });
+}
+
+void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
+                                             const SerialisedMessage& /*message*/) {
+// connections_->Send(addr, message, std::move(handler));
+// remove connection if failed
 }
 
 }  // namespace routing

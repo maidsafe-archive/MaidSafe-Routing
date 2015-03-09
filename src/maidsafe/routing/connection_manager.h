@@ -64,9 +64,10 @@ class ConnectionManager {
  public:
   using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
   using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>, Endpoint)>;
+  using OnConnectionLost = std::function<void(Address)>;
 
  public:
-  ConnectionManager(Address our_id, OnReceive on_receive);
+  ConnectionManager(Address our_id, OnReceive on_receive, OnConnectionLost on_connection_lost);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -76,6 +77,8 @@ class ConnectionManager {
 
   bool SuggestNodeToAdd(const Address& node_to_add) const;
   std::vector<NodeInfo> GetTarget(const Address& target_node) const;
+  std::vector<Address> GetNonRoutingNodes() const;
+
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
@@ -112,6 +115,8 @@ class ConnectionManager {
   template <class Handler /* void (error_code) */>
   void Send(const Address&, const SerialisedMessage&, Handler);
 
+  void SendToNonRoutingNode(const Address&, const SerialisedMessage&); // remove connection if fails
+
   template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
@@ -122,10 +127,12 @@ class ConnectionManager {
  private:
   boost::optional<CloseGroupDifference> GroupChanged();
 
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
   BoostAsioService boost_io_service_;
   RoutingTable routing_table_;
+  std::vector<Address> connected_non_routing_nodes_;  // clients & bootstrapping nodes
   OnReceive on_receive_;
+  OnConnectionLost on_connection_lost_;
   std::vector<Address> current_close_group_;
   std::function<void(CloseGroupDifference)> group_changed_functor_;
   std::shared_ptr<Connections> connections_;

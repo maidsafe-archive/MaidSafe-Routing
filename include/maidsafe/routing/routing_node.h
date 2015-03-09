@@ -142,8 +142,6 @@ class RoutingNode {
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
   LruCache<Identity, SerialisedMessage> cache_;
-  std::vector<Address> connected_nodes_;
-
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
@@ -157,11 +155,13 @@ RoutingNode<Child>::RoutingNode()
       connection_manager_(Address(our_fob_.name()->string()),
                           [=](asio::error_code error, Address address, SerialisedMessage msg) {
                             MessageReceived(error, std::move(address), std::move(msg));
+                          },
+                          [=](Address peer_id) {
+                            ConnectionLost(peer_id);
                           }),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
-      connected_nodes_(),
       destroy_indicator_(new boost::none_t) {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
@@ -357,10 +357,12 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
     });
   }
   // FIXME(dirvine) We need new rudp for this :26/01/2015
+  std::vector<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
   if (header.RelayedMessage() &&
-      std::any_of(std::begin(connected_nodes_), std::end(connected_nodes_),
+      std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
                   [&header](const Address& node) { return node == *header.ReplyToAddress(); })) {
     // send message to connected node
+    connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
     return;
   }
 
@@ -371,7 +373,7 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
   // group but the message destination is another group member node.
   // Dropping this before Sentinel check
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
-    if (header.Destination() != connection_manager_.OurId())  // not for me
+    if (header.Destination().first != connection_manager_.OurId())  // not for me
       return;
   }
 
@@ -432,11 +434,10 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
   BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
 }
 
-// TODO(PeterJ):
-// template <typename Child>
-// void RoutingNode<Child>::ConnectionLost(NodeId peer) {
-//  connection_manager_.LostNetworkConnection(peer);
-// }
+template <typename Child>
+void RoutingNode<Child>::ConnectionLost(Address peer) {
+  connection_manager_.LostNetworkConnection(peer);
+}
 
 // reply with our details;
 template <typename Child>
