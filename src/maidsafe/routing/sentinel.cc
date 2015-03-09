@@ -59,7 +59,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
   } else {
     if (header.FromGroup()) {
       if (!group_accumulator_.HaveName(std::make_pair(*header.FromGroup(), header.MessageId())))
-        get_group_key_(*header.FromGroup());
+        send_get_group_key_(*header.FromGroup());
       auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
@@ -69,7 +69,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       }
     } else {
       if (!node_accumulator_.HaveName(std::make_pair(header.FromNode(), header.MessageId())))
-        get_key_(header.FromNode());
+        send_get_client_key_(header.FromNode());
       auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                           std::make_tuple(header, tag, std::move(message)),
                                           header.FromNode()));
