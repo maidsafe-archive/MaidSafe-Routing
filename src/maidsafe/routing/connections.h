@@ -43,6 +43,23 @@ namespace routing {
 
 class Connections {
  public:
+   struct AcceptResult {
+     Endpoint his_endpoint;
+     Address  his_address;
+     Endpoint our_endpoint; // As seen by the other end
+   };
+
+   struct ConnectResult {
+     Address  his_address;
+     Endpoint our_endpoint; // As seen by the other end
+   };
+
+   struct ReceiveResult {
+     Address his_address;
+     SerialisedMessage message;
+   };
+
+ public:
   Connections(boost::asio::io_service&, const Address& our_node_id);
 
   Connections() = delete;
@@ -54,17 +71,17 @@ class Connections {
 
   ~Connections();
 
-  template <class Handler /* void (error_code) */>
-  void Send(const Address&, const SerialisedMessage&, Handler);
+  template <class Token>
+  AsyncResultReturn<Token> Send(const Address&, const SerialisedMessage&, Token&&);
 
-  template <class Handler /* void (error_code, Address, const SerialisedMessage&) */>
-  void Receive(Handler);
+  template <class Token>
+  AsyncResultReturn<Token, ReceiveResult> Receive(Token&&);
 
-  template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
-  void Connect(asio::ip::udp::endpoint, Handler);
+  template <class Token>
+  AsyncResultReturn<Token, ConnectResult> Connect(asio::ip::udp::endpoint, Token&&);
 
-  template <class Handler /* void (error_code, endpoint, Address, Endpoint our_endpoint) */>
-  void Accept(unsigned short port, const Handler);
+  template <class Token>
+  AsyncResultReturn<Token, AcceptResult> Accept(unsigned short port, Token&&);
 
   void Drop(const Address& their_id);
 
@@ -90,15 +107,20 @@ class Connections {
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
   std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
-  AsyncQueue<asio::error_code, Address, SerialisedMessage> receive_queue_;
+  AsyncQueue<asio::error_code, ReceiveResult> receive_queue_;
 };
 
 inline Connections::Connections(boost::asio::io_service& ios, const Address& our_node_id)
     : service_(ios), our_id_(our_node_id) {}
 
-template <class Handler /* void (error_code) */>
-void Connections::Send(const Address& remote_id, const SerialisedMessage& bytes, Handler handler) {
-  service_.post([=]() {
+template <class Token>
+AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
+                                           Token&& token) {
+  using Handler = AsyncResultHandler<Token>;
+  Handler handler(std::forward<Token>(token));
+  asio::async_result<Handler> result(handler);
+
+  get_io_service().post([=]() mutable {
     auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
 
     if (remote_endpoint_i == id_to_endpoint_map_.end()) {
@@ -115,7 +137,7 @@ void Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
     std::weak_ptr<crux::socket> weak_socket = socket;
 
     socket->async_send(boost::asio::buffer(*buffer),
-                       [=](boost::system::error_code error, std::size_t) {
+                       [=](boost::system::error_code error, std::size_t) mutable {
                          static_cast<void>(buffer);
 
                          if (!weak_socket.lock()) {
@@ -128,39 +150,57 @@ void Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
                          handler(convert::ToStd(error));
                        });
   });
+
+  return result.get();
 }
 
-template <typename Handler /* void (error_code, Address, SerialisedMessage) */>
-void Connections::Receive(Handler handler) {
-  service_.post([=]() { receive_queue_.AsyncPop(std::move(handler)); });
+template <typename Token>
+AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&& token) {
+  using Handler = AsyncResultHandler<Token, ReceiveResult>;
+  Handler handler(std::forward<Token>(token));
+  asio::async_result<Handler> result(handler);
+
+  // TODO(PeterJ): For some reason I need to wrap the handler, otherwise I get crashes
+  // in the future tests.
+  auto handler2 = [=](asio::error_code error, ReceiveResult result) mutable {
+    handler(error, std::move(result));
+  };
+
+  get_io_service().post([=]() mutable { receive_queue_.AsyncPop(handler2); });
+
+  return result.get();
 }
 
 inline Connections::~Connections() { Shutdown(); }
 
-template <class Handler /* void (error_code, Address, asio::ip::udp::endpoint) */>
-void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
-  using asio_endpoint = asio::ip::udp::endpoint;
+template <class Token>
+AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoint endpoint,
+                                                                          Token&& token) {
 
-  service_.post([=]() {
+  using Handler = AsyncResultHandler<Token, ConnectResult>;
+  Handler handler(std::forward<Token>(token));
+  asio::async_result<Handler> result(handler);
+
+  get_io_service().post([=]() mutable {
     crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
     auto socket = std::make_shared<crux::socket>(service_, unspecified_ep);
 
     auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
 
     if (!insert_result.second) {
-      return handler(asio::error::already_started, Address(), asio_endpoint());
+      return handler(asio::error::already_started, ConnectResult());
     }
 
     std::weak_ptr<crux::socket> weak_socket = socket;
 
-    socket->async_connect(convert::ToBoost(endpoint), [=](boost::system::error_code error) {
+    socket->async_connect(convert::ToBoost(endpoint), [=](boost::system::error_code error) mutable {
       auto socket = weak_socket.lock();
 
       if (!socket) {
-        return handler(asio::error::operation_aborted, Address(), asio_endpoint());
+        return handler(asio::error::operation_aborted, ConnectResult());
       }
       if (error) {
-        return handler(convert::ToStd(error), Address(), asio_endpoint());
+        return handler(convert::ToStd(error), ConnectResult());
       }
 
       auto remote_endpoint = socket->remote_endpoint();
@@ -169,16 +209,16 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
       auto his_endpoint = convert::ToAsio(socket->remote_endpoint());
 
       AsyncExchange(*socket, Serialise(our_id_, his_endpoint),
-                    [=](boost::system::error_code error, SerialisedMessage data) {
+                    [=](boost::system::error_code error, SerialisedMessage data) mutable {
                       auto socket = weak_socket.lock();
 
                       if (!socket) {
-                        return handler(asio::error::operation_aborted, Address(), asio_endpoint());
+                        return handler(asio::error::operation_aborted, ConnectResult());
                       }
 
                       if (error) {
                         connections_.erase(remote_endpoint);
-                        return handler(convert::ToStd(error), Address(), asio_endpoint());
+                        return handler(convert::ToStd(error), ConnectResult());
                       }
 
                       InputVectorStream stream(data);
@@ -189,15 +229,22 @@ void Connections::Connect(asio::ip::udp::endpoint endpoint, Handler handler) {
                       id_to_endpoint_map_[his_id] = remote_endpoint;
                       StartReceiving(his_id, remote_endpoint, socket);
 
-                      handler(convert::ToStd(error), his_id, our_endpoint);
+                      handler(convert::ToStd(error), ConnectResult{his_id, our_endpoint});
                     });
     });
   });
+
+  return result.get();
 }
 
-template <class Handler /* void (error_code, endpoint, Address) */>
-void Connections::Accept(unsigned short port, const Handler handler) {
-  service_.post([=]() {
+template <class Token>
+AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(unsigned short port,
+                                                                        Token&& token) {
+  using Handler = AsyncResultHandler<Token, AcceptResult>;
+  Handler handler(std::forward<Token>(token));
+  asio::async_result<Handler> result(handler);
+
+  get_io_service().post([=]() mutable {
     auto find_result = acceptors_.insert(std::make_pair(port, std::shared_ptr<crux::acceptor>()));
 
     auto& acceptor = find_result.first->second;
@@ -211,13 +258,13 @@ void Connections::Accept(unsigned short port, const Handler handler) {
 
     auto socket = std::make_shared<crux::socket>(service_);
 
-    acceptor->async_accept(*socket, [=](boost::system::error_code error) {
+    acceptor->async_accept(*socket, [=](boost::system::error_code error) mutable {
       if (!weak_acceptor.lock()) {
-        return handler(asio::error::operation_aborted, Endpoint(), Address(), Endpoint());
+        return handler(asio::error::operation_aborted, AcceptResult());
       }
 
       if (error) {
-        return handler(asio::error::operation_aborted, Endpoint(), Address(), Endpoint());
+        return handler(asio::error::operation_aborted, AcceptResult());
       }
 
       acceptors_.erase(port);
@@ -228,18 +275,18 @@ void Connections::Accept(unsigned short port, const Handler handler) {
       std::weak_ptr<crux::socket> weak_socket = socket;
 
       AsyncExchange(*socket, Serialise(our_id_, his_endpoint), [=](boost::system::error_code error,
-                                                                   SerialisedMessage data) {
+                                                                   SerialisedMessage data) mutable {
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return handler(asio::error::operation_aborted, convert::ToAsio(remote_endpoint),
-                         Address(), Endpoint());
+          return handler(asio::error::operation_aborted,
+                         AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
         }
 
         if (error) {
           connections_.erase(remote_endpoint);
-          return handler(convert::ToStd(error), convert::ToAsio(remote_endpoint), Address(),
-                         Endpoint());
+          return handler(convert::ToStd(error),
+                         AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
         }
 
         InputVectorStream stream(data);
@@ -250,10 +297,13 @@ void Connections::Accept(unsigned short port, const Handler handler) {
         id_to_endpoint_map_[his_id] = remote_endpoint;
         StartReceiving(his_id, remote_endpoint, socket);
 
-        handler(convert::ToStd(error), convert::ToAsio(remote_endpoint), his_id, our_endpoint);
+        handler(convert::ToStd(error),
+                AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
       });
     });
   });
+
+  return result.get();
 }
 
 inline void Connections::StartReceiving(const Address& id, const crux::endpoint& remote_endpoint,
@@ -264,11 +314,12 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
   auto buffer = std::make_shared<SerialisedMessage>(max_message_size());
 
   socket->async_receive(
-      boost::asio::buffer(*buffer), [=](boost::system::error_code error, size_t size) {
+      boost::asio::buffer(*buffer), [=](boost::system::error_code error, size_t size) mutable {
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return receive_queue_.Push(asio::error::operation_aborted, id, std::move(*buffer));
+          return receive_queue_.Push(asio::error::operation_aborted,
+                                     ReceiveResult{id, std::move(*buffer)});
         }
 
         if (error) {
@@ -277,7 +328,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         }
 
         buffer->resize(size);
-        receive_queue_.Push(convert::ToStd(error), id, std::move(*buffer));
+        receive_queue_.Push(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
 
         if (error)
           return;

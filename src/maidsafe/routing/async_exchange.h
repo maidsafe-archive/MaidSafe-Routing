@@ -46,7 +46,7 @@ void AsyncExchange(crux::socket& socket, SerialisedMessage our_data, Handler han
   state->tx_buffer = std::move(our_data);
 
   socket.async_send(boost::asio::buffer(state->tx_buffer),
-                    [state, handler](boost::system::error_code error, std::size_t) {
+                    [state, handler](boost::system::error_code error, std::size_t) mutable {
     if (state->first_error) {
       if (*state->first_error) {
         return handler(*state->first_error, SerialisedMessage());
@@ -61,7 +61,7 @@ void AsyncExchange(crux::socket& socket, SerialisedMessage our_data, Handler han
   });
 
   socket.async_receive(boost::asio::buffer(state->rx_buffer),
-                       [state, handler](boost::system::error_code error, std::size_t size) {
+                       [state, handler](boost::system::error_code error, std::size_t size) mutable {
     if (state->first_error) {
       if (*state->first_error) {
         return handler(*state->first_error, SerialisedMessage());

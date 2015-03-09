@@ -87,16 +87,16 @@ void ConnectionManager::AddNode(
 
   // TODO(PeterJ): Use local endpoint as well
   connections_->Connect(their_endpoint_pair.external,
-                        [=](asio::error_code error, Address addr, Endpoint our_endpoint) {
+                        [=](asio::error_code error, Connections::ConnectResult result) {
     if (!weak_connections.lock()) {
       return;
     }
 
-    if (error || (addr != node_to_add.id)) {
+    if (error || (result.his_address != node_to_add.id)) {
       return;
     }
 
-    on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
+    on_node_added(AddToRoutingTable(node_to_add), result.our_endpoint);
   });
 }
 
@@ -111,19 +111,19 @@ template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_conn
 
   // TODO(Team): What endpoint should we accept on?
   connections->Accept(6378,
-    [=](asio::error_code error, asio::ip::udp::endpoint, Address addr, Endpoint our_endpoint) {
+    [=](asio::error_code error, Connections::AcceptResult result) {
     if (error) {
       return;
     }
 
-    if (node_to_add.id != addr) {
+    if (node_to_add.id != result.his_address) {
       // Restart
       StartAccepting(weak_connections, std::move(node_to_add), std::move(node_eps),
                      std::move(handler));
       return;
     }
 
-    handler(our_endpoint);
+    handler(result.our_endpoint);
   });
 }
 
@@ -173,11 +173,10 @@ boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
 void ConnectionManager::StartReceiving() {
   std::weak_ptr<Connections> weak_connections = connections_;
 
-  connections_->Receive([=](asio::error_code error, Address address,
-                            const SerialisedMessage& message) {
+  connections_->Receive([=](asio::error_code error, Connections::ReceiveResult result) {
     if (!weak_connections.lock()) return;
     auto h = std::move(on_receive_);
-    h(error, std::move(address), std::move(message));
+    h(error, std::move(result.his_address), std::move(result.message));
     if (!weak_connections.lock()) return;
     on_receive_ = std::move(h);
     StartReceiving();

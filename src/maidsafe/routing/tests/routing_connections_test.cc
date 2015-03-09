@@ -17,6 +17,8 @@
     use of the MaidSafe Software.                                                                 */
 
 
+#include "asio/use_future.hpp"
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -28,6 +30,14 @@ namespace maidsafe {
 namespace routing {
 
 namespace test {
+
+static SerialisedMessage str_to_msg(const std::string& str) {
+  return SerialisedMessage(str.begin(), str.end());
+}
+
+static std::string msg_to_str(const SerialisedMessage& msg) {
+  return std::string(msg.begin(), msg.end());
+}
 
 TEST(ConnectionsTest, FUNC_TwoConnections) {
   boost::asio::io_service ios;
@@ -44,14 +54,13 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   bool c2_finished = false;
 
   c1.Accept(port,
-      [&](asio::error_code error, asio::ip::udp::endpoint, NodeId his_id, Endpoint my_ep) {
+      [&](asio::error_code error, Connections::AcceptResult result) {
         ASSERT_FALSE(error);
-        ASSERT_EQ(his_id, c2.OurId());
-        ASSERT_EQ(my_ep.port(), port);
-        std::string msg = "hello";
+        ASSERT_EQ(result.his_address, c2.OurId());
+        ASSERT_EQ(result.our_endpoint.port(), port);
 
-        c1.Send(his_id,
-                std::vector<unsigned char>(msg.begin(), msg.end()),
+        c1.Send(result.his_address,
+                str_to_msg("hello"),
                 [&](asio::error_code error) {
                   ASSERT_FALSE(error);
                   c1.Shutdown();
@@ -60,16 +69,14 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
       });
 
   c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, NodeId his_id, Endpoint /*my_ep*/) {
+      [&](asio::error_code error, Connections::ConnectResult result) {
         ASSERT_FALSE(error);
-        ASSERT_EQ(his_id, c1.OurId());
+        ASSERT_EQ(result.his_address, c1.OurId());
 
-        c2.Receive([&, his_id](asio::error_code error,
-                       NodeId sender_id,
-                       const std::vector<unsigned char>& bytes) {
+        c2.Receive([&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
           ASSERT_FALSE(error);
-          ASSERT_EQ(sender_id, his_id);
-          ASSERT_EQ(std::string(bytes.begin(), bytes.end()), "hello");
+          ASSERT_EQ(recv_result.his_address, result.his_address);
+          ASSERT_EQ(msg_to_str(recv_result.message), "hello");
 
           c2.Shutdown();
           c2_finished = true;
@@ -79,6 +86,44 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   ios.run();
 
   ASSERT_TRUE(c1_finished && c2_finished);
+}
+
+TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
+  boost::asio::io_service ios;
+  boost::asio::io_service::work work(ios);
+
+  NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
+  NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
+
+  Connections c1(ios, c1_id);
+  Connections c2(ios, c2_id);
+
+  unsigned short port = 8080;
+
+  std::thread thread([&]() { ios.run(); });
+
+  auto accept_f  = c1.Accept(port, asio::use_future);
+  auto connect_f = c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
+
+  auto accept_result  = accept_f.get();
+  auto connect_result = connect_f.get();
+
+  ASSERT_EQ(accept_result.his_address, c2.OurId());
+  ASSERT_EQ(accept_result.our_endpoint.port(), port);
+
+  ASSERT_EQ(connect_result.his_address, c1.OurId());
+
+  auto recv_f = c2.Receive(asio::use_future);
+  auto send_f = c1.Send(accept_result.his_address, str_to_msg("hello"), asio::use_future);
+
+  send_f.get();
+  recv_f.get();
+
+  c1.Shutdown();
+  c2.Shutdown();
+
+  ios.stop();
+  thread.join();
 }
 
 }  // namespace test

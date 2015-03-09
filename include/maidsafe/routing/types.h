@@ -92,6 +92,15 @@ using Checksum = crypto::SHA1Hash;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 
 
+template <typename CompletionToken, typename... Args>
+using AsyncResultHandler =
+    typename asio::handler_type<typename std::decay<CompletionToken>::type, void(asio::error_code, Args...)>::type;
+
+template <typename CompletionToken, typename... Args>
+using AsyncResultReturn =
+    typename asio::async_result<AsyncResultHandler<CompletionToken, Args...>>::type;
+
+// FIXME: All the below handlers and results can be implemented using the above two.
 template <typename CompletionToken>
 using BootstrapHandlerHandler =
     typename asio::handler_type<CompletionToken, void(asio::error_code, Contact)>::type;
