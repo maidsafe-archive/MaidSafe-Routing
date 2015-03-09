@@ -436,7 +436,9 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 
 template <typename Child>
 void RoutingNode<Child>::ConnectionLost(Address peer) {
-  connection_manager_.LostNetworkConnection(peer);
+  auto change = connection_manager_.LostNetworkConnection(peer);
+  if (change)
+    static_cast<Child*>(this)->HandleChurn(*added);
 }
 
 // reply with our details;
