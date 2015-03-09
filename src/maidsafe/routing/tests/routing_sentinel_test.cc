@@ -33,18 +33,6 @@ namespace routing {
 
 namespace test {
 
-void SendGetClientKey(Address /*node_address*/) {
-
-}
-
-void SendGetGroupKey(GroupAddress /*group_address*/) {
-  //std::lock_guard<std::mutex> lock(mutex_);
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](const SignatureGroup group_)
-                          { return group_.Address() == group_address.Address();});
-
-}
-
 // structure to track messages sent to sentinel and what sentinel result should be
 class SignatureGroup {
  public:
@@ -58,15 +46,18 @@ class SignatureGroup {
 };
 
 // persistent sentinel throughout all sentinel tests
-//
 class SentinelMessageSimulation : public testing::Test {
  public:
   SentinelMessageSimulation()
-    : sentinel_(SendGetClientKey, SendGetGroupKey) {}
+    : sentinel_(&SentinelMessageSimulation::SendGetClientKey,
+                &SentinelMessageSimulation::SendGetGroupKey) {}
 
   // Add a correct, cooperative group of indictated total size and responsive quorum
   void AddCorrectGroup(GroupAddress group_address, size_t group_size,
                        size_t active_quorum);
+
+  void SendGetClientKey(const Address node_address);
+  void SendGetGroupKey(const GroupAddress group_address);
 
  protected:
   Sentinel sentinel_;
@@ -75,6 +66,17 @@ class SentinelMessageSimulation : public testing::Test {
  private:
   std::vector<SignatureGroup> groups_;
 };
+
+void SentinelMessageSimulation::SendGetClientKey(Address node_address) {
+
+}
+
+void SentinelMessageSimulation::SendGetGroupKey(GroupAddress group_address) {
+  //std::lock_guard<std::mutex> lock(mutex_);
+  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
+                          [group_address](const SignatureGroup group_)
+                          { return group_.Address() == group_address.Address();});
+}
 
 // first try for specific message type, generalise later
 // PutData is chosen as fundamental type with data payload.
