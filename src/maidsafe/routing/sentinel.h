@@ -63,14 +63,14 @@ class Sentinel {
   using SingleMessage = std::false_type;
 
   template <typename AccumulatorType, typename AccumulatorKeyType>
-  boost::optional<std::vector<ResultType>> Validate(const typename AccumulatorType::Map& messages,
-                                                    const typename AccumulatorKeyType::Map& keys);
+  std::vector<ResultType> Validate(const typename AccumulatorType::Map& messages,
+                                   const typename AccumulatorKeyType::Map& keys);
 
   boost::optional<ResultType>
-  Resolve(const boost::optional<std::vector<ResultType>>& verified_messages, GroupMessage);
+  Resolve(const std::vector<ResultType>& verified_messages, GroupMessage);
 
   boost::optional<ResultType>
-  Resolve(const boost::optional<std::vector<ResultType>>& verified_messages, SingleMessage);
+  Resolve(const std::vector<ResultType>& verified_messages, SingleMessage);
 
   GetKey get_key_;
   GetGroupKey get_group_key_;
@@ -81,13 +81,13 @@ class Sentinel {
 };
 
 template <>
-boost::optional<std::vector<Sentinel::ResultType>>
+std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename Sentinel::NodeAccumulatorType::Map& messages,
     const typename Sentinel::KeyAccumulatorType::Map& keys);
 
 template <>
-boost::optional<std::vector<Sentinel::ResultType>>
+std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename Sentinel::GroupAccumulatorType::Map& messages,
     const typename Sentinel::KeyAccumulatorType::Map& keys);
