@@ -51,12 +51,27 @@ class SignatureGroup {
 
   GroupAddress Address() { return group_address_; }
 
+  std::vector<MessageHeader> GetHeaders(GroupAddress group_address,
+                                        MessageId message_id,
+                                        SerialisedData message);
+
  private:
   GroupAddress group_address_;
   size_t group_size_;
   size_t active_quorum_;
   std::vector<passport::Pmid> nodes_;
 };
+
+std::vector<MessageHeader> SignatureGroup::GetHeaders(GroupAddress group_address,
+                                                      MessageId message_id,
+                                                      SerialisedData message) {
+  std::vector<MessageHeader> headers;
+  auto itr = nodes_.begin();
+  for (size_t i; i < active_quorum; i++) {
+    headers.push_back(MessageHeader);
+    itr++;
+  }
+}
 
 // persistent sentinel throughout all sentinel tests
 class SentinelTest : public testing::Test {
@@ -69,8 +84,8 @@ class SentinelTest : public testing::Test {
   void AddCorrectGroup(GroupAddress group_address, size_t group_size,
                        size_t active_quorum);
 
-  template <typename TypeData>
-  void SimulateMessage(GroupAddress)
+  template <typename DataType>
+  void SimulateMessage(GroupAddress group_address, typename DataType message);
 
   void SendGetClientKey(const Address node_address);
   void SendGetGroupKey(const GroupAddress group_address);
@@ -125,7 +140,8 @@ TEST_F(SentinelTest, BEH_SentinelSimpleAdd) {
   // Full group will respond correctly to Sentinel requests
   const auto group_address(GroupAddress(NodeId(RandomString(NodeId::kSize))));
   AddCorrectGroup(group_address, GroupSize, GroupSize);
-  SimulateMessage
+  SimulateMessage(group_address, put_message);
+
 }
 
 }  // namespacce test
