@@ -40,7 +40,8 @@ enum class MessageTypeTag : uint16_t {
   PostResponse,
   PutData,
   PutDataResponse,
-  PutKey
+  PutKey,
+  AccountTransfer
 };
 
 class Connect;

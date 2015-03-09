@@ -21,6 +21,7 @@
 #include "maidsafe/common/rsa.h"
 
 #include "maidsafe/routing/sentinel.h"
+#include "maidsafe/routing/account_transfer_info.h"
 
 namespace maidsafe {
 
@@ -93,7 +94,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
 }
 
 template <>
-boost::optional<std::vector<Sentinel::ResultType>>
+std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename NodeAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
@@ -118,7 +119,7 @@ Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
 
   auto public_key(Parse<asymm::PublicKey>(*keys_map.begin()->second.begin()));
   if (!asymm::ValidateKey(public_key))
-    return boost::none;
+    return std::vector<ResultType>();
 
   for (const auto& message : messages) {
     auto signature(std::get<0>(message.second).Signature());
@@ -129,11 +130,11 @@ Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
   if (verified_messages.size() >= 1)
     return verified_messages;
 
-  return boost::none;
+  return std::vector<ResultType>();
 }
 
 template <>
-boost::optional<std::vector<Sentinel::ResultType>>
+std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename GroupAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
@@ -175,37 +176,46 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
   if (verified_messages.size() >= QuorumSize)
     return verified_messages;
 
-  return boost::none;
+  return std::vector<ResultType>();
 }
 
 boost::optional<Sentinel::ResultType>
-Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messages, GroupMessage) {
-  if (!verified_messages)
+Sentinel::Resolve(const std::vector<ResultType>& verified_messages, GroupMessage) {
+  if (verified_messages.size() < QuorumSize)
     return boost::none;
 
-  // TODO(mmoadeli): below is only for non-account transfer message types, where exact match is
-  // taken into account
-
-  for (size_t index(0); index < verified_messages->size(); ++index) {
-    auto& serialised_message(std::get<2>(verified_messages->at(index)));
-    if (static_cast<typename std::vector<ResultType>::size_type>(
-            std::count_if(verified_messages->begin(), verified_messages->end(),
-                          [&](const ResultType& result) {
-                            return std::get<2>(result) == serialised_message;
-                          })) >= QuorumSize)
-      return verified_messages->at(index);
+  // if part addresses non-account transfer message types, where an exact match is required
+  if (std::get<1>(*verified_messages.begin()) != MessageTypeTag::AccountTransfer) {
+    for (size_t index(0); index < verified_messages.size(); ++index) {
+      auto& serialised_message(std::get<2>(verified_messages.at(index)));
+      if (static_cast<typename std::vector<ResultType>::size_type>(
+              std::count_if(verified_messages.begin(), verified_messages.end(),
+                            [&](const ResultType& result) {
+                              return std::get<2>(result) == serialised_message;
+                            })) >= QuorumSize)
+        return verified_messages.at(index);
+    }
+  } else {  // account transfer
+    std::vector<std::unique_ptr<AccountTransferInfo>> accounts;
+    for (const auto& message : verified_messages)
+       accounts.emplace_back(Parse<std::unique_ptr<AccountTransferInfo>>(std::get<2>(message)));
+    auto merged_value_ptr((*accounts.begin())->Merge(accounts));
+    if (merged_value_ptr) {
+      auto result(*verified_messages.begin());
+      std::get<2>(result) = merged_value_ptr->Serialise();
+      return result;
+    }
   }
 
   return boost::none;
 }
 
 boost::optional<Sentinel::ResultType>
-Sentinel::Resolve(const boost::optional<std::vector<ResultType>>& verified_messages,
-                  SingleMessage) {
-  if (!verified_messages)
+Sentinel::Resolve(const std::vector<ResultType>& verified_messages, SingleMessage) {
+  if (verified_messages.empty())
     return boost::none;
 
-  return verified_messages->at(0);
+  return verified_messages.at(0);
 }
 
 }  // namespace routing
