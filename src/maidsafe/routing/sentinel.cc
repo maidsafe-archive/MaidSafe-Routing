@@ -80,7 +80,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     if (header.FromGroup()) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       if (!group_accumulator_.HaveName(key))
-        get_group_key_(*header.FromGroup());
+        send_get_group_key_(*header.FromGroup());
       auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
@@ -97,7 +97,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     } else {
       auto key(std::make_pair(header.FromNode(), header.MessageId()));
       if (!node_accumulator_.HaveName(key))
-        get_key_(header.FromNode());
+        send_get_client_key_(header.FromNode());
       auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                           std::make_tuple(header, tag, std::move(message)),
                                           header.FromNode()));
@@ -179,8 +179,10 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
   }
 
   // TODO(mmoadeli): For the time being, we assume that no invalid public is received
-  for (const auto& key_map : keys_map)
+  for (const auto& key_map : keys_map) {
     assert(key_map.second.size() == 1);
+    static_cast<void>(key_map);
+  }
 
   for (const auto& message : messages) {
     auto keys_map_iter = keys_map.find(std::get<0>(message.second).FromNode());
