@@ -90,6 +90,15 @@ class Accumulator {
     return std::make_pair(it->first, std::get<0>(it->second));
   }
 
+  void Delete(const NameType& key) {
+    const auto it = this->storage_.find(key);
+    if (it != this->storage_.end()) {
+      std::get<1>(it->second) = std::chrono::steady_clock::now() - this->time_to_live_;
+      this->key_order_.splice(this->key_order_.begin(), this->key_order_, std::get<0>(it->second));
+      this->RemoveOldestElement();
+    }
+  }
+
   size_t size() const { return storage_.size(); }
 
  private:
