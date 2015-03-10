@@ -53,7 +53,7 @@ class SignatureGroup {
 
   GroupAddress Address() { return group_address_; }
 
-  std::vector<MessageHeader> GetHeaders(GroupAddress group_address,
+  std::vector<MessageHeader> GetHeaders(DestinationAddress destination_address,
                                         MessageId message_id,
                                         SerialisedData message);
 
@@ -73,8 +73,8 @@ std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destina
   for (size_t i; i < active_quorum; i++) {
     headers.push_back(
         MessageHeader(destination_address,
-                      SourceAddress(NodeAddress(itr.name()), group_address_, boost::none),
-                      message_id, );
+                      SourceAddress(NodeAddress(itr->name()), group_address_, boost::none),
+                      message_id, authority_, assym::Sign(message, itr->private_key())));
     itr++;
   }
 }
