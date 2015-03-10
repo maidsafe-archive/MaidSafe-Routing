@@ -93,8 +93,9 @@ class Accumulator {
   void Delete(const NameType& key) {
     const auto it = this->storage_.find(key);
     if (it != this->storage_.end()) {
-      std::get<1>(it->second) = std::chrono::steady_clock::now() - this->time_to_live_;
-      this->key_order_.splice(this->key_order_.begin(), this->key_order_, std::get<0>(it->second));
+      std::get<2>(it->second) = std::chrono::steady_clock::now() - this->time_to_live_;
+      this->name_order_.splice(this->name_order_.begin(), this->name_order_,
+                               std::get<1>(it->second));
       this->RemoveOldestElement();
     }
   }
