@@ -19,28 +19,102 @@
 #ifndef MAIDSAFE_ROUTING_ACCOUNT_TRANSFER_INFO_H_
 #define MAIDSAFE_ROUTING_ACCOUNT_TRANSFER_INFO_H_
 
+#include <cstdint>
+
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/polymorphic.hpp"
 
-#include "maidsafe/common/data_types/data.h"
-#include "maidsafe/routing/types.h"
+#include "maidsafe/common/config.h"
+#include "maidsafe/common/error.h"
+#include "maidsafe/common/identity.h"
+#include "maidsafe/common/types.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-class AccountTransferInfo : public Data {
+class AccountTransferInfo {
  public:
-  virtual std::unique_ptr<AccountTransferInfo> Merge(
-              const std::vector<std::unique_ptr<AccountTransferInfo>>& accounts) = 0;
+  struct NameAndTypeId {
+    NameAndTypeId(Identity name_in, DataTypeId type_id_in);
+    NameAndTypeId();
+    NameAndTypeId(const NameAndTypeId&);
+    NameAndTypeId(NameAndTypeId&& other) MAIDSAFE_NOEXCEPT;
+    NameAndTypeId& operator=(const NameAndTypeId&);
+    NameAndTypeId& operator=(NameAndTypeId&& other) MAIDSAFE_NOEXCEPT;
 
-  virtual SerialisedMessage Serialise() = 0;
+    template <typename Archive>
+    Archive& serialize(Archive& archive) {
+      return archive(name, type_id);
+    }
+
+    Identity name;
+    DataTypeId type_id;
+  };
+
+  AccountTransferInfo();
+  AccountTransferInfo(const AccountTransferInfo&);
+  AccountTransferInfo(AccountTransferInfo&& other);
+  AccountTransferInfo& operator=(const AccountTransferInfo&);
+  AccountTransferInfo& operator=(AccountTransferInfo&& other);
+  virtual ~AccountTransferInfo();
+
+  virtual std::unique_ptr<AccountTransferInfo> Merge(
+               const std::vector<std::unique_ptr<AccountTransferInfo>>& accounts) = 0;
+
+  // Returns false for a default-constructed instance of this class, otherwise true.
+  bool IsInitialised() const;
+
+  // Throws if IsInitialised() is false.
+  const Identity& Name() const;
+
+  // Throws if IsInitialised() is false.
+  DataTypeId TypeId() const;
+
+  // Throws if IsInitialised() is false.
+  NameAndTypeId NameAndType() const;
+
+  // Throws if IsInitialised() is false.
+  template <typename Archive>
+  Archive& save(Archive& archive) const {
+    if (!IsInitialised())
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::uninitialised));
+    return archive(name_);
+  }
+
+  template <typename Archive>
+  Archive& load(Archive& archive) {
+    archive(name_);
+    if (!IsInitialised())
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    return archive;
+  }
+
+ protected:
+  // Throws if IsInitialised() is false.
+  explicit AccountTransferInfo(Identity name);
+
+  // Doesn't need to throw.
+  virtual std::uint32_t ThisTypeId() const = 0;
+
+  Identity name_;
 };
+
+bool operator==(const AccountTransferInfo::NameAndTypeId& lhs,
+                const AccountTransferInfo::NameAndTypeId& rhs);
+bool operator!=(const AccountTransferInfo::NameAndTypeId& lhs,
+                const AccountTransferInfo::NameAndTypeId& rhs);
+bool operator<(const AccountTransferInfo::NameAndTypeId& lhs,
+               const AccountTransferInfo::NameAndTypeId& rhs);
+bool operator>(const AccountTransferInfo::NameAndTypeId& lhs,
+               const AccountTransferInfo::NameAndTypeId& rhs);
+bool operator<=(const AccountTransferInfo::NameAndTypeId& lhs,
+                const AccountTransferInfo::NameAndTypeId& rhs);
+bool operator>=(const AccountTransferInfo::NameAndTypeId& lhs,
+                const AccountTransferInfo::NameAndTypeId& rhs);
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_ACCOUNT_TRANSFER_INFO_H_
-
-

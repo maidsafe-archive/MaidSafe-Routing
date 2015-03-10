@@ -19,6 +19,7 @@
 #include "cereal/types/utility.hpp"
 
 #include "maidsafe/common/rsa.h"
+#include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/account_transfer_info.h"
@@ -202,7 +203,7 @@ Sentinel::Resolve(const std::vector<ResultType>& verified_messages, GroupMessage
     auto merged_value_ptr((*accounts.begin())->Merge(accounts));
     if (merged_value_ptr) {
       auto result(*verified_messages.begin());
-      std::get<2>(result) = merged_value_ptr->Serialise();
+      std::get<2>(result) = Serialise(*merged_value_ptr);
       return result;
     }
   }
