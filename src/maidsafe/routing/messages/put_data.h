@@ -43,7 +43,7 @@ class PutData {
     return *this;
   }
 
-  PutData(const PutData&) = delete;
+  PutData(const PutData&) = default;
   PutData& operator=(const PutData&) = delete;
 
   template <typename Archive>
