@@ -40,10 +40,12 @@ namespace test {
 // structure to track messages sent to sentinel and what sentinel result should be
 class SignatureGroup {
  public:
-  SignatureGroup(GroupAddress group_address, size_t group_size, size_t active_quorum)
+  SignatureGroup(GroupAddress group_address, size_t group_size, size_t active_quorum,
+                 Authority authority)
       : group_address_(std::move(group_address)),
         group_size_(std::move(group_size)),
-        active_quorum_(std::move(active_quorum)) {
+        active_quorum_(std::move(active_quorum)),
+        authority_(std::move(authority)){
     for (size_t i = 0; i < group_size; i++) {
       nodes_.push_back(passport::CreatePmidAndSigner().first);
     }
@@ -59,16 +61,20 @@ class SignatureGroup {
   GroupAddress group_address_;
   size_t group_size_;
   size_t active_quorum_;
+  Authority authority_;
   std::vector<passport::Pmid> nodes_;
 };
 
-std::vector<MessageHeader> SignatureGroup::GetHeaders(GroupAddress group_address,
+std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destination_address,
                                                       MessageId message_id,
                                                       SerialisedData message) {
   std::vector<MessageHeader> headers;
   auto itr = nodes_.begin();
   for (size_t i; i < active_quorum; i++) {
-    headers.push_back(MessageHeader);
+    headers.push_back(
+        MessageHeader(destination_address,
+                      SourceAddress(NodeAddress(itr.name()), group_address_, boost::none),
+                      message_id, );
     itr++;
   }
 }
@@ -139,7 +145,7 @@ TEST_F(SentinelTest, BEH_SentinelSimpleAdd) {
 
   // Full group will respond correctly to Sentinel requests
   const auto group_address(GroupAddress(NodeId(RandomString(NodeId::kSize))));
-  AddCorrectGroup(group_address, GroupSize, GroupSize);
+  AddCorrectGroup(group_address, GroupSize, GroupSize, Authority::client_manager);
   SimulateMessage(group_address, put_message);
 
 }
