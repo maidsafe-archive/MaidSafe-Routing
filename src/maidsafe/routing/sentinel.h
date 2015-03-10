@@ -59,20 +59,38 @@ class Sentinel {
   using NodeAccumulatorType = Accumulator<NodeKeyType, ResultType>;
   using GroupAccumulatorType = Accumulator<GroupKeyType, ResultType>;
   using KeyAccumulatorType = Accumulator<GroupAddress, ResultType>;
+  using GroupMessage = std::true_type;
+  using SingleMessage = std::false_type;
 
   template <typename AccumulatorType, typename AccumulatorKeyType>
-  boost::optional<ResultType> Validate(const typename AccumulatorType::Map& messages,
-                                       const typename AccumulatorKeyType::Map& /*keys*/) {
-    return messages.begin()->second;
-  }
+  std::vector<ResultType> Validate(const typename AccumulatorType::Map& messages,
+                                   const typename AccumulatorKeyType::Map& keys);
+
+  boost::optional<ResultType>
+  Resolve(const std::vector<ResultType>& verified_messages, GroupMessage);
+
+  boost::optional<ResultType>
+  Resolve(const std::vector<ResultType>& verified_messages, SingleMessage);
 
   SendGetClientKey send_get_client_key_;
   SendGetGroupKey send_get_group_key_;
   NodeAccumulatorType node_accumulator_{std::chrono::minutes(20), 1U};
   GroupAccumulatorType group_accumulator_{std::chrono::minutes(20), QuorumSize};
   KeyAccumulatorType group_key_accumulator_{std::chrono::minutes(20), QuorumSize};
-  KeyAccumulatorType node_key_accumulator_{std::chrono::minutes(20), 1U};
+  KeyAccumulatorType node_key_accumulator_{std::chrono::minutes(20), QuorumSize};
 };
+
+template <>
+std::vector<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename Sentinel::NodeAccumulatorType::Map& messages,
+    const typename Sentinel::KeyAccumulatorType::Map& keys);
+
+template <>
+std::vector<Sentinel::ResultType>
+Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
+    const typename Sentinel::GroupAccumulatorType::Map& messages,
+    const typename Sentinel::KeyAccumulatorType::Map& keys);
 
 }  // namespace routing
 
