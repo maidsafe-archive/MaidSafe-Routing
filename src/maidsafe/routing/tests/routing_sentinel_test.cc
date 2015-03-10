@@ -46,7 +46,7 @@ class SignatureGroup {
         group_size_(std::move(group_size)),
         active_quorum_(std::move(active_quorum)),
         authority_(std::move(authority)){
-    for (size_t i = 0; i < group_size; i++) {
+    for (size_t i(0); i < group_size; i++) {
       nodes_.push_back(passport::CreatePmidAndSigner().first);
     }
   }
@@ -86,14 +86,18 @@ class SentinelTest : public testing::Test {
  public:
   SentinelTest()
     : sentinel_([this](Address address) { SendGetClientKey(address); },
-                [this](GroupAddress group_address) { SendGetGroupKey(group_address); }) {}
+                [this](GroupAddress group_address) { SendGetGroupKey(group_address); }),
+      our_pmid_(passport::CreatePmidAndSigner().first),
+      our_destination_(std::make_pair(Destination(NodeId(our_pmid_.name()->string())),
+                                      boost::none)) {}
 
   // Add a correct, cooperative group of indictated total size and responsive quorum
   void AddCorrectGroup(GroupAddress group_address, size_t group_size,
                        size_t active_quorum, Authority authority);
 
-  template <typename DataType>
-  void SimulateMessage(GroupAddress group_address, DataType message);
+  std::vector<boost::optional<Sentinel::ResultType>>
+    SimulateMessage(GroupAddress group_address,
+                    MessageTypeTag tag, SerialisedData message);
 
   void SendGetClientKey(const Address node_address);
   void SendGetGroupKey(const GroupAddress group_address);
@@ -104,6 +108,8 @@ class SentinelTest : public testing::Test {
 
  private:
   std::vector<SignatureGroup> groups_;
+  passport::Pmid our_pmid_;
+  DestinationAddress our_destination_;
 };
 
 void SentinelTest::AddCorrectGroup(GroupAddress group_address,
@@ -116,24 +122,30 @@ void SentinelTest::AddCorrectGroup(GroupAddress group_address,
       groups_.push_back(SignatureGroup(group_address, group_size, active_quorum, authority));
   else assert("Sentinel test AddCorrectGroup: Group already exists");
 
-
   static_cast<void>(itr);
   static_cast<void>(group_address);
   static_cast<void>(group_size);
   static_cast<void>(active_quorum);
 }
 
-template <typename DataType>
-void SentinelTest::SimulateMessage(GroupAddress group_address, DataType /*message*/) {
+std::vector<boost::optional<Sentinel::ResultType>>
+  SentinelTest::SimulateMessage(GroupAddress group_address,
+                                MessageTypeTag tag, SerialisedData message) {
 
+  std::vector<boost::optional<Sentinel::ResultType>> result;
   auto itr = std::find_if(std::begin(groups_), std::end(groups_),
                           [group_address](SignatureGroup group_)
                           { return group_.Address() == group_address; });
   if (itr == std::end(groups_)) assert("Sentinel test SimulateMessage: debug Error in test");
   else {
-
+     auto headers = itr->GetHeaders(our_destination_,
+                                    MessageId(RandomUint32()), message);
+     for (auto header : headers) {
+       result.push_back(sentinel_.Add(header, tag, message));
+     }
   }
 
+  return result;
 }
 
 void SentinelTest::SendGetClientKey(Address /*node_address*/) {
@@ -145,6 +157,8 @@ void SentinelTest::SendGetGroupKey(GroupAddress group_address) {
   auto itr = std::find_if(std::begin(groups_), std::end(groups_),
                           [group_address](SignatureGroup group_)
                           { return group_.Address() == group_address; });
+
+  sentinel_.Add()
   static_cast<void>(itr);
 }
 
@@ -160,7 +174,9 @@ TEST_F(SentinelTest, BEH_SentinelSimpleAdd) {
   // Full group will respond correctly to Sentinel requests
   const auto group_address(GroupAddress(NodeId(RandomString(NodeId::kSize))));
   AddCorrectGroup(group_address, GroupSize, GroupSize, Authority::client_manager);
-  SimulateMessage(group_address, put_message);
+  auto results(SimulateMessage(group_address,
+                               MessageTypeTag::PutData, Serialise(put_message)));
+
 
 }
 
