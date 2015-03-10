@@ -107,6 +107,7 @@ struct MessageToTag<PostResponse> {
   static MessageTypeTag value() { return MessageTypeTag::PostResponse; }
 };
 
+
 }  // namespace routing
 
 }  // namespace maidsafe
