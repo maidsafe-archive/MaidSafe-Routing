@@ -38,13 +38,19 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                         std::make_tuple(header, tag, std::move(message)),
                                         header.FromNode()));
     if (keys) {
-      if (node_accumulator_.HaveName(std::make_pair(header.FromNode(), header.MessageId()))) {
+      auto key(std::make_pair(header.FromNode(), header.MessageId()));
+      if (node_accumulator_.HaveName(key)) {
         auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                             std::make_tuple(header, tag, std::move(message)),
                                             header.FromNode()));
-        if (messages)
-          return Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
-                             messages->second, keys->second), SingleMessage());
+        if (messages) {
+          auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
+                                    messages->second, keys->second), SingleMessage()));
+          if (resolved) {
+            node_accumulator_.Delete(key);
+            return resolved;
+          }
+        }
       }
     }
   } else if (tag == MessageTypeTag::GetGroupKeyResponse) {
@@ -54,40 +60,56 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                    std::make_tuple(header, tag, std::move(message)),
                                    header.FromNode()));
     if (keys) {
-      if (group_accumulator_.HaveName(std::make_pair(*header.FromGroup(), header.MessageId()))) {
+      auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
+      if (group_accumulator_.HaveName(key)) {
         auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(),
                                                             header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
-        if (messages)
-          return Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
-                             messages->second, keys->second), GroupMessage());
+        if (messages) {
+          auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
+                                    messages->second, keys->second), GroupMessage()));
+          if (resolved) {
+            group_accumulator_.Delete(key);
+            return resolved;
+          }
+        }
       }
     }
   } else {
     if (header.FromGroup()) {
-      if (!group_accumulator_.HaveName(std::make_pair(*header.FromGroup(), header.MessageId())))
+      auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
+      if (!group_accumulator_.HaveName(key))
         get_group_key_(*header.FromGroup());
       auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
                                            std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
       if (messages) {
         auto keys(group_accumulator_.GetAll(messages->first));
-        return Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
-                           messages->second, keys->second),
-                       GroupMessage());
+        auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
+                                  messages->second, keys->second),
+                              GroupMessage()));
+        if (resolved) {
+          group_accumulator_.Delete(key);
+          return resolved;
+        }
       }
     } else {
-      if (!node_accumulator_.HaveName(std::make_pair(header.FromNode(), header.MessageId())))
+      auto key(std::make_pair(header.FromNode(), header.MessageId()));
+      if (!node_accumulator_.HaveName(key))
         get_key_(header.FromNode());
       auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
                                           std::make_tuple(header, tag, std::move(message)),
                                           header.FromNode()));
       if (messages) {
         auto keys(node_accumulator_.GetAll(messages->first));
-        return Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
-                           messages->second, keys->second),
-                       SingleMessage());
+        auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
+                                  messages->second, keys->second),
+                              SingleMessage()));
+        if (resolved) {
+          node_accumulator_.Delete(key);
+          return resolved;
+        }
       }
     }
   }
