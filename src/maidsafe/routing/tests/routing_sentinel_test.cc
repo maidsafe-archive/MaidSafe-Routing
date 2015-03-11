@@ -37,6 +37,8 @@ namespace routing {
 
 namespace test {
 
+using SentinelReturns = std::vector<boost::optional<Sentinel::ResultType>>;
+
 // structure to track messages sent to sentinel and what sentinel result should be
 class SignatureGroup {
  public:
@@ -53,9 +55,25 @@ class SignatureGroup {
 
   GroupAddress Address() { return group_address_; }
 
+  std::vector<passport::PublicPmid> GetPublicKeys() {
+      std::vector<passport::PublicPmid> result;
+      for (auto node : nodes_)
+          result.push_back(passport::PublicPmid(node));
+      return result;
+  }
+
   std::vector<MessageHeader> GetHeaders(DestinationAddress destination_address,
                                         MessageId message_id,
                                         SerialisedData message);
+
+  void SaveSentinelReturn(
+          boost::optional<Sentinel::ResultType> sentinel_result) {
+      sentinel_returns_.push_back(sentinel_result);
+  }
+
+  SentinelReturns GetSentinelReturns() {
+      return sentinel_returns_;
+  }
 
  private:
   GroupAddress group_address_;
@@ -63,6 +81,8 @@ class SignatureGroup {
   size_t active_quorum_;
   Authority authority_;
   std::vector<passport::Pmid> nodes_;
+
+  SentinelReturns sentinel_returns_;
 };
 
 std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destination_address,
@@ -70,7 +90,7 @@ std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destina
                                                       SerialisedData message) {
   std::vector<MessageHeader> headers;
   for (const auto node : nodes_) {
-    // FIXME(benjaminbollen): this is ridiculous!
+    // FIXME(benjaminbollen): this is ridiculous, I must be doing something wrong!
     NodeAddress node_address(NodeId(node.name()->string()));
     headers.push_back(
         MessageHeader(destination_address,
@@ -95,9 +115,9 @@ class SentinelTest : public testing::Test {
   void AddCorrectGroup(GroupAddress group_address, size_t group_size,
                        size_t active_quorum, Authority authority);
 
-  std::vector<boost::optional<Sentinel::ResultType>>
-    SimulateMessage(GroupAddress group_address,
-                    MessageTypeTag tag, SerialisedData message);
+  void SimulateMessage(GroupAddress group_address,
+                       MessageTypeTag tag, SerialisedData message);
+  SentinelReturns GetSentinelReturns(GroupAddress group_address);
 
   void SendGetClientKey(const Address node_address);
   void SendGetGroupKey(const GroupAddress group_address);
@@ -128,24 +148,33 @@ void SentinelTest::AddCorrectGroup(GroupAddress group_address,
   static_cast<void>(active_quorum);
 }
 
-std::vector<boost::optional<Sentinel::ResultType>>
-  SentinelTest::SimulateMessage(GroupAddress group_address,
-                                MessageTypeTag tag, SerialisedData message) {
+void SentinelTest::SimulateMessage(GroupAddress group_address,
+                                   MessageTypeTag tag, SerialisedData message) {
 
-  std::vector<boost::optional<Sentinel::ResultType>> result;
   auto itr = std::find_if(std::begin(groups_), std::end(groups_),
                           [group_address](SignatureGroup group_)
                           { return group_.Address() == group_address; });
   if (itr == std::end(groups_)) assert("Sentinel test SimulateMessage: debug Error in test");
   else {
-     auto headers = itr->GetHeaders(our_destination_,
-                                    MessageId(RandomUint32()), message);
-     for (auto header : headers) {
-       result.push_back(sentinel_.Add(header, tag, message));
-     }
+    auto headers = itr->GetHeaders(our_destination_,
+                                   MessageId(RandomUint32()), message);
+    for (auto header : headers) {
+      itr->SaveSentinelReturn(sentinel_.Add(header, tag, message));
+    }
   }
+}
 
-  return result;
+SentinelReturns SentinelTest::GetSentinelReturns(GroupAddress group_address) {
+  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
+                          [group_address](SignatureGroup group_)
+                          { return group_.Address() == group_address; });
+  if (itr == std::end(groups_)) {
+    assert("Sentinel test GetSentinelReturns: debug Error in test");
+    return SentinelReturns();
+  }
+  else {
+    return itr->GetSentinelReturns();
+  }
 }
 
 void SentinelTest::SendGetClientKey(Address /*node_address*/) {
@@ -158,9 +187,33 @@ void SentinelTest::SendGetGroupKey(GroupAddress group_address) {
                           [group_address](SignatureGroup group_)
                           { return group_.Address() == group_address; });
 
-  //sentinel_.Add();
+  if (itr == std::end(groups_)) assert("Sentinel test SendGetGroupKey: debug Error in test");
+  else {
+    auto message(Serialise(GetGroupKeyResponse(itr->GetPublicKeys(),
+                                               itr->Address())));
+    auto headers = itr->GetHeaders(our_destination_,
+                                   MessageId(RandomUint32()),
+                                   message);
+
+    for (auto header : headers) {
+        itr->SaveSentinelReturn(
+                    sentinel_.Add(header, MessageTypeTag::GetGroupKeyResponse,
+                                  message));
+    }
+  }
   static_cast<void>(itr);
 }
+
+//++++ Free Test Functions +++++++++++++++++++++
+
+size_t CountNoneSentinelReturns(SentinelReturns sentinel_returns) {
+  size_t i(0);
+  for (auto sentinel_return : sentinel_returns )
+      if (sentinel_return == boost::none) i++;
+  return i;
+}
+
+
 
 // first try for specific message type, generalise later
 // PutData is chosen as fundamental type with data payload.
@@ -174,10 +227,10 @@ TEST_F(SentinelTest, BEH_SentinelSimpleAdd) {
   // Full group will respond correctly to Sentinel requests
   const auto group_address(GroupAddress(NodeId(RandomString(NodeId::kSize))));
   AddCorrectGroup(group_address, GroupSize, GroupSize, Authority::client_manager);
-  auto results(SimulateMessage(group_address,
-                               MessageTypeTag::PutData, Serialise(put_message)));
-
-
+  SimulateMessage(group_address,
+                  MessageTypeTag::PutData, Serialise(put_message));
+  auto returns(GetSentinelReturns(group_address));
+  EXPECT_EQ(2 * GroupSize -1, CountNoneSentinelReturns(returns));
 }
 
 }  // namespacce test

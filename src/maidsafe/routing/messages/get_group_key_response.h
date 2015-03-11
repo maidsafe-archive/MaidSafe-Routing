@@ -33,16 +33,16 @@ class GetGroupKeyResponse {
   GetGroupKeyResponse() = default;
   ~GetGroupKeyResponse() = default;
 
-  GetGroupKeyResponse(SourceAddress requester, Identity target_id)
-      : requester_(std::move(requester)),
+  GetGroupKeyResponse(std::vector<passport::PublicPmid> group, GroupAddress target_id)
+      : group_(std::move(group)),
         target_id_(std::move(target_id)) {}
 
   GetGroupKeyResponse(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_(std::move(other.requester_)),
+      : group_(std::move(other.group_)),
         target_id_(std::move(other.target_id_)) {}
 
   GetGroupKeyResponse& operator=(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_ = std::move(other.requester_);
+    group_ = std::move(other.group_);
     target_id_ = std::move(other.target_id_);
     return *this;
   }
@@ -52,15 +52,16 @@ class GetGroupKeyResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-      archive(requester_, target_id_);
+      archive(group_, target_id_);
   }
 
-  SourceAddress requester() const { return requester_; }
-  Identity target_id() const { return target_id_; }
+  std::vector<passport::PublicPmid> group() const { return group_; }
+  GroupAddress target_id() const { return target_id_; }
 
  private:
-  SourceAddress requester_;
-  Identity target_id_;
+  // targeted GroupAddress
+  std::vector<passport::PublicPmid> group_;
+  GroupAddress target_id_;
 };
 
 }  // namespace routing
