@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
 
+#include "cereal/types/utility.hpp"
+
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
@@ -33,14 +35,14 @@ class GetClientKeyResponse {
   GetClientKeyResponse() = default;
   ~GetClientKeyResponse() = default;
 
-  GetClientKeyResponse(SerialisedMessage serialied_public_key)
-      : serialied_public_key_(std::move(serialied_public_key)) {}
+  GetClientKeyResponse(Address address, const asymm::PublicKey& public_key)
+      : address_(address), public_key_(public_key)  {}
 
   GetClientKeyResponse(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT
-      : serialied_public_key_(std::move(other.serialied_public_key_)) {}
+      : public_key_(std::move(other.public_key_)) {}
 
   GetClientKeyResponse& operator=(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT {
-    serialied_public_key_ = std::move(other.serialied_public_key_);
+    public_key_ = std::move(other.public_key_);
     return *this;
   }
 
@@ -49,13 +51,15 @@ class GetClientKeyResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-      archive(serialied_public_key_);
+      archive(address_, public_key_);
   }
 
-  SerialisedMessage serialied_public_key() const { return serialied_public_key_; }
+   Address address() const { return address_; }
+   asymm::PublicKey public_key() const { return public_key_; }
 
  private:
-  SerialisedMessage serialied_public_key_;
+  Address address_;
+  asymm::PublicKey public_key_;
 };
 
 }  // namespace routing

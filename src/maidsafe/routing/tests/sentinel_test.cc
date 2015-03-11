@@ -73,7 +73,7 @@ class SentinelTest : public testing::Test {
   
   SentinelAddInfo CreateGerKeyResponse(const passport::Maid& maid, MessageId message_id,
                                        Address source, passport::Pmid& pmid) {
-    GetClientKeyResponse get_client_response(Serialise(maid.public_key()));
+    GetClientKeyResponse get_client_response(Address(maid.name()->string()), maid.public_key());
     return MakeAddInfo(get_client_response,
                        pmid.private_key(),
                        DestinationAddress(std::make_pair(Destination(source), boost::none)),
