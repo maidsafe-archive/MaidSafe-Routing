@@ -23,6 +23,7 @@
 
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/messages/get_client_key_response.h"
+#include "maidsafe/routing/messages/get_group_key_response.h"
 #include "maidsafe/routing/account_transfer_info.h"
 
 namespace maidsafe {
@@ -171,42 +172,48 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
   assert(messages.size() >= QuorumSize);
   assert(keys.size() >= QuorumSize);
 
-//  std::vector<ResultType>  verified_messages;
-//  std::map<Address, std::set<SerialisedMessage>> keys_map;
+  std::vector<ResultType>  verified_messages;
+  std::map<Address, std::vector<asymm::PublicKey>> keys_map;
 
-//  for (const auto& group_keys : keys) {
-//    auto group_public_key_ids(Parse<std::vector<PublicKeyId>>(std::get<2>(group_keys.second)));
-//    for (const auto& public_key_id : group_public_key_ids) {
-//      if (keys_map.find(public_key_id.first) == keys_map.end())
-//        keys_map.insert(std::make_pair(public_key_id.first,
-//                                       std::set<SerialisedMessage> {public_key_id.second}));
-//      else
-//        keys_map[public_key_id.first].insert(public_key_id.second);
-//    }
-//  }
+  for (const auto& group_keys : keys) {
+    auto public_keys(Parse<GetGroupKeyResponse>(std::get<2>(group_keys.second)).public_keys());
+    for (const auto& public_key : public_keys) {
+      if (keys_map.find(public_key.first) == keys_map.end()) {
+        keys_map.insert(std::make_pair(public_key.first,
+                                       std::vector<asymm::PublicKey> {public_key.second}));
+      } else {
+        auto& existing_public_keys(keys_map[public_key.first]);
+        if (std::none_of(existing_public_keys.begin(), existing_public_keys.end(),
+                         [&](const asymm::PublicKey& entry) {
+                           return Serialise(public_key.second) == Serialise(entry);
+                         }))
+          keys_map[public_key.first].push_back(public_key.second);
+      }
+    }
+  }
 
-//  // TODO(mmoadeli): For the time being, we assume that no invalid public is received
-//  for (const auto& key_map : keys_map) {
-//    assert(key_map.second.size() == 1);
-//    static_cast<void>(key_map);
-//  }
+  // TODO(mmoadeli): For the time being, we assume that no invalid public is received
+  for (const auto& key_map : keys_map) {
+    assert(key_map.second.size() == 1);
+    static_cast<void>(key_map);
+  }
 
-//  for (const auto& message : messages) {
-//    auto keys_map_iter = keys_map.find(std::get<0>(message.second).FromNode());
-//    if (keys_map_iter == keys_map.end())
-//      continue;
+  for (const auto& message : messages) {
+    auto keys_map_iter = keys_map.find(std::get<0>(message.second).FromNode());
+    if (keys_map_iter == keys_map.end())
+      continue;
 
-//    auto public_key(Parse<asymm::PublicKey>(*keys_map_iter->second.begin()));
-//    if (!asymm::ValidateKey(public_key))
-//      continue;
+    auto public_key(*keys_map_iter->second.begin());
+    if (!asymm::ValidateKey(public_key))
+      continue;
 
-//    auto signature(std::get<0>(message.second).Signature());
-//    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
-//      verified_messages.emplace_back(message.second);
-//  }
+    auto signature(std::get<0>(message.second).Signature());
+    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
+      verified_messages.emplace_back(message.second);
+  }
 
-//  if (verified_messages.size() >= QuorumSize)
-//    return verified_messages;
+  if (verified_messages.size() >= QuorumSize)
+    return verified_messages;
 
   return std::vector<ResultType>();
 }
