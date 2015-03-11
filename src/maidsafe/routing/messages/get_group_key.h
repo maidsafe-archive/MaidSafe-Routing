@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,51 +16,56 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
-#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/data_types/data_type_values.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/source_address.h"
+
 
 namespace maidsafe {
 
 namespace routing {
 
-class PutData {
+class GetGroupKey {
  public:
-  PutData() = default;
-  ~PutData() = default;
+  GetGroupKey() = default;
+  ~GetGroupKey() = default;
 
-  PutData(DataTagValue tag, SerialisedData data) : tag_(tag), data_(std::move(data)) {}
+  GetGroupKey(SourceAddress requester, Identity target_id)
+      : requester_(std::move(requester)),
+        target_id_(std::move(target_id)) {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
-                                               data_(std::move(other.data_)) {}
+  GetGroupKey(GetGroupKey&& other) MAIDSAFE_NOEXCEPT
+      : requester_(std::move(other.requester_)),
+        target_id_(std::move(other.target_id_)) {}
 
-  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
-    data_ = std::move(other.data_);
+  GetGroupKey& operator=(GetGroupKey&& other) MAIDSAFE_NOEXCEPT {
+    requester_ = std::move(other.requester_);
+    target_id_ = std::move(other.target_id_);
     return *this;
   }
 
-  PutData(const PutData&) = default;
-  PutData& operator=(const PutData&) = delete;
+  GetGroupKey(const GetGroupKey&) = delete;
+  GetGroupKey& operator=(const GetGroupKey&) = delete;
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, data_);
+      archive(requester_, target_id_);
   }
 
-  DataTagValue tag() const { return tag_; }
-  SerialisedData data() const { return data_; }
+  SourceAddress requester() const { return requester_; }
+  Identity target_id() const { return target_id_; }
 
  private:
-  DataTagValue tag_;
-  SerialisedData data_;
+  SourceAddress requester_;
+  Identity target_id_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+#endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
