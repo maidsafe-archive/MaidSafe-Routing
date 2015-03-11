@@ -53,7 +53,7 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   bool c1_finished = false;
   bool c2_finished = false;
 
-  c1.Accept(port,
+  c1.Accept(port, nullptr,
       [&](asio::error_code error, Connections::AcceptResult result) {
         ASSERT_FALSE(error);
         ASSERT_EQ(result.his_address, c2.OurId());
@@ -102,7 +102,7 @@ TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
 
   std::thread thread([&]() { ios.run(); });
 
-  auto accept_f  = c1.Accept(port, asio::use_future);
+  auto accept_f  = c1.Accept(port, nullptr, asio::use_future);
   auto connect_f = c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
 
   auto accept_result  = accept_f.get();

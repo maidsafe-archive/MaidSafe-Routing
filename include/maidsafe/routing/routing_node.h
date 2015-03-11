@@ -166,19 +166,6 @@ RoutingNode<Child>::RoutingNode()
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
-  // try an connect to any local nodes (5483) Expect to be told Node_Id
-  auto temp_id(Address(RandomString(Address::kSize)));
-  // PeterJ: Start listening on ports 5483 and 5433 (why two though?)
-  // rudp_.Add(rudp::Contact(temp_id, EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
-  //                                                    rudp::Endpoint{GetLocalIp(), 5433}},
-  //                        our_fob_.public_key()),
-  //          [this, temp_id](asio::error_code error) {
-  //  if (!error) {
-  //    bootstrap_node_ = temp_id;
-  //    ConnectToCloseGroup();
-  //    return;
-  //  }
-  //  });
 
   auto bootstrap_contacts = bootstrap_handler_.ReadBootstrapContacts();
 
@@ -197,18 +184,6 @@ RoutingNode<Child>::RoutingNode()
       ConnectToCloseGroup();
     });
   }
-
-  // for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
-  //  rudp_.Add(node, [node, this](asio::error_code error) {
-  //    if (!error) {
-  //      bootstrap_node_ = node.id;
-  //      ConnectToCloseGroup();
-  //      return;
-  //    }
-  //  });
-  //  if (bootstrap_node_)
-  //    break;
-  //  }
 }
 
 template <typename Child>
@@ -357,7 +332,7 @@ void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
     });
   }
   // FIXME(dirvine) We need new rudp for this :26/01/2015
-  std::vector<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
+  std::set<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
   if (header.RelayedMessage() &&
       std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
                   [&header](const Address& node) { return node == *header.ReplyToAddress(); })) {
@@ -435,10 +410,10 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 }
 
 template <typename Child>
-void RoutingNode<Child>::ConnectionLost(Address peer) {
-  auto change = connection_manager_.LostNetworkConnection(peer);
-  if (change)
-    static_cast<Child*>(this)->HandleChurn(*added);
+void RoutingNode<Child>::ConnectionLost(Address /*peer*/) {
+  //auto change = connection_manager_.LostNetworkConnection(peer);
+  //if (change)
+  //  static_cast<Child*>(this)->HandleChurn(*added);
 }
 
 // reply with our details;

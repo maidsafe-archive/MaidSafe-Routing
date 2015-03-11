@@ -46,6 +46,7 @@ using boost::optional;
 ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive,
                                      OnConnectionLost on_connection_lost)
     : mutex_(),
+      our_accept_port_(5483),
       boost_io_service_(1),
       routing_table_(our_id),
       connected_non_routing_nodes_(),
@@ -54,6 +55,7 @@ ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive,
       current_close_group_(),
       connections_(new Connections(boost_io_service_.service(), our_id)) {
   StartReceiving();
+  StartAccepting();
 }
 
 bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
@@ -68,7 +70,7 @@ std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) c
   return nodes;
 }
 
-std::vector<Address> ConnectionManager::GetNonRoutingNodes() const {
+std::set<Address> ConnectionManager::GetNonRoutingNodes() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return connected_non_routing_nodes_;
 }
@@ -88,6 +90,63 @@ void ConnectionManager::DropNode(const Address& their_id) {
   connections_->Drop(their_id);
 }
 
+void ConnectionManager::StartAccepting() {
+  std::weak_ptr<Connections> weak_connections = connections_;
+
+  auto accept_handler = [=](asio::error_code error, Connections::AcceptResult result) {
+    auto connections = weak_connections.lock();
+
+    if (!connections) {
+      return;
+    }
+
+    if (error == asio::error::operation_aborted || error == asio::error::already_started) {
+      return;
+    }
+
+    if (!error) {
+      OnAccept(std::move(result));
+
+      // The handler may have destroyed 'this'.
+      if (!weak_connections.lock()) {
+        return;
+      }
+    }
+
+    return StartAccepting();
+  };
+
+  connections_->Accept(our_accept_port_, &our_accept_port_, std::move(accept_handler));
+}
+
+void ConnectionManager::OnAccept(Connections::AcceptResult result) {
+  auto expected_i = expected_accepts_.find(result.his_endpoint);
+
+  if (expected_i != expected_accepts_.end()) {
+    if (expected_i->second.node_info.id != result.his_address) {
+      return;
+    }
+
+    auto expected = std::move(expected_i->second);
+    expected_accepts_.erase(expected_i);
+
+    expected.handler(AddToRoutingTable(std::move(expected.node_info)), result.our_endpoint);
+  }
+  else {
+    connected_non_routing_nodes_.insert(result.his_address);
+  }
+}
+
+void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair his_endpoint_pair,
+                                      OnAddNode on_node_added) {
+  // TODO(PeterJ): Use internal endpoint as well.
+  expected_accepts_.insert(std::make_pair(his_endpoint_pair.external,
+                                          ExpectedAccept{node_info, on_node_added}));
+  //StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
+  //  on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
+  //});
+}
+
 void ConnectionManager::AddNode(
     NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode on_node_added) {
 
@@ -105,41 +164,6 @@ void ConnectionManager::AddNode(
     }
 
     on_node_added(AddToRoutingTable(node_to_add), result.our_endpoint);
-  });
-}
-
-template<class Handler> void StartAccepting(std::weak_ptr<Connections> weak_connections,
-                                            NodeInfo node_to_add, EndpointPair node_eps,
-                                            Handler handler) {
-  auto connections = weak_connections.lock();
-
-  if (!connections) {
-    return;
-  }
-
-  // TODO(Team): What endpoint should we accept on?
-  connections->Accept(6378,
-    [=](asio::error_code error, Connections::AcceptResult result) {
-    if (error) {
-      return;
-    }
-
-    if (node_to_add.id != result.his_address) {
-      // Restart
-      StartAccepting(weak_connections, std::move(node_to_add), std::move(node_eps),
-                     std::move(handler));
-      return;
-    }
-
-    handler(result.our_endpoint);
-  });
-}
-
-void ConnectionManager::AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair,
-                                      OnAddNode on_node_added) {
-
-  StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
-    on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
   });
 }
 

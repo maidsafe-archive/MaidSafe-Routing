@@ -80,8 +80,11 @@ class Connections {
   template <class Token>
   AsyncResultReturn<Token, ConnectResult> Connect(asio::ip::udp::endpoint, Token&&);
 
+  // The secont argument is an ugly C-style return of the actual port that has been
+  // chosen. TODO: Try to return it using a proper C++ way.
   template <class Token>
-  AsyncResultReturn<Token, AcceptResult> Accept(unsigned short port, Token&&);
+  AsyncResultReturn<Token, AcceptResult>
+  Accept(unsigned short port, unsigned short* chosen_port, Token&&);
 
   void Drop(const Address& their_id);
 
@@ -238,20 +241,37 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
 }
 
 template <class Token>
-AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(unsigned short port,
-                                                                        Token&& token) {
+AsyncResultReturn<Token, Connections::AcceptResult>
+Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& token) {
+
   using Handler = AsyncResultHandler<Token, AcceptResult>;
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
+  
+  auto loopback = [](unsigned short port) {
+    return crux::endpoint(boost::asio::ip::udp::v4(), port);
+  };
+
+  // TODO(PeterJ):Make sure this operation is thread safe in crux.
+  std::shared_ptr<crux::acceptor> acceptor;
+
+  try {
+    acceptor = std::make_shared<crux::acceptor>(service_, loopback(port));
+  }
+  catch(...) {
+    acceptor = std::make_shared<crux::acceptor>(service_, loopback(0));
+  }
+
+  if (chosen_port) {
+    *chosen_port = acceptor->local_endpoint().port();
+  }
+
   get_io_service().post([=]() mutable {
-    auto find_result = acceptors_.insert(std::make_pair(port, std::shared_ptr<crux::acceptor>()));
+    auto find_result = acceptors_.insert(std::make_pair(port, acceptor));
 
-    auto& acceptor = find_result.first->second;
-
-    if (!acceptor) {
-      crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
-      acceptor.reset(new crux::acceptor(service_, endpoint));
+    if (!find_result.second /* inserted? */) {
+      return handler(asio::error::already_started, Connections::AcceptResult());
     }
 
     std::weak_ptr<crux::acceptor> weak_acceptor = acceptor;
