@@ -57,15 +57,15 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     auto keys(group_key_accumulator_.Add(*header.FromGroup(),
-                                   std::make_tuple(header, tag, std::move(message)),
-                                   header.FromNode()));
+                                         std::make_tuple(header, tag, std::move(message)),
+                                         header.FromNode()));
     if (keys) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       if (group_accumulator_.HaveName(key)) {
         auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(),
                                                             header.MessageId()),
-                                           std::make_tuple(header, tag, std::move(message)),
-                                           header.FromNode()));
+                                             std::make_tuple(header, tag, std::move(message)),
+                                             header.FromNode()));
         if (messages) {
           auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
                                     messages->second, keys->second), GroupMessage()));
@@ -103,12 +103,14 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                           header.FromNode()));
       if (messages) {
         auto keys(node_accumulator_.GetAll(messages->first));
-        auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
-                                  messages->second, keys->second),
-                              SingleMessage()));
-        if (resolved) {
-          node_accumulator_.Delete(key);
-          return resolved;
+        if (keys) {
+          auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
+                                    messages->second, keys->second),
+                                SingleMessage()));
+          if (resolved) {
+            node_accumulator_.Delete(key);
+            return resolved;
+          }
         }
       }
     }
@@ -121,8 +123,8 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename NodeAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
-  assert(messages.size() >= 1);
-  assert(keys.size() >= QuorumSize);
+  if (messages.empty() || keys.size() < QuorumSize)
+    return std::vector<ResultType>();
 
   std::vector<ResultType>  verified_messages;
   std::map<Address, std::set<SerialisedMessage>> keys_map;
