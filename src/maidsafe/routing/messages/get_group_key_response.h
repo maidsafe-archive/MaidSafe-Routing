@@ -33,16 +33,16 @@ class GetGroupKeyResponse {
   GetGroupKeyResponse() = default;
   ~GetGroupKeyResponse() = default;
 
-  GetGroupKeyResponse(std::vector<passport::PublicPmid> group, GroupAddress target_id)
-      : group_(std::move(group)),
+  GetGroupKeyResponse(std::map<Address, asymm::PublicKey>& public_keys, GroupAddress target_id)
+      : public_keys_(std::move(public_keys)),
         target_id_(std::move(target_id)) {}
 
   GetGroupKeyResponse(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT
-      : group_(std::move(other.group_)),
+      : public_keys_(std::move(other.public_keys_)),
         target_id_(std::move(other.target_id_)) {}
 
   GetGroupKeyResponse& operator=(GetGroupKeyResponse&& other) MAIDSAFE_NOEXCEPT {
-    group_ = std::move(other.group_);
+    public_keys_ = std::move(other.public_keys_);
     target_id_ = std::move(other.target_id_);
     return *this;
   }
@@ -52,15 +52,15 @@ class GetGroupKeyResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-      archive(group_, target_id_);
+      archive(public_keys_, target_id_);
   }
 
-  std::vector<passport::PublicPmid> group() const { return group_; }
+  std::map<Address, asymm::PublicKey> public_keys() const { return public_keys_; }
   GroupAddress target_id() const { return target_id_; }
 
  private:
   // targeted GroupAddress
-  std::vector<passport::PublicPmid> group_;
+  std::map<Address, asymm::PublicKey> public_keys_;
   GroupAddress target_id_;
 };
 

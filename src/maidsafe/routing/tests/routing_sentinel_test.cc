@@ -181,27 +181,27 @@ void SentinelTest::SendGetClientKey(Address /*node_address*/) {
 
 }
 
-void SentinelTest::SendGetGroupKey(GroupAddress group_address) {
-  //std::lock_guard<std::mutex> lock(mutex_);
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.Address() == group_address; });
+void SentinelTest::SendGetGroupKey(GroupAddress /*group_address*/) {
+//  //std::lock_guard<std::mutex> lock(mutex_);
+//  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
+//                          [group_address](SignatureGroup group_)
+//                          { return group_.Address() == group_address; });
 
-  if (itr == std::end(groups_)) assert("Sentinel test SendGetGroupKey: debug Error in test");
-  else {
-    auto message(Serialise(GetGroupKeyResponse(itr->GetPublicKeys(),
-                                               itr->Address())));
-    auto headers = itr->GetHeaders(our_destination_,
-                                   MessageId(RandomUint32()),
-                                   message);
+//  if (itr == std::end(groups_)) assert("Sentinel test SendGetGroupKey: debug Error in test");
+//  else {
+//    auto message(Serialise(GetGroupKeyResponse(itr->GetPublicKeys(),
+//                                               itr->Address())));
+//    auto headers = itr->GetHeaders(our_destination_,
+//                                   MessageId(RandomUint32()),
+//                                   message);
 
-    for (auto header : headers) {
-        itr->SaveSentinelReturn(
-                    sentinel_.Add(header, MessageTypeTag::GetGroupKeyResponse,
-                                  message));
-    }
-  }
-  static_cast<void>(itr);
+//    for (auto header : headers) {
+//        itr->SaveSentinelReturn(
+//                    sentinel_.Add(header, MessageTypeTag::GetGroupKeyResponse,
+//                                  message));
+//    }
+//  }
+//  static_cast<void>(itr);
 }
 
 //++++ Free Test Functions +++++++++++++++++++++
