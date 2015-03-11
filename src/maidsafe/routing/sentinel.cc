@@ -60,18 +60,13 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                          header.FromNode()));
     if (keys) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
-      if (group_accumulator_.HaveName(key)) {
-        auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(),
-                                                            header.MessageId()),
-                                             std::make_tuple(header, tag, std::move(message)),
-                                             header.FromNode()));
-        if (messages) {
-          auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
-                                    messages->second, keys->second), GroupMessage()));
-          if (resolved) {
-            group_accumulator_.Delete(key);
-            return resolved;
-          }
+      auto messages(group_accumulator_.GetAll(key));
+      if (messages) {
+        auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
+                                  messages->second, keys->second), GroupMessage()));
+        if (resolved) {
+          group_accumulator_.Delete(key);
+          return resolved;
         }
       }
     }
@@ -176,7 +171,8 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
   std::map<Address, std::vector<asymm::PublicKey>> keys_map;
 
   for (const auto& group_keys : keys) {
-    auto public_keys(Parse<GetGroupKeyResponse>(std::get<2>(group_keys.second)).public_keys());
+    auto group_key_response(Parse<GetGroupKeyResponse>(std::get<2>(group_keys.second)));
+    auto public_keys(group_key_response.public_keys());
     for (const auto& public_key : public_keys) {
       if (keys_map.find(public_key.first) == keys_map.end()) {
         keys_map.insert(std::make_pair(public_key.first,
