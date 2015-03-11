@@ -16,54 +16,56 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
-#define MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
 
-#include "cereal/types/utility.hpp"
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/source_address.h"
 
+
 namespace maidsafe {
 
 namespace routing {
 
-class GetClientKeyResponse {
+class GetGroupKey {
  public:
-  GetClientKeyResponse() = default;
-  ~GetClientKeyResponse() = default;
+  GetGroupKey() = default;
+  ~GetGroupKey() = default;
 
-  GetClientKeyResponse(Address address, const asymm::PublicKey& public_key)
-      : address_(address), public_key_(public_key)  {}
+  GetGroupKey(SourceAddress requester, Identity target_id)
+      : requester_(std::move(requester)),
+        target_id_(std::move(target_id)) {}
 
-  GetClientKeyResponse(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT
-      : public_key_(std::move(other.public_key_)) {}
+  GetGroupKey(GetGroupKey&& other) MAIDSAFE_NOEXCEPT
+      : requester_(std::move(other.requester_)),
+        target_id_(std::move(other.target_id_)) {}
 
-  GetClientKeyResponse& operator=(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT {
-    public_key_ = std::move(other.public_key_);
+  GetGroupKey& operator=(GetGroupKey&& other) MAIDSAFE_NOEXCEPT {
+    requester_ = std::move(other.requester_);
+    target_id_ = std::move(other.target_id_);
     return *this;
   }
 
-  GetClientKeyResponse(const GetClientKeyResponse&) = delete;
-  GetClientKeyResponse& operator=(const GetClientKeyResponse&) = delete;
+  GetGroupKey(const GetGroupKey&) = delete;
+  GetGroupKey& operator=(const GetGroupKey&) = delete;
 
   template <typename Archive>
   void serialize(Archive& archive) {
-      archive(address_, public_key_);
+      archive(requester_, target_id_);
   }
 
-   Address address() const { return address_; }
-   asymm::PublicKey public_key() const { return public_key_; }
+  SourceAddress requester() const { return requester_id; }
+  Identity target_id() const { return target_id_; }
 
  private:
-  Address address_;
-  asymm::PublicKey public_key_;
+  SourceAddress requester_;
+  Identity target_id_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-
-#endif // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
+#endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
