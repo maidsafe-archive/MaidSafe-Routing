@@ -55,7 +55,7 @@ class GetGroupKeyResponse {
       archive(requester_, target_id_);
   }
 
-  SourceAddress requester() const { return requester_id; }
+  SourceAddress requester() const { return requester_; }
   Identity target_id() const { return target_id_; }
 
  private:

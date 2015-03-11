@@ -158,7 +158,7 @@ void SentinelTest::SendGetGroupKey(GroupAddress group_address) {
                           [group_address](SignatureGroup group_)
                           { return group_.Address() == group_address; });
 
-  sentinel_.Add();
+  //sentinel_.Add();
   static_cast<void>(itr);
 }
 

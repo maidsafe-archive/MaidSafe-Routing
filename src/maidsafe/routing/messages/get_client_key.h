@@ -38,7 +38,7 @@ class GetClientKey {
       : requester_(std::move(requester)),
         target_id_(std::move(target_id)) {}
 
-  GetClientKey(GetKey&& other) MAIDSAFE_NOEXCEPT
+  GetClientKey(GetClientKey&& other) MAIDSAFE_NOEXCEPT
       : requester_(std::move(other.requester_)),
         target_id_(std::move(other.target_id_)) {}
 
@@ -56,7 +56,7 @@ class GetClientKey {
       archive(requester_, target_id_);
   }
 
-  Identity requester() const { return requester_id; }
+  Identity requester() const { return requester_; }
   Identity target_id() const { return target_id_; }
 
  private:
