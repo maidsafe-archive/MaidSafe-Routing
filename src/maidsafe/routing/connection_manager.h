@@ -146,7 +146,10 @@ void ConnectionManager::Send(const Address& addr, const SerialisedMessage& messa
 
 template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
 void ConnectionManager::Connect(asio::ip::udp::endpoint remote_endpoint, Handler handler) {
-  connections_->Connect(remote_endpoint, std::move(handler));
+  connections_->Connect(remote_endpoint, [=](asio::error_code error,
+                                             Connections::ConnectResult result) {
+      handler(error, result.his_address, result.our_endpoint);
+      });
 }
 
 }  // namespace routing
