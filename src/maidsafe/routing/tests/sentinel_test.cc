@@ -37,7 +37,10 @@ namespace test {
 
 class SentinelTest : public testing::Test {
  public:
-  SentinelTest() : sentinel_(new Sentinel([](Address) {}, [](GroupAddress) {})) {}
+  SentinelTest() : sentinel_(new Sentinel([](Address) {}, [](GroupAddress) {})),
+                   maid_nodes_(),
+                   source_address_(NodeAddress(NodeId(RandomString(NodeId::kSize))), boost::none,
+                                               boost::none) {}
   
   struct SentinelAddInfo {
     MessageHeader header;
@@ -62,36 +65,67 @@ class SentinelTest : public testing::Test {
     while (quantity-- > 0)
       maid_nodes_.emplace_back(passport::CreateMaidAndSigner().first);
   }
+
+  void CreatePmidKeys(size_t quantity) {
+    while (quantity-- > 0)
+      pmid_nodes_.emplace_back(passport::CreatePmidAndSigner().first);
+  }
   
-  SentinelAddInfo CreateGerKeyResponse(const passport::Maid& maid, MessageId message_id) {
-    
-    return MakeAddInfo(<#const MessageType &message#>, <#const asymm::PrivateKey &private_key#>, <#DestinationAddress destination#>, <#maidsafe::routing::SourceAddress source#>, <#MessageId message_id#>, <#maidsafe::routing::Authority our_authority#>, <#maidsafe::routing::MessageTypeTag tag#>)
+  SentinelAddInfo CreateGerKeyResponse(const passport::Maid& maid, MessageId message_id,
+                                       Address source, passport::Pmid& pmid) {
+    GetClientKeyResponse get_client_response(Serialise(maid.public_key()));
+    return MakeAddInfo(get_client_response,
+                       pmid.private_key(),
+                       DestinationAddress(std::make_pair(Destination(source), boost::none)),
+                       SourceAddress(NodeAddress(NodeId(pmid.name()->string())),
+                                     GroupAddress(source), boost::none),
+                       message_id, Authority::nae_manager,
+                       MessageTypeTag::GetClientKeyResponse);
   }
   
  protected:
   std::unique_ptr<Sentinel> sentinel_;
   std::vector<passport::Maid> maid_nodes_;
+  std::vector<passport::Pmid> pmid_nodes_;
+  SourceAddress source_address_;
 };
 
 TEST_F(SentinelTest, BEH_BasicNonGroupAdd) {
   CreateMaidKeys(1);
+  CreatePmidKeys(QuorumSize);
   ImmutableData data(NonEmptyString(RandomString(NodeId::kSize)));
   auto serialised_data_string(data.Serialise().data.string());
   PutData put_data(DataTagValue::kImmutableDataValue, SerialisedData(serialised_data_string.begin(),
                                                                      serialised_data_string.end()));
   auto add_info(MakeAddInfo(put_data, maid_nodes_.at(0).private_key(),
                             DestinationAddress(
-                                std::make_pair(Destination(NodeId(RandomString(NodeId::kSize))),
+                                std::make_pair(Destination(
+                                                   NodeId(maid_nodes_.at(0).name()->string())),
                                                boost::none)),
-                            SourceAddress(NodeAddress(NodeId(maid_nodes_.at(0).name()->string())),
-                                          boost::none, boost::none),
+                            source_address_,
                             MessageId(RandomUint32()), Authority::client_manager,
                             MessageTypeTag::PutData));
 
   auto resolved(this->sentinel_->Add(add_info.header, add_info.tag, add_info.serialised));
   if (resolved)
     EXPECT_TRUE(false);
-  
+
+  for (size_t index(0); index < QuorumSize - 1; ++index) {
+      auto add_key_info(CreateGerKeyResponse(maid_nodes_.at(0), add_info.header.MessageId(),
+                                             source_address_.node_address.data,
+                                             pmid_nodes_.at(index)));
+    resolved = (this->sentinel_->Add(add_key_info.header, add_key_info.tag,
+                                     add_key_info.serialised));
+    if (resolved)
+      EXPECT_TRUE(false);
+  }
+  auto add_key_info(CreateGerKeyResponse(maid_nodes_.at(0), add_info.header.MessageId(),
+                                         source_address_.node_address.data,
+                                         pmid_nodes_.at(QuorumSize - 1)));
+  resolved = (this->sentinel_->Add(add_key_info.header, add_key_info.tag,
+                                   add_key_info.serialised));
+  if (!resolved)
+    EXPECT_TRUE(false);
 }
 
 }  // namespace test
