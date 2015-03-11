@@ -22,6 +22,7 @@
 #include "maidsafe/common/make_unique.h"
 
 #include "maidsafe/routing/sentinel.h"
+#include "maidsafe/routing/messages/get_client_key_response.h"
 #include "maidsafe/routing/account_transfer_info.h"
 
 namespace maidsafe {
@@ -34,22 +35,19 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
   if (tag == MessageTypeTag::GetKeyResponse) {
     if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    std::cout << *header.FromGroup() << ", " << header.MessageId() << " key \n";
     auto keys(node_key_accumulator_.Add(*header.FromGroup(),
                                         std::make_tuple(header, tag, std::move(message)),
                                         header.FromNode()));
     if (keys) {
-      auto key(std::make_pair(header.FromNode(), header.MessageId()));
-      if (node_accumulator_.HaveName(key)) {
-        auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
-                                            std::make_tuple(header, tag, std::move(message)),
-                                            header.FromNode()));
-        if (messages) {
-          auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
-                                    messages->second, keys->second), SingleMessage()));
-          if (resolved) {
-            node_accumulator_.Delete(key);
-            return resolved;
-          }
+      auto key(std::make_pair(NodeAddress(header.FromGroup()->data), header.MessageId()));
+      auto messages(node_accumulator_.GetAll(key));
+      if (messages) {
+        auto resolved(Resolve(Validate<NodeAccumulatorType, KeyAccumulatorType>(
+                                  messages->second, keys->second), SingleMessage()));
+        if (resolved) {
+          node_accumulator_.Delete(key);
+          return resolved;
         }
       }
     }
@@ -80,9 +78,8 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     if (header.FromGroup()) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       if (!group_accumulator_.HaveName(key))
-        get_group_key_(*header.FromGroup());
-      auto messages(group_accumulator_.Add(std::make_pair(*header.FromGroup(), header.MessageId()),
-                                           std::make_tuple(header, tag, std::move(message)),
+        send_get_group_key_(*header.FromGroup());
+      auto messages(group_accumulator_.Add(key, std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
       if (messages) {
         auto keys(group_accumulator_.GetAll(messages->first));
@@ -96,10 +93,10 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       }
     } else {
       auto key(std::make_pair(header.FromNode(), header.MessageId()));
+      std::cout << header.FromNode() << ", " << header.MessageId() << " message \n";
       if (!node_accumulator_.HaveName(key))
-        get_key_(header.FromNode());
-      auto messages(node_accumulator_.Add(std::make_pair(header.FromNode(), header.MessageId()),
-                                          std::make_tuple(header, tag, std::move(message)),
+        send_get_client_key_(header.FromNode());
+      auto messages(node_accumulator_.Add(key, std::make_tuple(header, tag, std::move(message)),
                                           header.FromNode()));
       if (messages) {
         auto keys(node_accumulator_.GetAll(messages->first));
@@ -123,18 +120,26 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename NodeAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
+  std::cout << messages.empty() << ", " << keys.size() << "\n";
   if (messages.empty() || keys.size() < QuorumSize)
     return std::vector<ResultType>();
 
   std::vector<ResultType>  verified_messages;
-  std::map<Address, std::set<SerialisedMessage>> keys_map;
+  std::map<Address, std::vector<asymm::PublicKey>> keys_map;
 
   for (const auto& node_key : keys) {
-    auto key(Parse<PublicKeyId>(std::get<2>(node_key.second)));
-    if (keys_map.find(key.first) == keys_map.end())
-      keys_map.insert(std::make_pair(key.first, std::set<SerialisedMessage> {key.second}));
-    else
-      keys_map[key.first].insert(key.second);
+    auto key(Parse<GetClientKeyResponse>(std::get<2>(node_key.second)));
+    if (keys_map.find(key.address()) == keys_map.end()) {
+      keys_map.insert(std::make_pair(key.address(),
+                                     std::vector<asymm::PublicKey> {key.public_key()}));
+    } else {
+      auto& public_keys(keys_map[key.address()]);
+      if (std::none_of(public_keys.begin(), public_keys.end(),
+                       [&](const asymm::PublicKey& public_key) {
+                         return Serialise(key.public_key()) == Serialise(public_key);
+                       }))
+        keys_map[key.address()].push_back(key.public_key());
+    }
   }
 
   // TODO(mmoadeli): Following checks that returned public keys from all nodes are identical.
@@ -142,7 +147,7 @@ Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
   assert(keys_map.size() == 1);
   assert(keys_map.begin()->second.size() == 1);
 
-  auto public_key(Parse<asymm::PublicKey>(*keys_map.begin()->second.begin()));
+  auto& public_key(*keys_map.begin()->second.begin());
   if (!asymm::ValidateKey(public_key))
     return std::vector<ResultType>();
 
@@ -166,40 +171,42 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
   assert(messages.size() >= QuorumSize);
   assert(keys.size() >= QuorumSize);
 
-  std::vector<ResultType>  verified_messages;
-  std::map<Address, std::set<SerialisedMessage>> keys_map;
+//  std::vector<ResultType>  verified_messages;
+//  std::map<Address, std::set<SerialisedMessage>> keys_map;
 
-  for (const auto& group_keys : keys) {
-    auto group_public_key_ids(Parse<std::vector<PublicKeyId>>(std::get<2>(group_keys.second)));
-    for (const auto& public_key_id : group_public_key_ids) {
-      if (keys_map.find(public_key_id.first) == keys_map.end())
-        keys_map.insert(std::make_pair(public_key_id.first,
-                                       std::set<SerialisedMessage> {public_key_id.second}));
-      else
-        keys_map[public_key_id.first].insert(public_key_id.second);
-    }
-  }
+//  for (const auto& group_keys : keys) {
+//    auto group_public_key_ids(Parse<std::vector<PublicKeyId>>(std::get<2>(group_keys.second)));
+//    for (const auto& public_key_id : group_public_key_ids) {
+//      if (keys_map.find(public_key_id.first) == keys_map.end())
+//        keys_map.insert(std::make_pair(public_key_id.first,
+//                                       std::set<SerialisedMessage> {public_key_id.second}));
+//      else
+//        keys_map[public_key_id.first].insert(public_key_id.second);
+//    }
+//  }
 
-  // TODO(mmoadeli): For the time being, we assume that no invalid public is received
-  for (const auto& key_map : keys_map)
-    assert(key_map.second.size() == 1);
+//  // TODO(mmoadeli): For the time being, we assume that no invalid public is received
+//  for (const auto& key_map : keys_map) {
+//    assert(key_map.second.size() == 1);
+//    static_cast<void>(key_map);
+//  }
 
-  for (const auto& message : messages) {
-    auto keys_map_iter = keys_map.find(std::get<0>(message.second).FromNode());
-    if (keys_map_iter == keys_map.end())
-      continue;
+//  for (const auto& message : messages) {
+//    auto keys_map_iter = keys_map.find(std::get<0>(message.second).FromNode());
+//    if (keys_map_iter == keys_map.end())
+//      continue;
 
-    auto public_key(Parse<asymm::PublicKey>(*keys_map_iter->second.begin()));
-    if (!asymm::ValidateKey(public_key))
-      continue;
+//    auto public_key(Parse<asymm::PublicKey>(*keys_map_iter->second.begin()));
+//    if (!asymm::ValidateKey(public_key))
+//      continue;
 
-    auto signature(std::get<0>(message.second).Signature());
-    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
-      verified_messages.emplace_back(message.second);
-  }
+//    auto signature(std::get<0>(message.second).Signature());
+//    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
+//      verified_messages.emplace_back(message.second);
+//  }
 
-  if (verified_messages.size() >= QuorumSize)
-    return verified_messages;
+//  if (verified_messages.size() >= QuorumSize)
+//    return verified_messages;
 
   return std::vector<ResultType>();
 }
