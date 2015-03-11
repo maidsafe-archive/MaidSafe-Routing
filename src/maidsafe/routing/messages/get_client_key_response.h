@@ -33,17 +33,14 @@ class GetClientKeyResponse {
   GetClientKeyResponse() = default;
   ~GetClientKeyResponse() = default;
 
-  GetClientKeyResponse(Identity requester, Identity target_id)
-      : requester_(std::move(requester)),
-        target_id_(std::move(target_id)) {}
+  GetClientKeyResponse(SerialisedMessage serialied_public_key)
+      : serialied_public_key_(std::move(serialied_public_key)) {}
 
   GetClientKeyResponse(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT
-      : requester_(std::move(other.requester_)),
-        target_id_(std::move(other.target_id_)) {}
+      : serialied_public_key_(std::move(other.serialied_public_key_)) {}
 
   GetClientKeyResponse& operator=(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT {
-    requester_ = std::move(other.requester_);
-    target_id_ = std::move(other.target_id_);
+    serialied_public_key_ = std::move(other.serialied_public_key_);
     return *this;
   }
 
@@ -52,15 +49,13 @@ class GetClientKeyResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-      archive(requester_, target_id_);
+      archive(serialied_public_key_);
   }
 
-  Identity requester() const { return requester_; }
-  Identity target_id() const { return target_id_; }
+  SerialisedMessage serialied_public_key() const { return serialied_public_key_; }
 
  private:
-  Identity requester_;
-  Identity target_id_;
+  SerialisedMessage serialied_public_key_;
 };
 
 }  // namespace routing

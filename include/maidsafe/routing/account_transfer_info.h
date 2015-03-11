@@ -63,7 +63,7 @@ class AccountTransferInfo {
                const std::vector<std::unique_ptr<AccountTransferInfo>>& accounts) = 0;
 
   // Returns false for a default-constructed instance of this class, otherwise true.
-  bool IsInitialised() const { return false; }
+  bool IsInitialised() const;
 
   // Throws if IsInitialised() is false.
   const Identity& Name() const;
