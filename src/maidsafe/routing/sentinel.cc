@@ -58,6 +58,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     auto keys(group_key_accumulator_.Add(*header.FromGroup(),
                                          std::make_tuple(header, tag, std::move(message)),
                                          header.FromNode()));
+    std::cout << *header.FromGroup() << ", " << header.MessageId() << " key \n";
     if (keys) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       auto messages(group_accumulator_.GetAll(key));
@@ -72,19 +73,22 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     }
   } else {
     if (header.FromGroup()) {
+      std::cout << *header.FromGroup() << ", " << header.MessageId() << " message \n";
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       if (!group_accumulator_.HaveName(key))
         send_get_group_key_(*header.FromGroup());
       auto messages(group_accumulator_.Add(key, std::make_tuple(header, tag, std::move(message)),
                                            header.FromNode()));
       if (messages) {
-        auto keys(group_accumulator_.GetAll(messages->first));
-        auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
-                                  messages->second, keys->second),
-                              GroupMessage()));
-        if (resolved) {
-          group_accumulator_.Delete(key);
-          return resolved;
+        auto keys(group_key_accumulator_.GetAll(*header.FromGroup()));
+        if (keys) {
+          auto resolved(Resolve(Validate<GroupAccumulatorType, KeyAccumulatorType>(
+                                    messages->second, keys->second),
+                                GroupMessage()));
+          if (resolved) {
+            group_accumulator_.Delete(key);
+            return resolved;
+          }
         }
       }
     } else {
@@ -164,8 +168,9 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename GroupAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
-  assert(messages.size() >= QuorumSize);
-  assert(keys.size() >= QuorumSize);
+  std::cout << messages.size() << ", " << keys.size() << "\n";
+  if (messages.size() < QuorumSize || keys.size() < QuorumSize)
+    return std::vector<ResultType>();
 
   std::vector<ResultType>  verified_messages;
   std::map<Address, std::vector<asymm::PublicKey>> keys_map;

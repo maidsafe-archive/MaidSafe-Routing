@@ -197,9 +197,16 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
                                         GroupAddress(source_address_.node_address.data)));
 
   auto group_key_response(
-      CreateGetGroupKeyResponse(message_id, GroupAddress(NodeId(data.name()->string())),
-                                GroupAddress(source_address_.node_address.data)));
+      CreateGetGroupKeyResponse(message_id, GroupAddress(source_address_.node_address.data),
+                                GroupAddress(NodeId(data.name()->string()))));
   for (const auto& add_key_info : group_message) {
+    auto resolved(this->sentinel_->Add(add_key_info.header, add_key_info.tag,
+                                       add_key_info.serialised));
+    if (resolved)
+      EXPECT_TRUE(false);
+  }
+
+  for (const auto& add_key_info : group_key_response) {
     auto resolved(this->sentinel_->Add(add_key_info.header, add_key_info.tag,
                                        add_key_info.serialised));
     if (resolved)
