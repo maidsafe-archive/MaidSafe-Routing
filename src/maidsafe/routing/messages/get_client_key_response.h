@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,51 +16,55 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
-#define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+#ifndef MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
+#define MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
+
+#include "cereal/types/utility.hpp"
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/data_types/data_type_values.h"
-#include "maidsafe/common/serialisation/serialisation.h"
+
+#include "maidsafe/routing/types.h"
+#include "maidsafe/routing/source_address.h"
 
 namespace maidsafe {
 
 namespace routing {
 
-class PutData {
+class GetClientKeyResponse {
  public:
-  PutData() = default;
-  ~PutData() = default;
+  GetClientKeyResponse() = default;
+  ~GetClientKeyResponse() = default;
 
-  PutData(DataTagValue tag, SerialisedData data) : tag_(tag), data_(std::move(data)) {}
+  GetClientKeyResponse(Address address, const asymm::PublicKey& public_key)
+      : address_(address), public_key_(public_key)  {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
-                                               data_(std::move(other.data_)) {}
+  GetClientKeyResponse(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT
+      : public_key_(std::move(other.public_key_)) {}
 
-  PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
-    data_ = std::move(other.data_);
+  GetClientKeyResponse& operator=(GetClientKeyResponse&& other) MAIDSAFE_NOEXCEPT {
+    public_key_ = std::move(other.public_key_);
     return *this;
   }
 
-  PutData(const PutData&) = default;
-  PutData& operator=(const PutData&) = delete;
+  GetClientKeyResponse(const GetClientKeyResponse&) = delete;
+  GetClientKeyResponse& operator=(const GetClientKeyResponse&) = delete;
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, data_);
+      archive(address_, public_key_);
   }
 
-  DataTagValue tag() const { return tag_; }
-  SerialisedData data() const { return data_; }
+   Address address() const { return address_; }
+   asymm::PublicKey public_key() const { return public_key_; }
 
  private:
-  DataTagValue tag_;
-  SerialisedData data_;
+  Address address_;
+  asymm::PublicKey public_key_;
 };
 
 }  // namespace routing
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
+
+#endif // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
