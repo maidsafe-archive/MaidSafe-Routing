@@ -126,9 +126,9 @@ class RoutingNode {
     if (!our_external_endpoint_) {
       return EndpointPair();
     }
-    return EndpointPair(Endpoint(asio::ip::address_v4::loopback(),
-                                 our_external_endpoint_->port()),
-                        *our_external_endpoint_);
+    auto port = connection_manager_.AcceptingPort();
+    return EndpointPair(Endpoint(GetLocalIp(), port),
+                        Endpoint(our_external_endpoint_->address(), port));
   }
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
   // nodes appering or vanishing so its pretty important.
@@ -185,8 +185,7 @@ RoutingNode<Child>::RoutingNode()
       }
       // FIXME(Team): Thread safety.
       bootstrap_node_ = contact.id;
-      our_external_endpoint_ = Endpoint(our_endpoint.address(),
-                                        connection_manager_.AcceptingPort());
+      our_external_endpoint_ = our_endpoint;
       ConnectToCloseGroup();
     });
   }
