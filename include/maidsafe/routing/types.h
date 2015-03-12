@@ -85,7 +85,7 @@ using HandleGetReturn =
                     maidsafe_error>;
 using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
 using HandlePostReturn =
-    boost::expected<boost::variant<std::vector<DestinationAddress>, std::vector<byte>>,
+    boost::expected<std::pair<std::vector<DestinationAddress>, std::vector<byte>>,
                     maidsafe_error>;
 
 using Endpoint = asio::ip::udp::endpoint;
