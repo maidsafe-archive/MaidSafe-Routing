@@ -24,7 +24,7 @@
 
 #include "cereal/types/array.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/types.h"
 
 #include "maidsafe/routing/types.h"

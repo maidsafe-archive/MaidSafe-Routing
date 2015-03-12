@@ -32,8 +32,8 @@ namespace test {
 TEST(ConnectionsTest, FUNC_TwoConnections) {
   boost::asio::io_service ios;
 
-  NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
-  NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
+  Address c1_id(MakeIdentity());
+  Address c2_id(MakeIdentity());
 
   Connections c1(ios, c1_id);
   Connections c2(ios, c2_id);
@@ -44,7 +44,7 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   bool c2_finished = false;
 
   c1.Accept(port,
-      [&](asio::error_code error, asio::ip::udp::endpoint, NodeId his_id) {
+      [&](asio::error_code error, asio::ip::udp::endpoint, Address his_id) {
         ASSERT_FALSE(error);
         ASSERT_EQ(his_id, c2.OurId());
         std::string msg = "hello";
@@ -59,13 +59,12 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
       });
 
   c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, NodeId his_id) {
+      [&](asio::error_code error, Address his_id) {
         ASSERT_FALSE(error);
         ASSERT_EQ(his_id, c1.OurId());
 
-        c2.Receive([&, his_id](asio::error_code error,
-                       NodeId sender_id,
-                       const std::vector<unsigned char>& bytes) {
+        c2.Receive([&, his_id](asio::error_code error, Address sender_id,
+                               const std::vector<unsigned char>& bytes) {
           ASSERT_FALSE(error);
           ASSERT_EQ(sender_id, his_id);
           ASSERT_EQ(std::string(bytes.begin(), bytes.end()), "hello");

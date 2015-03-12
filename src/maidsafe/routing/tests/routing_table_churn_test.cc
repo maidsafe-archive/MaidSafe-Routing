@@ -70,7 +70,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckChurn) {
     // + 1 as addresses includes our ID
     std::partial_sort(std::begin(addresses), std::begin(addresses) + size + 1, std::end(addresses),
                       [id](const Address& lhs,
-                           const Address& rhs) { return Address::CloserToTarget(lhs, rhs, id); });
+                           const Address& rhs) { return CloserToTarget(lhs, rhs, id); });
     auto groups = node->OurCloseGroup();
     EXPECT_EQ(groups.size(), size);
     // currently disabled as nodes are not doing a get_close_group to begin and this

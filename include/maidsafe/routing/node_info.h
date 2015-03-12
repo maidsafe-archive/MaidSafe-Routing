@@ -20,7 +20,9 @@
 #define MAIDSAFE_ROUTING_NODE_INFO_H_
 
 #include <cstdint>
+
 #include "boost/optional/optional.hpp"
+
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/passport/types.h"
@@ -34,7 +36,7 @@ namespace routing {
 struct NodeInfo {
   using PublicPmid = passport::PublicPmid;
 
-  NodeInfo(NodeId id_in, PublicPmid dht_fob_in, bool connected_in)
+  NodeInfo(Address id_in, PublicPmid dht_fob_in, bool connected_in)
       : id(id_in), dht_fob(std::move(dht_fob_in)), connected(connected_in) {}
 
   NodeInfo() : id(), dht_fob(), connected(false) {}

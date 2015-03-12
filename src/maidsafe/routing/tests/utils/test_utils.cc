@@ -41,8 +41,7 @@ BootstrapHandler::BootstrapContact CreateBootstrapContact(asymm::PublicKey publi
     auto keys(asymm::GenerateKeyPair());
     public_key = keys.public_key;
   }
-  return BootstrapHandler::BootstrapContact{NodeId(RandomString(NodeId::kSize)),
-                                            GetRandomEndpoint(), public_key};
+  return BootstrapHandler::BootstrapContact{MakeIdentity(), GetRandomEndpoint(), public_key};
 }
 
 std::vector<BootstrapHandler::BootstrapContact> CreateBootstrapContacts(size_t number) {
@@ -57,10 +56,8 @@ std::vector<std::unique_ptr<RoutingTable>> RoutingTableNetwork(size_t size) {
   // passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
   std::vector<std::unique_ptr<RoutingTable>> routing_tables;
   routing_tables.reserve(size);
-  for (size_t i = 0; i < size; ++i) {
-    routing_tables.emplace_back(
-        maidsafe::make_unique<RoutingTable>(Address(RandomString(Address::kSize))));
-  }
+  for (size_t i = 0; i < size; ++i)
+    routing_tables.emplace_back(maidsafe::make_unique<RoutingTable>(MakeIdentity()));
   return routing_tables;
 }
 
@@ -84,13 +81,11 @@ Endpoint GetRandomEndpoint() {
 }
 
 MessageHeader GetRandomMessageHeader() {
-  return MessageHeader(
-      DestinationAddress(
-          std::make_pair(Destination(Address(RandomString(Address::kSize))), boost::none)),
-      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none),
-      MessageId(RandomUint32()), Authority::client,
-      asymm::Sign(asymm::PlainText(RandomString(Address::kSize)),
-                  asymm::GenerateKeyPair().private_key));
+  return MessageHeader(DestinationAddress(std::make_pair(Destination(MakeIdentity()), boost::none)),
+                       SourceAddress(NodeAddress(MakeIdentity()), boost::none, boost::none),
+                       MessageId(RandomUint32()), Authority::client,
+                       asymm::Sign(asymm::PlainText(RandomString(identity_size)),
+                                   asymm::GenerateKeyPair().private_key));
 }
 
 ScopedBootstrapFile::ScopedBootstrapFile(boost::filesystem::path path)

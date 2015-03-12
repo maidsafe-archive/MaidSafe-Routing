@@ -34,18 +34,18 @@ namespace routing {
 namespace test {
 
 TEST(RoutingTableTest, BEH_AddCloseNodes) {
-  Address address(RandomString(Address::kSize));
+  Address address(RandomString(identity_size));
   RoutingTable routing_table(address);
   // check the node is useful when false is set
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    Address node(RandomString(Address::kSize));
+    Address node(RandomString(identity_size));
     EXPECT_TRUE(routing_table.CheckNode(node));
   }
   EXPECT_EQ(0, routing_table.Size());
   // everything should be set to go now
   auto fob(PublicFob());
   for (unsigned int i = 0; i < GroupSize; ++i) {
-    NodeInfo node(Address(RandomString(Address::kSize)), fob, true);
+    NodeInfo node(MakeIdentity(), fob, true);
     EXPECT_TRUE(routing_table.AddNode(node).first);
   }
   EXPECT_EQ(GroupSize, routing_table.Size());

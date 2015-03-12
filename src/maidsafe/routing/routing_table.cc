@@ -30,16 +30,16 @@ namespace routing {
 namespace {
 
 void Validate(const Address& id) {
-  assert(id.IsValid());
-  if (!id.IsValid())
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_node_id));
+  assert(id.IsInitialised());
+  if (!id.IsInitialised())
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_identity));
 }
 
 }  // unnamed namespace
 
 RoutingTable::RoutingTable(Address our_id)
     : our_id_(std::move(our_id)), comparison_(our_id_), mutex_(), nodes_() {
-  assert(our_id_.IsValid());
+  assert(our_id_.IsInitialised());
 }
 
 std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_info) {
@@ -60,7 +60,7 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
   }
 
   // new close group member
-  if (Address::CloserToTarget(their_info.id, nodes_.at(GroupSize).id, our_id_)) {
+  if (CloserToTarget(their_info.id, nodes_.at(GroupSize).id, our_id_)) {
     // first push the new node in (it's close) and then get another sacrificial node if we can
     // this will make RT grow but only after several tens of millions of nodes
     PushBackThenSort(std::move(their_info));
@@ -101,7 +101,7 @@ bool RoutingTable::CheckNode(const Address& their_id) const {
     return true;
 
   // close node
-  if (Address::CloserToTarget(their_id, nodes_.at(GroupSize).id, our_id_))
+  if (CloserToTarget(their_id, nodes_.at(GroupSize).id, our_id_))
     return true;
 
   return NewNodeIsBetterThanExisting(their_id, FindCandidateForRemoval());
@@ -184,7 +184,7 @@ size_t RoutingTable::Size() const {
 // bucket 511 is us, 0 is furthest bucket (should fill first)
 int32_t RoutingTable::BucketIndex(const Address& address) const {
   assert(address != our_id_);
-  return our_id_.CommonLeadingBits(address);
+  return CommonLeadingBits(our_id_, address);
 }
 
 bool RoutingTable::HaveNode(const Address& their_id) const {

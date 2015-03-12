@@ -37,10 +37,9 @@ enum class ContactType { kFar, kMid, kClose };
 
 Address GetContact(const Address& furthest_from_tables_own_id, unsigned bucket_index,
                    ContactType contact_type) {
-  std::bitset<Address::kSize * 8> binary_id{
-      furthest_from_tables_own_id.ToStringEncoded(Address::EncodingType::kBinary)};
+  std::bitset<identity_size * 8> binary_id{binary::Encode(furthest_from_tables_own_id)};
   if (bucket_index > 0) {
-    for (unsigned i = (Address::kSize * 8) - bucket_index; i < Address::kSize * 8; ++i)
+    for (unsigned i = (identity_size * 8) - bucket_index; i < identity_size * 8; ++i)
       binary_id.flip(i);
   }
   switch (contact_type) {
@@ -54,10 +53,11 @@ Address GetContact(const Address& furthest_from_tables_own_id, unsigned bucket_i
     default:
       break;
   }
-  return Address{binary_id.to_string(), Address::EncodingType::kBinary};
+  return MakeIdentity(binary::String(binary_id.to_string()));
 }
 
 }  // unnamed namespace
+
 RoutingTableUnitTest::Bucket::Bucket(const Address& furthest_from_tables_own_id, unsigned index_in)
     : index(index_in),
       far_contact(GetContact(furthest_from_tables_own_id, index, ContactType::kFar)),
@@ -65,7 +65,7 @@ RoutingTableUnitTest::Bucket::Bucket(const Address& furthest_from_tables_own_id,
       close_contact(GetContact(furthest_from_tables_own_id, index, ContactType::kClose)) {}
 
 RoutingTableUnitTest::RoutingTableUnitTest()
-    : our_id_(RandomString(Address::kSize)),
+    : our_id_(RandomString(identity_size)),
       fob_(passport::Pmid(passport::Anpmid())),
       public_fob_(passport::PublicPmid(fob_)),
       table_(our_id_),
@@ -75,18 +75,18 @@ RoutingTableUnitTest::RoutingTableUnitTest()
       added_ids_() {
   for (int i = 0; i < 99; ++i) {
     EXPECT_TRUE(
-        Address::CloserToTarget(buckets_[i].mid_contact, buckets_[i].far_contact, table_.OurId()))
+        CloserToTarget(buckets_[i].mid_contact, buckets_[i].far_contact, table_.OurId()))
         << "i == " << i;
     EXPECT_TRUE(
-        Address::CloserToTarget(buckets_[i].close_contact, buckets_[i].mid_contact, table_.OurId()))
+        CloserToTarget(buckets_[i].close_contact, buckets_[i].mid_contact, table_.OurId()))
         << "i == " << i;
-    EXPECT_TRUE(Address::CloserToTarget(buckets_[i + 1].far_contact, buckets_[i].close_contact,
+    EXPECT_TRUE(CloserToTarget(buckets_[i + 1].far_contact, buckets_[i].close_contact,
                                         table_.OurId()))
         << "i == " << i;
   }
   EXPECT_TRUE(
-      Address::CloserToTarget(buckets_[99].mid_contact, buckets_[99].far_contact, table_.OurId()));
-  EXPECT_TRUE(Address::CloserToTarget(buckets_[99].close_contact, buckets_[99].mid_contact,
+      CloserToTarget(buckets_[99].mid_contact, buckets_[99].far_contact, table_.OurId()));
+  EXPECT_TRUE(CloserToTarget(buckets_[99].close_contact, buckets_[99].mid_contact,
                                       table_.OurId()));
 
   const asymm::Keys keys(asymm::GenerateKeyPair());
@@ -112,7 +112,7 @@ void RoutingTableUnitTest::CompleteFillingTable() {
 }
 
 RoutingTableUnitTest::Buckets RoutingTableUnitTest::InitialiseBuckets() {
-  auto furthest_from_tables_own_id = table_.OurId() ^ Address { std::string(Address::kSize, -1) };
+  auto furthest_from_tables_own_id = table_.OurId() ^ Address { std::string(identity_size, -1) };
   Buckets the_buckets;
   for (unsigned i = 0; i < the_buckets.size(); ++i)
     the_buckets[i] = Bucket{furthest_from_tables_own_id, i};

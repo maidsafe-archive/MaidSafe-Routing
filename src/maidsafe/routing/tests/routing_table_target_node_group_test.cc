@@ -53,7 +53,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckTarget) {
   for (const auto& node : routing_tables) {
     std::sort(std::begin(addresses), std::end(addresses),
               [&node](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, node->OurId());
+      return CloserToTarget(lhs, rhs, node->OurId());
     });
     // if target is in close group return the whole close group excluding target
     for (size_t i = 1; i < GroupSize - QuorumSize; ++i) {

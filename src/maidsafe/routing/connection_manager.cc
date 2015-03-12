@@ -47,7 +47,7 @@ using boost::optional;
 ConnectionManager::ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
     : io_service_(ios),
       our_fob_(std::move(our_fob)),
-      our_id_(our_fob_.name()->string()),
+      our_id_(our_fob_.Name()),
       peers_(Comparison(our_id_)),
       current_close_group_(),
       destroy_indicator_(new boost::none_t()) {}
@@ -122,7 +122,7 @@ void ConnectionManager::StartAccepting(unsigned short port) {
         return;
 
       PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
-      Address their_id(their_public_pmid.name()->string());
+      Address their_id(their_public_pmid.Name());
       InsertPeer(PeerNode(NodeInfo(std::move(their_id), std::move(their_public_pmid), true),
                           std::move(socket)));
     });
@@ -170,7 +170,7 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPa
         return;
 
       PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
-      Address their_id(their_public_pmid.name()->string());
+      Address their_id(their_public_pmid.Name());
       NodeInfo their_node_info(std::move(their_id), std::move(their_public_pmid), true);
 
       if (assumed_node_info && *assumed_node_info != their_node_info)
@@ -232,7 +232,7 @@ optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   auto new_group(OurCloseGroup());
   std::vector<Address> new_group_ids;
   for (const auto& group_member_public_pmid : new_group)
-    new_group_ids.push_back(Address(group_member_public_pmid.name()->string()));
+    new_group_ids.push_back(group_member_public_pmid.Name());
 
   if (new_group_ids != current_close_group_) {
     auto changed = std::make_pair(new_group_ids, current_close_group_);

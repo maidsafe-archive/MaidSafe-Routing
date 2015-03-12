@@ -54,7 +54,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckCloseGroups) {
     // + 1 as Addresss includes our ID
     std::partial_sort(std::begin(addresses), std::begin(addresses) + GroupSize + 1,
                       std::end(addresses), [id](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, id);
+      return CloserToTarget(lhs, rhs, id);
     });
     auto groups = node->OurCloseGroup();
     EXPECT_EQ(groups.size(), GroupSize);
