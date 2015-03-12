@@ -84,14 +84,15 @@ class SentinelTest : public testing::Test {
 
   std::vector<SentinelAddInfo> CreateGetGroupKeyResponse(MessageId message_id,
                                                          const GroupAddress& target,
-                                                         const Address& source) {
+                                                         const GroupAddress& source,
+                                                         Authority authority) {
     assert(pmid_nodes_.size() >= GroupSize);
     std::vector<SentinelAddInfo> group_key_response;
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
                 return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
                                               NodeId(rhs.name()->string()),
-                                              target.data);
+                                              source.data);
               });
     std::map<Address, asymm::PublicKey> public_key_map;
     for (size_t index(0); index < GroupSize; ++index)
@@ -102,10 +103,10 @@ class SentinelTest : public testing::Test {
       group_key_response.push_back(
           MakeAddInfo(get_group_key_response,
                       pmid_nodes_.at(index).private_key(),
-                      DestinationAddress(std::make_pair(Destination(source), boost::none)),
+                      DestinationAddress(std::make_pair(Destination(target.data), boost::none)),
                       SourceAddress(NodeAddress(NodeId(pmid_nodes_.at(index).name()->string())),
-                                    target, boost::none),
-                      message_id, Authority::nae_manager, MessageTypeTag::GetGroupKeyResponse));
+                                    source, boost::none),
+                      message_id, authority, MessageTypeTag::GetGroupKeyResponse));
     }
     assert(group_key_response.size() >= GroupSize);
     return group_key_response;
@@ -120,9 +121,9 @@ class SentinelTest : public testing::Test {
     std::vector<SentinelAddInfo> group_message;
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
-                return NodeId::CloserToTarget(NodeId(rhs.name()->string()),
-                                              NodeId(lhs.name()->string()),
-                                              target.data);
+                return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
+                                              NodeId(rhs.name()->string()),
+                                              source.data);
               });
 
     for (size_t index(0); index < GroupSize; ++index) {
@@ -191,14 +192,15 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
   PutData put_data(DataTagValue::kImmutableDataValue, SerialisedData(serialised_data_string.begin(),
                                                                      serialised_data_string.end()));
   MessageId message_id(RandomInt32());
-  auto group_message(CreateGroupMessage(put_data, message_id, Authority::node_manager,
+  auto group_message(CreateGroupMessage(put_data, message_id, Authority::nae_manager,
                                         MessageTypeTag::PutData,
-                                        GroupAddress(NodeId(data.name()->string())),
-                                        GroupAddress(source_address_.node_address.data)));
+                                        GroupAddress(source_address_.node_address.data),
+                                        GroupAddress(NodeId(data.name()->string()))));
 
   auto group_key_response(
       CreateGetGroupKeyResponse(message_id, GroupAddress(source_address_.node_address.data),
-                                GroupAddress(NodeId(data.name()->string()))));
+                                GroupAddress(NodeId(data.name()->string())),
+                                Authority::nae_manager));
   for (const auto& add_key_info : group_message) {
     auto resolved(this->sentinel_->Add(add_key_info.header, add_key_info.tag,
                                        add_key_info.serialised));
@@ -206,12 +208,19 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
       EXPECT_TRUE(false);
   }
 
-  for (const auto& add_key_info : group_key_response) {
-    auto resolved(this->sentinel_->Add(add_key_info.header, add_key_info.tag,
-                                       add_key_info.serialised));
+  for (size_t index(0); index < QuorumSize - 1; ++index) {
+    auto resolved(this->sentinel_->Add(group_key_response.at(index).header,
+                                       group_key_response.at(index).tag,
+                                       group_key_response.at(index).serialised));
     if (resolved)
       EXPECT_TRUE(false);
   }
+  auto resolved(this->sentinel_->Add(group_key_response.at(QuorumSize - 1).header,
+                                     group_key_response.at(QuorumSize - 1).tag,
+                                     group_key_response.at(QuorumSize - 1).serialised));
+  if (!resolved)
+    EXPECT_TRUE(false);
+
 }
 
 }  // namespace test
