@@ -296,20 +296,20 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   // other async actions (same with the tests below).
 
 
-  LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
+//  LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
 
-  RoutingNode<VaultFacade> n;
+//  RoutingNode<VaultFacade> n;
 
-  auto value = NonEmptyString(RandomAlphaNumericString(65));
-  Identity name{Identity(crypto::Hash<crypto::SHA512>(value))};
-  MutableData a{MutableData::Name(name), value};
-  ImmutableData b{value};
+//  auto value = NonEmptyString(RandomAlphaNumericString(65));
+//  Identity name{Identity(crypto::Hash<crypto::SHA512>(value))};
+//  MutableData a{MutableData::Name(name), value};
+//  ImmutableData b{value};
 
-  Address from(Address(RandomString(Address::kSize)));
-  Address to(Address(RandomString(Address::kSize)));
+//  Address from(Address(RandomString(Address::kSize)));
+//  Address to(Address(RandomString(Address::kSize)));
 
-  n.Get<ImmutableData>(name, [](asio::error_code /* error */) {});
-  n.Get<MutableData>(name, [](asio::error_code /* error */) {});
+//  n.Get<ImmutableData>(name, [](asio::error_code /* error */) {});
+//  n.Get<MutableData>(name, [](asio::error_code /* error */) {});
 
   // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
   // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});
