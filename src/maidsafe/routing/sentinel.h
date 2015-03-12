@@ -42,8 +42,8 @@ class Sentinel {
  public:
   // TODO(mmoadeli): ResultType below may have extra information which could be removed later
   using ResultType = std::tuple<MessageHeader, MessageTypeTag, SerialisedMessage>;
-  Sentinel(GetKey get_key, GetGroupKey get_group_key)
-      : get_key_(get_key), get_group_key_(get_group_key) {}
+  Sentinel(SendGetClientKey send_get_client_key, SendGetGroupKey send_get_group_key)
+      : send_get_client_key_(send_get_client_key), send_get_group_key_(send_get_group_key) {}
   Sentinel(const Sentinel&) = delete;
   Sentinel(Sentinel&&) = delete;
   ~Sentinel() = default;
@@ -72,8 +72,8 @@ class Sentinel {
   boost::optional<ResultType>
   Resolve(const std::vector<ResultType>& verified_messages, SingleMessage);
 
-  GetKey get_key_;
-  GetGroupKey get_group_key_;
+  SendGetClientKey send_get_client_key_;
+  SendGetGroupKey send_get_group_key_;
   NodeAccumulatorType node_accumulator_{std::chrono::minutes(20), 1U};
   GroupAccumulatorType group_accumulator_{std::chrono::minutes(20), QuorumSize};
   KeyAccumulatorType group_key_accumulator_{std::chrono::minutes(20), QuorumSize};

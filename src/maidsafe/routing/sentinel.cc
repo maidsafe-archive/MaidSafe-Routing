@@ -33,7 +33,7 @@ namespace routing {
 boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                                     MessageTypeTag tag,
                                                     SerialisedMessage message) {
-  if (tag == MessageTypeTag::GetKeyResponse) {
+  if (tag == MessageTypeTag::GetClientKeyResponse) {
     if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     std::cout << *header.FromGroup() << ", " << header.MessageId() << " key \n";

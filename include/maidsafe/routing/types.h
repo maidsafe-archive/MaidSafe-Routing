@@ -74,8 +74,8 @@ using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
 
-using GetKey = std::function<void(Address)>;
-using GetGroupKey = std::function<void(GroupAddress)>;
+using SendGetClientKey = std::function<void(Address)>;
+using SendGetGroupKey = std::function<void(GroupAddress)>;
 
 template <class Archive>
 void serialize(Archive& archive, DestinationAddress& address) {
