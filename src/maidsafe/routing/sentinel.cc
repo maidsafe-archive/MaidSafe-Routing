@@ -168,7 +168,7 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename GroupAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
-  std::cout << messages.size() << ", " << keys.size() << "\n";
+  std::cout << messages.size() << ", " << keys.size() << " validate \n";
   if (messages.size() < QuorumSize || keys.size() < QuorumSize)
     return std::vector<ResultType>();
 
@@ -242,7 +242,7 @@ Sentinel::Resolve(const std::vector<ResultType>& verified_messages, GroupMessage
     auto merged_value_ptr((*accounts.begin())->Merge(accounts));
     if (merged_value_ptr) {
       auto result(*verified_messages.begin());
-      std::get<2>(result) = Serialise(*merged_value_ptr);
+      std::get<2>(result) = Serialise(merged_value_ptr);
       return result;
     }
   }

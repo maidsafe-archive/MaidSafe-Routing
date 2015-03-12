@@ -19,6 +19,10 @@
 #include <memory>
 #include <vector>
 
+#include "cereal/types/base_class.hpp"
+#include "cereal/types/polymorphic.hpp"
+#include "maidsafe/common/serialisation/binary_archive.h"
+
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -28,6 +32,7 @@
 
 #include "maidsafe/routing/sentinel.h"
 #include "maidsafe/routing/messages/messages.h"
+#include "maidsafe/routing/account_transfer_info.h"
 
 namespace maidsafe {
 
@@ -130,6 +135,14 @@ class SentinelTest : public testing::Test {
 
   
  protected:
+  void SortPmidNodes(const Address& target) {
+    std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
+              [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
+                return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
+                                              NodeId(rhs.name()->string()), target);
+              });
+  }
+
   std::unique_ptr<Sentinel> sentinel_;
   std::vector<passport::Maid> maid_nodes_;
   std::vector<passport::Pmid> pmid_nodes_;
@@ -208,7 +221,96 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
                                group_key_response.at(QuorumSize - 1).serialised));
   if (!resolved)
     EXPECT_TRUE(false);
+}
 
+class AccountTransfer : public AccountTransferInfo {
+ public:
+  AccountTransfer() = default;
+  AccountTransfer(Identity identy, int value)
+      : AccountTransferInfo(identy), value_(value) {}
+  std::uint32_t ThisTypeId() const override {
+    return 1;
+  }
+
+  ~AccountTransfer() override final = default;
+
+  int value() const { return value_; }
+
+  template <typename Archive>
+  Archive& save(Archive& archive) const {
+    return archive(cereal::base_class<AccountTransferInfo>(this), value_);
+  }
+
+  template <typename Archive>
+  Archive& load(Archive& archive) {
+    try {
+      archive(cereal::base_class<AccountTransferInfo>(this), value_);
+    } catch (const std::exception&) {
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
+    }
+    return archive;
+  }
+
+  std::unique_ptr<AccountTransferInfo> Merge(
+      const std::vector<std::unique_ptr<AccountTransferInfo>>& accounts) override {
+    decltype(value_) merged(0);
+    for (size_t index(0); index < accounts.size(); ++index)
+       merged += dynamic_cast<AccountTransfer*>(accounts.at(index).get())->value();
+
+    return maidsafe::make_unique<AccountTransfer>(Name(), merged);
+ }
+
+ private:
+  int value_;
+};
+
+
+TEST_F(SentinelTest, BEH_BasicAccountTransferAdd) {
+  CreatePmidKeys(GroupSize * 2);
+  SortPmidNodes(source_address_.node_address.data);
+  MessageId message_id(RandomInt32());
+  std::vector<SentinelAddInfo> account_transfers;
+  for (size_t index(0); index < GroupSize; ++index) {
+    std::unique_ptr<AccountTransferInfo>
+        account(dynamic_cast<AccountTransferInfo*>(
+                    new AccountTransfer(Identity(source_address_.node_address.data.string()),
+                                        index)));
+    account_transfers.emplace_back(
+        MakeAddInfo(account, pmid_nodes_.at(index).private_key(),
+                    DestinationAddress(std::make_pair(
+                                           Destination(source_address_.node_address.data),
+                                           boost::none)),
+                    SourceAddress(NodeAddress(Address(pmid_nodes_.at(index).name()->string())),
+                                  GroupAddress(source_address_.node_address.data), boost::none),
+                message_id, Authority::nae_manager, MessageTypeTag::AccountTransfer));
+  }
+
+  for (const auto& add_info : account_transfers) {
+    auto resolved(sentinel_->Add(add_info.header, add_info.tag, add_info.serialised));
+    if (resolved)
+      EXPECT_TRUE(false);
+  }
+
+  auto group_key_response(
+      CreateGetGroupKeyResponse(message_id, GroupAddress(source_address_.node_address.data),
+                                GroupAddress(source_address_.node_address.data),
+                                Authority::nae_manager));
+  for (size_t index(0); index < QuorumSize - 1; ++index) {
+    auto resolved(sentinel_->Add(group_key_response.at(index).header,
+                                 group_key_response.at(index).tag,
+                                 group_key_response.at(index).serialised));
+    if (resolved)
+      EXPECT_TRUE(false);
+  }
+  auto resolved(sentinel_->Add(group_key_response.at(QuorumSize - 1).header,
+                               group_key_response.at(QuorumSize - 1).tag,
+                               group_key_response.at(QuorumSize - 1).serialised));
+  if (!resolved)
+    EXPECT_TRUE(false);
+
+  auto base_ptr(Parse<std::unique_ptr<AccountTransferInfo>>(std::get<2>(*resolved)));
+  auto merged(dynamic_cast<AccountTransfer*>(base_ptr.get()));
+  EXPECT_EQ(merged->value(), GroupSize*(GroupSize - 1) / 2);
 }
 
 }  // namespace test
@@ -216,3 +318,5 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
 }  // namespace routing
 
 }  // namespace maidsafe
+
+CEREAL_REGISTER_TYPE(maidsafe::routing::test::AccountTransfer)
