@@ -62,9 +62,9 @@ class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
  public:
-  using OnReceive  = std::function<void(asio::error_code, Address, const SerialisedMessage&)>;
+  using OnReceive  = std::function<void(Address, const SerialisedMessage&)>;
   using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>, Endpoint)>;
-  using OnConnectionLost = std::function<void(Address)>;
+  using OnConnectionLost = std::function<void(boost::optional<CloseGroupDifference>, Address)>;
 
  private:
   struct ExpectedAccept {
@@ -135,10 +135,12 @@ class ConnectionManager {
   void StartReceiving();
   void StartAccepting();
 
-  void OnAccept(Connections::AcceptResult);
+  void HandleAccept(Connections::AcceptResult);
+  void HandleConnectionLost(Address);
+
+  boost::optional<CloseGroupDifference> GroupChanged();
 
  private:
-  boost::optional<CloseGroupDifference> GroupChanged();
 
   mutable std::mutex mutex_;
   unsigned short our_accept_port_;
@@ -148,7 +150,6 @@ class ConnectionManager {
   OnReceive on_receive_;
   OnConnectionLost on_connection_lost_;
   std::vector<Address> current_close_group_;
-  std::function<void(CloseGroupDifference)> group_changed_functor_;
   std::map<Endpoint, ExpectedAccept> expected_accepts_;
   std::shared_ptr<Connections> connections_;
 };
@@ -156,7 +157,18 @@ class ConnectionManager {
 template <class Handler /* void (error_code) */>
 void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
                              Handler handler) {
-  connections_->Send(addr, message, std::move(handler));
+
+  std::weak_ptr<Connections> guard = connections_;
+
+  connections_->Send(addr, message, [=](asio::error_code error) {
+      handler(error);
+
+      if (!guard.lock()) return;
+
+      if (error) {
+        HandleConnectionLost(std::move(addr));
+      }
+      });
 }
 
 template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>

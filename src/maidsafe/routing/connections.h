@@ -96,6 +96,8 @@ class Connections {
 
   boost::asio::io_service& get_io_service();
 
+  std::weak_ptr<boost::none_t> Guard() { return destroy_indicator_; }
+
  private:
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
 
@@ -111,10 +113,12 @@ class Connections {
   std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
   AsyncQueue<asio::error_code, ReceiveResult> receive_queue_;
+
+  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 inline Connections::Connections(boost::asio::io_service& ios, const Address& our_node_id)
-    : service_(ios), our_id_(our_node_id) {}
+    : service_(ios), our_id_(our_node_id), destroy_indicator_(new boost::none_t) {}
 
 template <class Token>
 AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
@@ -360,7 +364,10 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
 inline boost::asio::io_service& Connections::get_io_service() { return service_; }
 
 inline void Connections::Shutdown() {
+  auto guard = Guard();
+
   service_.post([=]() {
+    if (!guard.lock()) return;
     acceptors_.clear();
     connections_.clear();
     id_to_endpoint_map_.clear();

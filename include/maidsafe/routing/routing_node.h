@@ -112,8 +112,8 @@ class RoutingNode {
   void HandleMessage(routing::Post post, MessageHeader original_header);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address name);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
-  void MessageReceived(asio::error_code, Address peer_id, SerialisedMessage serialised_message);
-  void ConnectionLost(Address peer);
+  void MessageReceived(Address peer_id, SerialisedMessage serialised_message);
+  void ConnectionLost(boost::optional<CloseGroupDifference>, Address peer);
   void OnCloseGroupChanged(CloseGroupDifference close_group_difference);
   SourceAddress OurSourceAddress() const;
   SourceAddress OurSourceAddress(GroupAddress) const;
@@ -158,11 +158,11 @@ RoutingNode<Child>::RoutingNode()
       bootstrap_node_(boost::none),
       bootstrap_handler_(),
       connection_manager_(Address(our_fob_.name()->string()),
-                          [=](asio::error_code error, Address address, SerialisedMessage msg) {
-                            MessageReceived(error, std::move(address), std::move(msg));
+                          [=](Address address, SerialisedMessage msg) {
+                            MessageReceived(std::move(address), std::move(msg));
                           },
-                          [=](Address peer_id) {
-                            ConnectionLost(peer_id);
+                          [=](boost::optional<CloseGroupDifference> diff, Address peer_id) {
+                            ConnectionLost(std::move(diff), std::move(peer_id));
                           }),
       filter_(std::chrono::minutes(20)),
       sentinel_(asio_service_.service()),
@@ -284,8 +284,7 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 }
 
 template <typename Child>
-void RoutingNode<Child>::MessageReceived(asio::error_code /*error*/,
-                                         NodeId /* peer_id */,
+void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
                                          SerialisedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
@@ -416,10 +415,10 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 }
 
 template <typename Child>
-void RoutingNode<Child>::ConnectionLost(Address /*peer*/) {
+void RoutingNode<Child>::ConnectionLost(boost::optional<CloseGroupDifference> diff, Address) {
   //auto change = connection_manager_.LostNetworkConnection(peer);
-  //if (change)
-  //  static_cast<Child*>(this)->HandleChurn(*added);
+  if (diff)
+    static_cast<Child*>(this)->HandleChurn(*diff);
 }
 
 // reply with our details;

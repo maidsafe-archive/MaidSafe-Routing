@@ -75,11 +75,11 @@ std::set<Address> ConnectionManager::GetNonRoutingNodes() const {
   return connected_non_routing_nodes_;
 }
 
-boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
-    const Address& node) {
-  routing_table_.DropNode(node);
-  return GroupChanged();
-}
+//boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+//    const Address& node) {
+//  routing_table_.DropNode(node);
+//  return GroupChanged();
+//}
 
 //optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
 //  routing_table_.DropNode(their_id);
@@ -105,7 +105,7 @@ void ConnectionManager::StartAccepting() {
     }
 
     if (!error) {
-      OnAccept(std::move(result));
+      HandleAccept(std::move(result));
 
       // The handler may have destroyed 'this'.
       if (!weak_connections.lock()) {
@@ -119,7 +119,7 @@ void ConnectionManager::StartAccepting() {
   connections_->Accept(our_accept_port_, &our_accept_port_, std::move(accept_handler));
 }
 
-void ConnectionManager::OnAccept(Connections::AcceptResult result) {
+void ConnectionManager::HandleAccept(Connections::AcceptResult result) {
   auto expected_i = expected_accepts_.find(result.his_endpoint);
 
   if (expected_i != expected_accepts_.end()) {
@@ -207,8 +207,11 @@ void ConnectionManager::StartReceiving() {
 
   connections_->Receive([=](asio::error_code error, Connections::ReceiveResult result) {
     if (!weak_connections.lock()) return;
+    if (error) {
+      return HandleConnectionLost(result.his_address);
+    }
     auto h = std::move(on_receive_);
-    h(error, std::move(result.his_address), std::move(result.message));
+    h(std::move(result.his_address), std::move(result.message));
     if (!weak_connections.lock()) return;
     on_receive_ = std::move(h);
     StartReceiving();
@@ -219,6 +222,12 @@ void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
                                              const SerialisedMessage& /*message*/) {
 // connections_->Send(addr, message, std::move(handler));
 // remove connection if failed
+}
+
+void ConnectionManager::HandleConnectionLost(Address lost_connection) {
+  routing_table_.DropNode(lost_connection);
+  connected_non_routing_nodes_.erase(lost_connection);
+  on_connection_lost_(GroupChanged(), lost_connection);
 }
 
 }  // namespace routing
