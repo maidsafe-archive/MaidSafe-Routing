@@ -125,8 +125,6 @@ class ConnectionManager {
 
   unsigned short AcceptingPort() const { return our_accept_port_; }
 
-  boost::asio::io_service& get_io_service() { return boost_io_service_.service(); }
-
   template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
@@ -144,7 +142,6 @@ class ConnectionManager {
 
   mutable std::mutex mutex_;
   unsigned short our_accept_port_;
-  BoostAsioService boost_io_service_;
   RoutingTable routing_table_;
   std::set<Address> connected_non_routing_nodes_;  // clients & bootstrapping nodes
   OnReceive on_receive_;

@@ -60,7 +60,7 @@ class Connections {
    };
 
  public:
-  Connections(boost::asio::io_service&, const Address& our_node_id);
+  Connections(const Address& our_node_id);
 
   Connections() = delete;
   Connections(const Connections&) = delete;
@@ -98,10 +98,10 @@ class Connections {
 
   std::weak_ptr<boost::none_t> Guard() { return destroy_indicator_; }
 
+  void Wait();
+
  private:
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
-
-  boost::asio::io_service& service_;
 
   Address our_id_;
 
@@ -114,11 +114,13 @@ class Connections {
 
   AsyncQueue<asio::error_code, ReceiveResult> receive_queue_;
 
+  BoostAsioService runner_;
+
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
-inline Connections::Connections(boost::asio::io_service& ios, const Address& our_node_id)
-    : service_(ios), our_id_(our_node_id), destroy_indicator_(new boost::none_t) {}
+inline Connections::Connections(const Address& our_node_id)
+    : our_id_(our_node_id), runner_(1), destroy_indicator_(new boost::none_t) {}
 
 template <class Token>
 AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
@@ -178,7 +180,11 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
   return result.get();
 }
 
-inline Connections::~Connections() { Shutdown(); }
+inline Connections::~Connections() {
+  destroy_indicator_.reset();
+  Shutdown();
+  runner_.Stop();
+}
 
 template <class Token>
 AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoint endpoint,
@@ -190,7 +196,7 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
 
   get_io_service().post([=]() mutable {
     crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
-    auto socket = std::make_shared<crux::socket>(service_, unspecified_ep);
+    auto socket = std::make_shared<crux::socket>(get_io_service(), unspecified_ep);
 
     auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
 
@@ -261,10 +267,10 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
   std::shared_ptr<crux::acceptor> acceptor;
 
   try {
-    acceptor = std::make_shared<crux::acceptor>(service_, loopback(port));
+    acceptor = std::make_shared<crux::acceptor>(get_io_service(), loopback(port));
   }
   catch(...) {
-    acceptor = std::make_shared<crux::acceptor>(service_, loopback(0));
+    acceptor = std::make_shared<crux::acceptor>(get_io_service(), loopback(0));
   }
 
   if (chosen_port) {
@@ -280,7 +286,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
 
     std::weak_ptr<crux::acceptor> weak_acceptor = acceptor;
 
-    auto socket = std::make_shared<crux::socket>(service_);
+    auto socket = std::make_shared<crux::socket>(get_io_service());
 
     acceptor->async_accept(*socket, [=](boost::system::error_code error) mutable {
       if (!weak_acceptor.lock()) {
@@ -361,21 +367,22 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
       });
 }
 
-inline boost::asio::io_service& Connections::get_io_service() { return service_; }
+inline boost::asio::io_service& Connections::get_io_service() { return runner_.service(); }
 
 inline void Connections::Shutdown() {
-  auto guard = Guard();
-
-  service_.post([=]() {
-    if (!guard.lock()) return;
+  get_io_service().post([=]() {
     acceptors_.clear();
     connections_.clear();
     id_to_endpoint_map_.clear();
   });
 }
 
+inline void Connections::Wait() {
+  runner_.Stop();
+}
+
 inline void Connections::Drop(const Address& their_id) {
-  service_.post([=]() {
+  get_io_service().post([=]() {
     // TODO: Migth it be that it is in connections_ but not in the id_to_endpoint_map_?
     // I.e. that above layers would wan't to remove by ID nodes which were not
     // yet connected?

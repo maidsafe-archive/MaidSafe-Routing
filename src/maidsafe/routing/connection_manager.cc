@@ -47,13 +47,12 @@ ConnectionManager::ConnectionManager(Address our_id, OnReceive on_receive,
                                      OnConnectionLost on_connection_lost)
     : mutex_(),
       our_accept_port_(5483),
-      boost_io_service_(1),
       routing_table_(our_id),
       connected_non_routing_nodes_(),
       on_receive_(std::move(on_receive)),
       on_connection_lost_(std::move(on_connection_lost)),
       current_close_group_(),
-      connections_(new Connections(boost_io_service_.service(), our_id)) {
+      connections_(new Connections(our_id)) {
   StartReceiving();
   StartAccepting();
 }

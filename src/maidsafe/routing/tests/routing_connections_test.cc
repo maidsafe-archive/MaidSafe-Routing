@@ -40,67 +40,63 @@ static std::string msg_to_str(const SerialisedMessage& msg) {
 }
 
 TEST(ConnectionsTest, FUNC_TwoConnections) {
-  boost::asio::io_service ios;
-
-  NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
-  NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
-
-  Connections c1(ios, c1_id);
-  Connections c2(ios, c2_id);
-
-  unsigned short port = 8080;
-
   bool c1_finished = false;
   bool c2_finished = false;
 
-  c1.Accept(port, nullptr,
-      [&](asio::error_code error, Connections::AcceptResult result) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(result.his_address, c2.OurId());
-        ASSERT_EQ(result.our_endpoint.port(), port);
+  {
+    NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
+    NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
 
-        c1.Send(result.his_address,
-                str_to_msg("hello"),
-                [&](asio::error_code error) {
-                  ASSERT_FALSE(error);
-                  c1.Shutdown();
-                  c1_finished = true;
-                });
-      });
+    Connections c1(c1_id);
+    Connections c2(c2_id);
 
-  c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, Connections::ConnectResult result) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(result.his_address, c1.OurId());
+    unsigned short port = 8080;
 
-        c2.Receive([&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
+    c1.Accept(port, nullptr,
+        [&](asio::error_code error, Connections::AcceptResult result) {
           ASSERT_FALSE(error);
-          ASSERT_EQ(recv_result.his_address, result.his_address);
-          ASSERT_EQ(msg_to_str(recv_result.message), "hello");
+          ASSERT_EQ(result.his_address, c2.OurId());
+          ASSERT_EQ(result.our_endpoint.port(), port);
 
-          c2.Shutdown();
-          c2_finished = true;
+          c1.Send(result.his_address,
+                  str_to_msg("hello"),
+                  [&](asio::error_code error) {
+                    ASSERT_FALSE(error);
+                    c1.Shutdown();
+                    c1_finished = true;
+                  });
         });
-      });
 
-  ios.run();
+    c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
+        [&](asio::error_code error, Connections::ConnectResult result) {
+          ASSERT_FALSE(error);
+          ASSERT_EQ(result.his_address, c1.OurId());
+
+          c2.Receive([&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
+            ASSERT_FALSE(error);
+            ASSERT_EQ(recv_result.his_address, result.his_address);
+            ASSERT_EQ(msg_to_str(recv_result.message), "hello");
+
+            c2.Shutdown();
+            c2_finished = true;
+          });
+        });
+
+    c1.Wait();
+    c2.Wait();
+  }
 
   ASSERT_TRUE(c1_finished && c2_finished);
 }
 
 TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
-  boost::asio::io_service ios;
-  boost::asio::io_service::work work(ios);
-
   NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
   NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
 
-  Connections c1(ios, c1_id);
-  Connections c2(ios, c2_id);
+  Connections c1(c1_id);
+  Connections c2(c2_id);
 
   unsigned short port = 8080;
-
-  std::thread thread([&]() { ios.run(); });
 
   auto accept_f  = c1.Accept(port, nullptr, asio::use_future);
   auto connect_f = c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
@@ -121,9 +117,6 @@ TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
 
   c1.Shutdown();
   c2.Shutdown();
-
-  ios.stop();
-  thread.join();
 }
 
 }  // namespace test
