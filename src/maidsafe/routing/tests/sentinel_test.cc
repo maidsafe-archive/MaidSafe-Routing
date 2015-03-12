@@ -86,8 +86,6 @@ class SentinelTest : public testing::Test {
                                                          const GroupAddress& target,
                                                          const GroupAddress& source,
                                                          Authority authority) {
-    assert(pmid_nodes_.size() >= GroupSize);
-    std::vector<SentinelAddInfo> group_key_response;
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
                 return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
@@ -99,17 +97,8 @@ class SentinelTest : public testing::Test {
       public_key_map.insert(std::make_pair(Address(pmid_nodes_.at(index).name()->string()),
                                            pmid_nodes_.at(index).public_key()));
     GetGroupKeyResponse get_group_key_response(public_key_map, target);
-    for (size_t index(0); index < GroupSize; ++index) {
-      group_key_response.push_back(
-          MakeAddInfo(get_group_key_response,
-                      pmid_nodes_.at(index).private_key(),
-                      DestinationAddress(std::make_pair(Destination(target.data), boost::none)),
-                      SourceAddress(NodeAddress(NodeId(pmid_nodes_.at(index).name()->string())),
-                                    source, boost::none),
-                      message_id, authority, MessageTypeTag::GetGroupKeyResponse));
-    }
-    assert(group_key_response.size() >= GroupSize);
-    return group_key_response;
+    return CreateGroupMessage(get_group_key_response, message_id, authority,
+                              MessageTypeTag::GetGroupKeyResponse, target, source);
   }
 
   template<typename MessageType>
@@ -202,22 +191,21 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
                                 GroupAddress(NodeId(data.name()->string())),
                                 Authority::nae_manager));
   for (const auto& add_key_info : group_message) {
-    auto resolved(this->sentinel_->Add(add_key_info.header, add_key_info.tag,
-                                       add_key_info.serialised));
+    auto resolved(sentinel_->Add(add_key_info.header, add_key_info.tag, add_key_info.serialised));
     if (resolved)
       EXPECT_TRUE(false);
   }
 
   for (size_t index(0); index < QuorumSize - 1; ++index) {
-    auto resolved(this->sentinel_->Add(group_key_response.at(index).header,
-                                       group_key_response.at(index).tag,
-                                       group_key_response.at(index).serialised));
+    auto resolved(sentinel_->Add(group_key_response.at(index).header,
+                                 group_key_response.at(index).tag,
+                                 group_key_response.at(index).serialised));
     if (resolved)
       EXPECT_TRUE(false);
   }
-  auto resolved(this->sentinel_->Add(group_key_response.at(QuorumSize - 1).header,
-                                     group_key_response.at(QuorumSize - 1).tag,
-                                     group_key_response.at(QuorumSize - 1).serialised));
+  auto resolved(sentinel_->Add(group_key_response.at(QuorumSize - 1).header,
+                               group_key_response.at(QuorumSize - 1).tag,
+                               group_key_response.at(QuorumSize - 1).serialised));
   if (!resolved)
     EXPECT_TRUE(false);
 
