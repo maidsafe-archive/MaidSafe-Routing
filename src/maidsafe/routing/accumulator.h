@@ -119,6 +119,7 @@ class Accumulator {
     name_order_.pop_front();
   }
 
+  // Return true if Least Recently Used item's time to live has expired
   bool CheckTimeExpired() const {
     if (time_to_live_ == std::chrono::steady_clock::duration::zero() || storage_.empty())
       return false;
@@ -127,6 +128,7 @@ class Accumulator {
     return ((std::get<2>(name->second) + time_to_live_) < (std::chrono::steady_clock::now()));
   }
 
+  // Least Recently Used, re-insert name at end of list as most recently used.
   void ReOrder(const NameType& name) {
     const auto it = storage_.find(name);
     assert(it != storage_.end());
