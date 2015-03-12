@@ -123,7 +123,12 @@ class RoutingNode {
   template <class Message>
   void SendDirect(NodeId, Message, SendHandler);
   EndpointPair NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
-    return EndpointPair();
+    if (!our_external_endpoint_) {
+      return EndpointPair();
+    }
+    return EndpointPair(Endpoint(asio::ip::address_v4::loopback(),
+                                 our_external_endpoint_->port()),
+                        *our_external_endpoint_);
   }
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
   // nodes appering or vanishing so its pretty important.
@@ -136,7 +141,7 @@ class RoutingNode {
   passport::Pmid our_fob_;
   std::atomic<MessageId> message_id_;
   boost::optional<Address> bootstrap_node_;
-  boost::optional<Endpoint> bootstrap_endpoint_;
+  boost::optional<Endpoint> our_external_endpoint_;
   BootstrapHandler bootstrap_handler_;
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
@@ -180,7 +185,8 @@ RoutingNode<Child>::RoutingNode()
       }
       // FIXME(Team): Thread safety.
       bootstrap_node_ = contact.id;
-      bootstrap_endpoint_ = our_endpoint;
+      our_external_endpoint_ = Endpoint(our_endpoint.address(),
+                                        connection_manager_.AcceptingPort());
       ConnectToCloseGroup();
     });
   }
