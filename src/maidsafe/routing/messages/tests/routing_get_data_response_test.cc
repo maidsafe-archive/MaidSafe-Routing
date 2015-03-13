@@ -36,9 +36,9 @@ namespace test {
 namespace {
 
 GetDataResponse GenerateInstance() {
-  const auto serialised_data(RandomString(Address::kSize));
+  const auto serialised_data(RandomString(identity_size));
 
-  return GetDataResponse{Identity{RandomString(Address::kSize)},
+  return GetDataResponse{Data::NameAndTypeId{MakeIdentity(), DataTypeId{RandomUint32()}},
                          SerialisedData(serialised_data.begin(), serialised_data.end())};
 }
 
@@ -68,7 +68,7 @@ TEST(GetDataResponseTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, get_data_rsp_after);
 
-  EXPECT_EQ(get_data_rsp_before.name(), get_data_rsp_after.name());
+  EXPECT_EQ(get_data_rsp_before.name_and_type_id(), get_data_rsp_after.name_and_type_id());
   EXPECT_EQ(get_data_rsp_before.data()->size(), get_data_rsp_after.data()->size());
 }
 

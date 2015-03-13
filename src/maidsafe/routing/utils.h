@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -24,7 +24,7 @@
 
 #include "cereal/types/array.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/types.h"
 
 #include "maidsafe/routing/types.h"

@@ -33,14 +33,14 @@ namespace test {
 
 TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
   // Check on empty table
-  auto target_nodes = table_.TargetNodes(Address{RandomString(Address::kSize)});
+  auto target_nodes = table_.TargetNodes(MakeIdentity());
   EXPECT_TRUE(target_nodes.empty());
 
   // Partially fill the table with < GroupSize contacts
   PartiallyFillTable();
 
   // Check we get all contacts returned
-  target_nodes = table_.TargetNodes(Address{RandomString(Address::kSize)});
+  target_nodes = table_.TargetNodes(MakeIdentity());
   EXPECT_EQ(initial_count_, target_nodes.size());
   for (size_t i = 0; i < initial_count_; ++i) {
     EXPECT_TRUE(
@@ -77,7 +77,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
       std::partial_sort(std::begin(added_ids_),
                         std::begin(added_ids_) + RoutingTable::Parallelism(), std::end(added_ids_),
                         [&](const Address& lhs, const Address& rhs) {
-        return Address::CloserToTarget(lhs, rhs, target);
+        return CloserToTarget(lhs, rhs, target);
       });
       for (const auto& target_node : target_nodes) {
         EXPECT_TRUE(std::any_of(
@@ -96,7 +96,7 @@ TEST_F(RoutingTableUnitTest, BEH_TargetNodes) {
       EXPECT_EQ(GroupSize, target_nodes.size());
       std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
                         std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-        return Address::CloserToTarget(lhs, rhs, target);
+        return CloserToTarget(lhs, rhs, target);
       });
 
       for (const auto& target_node : target_nodes) {
