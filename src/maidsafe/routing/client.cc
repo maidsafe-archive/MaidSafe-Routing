@@ -43,7 +43,7 @@ Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_ke
       bootstrap_handler_(),
       connected_peers_(),
       filter_(std::chrono::minutes(20)),
-      sentinel_(io_service) {}
+      sentinel_([](Address) {}, [](GroupAddress) {}) {}
 
 Client::Client(asio::io_service& io_service, const passport::Maid& maid)
     : crux_asio_service_(1),
@@ -60,7 +60,7 @@ Client::Client(asio::io_service& io_service, const passport::Maid& maid)
       bootstrap_handler_(),
       connected_peers_(),
       filter_(std::chrono::minutes(20)),
-      sentinel_(io_service) {}
+      sentinel_([](Address) {}, [](GroupAddress) {}) {}
 
 Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
     : crux_asio_service_(1),
@@ -77,7 +77,7 @@ Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
       bootstrap_handler_(),
       connected_peers_(),
       filter_(std::chrono::minutes(20)),
-      sentinel_(io_service) {}
+      sentinel_([](Address) {}, [](GroupAddress) {}) {}
 
 void Client::MessageReceived(const Address& /*peer_id*/, SerialisedMessage message) {
   InputVectorStream binary_input_stream(std::move(message));
