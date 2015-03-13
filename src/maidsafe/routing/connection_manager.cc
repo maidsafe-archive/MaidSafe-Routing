@@ -116,6 +116,7 @@ void ConnectionManager::StartAccepting() {
   };
 
   connections_->Accept(our_accept_port_, &our_accept_port_, std::move(accept_handler));
+  LOG(kInfo) << "StartAccepting() port " << our_accept_port_;
 }
 
 void ConnectionManager::HandleAccept(Connections::AcceptResult result) {

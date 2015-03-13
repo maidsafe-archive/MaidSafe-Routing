@@ -75,6 +75,9 @@ routing::HandleGetReturn FakeVaultFacade::HandleGet(routing::SourceAddress from,
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 
+void FakeVaultFacade::HandleChurn(routing::CloseGroupDifference /*diff*/) {
+}
+
 }  // namespace test
 
 }  // namespace vault

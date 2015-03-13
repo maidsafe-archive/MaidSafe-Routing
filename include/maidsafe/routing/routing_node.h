@@ -154,7 +154,7 @@ class RoutingNode {
 
 template <typename Child>
 RoutingNode<Child>::RoutingNode()
-    : asio_service_(4),
+    : asio_service_(1),
       our_fob_(passport::CreatePmidAndSigner().first),
       message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
@@ -170,6 +170,7 @@ RoutingNode<Child>::RoutingNode()
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
       destroy_indicator_(new boost::none_t) {
+  LOG(kInfo) << "RoutingNode -- " << OurId();
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
@@ -182,7 +183,7 @@ RoutingNode<Child>::~RoutingNode() {
 
 template <typename Child>
 void RoutingNode<Child>::StartBootstrap() {
-  auto handler = [=](asio::error_code error, Address peer_addr, Endpoint our_public_endpoint) {
+  auto handler = [=](asio::error_code error, Address peer_addr, Endpoint /*our_public_endpoint*/) {
                         if (error) {
                           LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr
                                         << " >" << error.message();
@@ -191,6 +192,7 @@ void RoutingNode<Child>::StartBootstrap() {
                           // on failure keep retrying all options forever
                           return;
                         }
+                        LOG(kInfo) << "StartBootstrap succeded !! " << peer_addr;
                         // FIXME(Team): Thread safety.
                         bootstrap_node_ = peer_addr;
                         // bootstrap_endpoint_ = our_endpoint; this will not required if
@@ -199,8 +201,10 @@ void RoutingNode<Child>::StartBootstrap() {
                         ConnectToCloseGroup();
                       };
   // try connect to any local nodes (5483) Expect to be told Node_Id
-  Endpoint live_port_ep(GetLocalIp, kLivePort);
-  connection_manager_.Connect(live_port_ep, handler);
+  Endpoint live_port_ep(GetLocalIp(), kLivePort);
+  // skip trying to bootstrap off self
+  if (connection_manager_.AcceptingPort() != kLivePort)
+    connection_manager_.Connect(live_port_ep, handler);
 
   // auto bootstrap_contacts = bootstrap_handler_.ReadBootstrapContacts();
 }
@@ -208,17 +212,19 @@ void RoutingNode<Child>::StartBootstrap() {
 template <typename Child>
 void RoutingNode<Child>::PutOurPublicPmid() {
   passport::PublicPmid our_public_pmid{ passport::PublicPmid(our_fob_) };
-  auto to = our_public_pmid.name();
+  auto name = our_public_pmid.name();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed
-    MessageHeader our_header(std::make_pair(Destination(to), boost::none), OurSourceAddress(),
+    MessageHeader our_header(std::make_pair(Destination(Address(name)), boost::none), OurSourceAddress(),
                              ++message_id_, Authority::client); // As this node is not yet connected
     // to its close group, client authority seems appropriate
-    PutData request(passport::PublicPmid::Tag::kValue, our_public_pmid.Serialise());
+    PutData request(passport::PublicPmid::Tag::kValue, Serialise(our_public_pmid));
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
     connection_manager_.Send(*bootstrap_node_, message, [=](asio::error_code error) {
         if (error)
           LOG(kWarning) << "Failed to send to  < " << *this->bootstrap_node_;
+        else
+          LOG(kVerbose) << "Send PutOurPublicPmid to  < " << *this->bootstrap_node_;
     });
   });
 }
@@ -311,8 +317,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 }
 
 template <typename Child>
-void RoutingNode<Child>::MessageReceived(NodeId /* peer_id */,
-                                         SerialisedMessage serialised_message) {
+void RoutingNode<Child>::MessageReceived(NodeId peer_id, SerialisedMessage serialised_message) {
+  LOG(kVerbose) << "MessageReceived from " << peer_id;
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
