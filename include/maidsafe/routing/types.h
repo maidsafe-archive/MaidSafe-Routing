@@ -75,6 +75,9 @@ using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress
 using NodeAddress = TaggedValue<Address, struct NodeTag>;
 using GroupAddress = TaggedValue<Address, struct GroupTag>;
 
+using SendGetClientKey = std::function<void(Address)>;
+using SendGetGroupKey = std::function<void(GroupAddress)>;
+
 template <class Archive>
 void serialize(Archive& archive, DestinationAddress& address) {
   archive(address.first, address.second);
@@ -90,7 +93,7 @@ using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
-
+using PublicKeyId = std::pair<Address, asymm::PublicKey>;
 
 template <typename CompletionToken>
 using BootstrapHandlerHandler =
