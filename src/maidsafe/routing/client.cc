@@ -48,7 +48,7 @@ Client::Client(asio::io_service& io_service, Identity our_id, asymm::Keys our_ke
 Client::Client(asio::io_service& io_service, const passport::Maid& maid)
     : crux_asio_service_(1),
       io_service_(io_service),
-      our_id_(maid.name()->string()),
+      our_id_(maid.name()),
       our_keys_([&]() -> asymm::Keys {
         asymm::Keys keys;
         keys.private_key = maid.private_key();
@@ -65,7 +65,7 @@ Client::Client(asio::io_service& io_service, const passport::Maid& maid)
 Client::Client(asio::io_service& io_service, const passport::Mpid& mpid)
     : crux_asio_service_(1),
       io_service_(io_service),
-      our_id_(mpid.name()->string()),
+      our_id_(mpid.name()),
       our_keys_([&]() -> asymm::Keys {
         asymm::Keys keys;
         keys.private_key = mpid.private_key();

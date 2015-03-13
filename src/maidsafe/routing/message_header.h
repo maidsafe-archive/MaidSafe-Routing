@@ -142,21 +142,24 @@ class MessageHeader {
 
  private:
   void Validate() const {
-    if (source_.node_address->IsValid() ||
-        ((FromGroup() && FromGroup()->data.IsValid()) ||
-         (RelayedMessage() && ReplyToAddress()->data.IsValid())) ||
+    if (source_.node_address->IsInitialised() ||
+        ((FromGroup() && FromGroup()->data.IsInitialised()) ||
+         (RelayedMessage() && ReplyToAddress()->data.IsInitialised())) ||
         (FromGroup() && RelayedMessage())) {
       return;
     } else {
-      LOG(kWarning) << std::boolalpha << "Header is invalid:\n\tsource_.node_address->IsValid(): "
-                    << source_.node_address->IsValid()
+      LOG(kWarning) << std::boolalpha
+                    << "Header is invalid:\n\tsource_.node_address->IsInitialised(): "
+                    << source_.node_address->IsInitialised()
                     << "\n\tFromGroup(): " << static_cast<bool>(FromGroup())
-                    << "\n\tFromGroup()->data.IsValid(): "
-                    << (FromGroup() ? (FromGroup()->data.IsValid() ? "true" : "false") : "N/A")
+                    << "\n\tFromGroup()->data.IsInitialised(): "
+                    << (FromGroup() ? (FromGroup()->data.IsInitialised() ? "true" : "false") :
+                                      "N/A")
                     << "\n\tRelayedMessage(): " << static_cast<bool>(RelayedMessage())
-                    << "\n\tReplyToAddress()->data.IsValid(): "
-                    << (RelayedMessage() ? (ReplyToAddress()->data.IsValid() ? "true" : "false")
-                                         : "N/A");
+                    << "\n\tReplyToAddress()->data.IsInitialised(): "
+                    << (RelayedMessage() ?
+                            (ReplyToAddress()->data.IsInitialised() ? "true" : "false") :
+                            "N/A");
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     }
   }

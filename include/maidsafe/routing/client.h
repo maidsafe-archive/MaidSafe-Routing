@@ -31,8 +31,8 @@
 #include "boost/optional/optional.hpp"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/make_unique.h"
-#include "maidsafe/common/node_id.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/containers/lru_cache.h"

@@ -102,10 +102,10 @@ class RoutingTable {
     using NodesItr = std::vector<NodeInfo>::const_iterator;
     explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
     bool operator()(const NodeInfo& lhs, const NodeInfo& rhs) const {
-      return Address::CloserToTarget(lhs.id, rhs.id, our_id_);
+      return CloserToTarget(lhs.id, rhs.id, our_id_);
     }
     bool operator()(NodesItr lhs, NodesItr rhs) const {
-      return Address::CloserToTarget(lhs->id, rhs->id, our_id_);
+      return CloserToTarget(lhs->id, rhs->id, our_id_);
     }
 
    private:

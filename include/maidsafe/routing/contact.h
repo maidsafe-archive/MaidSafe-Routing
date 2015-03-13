@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_CONTACT_H_
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/routing/endpoint_pair.h"
 
@@ -41,17 +42,17 @@ struct Contact {
     return *this;
   }
 
-  Contact(NodeId node_id, EndpointPair::Endpoint both, asymm::PublicKey public_key_in)
+  Contact(Identity node_id, EndpointPair::Endpoint both, asymm::PublicKey public_key_in)
       : id(std::move(node_id)),
         endpoint_pair(std::move(both)),
         public_key(std::move(public_key_in)) {}
 
-  Contact(NodeId node_id, EndpointPair endpoint_pair_in, asymm::PublicKey public_key_in)
+  Contact(Identity node_id, EndpointPair endpoint_pair_in, asymm::PublicKey public_key_in)
       : id(std::move(node_id)),
         endpoint_pair(std::move(endpoint_pair_in)),
         public_key(std::move(public_key_in)) {}
 
-  NodeId id;
+  Identity id;
   EndpointPair endpoint_pair;
   asymm::PublicKey public_key;
 };

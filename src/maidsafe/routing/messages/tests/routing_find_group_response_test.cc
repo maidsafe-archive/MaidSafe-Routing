@@ -39,7 +39,7 @@ FindGroupResponse GenerateInstance() {
   passport::PublicPmid public_fob{passport::Pmid(passport::Anpmid())};
   std::vector<passport::PublicPmid> vec(
       1, passport::PublicPmid(passport::CreatePmidAndSigner().first));
-  return FindGroupResponse{Address{RandomString(Address::kSize)}, vec};
+  return FindGroupResponse{MakeIdentity(), vec};
 }
 
 }  // anonymous namespace

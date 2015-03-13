@@ -24,18 +24,19 @@
 #include <utility>
 #include <vector>
 
-#include "boost/optional/optional.hpp"
-#include "boost/expected/expected.hpp"
-#include "boost/variant/variant.hpp"
 #include "asio/async_result.hpp"
 #include "asio/handler_type.hpp"
 #include "asio/ip/udp.hpp"
+#include "boost/expected/expected.hpp"
+#include "boost/optional/optional.hpp"
+#include "boost/variant/variant.hpp"
 
+#include "maidsafe/common/bounded_string.h"
+#include "maidsafe/common/identity.h"
+#include "maidsafe/common/tagged_value.h"
+#include "maidsafe/common/types.h"
 #include "maidsafe/passport/types.h"
 #include "maidsafe/passport/passport.h"
-#include "maidsafe/common/node_id.h"
-#include "maidsafe/common/data_types/data_type_values.h"
-#include "maidsafe/common/tagged_value.h"
 
 #include "maidsafe/routing/contact.h"
 #include "maidsafe/routing/endpoint_pair.h"
@@ -66,7 +67,7 @@ enum class Authority : int32_t {
   client
 };
 
-using Address = NodeId;
+using Address = Identity;
 using MessageId = uint32_t;
 using Destination = TaggedValue<Address, struct DestinationTag>;
 using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
@@ -91,7 +92,6 @@ using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, mai
 using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
 using SerialisedMessage = std::vector<byte>;
-using Checksum = crypto::SHA1Hash;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 using PublicKeyId = std::pair<Address, asymm::PublicKey>;
 

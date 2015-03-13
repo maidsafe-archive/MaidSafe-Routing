@@ -58,7 +58,7 @@ std::vector<BootstrapHandler::BootstrapContact> BootstrapHandler::ReadBootstrapC
                               "SELECT NODEID, PUBLIC_KEY, ENDPOINT FROM BOOTSTRAP_CONTACTS"};
   while (statement.Step() == sqlite::StepResult::kSqliteRow) {
     bootstrap_contacts.push_back(BootstrapContact{
-        Parse<NodeId>(statement.ColumnBlob(0)),
+        Parse<Address>(statement.ColumnBlob(0)),
         Parse<asio::ip::udp::endpoint>(statement.ColumnBlob(2)),
         Parse<asymm::PublicKey>(statement.ColumnBlob(1))});
   }
