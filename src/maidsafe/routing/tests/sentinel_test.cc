@@ -27,6 +27,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/make_unique.h"
+#include "maidsafe/common/data_types/immutable_data.h"
 
 #include "maidsafe/passport/types.h"
 
@@ -44,9 +45,9 @@ class SentinelTest : public testing::Test {
  public:
   SentinelTest() : sentinel_(new Sentinel([](Address) {}, [](GroupAddress) {})),
                    maid_nodes_(),
-                   source_address_(NodeAddress(NodeId(RandomString(NodeId::kSize))), boost::none,
+                   source_address_(NodeAddress(Address(MakeIdentity())), boost::none,
                                                boost::none) {}
-  
+  int i = maidsafe::crypto::SHA512::DIGESTSIZE;
   struct SentinelAddInfo {
     MessageHeader header;
     MessageTypeTag tag;
@@ -61,7 +62,7 @@ class SentinelTest : public testing::Test {
     add_info.tag = tag;
     add_info.serialised = Serialise(message);
     add_info.header = MessageHeader(destination, source, message_id, our_authority,
-                                    asymm::Sign(add_info.serialised, private_key));
+                                    asymm::Sign(rsa::PlainText(add_info.serialised), private_key));
     return add_info;
   }
   
@@ -77,11 +78,11 @@ class SentinelTest : public testing::Test {
   
   SentinelAddInfo CreateGetKeyResponse(const passport::Maid& maid, MessageId message_id,
                                        Address source, passport::Pmid& pmid) {
-    GetClientKeyResponse get_client_response(Address(maid.name()->string()), maid.public_key());
+    GetClientKeyResponse get_client_response(Address(maid.name()), maid.public_key());
     return MakeAddInfo(get_client_response,
                        pmid.private_key(),
                        DestinationAddress(std::make_pair(Destination(source), boost::none)),
-                       SourceAddress(NodeAddress(NodeId(pmid.name()->string())),
+                       SourceAddress(NodeAddress(Identity(pmid.name())),
                                      GroupAddress(source), boost::none),
                        message_id, Authority::nae_manager,
                        MessageTypeTag::GetClientKeyResponse);
@@ -93,13 +94,13 @@ class SentinelTest : public testing::Test {
                                                          Authority authority) {
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
-                return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
-                                              NodeId(rhs.name()->string()),
-                                              source.data);
+                return CloserToTarget(Identity(lhs.name()),
+                                      Identity(rhs.name()),
+                                      source.data);
               });
     std::map<Address, asymm::PublicKey> public_key_map;
     for (size_t index(0); index < GroupSize; ++index)
-      public_key_map.insert(std::make_pair(Address(pmid_nodes_.at(index).name()->string()),
+      public_key_map.insert(std::make_pair(Address(Identity(pmid_nodes_.at(index).name())),
                                            pmid_nodes_.at(index).public_key()));
     GetGroupKeyResponse get_group_key_response(public_key_map, target);
     return CreateGroupMessage(get_group_key_response, message_id, authority,
@@ -115,16 +116,14 @@ class SentinelTest : public testing::Test {
     std::vector<SentinelAddInfo> group_message;
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
-                return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
-                                              NodeId(rhs.name()->string()),
-                                              source.data);
+                return CloserToTarget(lhs.name(), rhs.name(), source.data);
               });
 
     for (size_t index(0); index < GroupSize; ++index) {
       group_message.emplace_back(
           MakeAddInfo(message, pmid_nodes_.at(index).private_key(),
                       DestinationAddress(std::make_pair(Destination(target.data), boost::none)),
-                      SourceAddress(NodeAddress(NodeId(pmid_nodes_.at(index).name()->string())),
+                      SourceAddress(NodeAddress(pmid_nodes_.at(index).name()),
                                     source, boost::none),
                       message_id, authority, message_type));
     }
@@ -138,8 +137,7 @@ class SentinelTest : public testing::Test {
   void SortPmidNodes(const Address& target) {
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
               [&](const passport::Pmid& lhs, const passport::Pmid& rhs) {
-                return NodeId::CloserToTarget(NodeId(lhs.name()->string()),
-                                              NodeId(rhs.name()->string()), target);
+                return CloserToTarget(Identity(lhs.name()), Identity(rhs.name()), target);
               });
   }
 
@@ -152,14 +150,11 @@ class SentinelTest : public testing::Test {
 TEST_F(SentinelTest, BEH_BasicNonGroupAdd) {
   CreateMaidKeys(1);
   CreatePmidKeys(QuorumSize);
-  ImmutableData data(NonEmptyString(RandomString(NodeId::kSize)));
-  auto serialised_data_string(data.Serialise().data.string());
-  PutData put_data(DataTagValue::kImmutableDataValue, SerialisedData(serialised_data_string.begin(),
-                                                                     serialised_data_string.end()));
+  ImmutableData data(NonEmptyString(RandomBytes(identity_size)));
+  PutData put_data(data.TypeId(), SerialisedData(Serialise(data)));
   auto add_info(MakeAddInfo(put_data, maid_nodes_.at(0).private_key(),
                             DestinationAddress(
-                                std::make_pair(Destination(
-                                                   NodeId(maid_nodes_.at(0).name()->string())),
+                                std::make_pair(Destination(Identity(maid_nodes_.at(0).name())),
                                                boost::none)),
                             source_address_,
                             MessageId(RandomUint32()), Authority::client_manager,
@@ -189,19 +184,17 @@ TEST_F(SentinelTest, BEH_BasicNonGroupAdd) {
 
 TEST_F(SentinelTest, BEH_BasicGroupAdd) {
   CreatePmidKeys(GroupSize * 4);
-  ImmutableData data(NonEmptyString(RandomString(NodeId::kSize)));
-  auto serialised_data_string(data.Serialise().data.string());
-  PutData put_data(DataTagValue::kImmutableDataValue, SerialisedData(serialised_data_string.begin(),
-                                                                     serialised_data_string.end()));
+  ImmutableData data(NonEmptyString(RandomBytes(identity_size)));
+  PutData put_data(data.TypeId(), SerialisedData(Serialise(data)));
   MessageId message_id(RandomInt32());
   auto group_message(CreateGroupMessage(put_data, message_id, Authority::nae_manager,
                                         MessageTypeTag::PutData,
                                         GroupAddress(source_address_.node_address.data),
-                                        GroupAddress(NodeId(data.name()->string()))));
+                                        GroupAddress(data.Name())));
 
   auto group_key_response(
       CreateGetGroupKeyResponse(message_id, GroupAddress(source_address_.node_address.data),
-                                GroupAddress(NodeId(data.name()->string())),
+                                GroupAddress(data.Name()),
                                 Authority::nae_manager));
   for (const auto& add_key_info : group_message) {
     auto resolved(sentinel_->Add(add_key_info.header, add_key_info.tag, add_key_info.serialised));
@@ -228,6 +221,7 @@ class AccountTransfer : public AccountTransferInfo {
   AccountTransfer() = default;
   AccountTransfer(Identity identy, int value)
       : AccountTransferInfo(identy), value_(value) {}
+
   std::uint32_t ThisTypeId() const override {
     return 1;
   }
@@ -274,13 +268,13 @@ TEST_F(SentinelTest, BEH_BasicAccountTransferAdd) {
     std::unique_ptr<AccountTransferInfo>
         account(dynamic_cast<AccountTransferInfo*>(
                     new AccountTransfer(Identity(source_address_.node_address.data.string()),
-                                        index)));
+                                        static_cast<int>(index))));
     account_transfers.emplace_back(
         MakeAddInfo(account, pmid_nodes_.at(index).private_key(),
                     DestinationAddress(std::make_pair(
                                            Destination(source_address_.node_address.data),
                                            boost::none)),
-                    SourceAddress(NodeAddress(Address(pmid_nodes_.at(index).name()->string())),
+                    SourceAddress(NodeAddress(Address(pmid_nodes_.at(index).name())),
                                   GroupAddress(source_address_.node_address.data), boost::none),
                 message_id, Authority::nae_manager, MessageTypeTag::AccountTransfer));
   }

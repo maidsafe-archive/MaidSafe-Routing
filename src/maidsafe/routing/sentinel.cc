@@ -36,7 +36,6 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
   if (tag == MessageTypeTag::GetClientKeyResponse) {
     if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
-    std::cout << *header.FromGroup() << ", " << header.MessageId() << " key \n";
     auto keys(node_key_accumulator_.Add(*header.FromGroup(),
                                         std::make_tuple(header, tag, std::move(message)),
                                         header.FromNode()));
@@ -53,12 +52,11 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       }
     }
   } else if (tag == MessageTypeTag::GetGroupKeyResponse) {
-    if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
+    if (!header.FromGroup())
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     auto keys(group_key_accumulator_.Add(*header.FromGroup(),
                                          std::make_tuple(header, tag, std::move(message)),
                                          header.FromNode()));
-    std::cout << *header.FromGroup() << ", " << header.MessageId() << " key \n";
     if (keys) {
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       auto messages(group_accumulator_.GetAll(key));
@@ -73,7 +71,6 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
     }
   } else {
     if (header.FromGroup()) {
-      std::cout << *header.FromGroup() << ", " << header.MessageId() << " message \n";
       auto key(std::make_pair(*header.FromGroup(), header.MessageId()));
       if (!group_accumulator_.HaveName(key))
         send_get_group_key_(*header.FromGroup());
@@ -93,7 +90,6 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
       }
     } else {
       auto key(std::make_pair(header.FromNode(), header.MessageId()));
-      std::cout << header.FromNode() << ", " << header.MessageId() << " message \n";
       if (!node_accumulator_.HaveName(key))
         send_get_client_key_(header.FromNode());
       auto messages(node_accumulator_.Add(key, std::make_tuple(header, tag, std::move(message)),
@@ -120,7 +116,6 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename NodeAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
-  std::cout << messages.empty() << ", " << keys.size() << "\n";
   if (messages.empty() || keys.size() < QuorumSize)
     return std::vector<ResultType>();
 
@@ -153,7 +148,8 @@ Sentinel::Validate<Sentinel::NodeAccumulatorType, Sentinel::KeyAccumulatorType>(
 
   for (const auto& message : messages) {
     auto signature(std::get<0>(message.second).Signature());
-    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
+    if (signature && asymm::CheckSignature(
+          rsa::PlainText(std::get<2>(message.second)), *signature, public_key))
       verified_messages.emplace_back(message.second);
   }
 
@@ -168,7 +164,6 @@ std::vector<Sentinel::ResultType>
 Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>(
     const typename GroupAccumulatorType::Map& messages,
     const typename KeyAccumulatorType::Map& keys) {
-  std::cout << messages.size() << ", " << keys.size() << " validate \n";
   if (messages.size() < QuorumSize || keys.size() < QuorumSize)
     return std::vector<ResultType>();
 
@@ -209,7 +204,8 @@ Sentinel::Validate<Sentinel::GroupAccumulatorType, Sentinel::KeyAccumulatorType>
       continue;
 
     auto signature(std::get<0>(message.second).Signature());
-    if (signature && asymm::CheckSignature(std::get<2>(message.second), *signature, public_key))
+    if (signature && asymm::CheckSignature(
+          rsa::PlainText(std::get<2>(message.second)), *signature, public_key))
       verified_messages.emplace_back(message.second);
   }
 
@@ -228,7 +224,7 @@ Sentinel::Resolve(const std::vector<ResultType>& verified_messages, GroupMessage
   if (std::get<1>(*verified_messages.begin()) != MessageTypeTag::AccountTransfer) {
     for (size_t index(0); index < verified_messages.size(); ++index) {
       auto& serialised_message(std::get<2>(verified_messages.at(index)));
-      if (static_cast<typename std::vector<ResultType>::size_type>(
+      if (static_cast<std::vector<ResultType>::size_type>(
               std::count_if(verified_messages.begin(), verified_messages.end(),
                             [&](const ResultType& result) {
                               return std::get<2>(result) == serialised_message;
