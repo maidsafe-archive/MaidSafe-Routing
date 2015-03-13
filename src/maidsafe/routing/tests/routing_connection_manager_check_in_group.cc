@@ -39,10 +39,10 @@ namespace test {
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   boost::asio::io_service io_service;
   passport::PublicPmid our_public_pmid(passport::CreatePmidAndSigner().first);
-  auto our_id(Address(our_public_pmid.name()->string()));
+  auto our_id(our_public_pmid.Name());
   ConnectionManager connection_manager(io_service, our_public_pmid);
   asymm::Keys key(asymm::GenerateKeyPair());
-  std::vector<Address> addresses(60, Address(RandomString(Address::kSize)));
+  std::vector<Address> addresses(60, MakeIdentity());
   // iterate and fill routing table
   auto fob(PublicFob());
   for (auto& node : addresses) {
@@ -55,7 +55,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   }
   std::sort(std::begin(addresses), std::end(addresses),
             [our_id](const Address& lhs,
-                     const Address& rhs) { return Address::CloserToTarget(lhs, rhs, our_id); });
+                     const Address& rhs) { return CloserToTarget(lhs, rhs, our_id); });
   auto close_group(connection_manager.OurCloseGroup());
   // no node added as rudp will refuse these connections;
   EXPECT_EQ(0U, close_group.size());

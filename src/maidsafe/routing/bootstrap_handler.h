@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -38,7 +38,7 @@ This object in itself will very possibly end up in rudp itself.
 #include "boost/filesystem/path.hpp"
 #include "boost/preprocessor/stringize.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 
@@ -64,7 +64,7 @@ inline boost::filesystem::path GetBootstrapFilePath() {
   file_path = boost::filesystem::path("/opt/") / "maidsafe" / "sbin" / file_name;
 #else
   LOG(kError) << "Cannot deduce system wide application directory path";
-  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+  BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_argument));
 #endif
   return file_path;
 }

@@ -47,7 +47,7 @@ using boost::optional;
 ConnectionManager::ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
     : io_service_(ios),
       our_fob_(std::move(our_fob)),
-      our_id_(our_fob_.name()->string()),
+      our_id_(our_fob_.Name()),
       peers_(Comparison(our_id_)),
       current_close_group_(),
       destroy_indicator_(new boost::none_t()) {}
@@ -113,7 +113,7 @@ void ConnectionManager::StartAccepting(unsigned short port) {
 
     StartAccepting(port);
 
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
+    AsyncExchange(*socket, Serialise(our_fob_),
                   [=](boost::system::error_code error, SerialisedMessage data) {
       if (!destroy_guard.lock())
         return;
@@ -121,13 +121,10 @@ void ConnectionManager::StartAccepting(unsigned short port) {
       if (error)
         return;
 
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
-      InsertPeer(PeerNode(std::move(their_node_info), std::move(socket)));
+      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
+      Address their_id(their_public_pmid.Name());
+      InsertPeer(PeerNode(NodeInfo(std::move(their_id), std::move(their_public_pmid), true),
+                          std::move(socket)));
     });
   });
 }
@@ -160,7 +157,7 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPa
       return;
     }
 
-    AsyncExchange(*socket, Serialise(our_fob_.name(), our_fob_.Serialise()),
+    AsyncExchange(*socket, Serialise(our_fob_),
                   [=](boost::system::error_code error, SerialisedMessage data) {
       auto socket = weak_socket.lock();
 
@@ -172,12 +169,9 @@ void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPa
       if (error)
         return;
 
-      InputVectorStream data_stream(std::move(data));
-      PublicPmid::Name their_pmid_name;
-      PublicPmid::serialised_type their_pmid_value;
-      Parse(data_stream, their_pmid_name, their_pmid_value);
-      NodeInfo their_node_info(Address(their_pmid_name->string()),
-                               PublicPmid(their_pmid_name, their_pmid_value), true);
+      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
+      Address their_id(their_public_pmid.Name());
+      NodeInfo their_node_info(std::move(their_id), std::move(their_public_pmid), true);
 
       if (assumed_node_info && *assumed_node_info != their_node_info)
         return;
@@ -238,7 +232,7 @@ optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   auto new_group(OurCloseGroup());
   std::vector<Address> new_group_ids;
   for (const auto& group_member_public_pmid : new_group)
-    new_group_ids.push_back(Address(group_member_public_pmid.name()->string()));
+    new_group_ids.push_back(group_member_public_pmid.Name());
 
   if (new_group_ids != current_close_group_) {
     auto changed = std::make_pair(new_group_ids, current_close_group_);

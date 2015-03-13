@@ -54,7 +54,7 @@ TEST_F(RoutingTableUnitTest, BEH_OurCloseGroup) {
   EXPECT_EQ(GroupSize, our_close_group.size());
   std::partial_sort(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,
                     std::end(added_ids_), [&](const Address& lhs, const Address& rhs) {
-    return Address::CloserToTarget(lhs, rhs, table_.OurId());
+    return CloserToTarget(lhs, rhs, table_.OurId());
   });
   for (const auto& node : our_close_group) {
     EXPECT_TRUE(std::any_of(std::begin(added_ids_), std::begin(added_ids_) + GroupSize,

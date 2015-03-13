@@ -24,6 +24,7 @@
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
 #include "maidsafe/common/types.h"
+#include "maidsafe/common/data_types/data.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
@@ -35,18 +36,19 @@ class GetDataResponse {
   GetDataResponse() = default;
   ~GetDataResponse() = default;
 
-  GetDataResponse(Identity&& name, SerialisedData&& data)
-      : name_(std::move(name)), data_(std::move(data)), error_() {}
+  GetDataResponse(Data::NameAndTypeId name_and_type_id, SerialisedData&& data)
+      : name_and_type_id_(std::move(name_and_type_id)), data_(std::move(data)), error_() {}
 
-  GetDataResponse(Identity&& name, maidsafe_error error)
-      : name_(std::move(name)), data_(), error_(error) {}
+  GetDataResponse(Data::NameAndTypeId name_and_type_id, maidsafe_error error)
+      : name_and_type_id_(std::move(name_and_type_id)), data_(), error_(error) {}
 
-  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT : name_(std::move(other.name_)),
-                                                               data_(std::move(other.data_)),
-                                                               error_(std::move(other.error_)) {}
+  GetDataResponse(GetDataResponse&& other) MAIDSAFE_NOEXCEPT
+      : name_and_type_id_(std::move(other.name_and_type_id_)),
+        data_(std::move(other.data_)),
+        error_(std::move(other.error_)) {}
 
   GetDataResponse& operator=(GetDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    name_ = std::move(other.name_);
+    name_and_type_id_ = std::move(other.name_and_type_id_);
     data_ = std::move(other.data_);
     error_ = std::move(other.error_);
     return *this;
@@ -57,15 +59,15 @@ class GetDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(name_, data_, error_);
+    archive(name_and_type_id_, data_, error_);
   }
 
-  Identity name() const { return name_; }
+  Data::NameAndTypeId name_and_type_id() const { return name_and_type_id_; }
   boost::optional<SerialisedData> data() const { return data_; }
   boost::optional<maidsafe_error> error() const { return error_; }
 
  private:
-  Identity name_;
+  Data::NameAndTypeId name_and_type_id_;
   boost::optional<SerialisedData> data_;
   boost::optional<maidsafe_error> error_;
 };
