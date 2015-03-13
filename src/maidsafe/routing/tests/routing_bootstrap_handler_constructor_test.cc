@@ -25,7 +25,7 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
@@ -33,6 +33,7 @@
 
 #include "maidsafe/routing/bootstrap_handler.h"
 #include "maidsafe/routing/types.h"
+#include "maidsafe/routing/tests/utils/test_utils.h"
 
 namespace maidsafe {
 
@@ -43,8 +44,9 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_CreateBoostrapDatabase) {
+  ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   EXPECT_NO_THROW(BootstrapHandler tmp);
-  std::string file_content(RandomString(3000 + RandomUint32() % 1000));
+  SerialisedData file_content(RandomBytes(3000, 4000));
   auto bootstrap_file_path(GetBootstrapFilePath());
   ASSERT_TRUE(fs::exists(bootstrap_file_path));
   EXPECT_TRUE(WriteFile(bootstrap_file_path, file_content));

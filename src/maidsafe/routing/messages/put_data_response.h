@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
-#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/types.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
@@ -33,15 +33,15 @@ class PutDataResponse {
   PutDataResponse() = default;
   ~PutDataResponse() = default;
 
-  PutDataResponse(DataTagValue tag, SerialisedData data, maidsafe_error error)
-      : tag_(tag), data_(std::move(data)), error_(std::move(error)) {}
+  PutDataResponse(DataTypeId type_id, SerialisedData data, maidsafe_error error)
+      : type_id_(type_id), data_(std::move(data)), error_(std::move(error)) {}
 
-  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+  PutDataResponse(PutDataResponse&& other) MAIDSAFE_NOEXCEPT : type_id_(std::move(other.type_id_)),
                                                                data_(std::move(other.data_)),
                                                                error_(std::move(other.error_)) {}
 
   PutDataResponse& operator=(PutDataResponse&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
+    type_id_ = std::move(other.type_id_);
     data_ = std::move(other.data_);
     error_ = std::move(other.error_);
     return *this;
@@ -52,15 +52,15 @@ class PutDataResponse {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, data_, error_);
+    archive(type_id_, data_, error_);
   }
 
-  DataTagValue tag() const { return tag_; }
+  DataTypeId type_id() const { return type_id_; }
   SerialisedData data() const { return data_; }
   maidsafe_error error() const { return error_; }
 
  private:
-  DataTagValue tag_;
+  DataTypeId type_id_;
   SerialisedData data_;
   maidsafe_error error_;
 };

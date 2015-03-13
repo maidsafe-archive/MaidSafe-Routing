@@ -39,7 +39,7 @@ TEST_F(RoutingTableUnitTest, BEH_TrivialFunctions) {  // 'GetPublicKey', 'OurId'
 
   // Check on partially filled the table
   PartiallyFillTable();
-  auto test_id = Address{RandomString(Address::kSize)};
+  auto test_id = MakeIdentity();
   info_.id = test_id;
   auto keys = asymm::GenerateKeyPair();
   info_.dht_fob = PublicFob();

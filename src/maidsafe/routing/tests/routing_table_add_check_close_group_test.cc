@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -54,7 +54,7 @@ TEST(RoutingTableTest, FUNC_AddManyNodesCheckCloseGroups) {
     // + 1 as Addresss includes our ID
     std::partial_sort(std::begin(addresses), std::begin(addresses) + GroupSize + 1,
                       std::end(addresses), [id](const Address& lhs, const Address& rhs) {
-      return Address::CloserToTarget(lhs, rhs, id);
+      return CloserToTarget(lhs, rhs, id);
     });
     auto groups = node->OurCloseGroup();
     EXPECT_EQ(groups.size(), GroupSize);

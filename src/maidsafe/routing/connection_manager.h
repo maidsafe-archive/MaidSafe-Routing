@@ -65,7 +65,7 @@ class ConnectionManager {
     explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
 
     bool operator()(const Address& lhs, const Address& rhs) const {
-      return Address::CloserToTarget(lhs, rhs, our_id_);
+      return CloserToTarget(lhs, rhs, our_id_);
     }
 
    private:
@@ -157,11 +157,11 @@ class ConnectionManager {
  private:
   boost::asio::io_service& io_service_;
 
-  std::function<void(NodeId)> on_connection_added_;
-  std::function<void(NodeId, const SerialisedMessage&)> on_receive_;
+  std::function<void(Address)> on_connection_added_;
+  std::function<void(Address, const SerialisedMessage&)> on_receive_;
 
   PublicPmid our_fob_;
-  NodeId our_id_;
+  Address our_id_;
 
   std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;

@@ -26,7 +26,7 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
@@ -44,6 +44,7 @@ namespace test {
 
 TEST(BootstrapHandlerUnitTest, BEH_RefreshDatabase) {
   const size_t size(10);
+  ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   maidsafe::test::TestPath test_path(maidsafe::test::CreateTestPath("MaidSafe_TestBootstrap"));
   BootstrapHandler test_handler;
   std::vector<BootstrapHandler::BootstrapContact> write_first(CreateBootstrapContacts(size));

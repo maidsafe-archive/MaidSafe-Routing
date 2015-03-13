@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2014 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -62,6 +62,14 @@ address_v6 GetRandomIPv6Address();
 Endpoint GetRandomEndpoint();
 
 MessageHeader GetRandomMessageHeader();
+
+struct ScopedBootstrapFile {
+  explicit ScopedBootstrapFile(boost::filesystem::path path);
+  ~ScopedBootstrapFile();
+
+ private:
+  const boost::filesystem::path kPath_;
+};
 
 }  // namespace test
 

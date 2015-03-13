@@ -25,7 +25,7 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
@@ -44,6 +44,7 @@ namespace test {
 namespace fs = boost::filesystem;
 
 TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
+  ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   BootstrapHandler test_handler;
   for (int i = 0; i < 100; ++i) {
     EXPECT_NO_THROW(test_handler.AddBootstrapContacts(CreateBootstrapContacts(10)));

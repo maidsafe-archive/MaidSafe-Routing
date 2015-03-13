@@ -21,7 +21,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/data_types/data.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
@@ -33,16 +33,14 @@ class Post {
   Post() = default;
   ~Post() = default;
 
-  Post(DataTagValue tag, Identity name, SerialisedData data)
-      : tag_(tag), name_(std::move(name)), data_(std::move(data)) {}
+  Post(Data::NameAndTypeId name_and_type_id, SerialisedData data)
+      : name_and_type_id_(std::move(name_and_type_id)), data_(std::move(data)) {}
 
-  Post(Post&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
-                                         name_(std::move(other.name_)),
+  Post(Post&& other) MAIDSAFE_NOEXCEPT : name_and_type_id_(std::move(other.name_and_type_id_)),
                                          data_(std::move(other.data_)) {}
 
   Post& operator=(Post&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
-    name_ = std::move(other.name_);
+    name_and_type_id_ = std::move(other.name_and_type_id_);
     data_ = std::move(other.data_);
     return *this;
   }
@@ -52,16 +50,14 @@ class Post {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, name_, data_);
+    archive(name_and_type_id_, data_);
   }
 
-  DataTagValue tag() const { return tag_; }
-  Identity name() const { return name_; }
+  Data::NameAndTypeId name_and_type_id() const { return name_and_type_id_; }
   SerialisedData data() const { return data_; }
 
  private:
-  DataTagValue tag_;
-  Identity name_;
+  Data::NameAndTypeId name_and_type_id_;
   SerialisedData data_;
 };
 

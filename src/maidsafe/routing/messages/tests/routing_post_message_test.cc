@@ -36,10 +36,9 @@ namespace test {
 namespace {
 
 Post GenerateInstance() {
-  const auto serialised_data(RandomString(Address::kSize));
+  const auto serialised_data(RandomString(identity_size));
 
-  return Post(DataTagValue::kImmutableDataValue,
-              Identity(RandomString(Address::kSize)),
+  return Post(Data::NameAndTypeId{MakeIdentity(), DataTypeId{RandomUint32()}},
               SerialisedData(serialised_data.begin(), serialised_data.end()));
 }
 
@@ -69,7 +68,7 @@ TEST(PostTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, post_after);
 
-  EXPECT_EQ(post_before.name(), post_after.name());
+  EXPECT_EQ(post_before.name_and_type_id(), post_after.name_and_type_id());
 
   EXPECT_EQ(post_before.data().size(), post_after.data().size());
   EXPECT_EQ(post_before.data(), post_after.data());

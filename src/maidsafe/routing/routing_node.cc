@@ -52,7 +52,7 @@ namespace routing {
 //   // need Quorum number of these signed anyway.
 //   cache_.Add(Address(pmid.name()->string()), Serialise(passport::PublicPmid(our_fob_)));
 //   // try an connect to any local nodes (5483) Expect to be told Node_Id
-//   auto temp_id(Address(RandomString(Address::kSize)));
+//   auto temp_id(MakeIdentity());
 //   rudp_.Add(rudp::Contact(temp_id, rudp::EndpointPair{rudp::Endpoint{GetLocalIp(), 5483},
 //                                                       rudp::Endpoint{GetLocalIp(), 5433}},
 //                           our_fob_.public_key()),

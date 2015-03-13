@@ -35,12 +35,7 @@ namespace test {
 
 namespace {
 
-PutData GenerateInstance() {
-  const auto serialised_data(RandomString(Address::kSize));
-
-  return PutData{DataTagValue::kPmidValue,
-                 std::vector<byte>(serialised_data.begin(), serialised_data.end())};
-}
+PutData GenerateInstance() { return PutData{DataTypeId{RandomUint32()}, RandomBytes(1000, 10000)}; }
 
 }  // anonymous namespace
 
@@ -68,7 +63,7 @@ TEST(PutDataTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, put_data_after);
 
-  EXPECT_EQ(put_data_before.tag(), put_data_after.tag());
+  EXPECT_EQ(put_data_before.type_id(), put_data_after.type_id());
 
   EXPECT_EQ(put_data_before.data().size(), put_data_after.data().size());
   EXPECT_EQ(put_data_before.data(), put_data_after.data());
