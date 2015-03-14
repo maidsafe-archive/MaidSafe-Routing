@@ -24,6 +24,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/identity.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/data_types/immutable_data.h"
 
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/message_header.h"
@@ -90,12 +91,11 @@ std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destina
                                                       SerialisedData message) {
   std::vector<MessageHeader> headers;
   for (const auto node : nodes_) {
-    // FIXME(benjaminbollen): this is ridiculous, I must be doing something wrong!
-    NodeAddress node_address(NodeId(node.name()->string()));
+    NodeAddress node_address(node.name());
     headers.push_back(
         MessageHeader(destination_address,
                       SourceAddress(node_address, group_address_, boost::none),
-                      message_id, authority_, asymm::Sign(message, node.private_key())));
+                      message_id, authority_, asymm::Sign(asymm::PlainText(message), node.private_key())));
   }
 
   return headers;
@@ -108,7 +108,7 @@ class SentinelFunctionalTest : public testing::Test {
     : sentinel_([this](Address address) { SendGetClientKey(address); },
                 [this](GroupAddress group_address) { SendGetGroupKey(group_address); }),
       our_pmid_(passport::CreatePmidAndSigner().first),
-      our_destination_(std::make_pair(Destination(NodeId(our_pmid_.name()->string())),
+      our_destination_(std::make_pair(Destination(our_pmid_.name()),
                                       boost::none)) {}
 
   // Add a correct, cooperative group of indictated total size and responsive quorum
@@ -219,13 +219,11 @@ size_t CountNoneSentinelReturns(SentinelReturns sentinel_returns) {
 // PutData is chosen as fundamental type with data payload.
 TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
 
-  const auto serialised_data(RandomString(100));
-  PutData put_message(DataTagValue::kImmutableDataValue,
-                      std::vector<byte>(serialised_data.begin(),
-                                        serialised_data.end()));
+  const ImmutableData data(NonEmptyString(RandomBytes(100)));
+  PutData put_message(data.TypeId(), Serialise(data));
 
   // Full group will respond correctly to Sentinel requests
-  const auto group_address(GroupAddress(NodeId(RandomString(NodeId::kSize))));
+  const GroupAddress group_address(MakeIdentity());
   AddCorrectGroup(group_address, GroupSize, GroupSize, Authority::client_manager);
   SimulateMessage(group_address,
                   MessageTypeTag::PutData, Serialise(put_message));
