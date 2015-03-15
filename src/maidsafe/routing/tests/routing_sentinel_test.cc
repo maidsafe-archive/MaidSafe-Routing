@@ -228,7 +228,7 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
   SimulateMessage(group_address,
                   MessageTypeTag::PutData, Serialise(put_message));
   auto returns(GetSentinelReturns(group_address));
-  EXPECT_EQ(2 * GroupSize -1, CountNoneSentinelReturns(returns));
+  EXPECT_EQ(3 * GroupSize -1, CountNoneSentinelReturns(returns));
 }
 
 }  // namespacce test
