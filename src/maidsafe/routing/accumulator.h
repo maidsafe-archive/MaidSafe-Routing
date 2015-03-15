@@ -31,7 +31,7 @@
 
 #include "boost/optional/optional.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 
 #include "maidsafe/routing/types.h"
 
@@ -52,7 +52,7 @@ class Accumulator {
   Accumulator(Accumulator&&) = delete;
   Accumulator& operator=(const Accumulator&) = delete;
   Accumulator& operator=(Accumulator&&) = delete;
-  using Map = std::map<NodeId, ValueType>;
+  using Map = std::map<Address, ValueType>;
 
   bool HaveName(NameType name) const { return (storage_.find(name) != std::end(storage_)); }
 
@@ -66,7 +66,7 @@ class Accumulator {
   // returns true when the quorum has been reached. This will return Quorum times
   // a tuple of valuetype which should be Source Address signature tag type and value
   boost::optional<std::pair<NameType, Map>> Add(const NameType& name, ValueType value,
-                                                NodeId sender) {
+                                                Address sender) {
     auto it = storage_.find(name);
     if (it == std::end(storage_)) {
       AddNew(name, value, sender);
@@ -93,7 +93,7 @@ class Accumulator {
   size_t size() const { return storage_.size(); }
 
  private:
-  void AddNew(NameType name, ValueType value, NodeId sender) {
+  void AddNew(NameType name, ValueType value, Address sender) {
     // check if we have entries with time expired
     while (CheckTimeExpired())  // any old entries at beginning of the list
       RemoveOldestElement();

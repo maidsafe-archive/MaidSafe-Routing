@@ -20,7 +20,7 @@
 #define MAIDSAFE_ROUTING_MESSAGES_PUT_DATA_H_
 
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/types.h"
 #include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
@@ -32,13 +32,13 @@ class PutData {
   PutData() = default;
   ~PutData() = default;
 
-  PutData(DataTagValue tag, SerialisedData data) : tag_(tag), data_(std::move(data)) {}
+  PutData(DataTypeId type_id, SerialisedData data) : type_id_(type_id), data_(std::move(data)) {}
 
-  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
+  PutData(PutData&& other) MAIDSAFE_NOEXCEPT : type_id_(std::move(other.type_id_)),
                                                data_(std::move(other.data_)) {}
 
   PutData& operator=(PutData&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
+    type_id_ = std::move(other.type_id_);
     data_ = std::move(other.data_);
     return *this;
   }
@@ -48,14 +48,14 @@ class PutData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, data_);
+    archive(type_id_, data_);
   }
 
-  DataTagValue tag() const { return tag_; }
+  DataTypeId type_id() const { return type_id_; }
   SerialisedData data() const { return data_; }
 
  private:
-  DataTagValue tag_;
+  DataTypeId type_id_;
   SerialisedData data_;
 };
 

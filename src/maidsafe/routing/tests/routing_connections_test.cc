@@ -44,8 +44,8 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   bool c2_finished = false;
 
   {
-    NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
-    NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
+    Address c1_id(MakeIdentity());
+    Address c2_id(MakeIdentity());
 
     Connections c1(c1_id);
     Connections c2(c2_id);
@@ -85,13 +85,12 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
     c1.Wait();
     c2.Wait();
   }
-
   ASSERT_TRUE(c1_finished && c2_finished);
 }
 
 TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
-  NodeId c1_id(NodeId(RandomString(NodeId::kSize)));
-  NodeId c2_id(NodeId(RandomString(NodeId::kSize)));
+  Address c1_id(MakeIdentity());
+  Address c2_id(MakeIdentity());
 
   Connections c1(c1_id);
   Connections c2(c2_id);

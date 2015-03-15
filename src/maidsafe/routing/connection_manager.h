@@ -104,8 +104,8 @@ class ConnectionManager {
     if (routing_table_.Size() < GroupSize) {
       return true;
     }
-    return NodeId::CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
-                                  routing_table_.OurId());
+    return CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+                          routing_table_.OurId());
   }
 
   const Address& OurId() const { return routing_table_.OurId(); }
@@ -154,7 +154,6 @@ class ConnectionManager {
 template <class Handler /* void (error_code) */>
 void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
                              Handler handler) {
-
   std::weak_ptr<Connections> guard = connections_;
 
   connections_->Send(addr, message, [=](asio::error_code error) {

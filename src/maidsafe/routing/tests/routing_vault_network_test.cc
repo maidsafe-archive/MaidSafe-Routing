@@ -27,12 +27,13 @@
 #include "boost/filesystem/path.hpp"
 #include "boost/expected/expected.hpp"
 
-#include "maidsafe/common/node_id.h"
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/rsa.h"
-#include "maidsafe/common/data_types/immutable_data.h"
 #include "maidsafe/common/sqlite3_wrapper.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/data_types/immutable_data.h"
+#include "maidsafe/common/data_types/mutable_data.h"
 
 #include "maidsafe/routing/routing_node.h"
 #include "maidsafe/routing/bootstrap_handler.h"
@@ -207,27 +208,26 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // std::tuple<ClientManager, NaeManager, NodeManager> our_personas;  // i.e. handle
   // get/put
   // std::tuple<ImmutableData, MutableData> DataTuple;
-  template <typename DataType>
-  HandleGetReturn HandleGet(SourceAddress from, Authority authority, DataType data_type,
-                            Identity data_name) {
+  HandleGetReturn HandleGet(SourceAddress from, Authority authority,
+                            Data::NameAndTypeId name_and_type_id) {
     switch (authority) {
       case Authority::nae_manager:
-        if (data_type == DataTagValue::kImmutableDataValue)
-          return DataManager::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataTagValue::kMutableDataValue)
-          return DataManager::template HandleGet<ImmutableData>(from, data_name);
+        if (name_and_type_id.type_id == DataTypeId(0))
+          return DataManager::template HandleGet<ImmutableData>(from, name_and_type_id.name);
+        else if (name_and_type_id.type_id == DataTypeId(1))
+          return DataManager::template HandleGet<MutableData>(from, name_and_type_id.name);
         break;
       case Authority::node_manager:
-        if (data_type == DataTagValue::kImmutableDataValue)
-          return PmidManager::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataTagValue::kMutableDataValue)
-          return PmidManager::template HandleGet<ImmutableData>(from, data_name);
+        if (name_and_type_id.type_id == DataTypeId(0))
+          return PmidManager::template HandleGet<ImmutableData>(from, name_and_type_id.name);
+        else if (name_and_type_id.type_id == DataTypeId(1))
+          return PmidManager::template HandleGet<MutableData>(from, name_and_type_id.name);
         break;
       case Authority::managed_node:
-        if (data_type == DataTagValue::kImmutableDataValue)
-          return PmidNode::template HandleGet<ImmutableData>(from, data_name);
-        else if (data_type == DataTagValue::kMutableDataValue)
-          return PmidNode::template HandleGet<ImmutableData>(from, data_name);
+        if (name_and_type_id.type_id == DataTypeId(0))
+          return PmidNode::template HandleGet<ImmutableData>(from, name_and_type_id.name);
+        else if (name_and_type_id.type_id == DataTypeId(1))
+          return PmidNode::template HandleGet<MutableData>(from, name_and_type_id.name);
         break;
       default:
         break;
@@ -266,16 +266,11 @@ class VaultFacade : public test::MaidManager<VaultFacade>,
   // default no post allowed unless implemented in upper layers
   bool HandlePost(const SerialisedMessage&) { return false; }
   bool HandleGetResponse(const SerialisedMessage&) { return false; }
-  // not in local cache do upper layers have it (called when we are in target group)
-  // template <typename DataType>
-  boost::expected<SerialisedMessage, maidsafe_error> HandleGet(Address) {
-    return boost::make_unexpected(MakeError(CommonErrors::no_such_element));
-  }
   // default put is allowed unless prevented by upper layers
   bool HandlePut(Address, SerialisedMessage) { return true; }
   // if the implementation allows any put of data in unauthenticated mode
   bool HandleUnauthenticatedPut(Address, SerialisedMessage) { return true; }
-  void HandleConnectionAdded(NodeId) {
+  void HandleConnectionAdded(Address) {
   }
 
   void HandleChurn(CloseGroupDifference diff) {
@@ -300,16 +295,16 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
 
 //  RoutingNode<VaultFacade> n;
 
-//  auto value = NonEmptyString(RandomAlphaNumericString(65));
-//  Identity name{Identity(crypto::Hash<crypto::SHA512>(value))};
-//  MutableData a{MutableData::Name(name), value};
-//  ImmutableData b{value};
+//  NonEmptyString value(RandomAlphaNumericBytes(65));
+//  Identity name(crypto::Hash<crypto::SHA512>(value));
+//  MutableData a(name, value);
+//  ImmutableData b(value);
 
-//  Address from(Address(RandomString(Address::kSize)));
-//  Address to(Address(RandomString(Address::kSize)));
+//  Address from(MakeIdentity());
+//  Address to(MakeIdentity());
 
-//  n.Get<ImmutableData>(name, [](asio::error_code /* error */) {});
-//  n.Get<MutableData>(name, [](asio::error_code /* error */) {});
+//  n.Get(b.NameAndType(), [](asio::error_code /* error */) {});
+//  n.Get(a.NameAndType(), [](asio::error_code /* error */) {});
 
   // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
   // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});

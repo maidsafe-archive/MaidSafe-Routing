@@ -162,7 +162,6 @@ void ConnectionManager::AddNode(
     if (error || (result.his_address != node_to_add.id)) {
       return;
     }
-
     on_node_added(AddToRoutingTable(node_to_add), result.our_endpoint);
   });
 }
@@ -223,6 +222,7 @@ void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
 // connections_->Send(addr, message, std::move(handler));
 // remove connection if failed
 }
+
 
 void ConnectionManager::HandleConnectionLost(Address lost_connection) {
   routing_table_.DropNode(lost_connection);

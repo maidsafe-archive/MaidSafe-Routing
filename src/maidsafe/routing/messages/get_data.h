@@ -23,7 +23,7 @@
 
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/data_types/data_type_values.h"
+#include "maidsafe/common/data_types/data.h"
 
 #include "maidsafe/routing/source_address.h"
 
@@ -36,16 +36,15 @@ class GetData {
   GetData() = default;
   ~GetData() = default;
 
-  GetData(DataTagValue tag, Identity name, SourceAddress requester)
-      : tag_(tag), name_(std::move(name)), requester_(std::move(requester)) {}
+  GetData(Data::NameAndTypeId name_and_type_id, SourceAddress requester)
+    : name_and_type_id_(std::move(name_and_type_id)), requester_(std::move(requester)) {}
 
-  GetData(GetData&& other) MAIDSAFE_NOEXCEPT : tag_(std::move(other.tag_)),
-                                               name_(std::move(other.name_)),
-                                               requester_(std::move(other.requester_)) {}
+  GetData(GetData&& other) MAIDSAFE_NOEXCEPT
+      : name_and_type_id_(std::move(other.name_and_type_id_)),
+        requester_(std::move(other.requester_)) {}
 
   GetData& operator=(GetData&& other) MAIDSAFE_NOEXCEPT {
-    tag_ = std::move(other.tag_);
-    name_ = std::move(other.name_);
+    name_and_type_id_ = std::move(other.name_and_type_id_);
     requester_ = std::move(other.requester_);
     return *this;
   }
@@ -55,16 +54,14 @@ class GetData {
 
   template <typename Archive>
   void serialize(Archive& archive) {
-    archive(tag_, name_, requester_);
+    archive(name_and_type_id_, requester_);
   }
 
-  DataTagValue tag() const { return tag_; }
-  Identity name() const { return name_; }
+  Data::NameAndTypeId name_and_type_id() const { return name_and_type_id_; }
   SourceAddress requester() const { return requester_; }
 
  private:
-  DataTagValue tag_;
-  Identity name_;
+  Data::NameAndTypeId name_and_type_id_;
   SourceAddress requester_;
 };
 

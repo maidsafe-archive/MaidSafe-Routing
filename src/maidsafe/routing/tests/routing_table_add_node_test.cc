@@ -31,7 +31,7 @@ namespace test {
 TEST_F(RoutingTableUnitTest, BEH_AddNode) {
 #ifdef NDEBUG
   // Try with invalid Address (should throw)
-  EXPECT_THROW(table_.AddNode(info_), common_error);
+  EXPECT_THROW(table_.AddNode(NodeInfo()), common_error);
   EXPECT_EQ(0, table_.Size());
 #endif
 

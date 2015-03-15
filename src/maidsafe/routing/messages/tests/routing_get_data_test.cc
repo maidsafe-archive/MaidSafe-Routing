@@ -35,18 +35,18 @@ namespace test {
 
 TEST(GetDataTest, BEH_SerialiseParse) {
   // Serialise
-  auto get_data_before(GetData(
-      DataTagValue::kPmidValue, Identity(RandomString(Address::kSize)),
-      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
+  auto get_data_before(
+      GetData(Data::NameAndTypeId{MakeIdentity(), DataTypeId{RandomUint32()}},
+              SourceAddress(NodeAddress(MakeIdentity()), boost::none, boost::none)));
   auto header_before(GetRandomMessageHeader());
   auto tag_before(MessageToTag<GetData>::value());
 
   auto serialised_get_data(Serialise(header_before, tag_before, get_data_before));
 
   // Parse
-  auto get_data_after(GetData(
-      DataTagValue::kMpidValue, Identity(RandomString(Address::kSize)),
-      SourceAddress(NodeAddress(Address(RandomString(Address::kSize))), boost::none, boost::none)));
+  auto get_data_after(
+      GetData(Data::NameAndTypeId{MakeIdentity(), DataTypeId{RandomUint32()}},
+              SourceAddress(NodeAddress(MakeIdentity()), boost::none, boost::none)));
   auto header_after(GetRandomMessageHeader());
   auto tag_after(MessageTypeTag{});
 
@@ -61,7 +61,7 @@ TEST(GetDataTest, BEH_SerialiseParse) {
   // Parse the rest
   Parse(binary_input_stream, get_data_after);
 
-  EXPECT_EQ(get_data_before.name(), get_data_after.name());
+  EXPECT_EQ(get_data_before.name_and_type_id(), get_data_after.name_and_type_id());
 }
 
 }  // namespace test

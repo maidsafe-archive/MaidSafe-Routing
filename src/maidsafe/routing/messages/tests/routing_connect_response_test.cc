@@ -39,8 +39,8 @@ namespace {
 ConnectResponse GenerateInstance() {
   return ConnectResponse{EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
                          EndpointPair{GetRandomEndpoint(), GetRandomEndpoint()},
-                         Address{RandomString(Address::kSize)},
-                         Address{RandomString(Address::kSize)},
+                         MakeIdentity(),
+                         MakeIdentity(),
                          passport::PublicPmid(passport::Pmid(passport::Anpmid()))};
 }
 

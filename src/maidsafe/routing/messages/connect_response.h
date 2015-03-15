@@ -61,25 +61,9 @@ class ConnectResponse {
   ConnectResponse(const ConnectResponse&) = delete;
   ConnectResponse& operator=(const ConnectResponse&) = delete;
 
-  //template <typename Archive>
-  //void serialize(Archive& archive) {
-  //  archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_, receiver_fob_);
-  //}
-
   template <typename Archive>
-  void save(Archive& archive) const {
-    archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_,
-            receiver_fob_.name(), receiver_fob_.Serialise());
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    passport::PublicPmid::Name receiver_fob_name;
-    passport::PublicPmid::serialised_type receiver_fob_contents;
-    archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_,
-            receiver_fob_name, receiver_fob_contents);
-    receiver_fob_ =
-        passport::PublicPmid(std::move(receiver_fob_name), std::move(receiver_fob_contents));
+  void serialize(Archive& archive) {
+    archive(requester_endpoints_, receiver_endpoints_, requester_id_, receiver_id_, receiver_fob_);
   }
 
   EndpointPair requester_endpoints() const { return requester_endpoints_; }

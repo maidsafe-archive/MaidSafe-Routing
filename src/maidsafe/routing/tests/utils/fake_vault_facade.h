@@ -42,7 +42,7 @@ template <typename Facade> template <typename Data>
 routing::HandlePutPostReturn MaidManager<Facade>::HandlePut(
     const routing::SourceAddress& /*source_address*/, const Data& data) {
   std::vector<routing::DestinationAddress> result;
-  result.push_back(std::make_pair(routing::Destination(routing::Address(data.name())),
+  result.push_back(std::make_pair(routing::Destination(routing::Address(data.Name())),
                                   boost::none));
   return routing::HandlePutPostReturn(result);
 }
@@ -59,7 +59,7 @@ class DataManager {
   routing::HandleGetReturn HandleGet(const routing::SourceAddress& from, const Identity& name);
 
  private:
-  std::map<std::string, std::string> data_;
+  std::map<std::vector<byte>, std::vector<byte>> data_;
   routing::CloseGroupDifference close_group_;
 };
 
@@ -82,17 +82,17 @@ routing::HandleGetReturn DataManager<Facade>::HandleGet(
 
 // Helper function to parse data name and contents
 // FIXME this need discussion, adding it temporarily to progress
-template <typename ParsedType>
-ParsedType ParseData(const SerialisedData& serialised_data) {
-  InputVectorStream binary_input_stream{serialised_data};
-  typename ParsedType::Name name;
-  typename ParsedType::serialised_type contents;
-  Parse(binary_input_stream, name, contents);
-  return ParsedType(name, contents);
-}
+//template <typename ParsedType>
+//ParsedType ParseData(const SerialisedData& serialised_data) {
+//  InputVectorStream binary_input_stream{serialised_data};
+//  typename ParsedType::Name name;
+//  typename ParsedType::serialised_type contents;
+//  Parse(binary_input_stream, name, contents);
+//  return ParsedType(name, contents);
+//}
 
-template <>
-ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data);
+//template <>
+//ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data);
 
 class FakeVaultFacade : public MaidManager<FakeVaultFacade>,
                         public DataManager<FakeVaultFacade>,
@@ -107,12 +107,13 @@ class FakeVaultFacade : public MaidManager<FakeVaultFacade>,
 
   void HandleConnectionAdded(routing::Address /*address*/) {}
 
-  routing::HandleGetReturn HandleGet(routing::SourceAddress from, routing::Authority authority,
-                                     DataTagValue data_type, Identity data_name);
+  routing::HandleGetReturn HandleGet(routing::SourceAddress from, routing::Authority from_authority,
+                                     routing::Authority authority,
+                                     Data::NameAndTypeId name_and_type_id);
 
   routing::HandlePutPostReturn HandlePut(routing::SourceAddress from,
-      routing::Authority from_authority, routing::Authority authority, DataTagValue data_type,
-          SerialisedData serialised_data);
+      routing::Authority from_authority, routing::Authority authority,
+      Data::NameAndTypeId name_and_type_id, SerialisedData serialised_data);
 
   bool HandlePost(const routing::SerialisedMessage& message);
   // not in local cache do upper layers have it (called when we are in target group)

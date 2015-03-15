@@ -17,6 +17,11 @@
     use of the MaidSafe Software.                                                                 */
 
 #include "maidsafe/routing/tests/utils/fake_vault_facade.h"
+#include "maidsafe/common/identity.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/data_types/immutable_data.h"
+#include "maidsafe/common/data_types/mutable_data.h"
+#include "maidsafe/passport/types.h"
 
 namespace maidsafe {
 
@@ -24,54 +29,55 @@ namespace vault {
 
 namespace test {
 
-template <>
-ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data) {
-  auto digest_size(crypto::SHA512::DIGESTSIZE);
-  std::string name(serialised_data.begin(), serialised_data.begin() + digest_size);
-  std::string content(serialised_data.begin() + digest_size, serialised_data.end());
-  return ImmutableData(ImmutableData::Name(Identity(name)),
-                       ImmutableData::serialised_type(NonEmptyString(content)));
-}
+//template <>
+//ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data) {
+//  auto digest_size(crypto::SHA512::DIGESTSIZE);
+//  std::string name(serialised_data.begin(), serialised_data.begin() + digest_size);
+//  std::string content(serialised_data.begin() + digest_size, serialised_data.end());
+//  return ImmutableData(ImmutableData::Name(Identity(name)),
+//                       ImmutableData::serialised_type(NonEmptyString(content)));
+//}
 
-routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
-    routing::Authority from_authority, routing::Authority authority, DataTagValue data_type,
-    SerialisedData serialised_data) {
-  switch (authority) {
-    case routing::Authority::client_manager:
-      if (from_authority != routing::Authority::client)
-        break;
-      if (data_type == DataTagValue::kImmutableDataValue)
-        return MaidManager::HandlePut(from, ParseData<ImmutableData>(serialised_data));
-      else if (data_type == DataTagValue::kMutableDataValue)
-        return MaidManager::HandlePut(from, ParseData<MutableData>(serialised_data));
-      else if (data_type == DataTagValue::kPmidValue)
-        return MaidManager::HandlePut(from, ParseData<passport::PublicPmid>(serialised_data));
-    case routing::Authority::nae_manager:
-      if (from_authority != routing::Authority::client_manager)
-        break;
-      if (data_type == DataTagValue::kImmutableDataValue)
-        return DataManager::HandlePut(from, ParseData<ImmutableData>(serialised_data));
-      else if (data_type == DataTagValue::kMutableDataValue)
-        return DataManager::HandlePut(from, ParseData<MutableData>(serialised_data));
-      break;
-    default:
-      break;
-  }
+routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress /*from*/,
+    routing::Authority /*from_authority*/, routing::Authority /*authority*/,
+    Data::NameAndTypeId /*name_and_type_id*/, SerialisedData /*serialised_data*/) {
+//  switch (authority) {
+//    case routing::Authority::client_manager:
+//      if (from_authority != routing::Authority::client)
+//        break;
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return MaidManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return MaidManager::HandlePut(from, Parse<MutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<passport::PublicPmid>::value)
+//        return MaidManager::HandlePut(from, Parse<passport::PublicPmid>(serialised_data));
+//    case routing::Authority::nae_manager:
+//      if (from_authority != routing::Authority::client_manager)
+//        break;
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return DataManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return DataManager::HandlePut(from, Parse<MutableData>(serialised_data));
+//      break;
+//    default:
+//      break;
+//  }
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 
-routing::HandleGetReturn FakeVaultFacade::HandleGet(routing::SourceAddress from,
-      routing::Authority authority, DataTagValue data_type, Identity data_name) {
-  switch (authority) {
-    case routing::Authority::nae_manager:
-      if (data_type == DataTagValue::kImmutableDataValue)
-        return DataManager::template HandleGet<ImmutableData>(from, data_name);
-      else if (data_type == DataTagValue::kMutableDataValue)
-        return DataManager::template HandleGet<MutableData>(from, data_name);
-      break;
-    default:
-      break;
-  }
+routing::HandleGetReturn FakeVaultFacade::HandleGet(routing::SourceAddress /*from*/,
+    routing::Authority /*from_authority*/, routing::Authority /*authority*/,
+    Data::NameAndTypeId /*name_and_type_id*/) {
+//  switch (authority) {
+//    case routing::Authority::nae_manager:
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return DataManager::template HandleGet<ImmutableData>(from, data_name);
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return DataManager::template HandleGet<MutableData>(from, data_name);
+//      break;
+//    default:
+//      break;
+//  }
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 

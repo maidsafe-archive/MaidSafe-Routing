@@ -58,25 +58,9 @@ class Connect {
   Connect(const Connect&) = default;
   Connect& operator=(const Connect&) = default;
 
-  //template <typename Archive>
-  //void serialize(Archive& archive) {
-  //  archive(requester_endpoints_, requester_id_, receiver_id_, requester_fob_);
-  //}
-
   template <typename Archive>
-  void save(Archive& archive) const {
-    archive(requester_endpoints_, requester_id_, receiver_id_,
-            requester_fob_.name(), requester_fob_.Serialise());
-  }
-
-  template <typename Archive>
-  void load(Archive& archive) {
-    passport::PublicPmid::Name receiver_fob_name;
-    passport::PublicPmid::serialised_type receiver_fob_contents;
-    archive(requester_endpoints_, requester_id_, receiver_id_,
-            receiver_fob_name, receiver_fob_contents);
-    requester_fob_ =
-        passport::PublicPmid(std::move(receiver_fob_name), std::move(receiver_fob_contents));
+  void serialize(Archive& archive) {
+    archive(requester_endpoints_, requester_id_, receiver_id_, requester_fob_);
   }
 
   EndpointPair requester_endpoints() const { return requester_endpoints_; }

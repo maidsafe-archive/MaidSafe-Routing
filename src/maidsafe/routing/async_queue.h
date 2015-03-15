@@ -36,6 +36,7 @@ namespace detail {
 namespace helper {
 
 // For more info in ApplyTuple see: https://www.preney.ca/paul/archives/486
+
 template <int... Is>
 struct Index {};
 

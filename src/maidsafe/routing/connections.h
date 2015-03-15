@@ -61,7 +61,6 @@ class Connections {
 
  public:
   Connections(const Address& our_node_id);
-
   Connections() = delete;
   Connections(const Connections&) = delete;
   Connections(Connections&&) = delete;
@@ -148,7 +147,6 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
     socket->async_send(boost::asio::buffer(*buffer),
                        [=](boost::system::error_code error, std::size_t) mutable {
                          static_cast<void>(buffer);
-
                          if (!weak_socket.lock()) {
                            return handler(asio::error::operation_aborted);
                          }
@@ -159,7 +157,6 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
                          handler(convert::ToStd(error));
                        });
   });
-
   return result.get();
 }
 
@@ -238,7 +235,6 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
                       Address his_id;
                       asio::ip::udp::endpoint our_endpoint;
                       Parse(stream, his_id, our_endpoint);
-
                       id_to_endpoint_map_[his_id] = remote_endpoint;
                       StartReceiving(his_id, remote_endpoint, socket);
 
@@ -258,7 +254,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
-  
+
   auto loopback = [](unsigned short port) {
     return crux::endpoint(boost::asio::ip::udp::v4(), port);
   };
@@ -282,6 +278,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
 
     if (!find_result.second /* inserted? */) {
       return handler(asio::error::already_started, Connections::AcceptResult());
+
     }
 
     std::weak_ptr<crux::acceptor> weak_acceptor = acceptor;
@@ -311,7 +308,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
         if (!socket) {
           return handler(asio::error::operation_aborted,
                          AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
-        }
+       }
 
         if (error) {
           connections_.erase(remote_endpoint);
