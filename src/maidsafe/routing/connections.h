@@ -132,6 +132,7 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
     auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
 
     if (remote_endpoint_i == id_to_endpoint_map_.end()) {
+      LOG(kWarning) << "bad_descriptor !! " <<  remote_id;
       return handler(asio::error::bad_descriptor);
     }
 

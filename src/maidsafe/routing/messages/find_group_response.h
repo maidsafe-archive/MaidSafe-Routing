@@ -52,23 +52,8 @@ class FindGroupResponse {
   FindGroupResponse& operator=(const FindGroupResponse&) = delete;
 
   template <typename Archive>
-  Archive& load(Archive& archive) {
-    group_.clear();
-    std::size_t group_size(0);
-    archive(target_id_, group_size);
-    for (std::size_t i = 0; i < group_size; ++i) {
-      group_.emplace_back();
-      archive(group_.back());
-    }
-    return archive;
-  }
-
-  template <typename Archive>
-  Archive& save(Archive& archive) const {
-    archive(target_id_, group_.size());
-    for (const auto& public_pmid : group_)
-      archive(public_pmid);
-    return archive;
+  void serialize(Archive& archive) {
+    archive(target_id_, group_);
   }
 
   Address target_id() const { return target_id_; }

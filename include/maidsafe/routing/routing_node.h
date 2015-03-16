@@ -217,10 +217,9 @@ void RoutingNode<Child>::PutOurPublicPmid() {
   auto type_id = our_public_pmid.TypeId();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed
-    MessageHeader our_header(std::make_pair(Destination(Address(name)), boost::none), OurSourceAddress(),
-                             ++message_id_, Authority::client); // As this node is not yet connected
-    // to its close group, client authority seems appropriate
-//    PutData request(passport::PublicPmid::Tag::kValue, Serialise(our_public_pmid));
+    MessageHeader our_header(std::make_pair(Destination(Address(name)), boost::none),
+                             OurSourceAddress(), ++message_id_, Authority::client);
+    // As this node is not yet connected to its close group, client authority seems appropriate
     PutData request(type_id, Serialise(our_public_pmid));
 
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
@@ -327,7 +326,7 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 
 template <typename Child>
 void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
-  LOG(kVerbose) << "MessageReceived from " << peer_id;
+  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<< hex::Substr(serialised_message) << ">>>";
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
@@ -381,8 +380,7 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
       }
     });
   }
-  if (header.RelayedMessage() &&
-      (Address(header.FromNode()) != OurId())) { // allow outgoing message
+  if (header.RelayedMessage() && (Address(header.FromNode()) != OurId())) { // skip outgoing msgs
     std::set<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
     if (std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
         [&header](const Address& node) { return node == Address(*header.ReplyToAddress()); })) {
@@ -554,7 +552,22 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
   for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
     connection_manager_.Send(node.id, message, [](asio::error_code) {});
   }
-  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ?
+
+  LOG(kInfo) << "FindGroupResponse msg    <<< "<< hex::Substr(message) << ">>>";
+  // if node in my group && in non routing list send it to non_routnig list as well
+  //if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle message part !
+
+  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ? temp code to get past zero state. Delete me !!
+  auto temp = Address(*original_header.ReplyToAddress());
+  LOG(kWarning) << "FindGroupResp sent to " << temp << " but fails !!!!!!!!!!!!!!!!!!!!";
+  connection_manager_.Send(temp, message,
+                           [=](asio::error_code error) {
+                             if (error) {
+                               LOG(kWarning) << "Could not send to " << temp;
+                             } else {
+                               LOG(kInfo) << "Sent FindGroupResponse to " << temp;
+                             }
+                           });
 }
 
 template <typename Child>
