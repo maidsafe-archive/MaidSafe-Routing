@@ -151,6 +151,16 @@ class SentinelFunctionalTest : public testing::Test {
   SentinelReturns GetSendGetGroupKeySentinelReturns(GroupAddress group_address);
   SentinelReturns GetSendGetClientKeySentinelReturns(GroupAddress group_address);
 
+  size_t CountSendGetGroupKeyCalls(GroupAddress group_address) {
+    return std::count(send_get_group_key_calls_.begin(),
+                      send_get_group_key_calls_.end(), group_address);
+  }
+
+  size_t CountSendGetClientKeyCalls(GroupAddress group_address) {
+    return std::count(send_get_client_key_calls_.begin(),
+                      send_get_client_key_calls_.end(), group_address);
+  }
+
   void SendGetClientKey(const Address node_address);
   void SendGetGroupKey(const GroupAddress group_address);
 
@@ -162,6 +172,8 @@ class SentinelFunctionalTest : public testing::Test {
   std::vector<SignatureGroup> groups_;
   passport::Pmid our_pmid_;
   DestinationAddress our_destination_;
+  std::vector<GroupAddress> send_get_group_key_calls_;
+  std::vector<GroupAddress> send_get_client_key_calls_;
 };
 
 void SentinelFunctionalTest::AddCorrectGroup(GroupAddress group_address,
@@ -255,6 +267,7 @@ void SentinelFunctionalTest::SendGetClientKey(Address /*node_address*/) {
 
 void SentinelFunctionalTest::SendGetGroupKey(GroupAddress group_address) {
   //std::lock_guard<std::mutex> lock(mutex_);
+  send_get_group_key_calls_.push_back(group_address);
   auto itr = std::find_if(std::begin(groups_), std::end(groups_),
                           [group_address](SignatureGroup group_)
                           { return group_.SignatureGroupAddress() == group_address; });
@@ -312,6 +325,10 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
   EXPECT_EQ(0, CountAllSentinelReturns(all_send_get_client_key_returns));
   EXPECT_EQ(GroupSize, CountAllSentinelReturns(all_send_get_group_key_returns));
   EXPECT_EQ(GroupSize, CountAllSentinelReturns(all_message_returns));
+
+  EXPECT_EQ(1, CountSendGetGroupKeyCalls(group_address));
+  EXPECT_EQ(0, CountSendGetClientKeyCalls(group_address));
+
 }
 
 /* //Simply to time surrounding execution time,
