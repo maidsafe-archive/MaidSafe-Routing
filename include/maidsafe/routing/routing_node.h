@@ -228,7 +228,7 @@ void RoutingNode<Child>::PutOurPublicPmid() {
         if (error)
           LOG(kWarning) << "Failed to send to  < " << *this->bootstrap_node_;
         else
-          LOG(kVerbose) << "Send PutOurPublicPmid to  < " << *this->bootstrap_node_;
+          LOG(kVerbose) << "Sent PutOurPublicPmid to : " << *this->bootstrap_node_;
     });
   });
 }
@@ -307,6 +307,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
     connection_manager_.Send(*bootstrap_node_, std::move(msg_data), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
+      } else {
+        LOG(kInfo) << "Sent Find group";
       }
     });
     return;
@@ -321,6 +323,8 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   }
 }
 
+
+
 template <typename Child>
 void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
   LOG(kVerbose) << "MessageReceived from " << peer_id;
@@ -334,6 +338,9 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
+  LOG(kVerbose) << "MessageReceived from " << peer_id << " PutData " << header.MessageId()
+                << "tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
+
 
   if (filter_.Check(header.FilterValue()))
     return;  // already seen
@@ -374,24 +381,30 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
       }
     });
   }
-  std::set<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
   if (header.RelayedMessage() &&
-      std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
-                  [&header](const Address& node) { return node == Address(*header.ReplyToAddress()); })) {
-    // send message to connected node
-    connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
-    return;
+      (Address(header.FromNode()) != OurId())) { // allow outgoing message
+    std::set<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
+    if (std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
+        [&header](const Address& node) { return node == Address(*header.ReplyToAddress()); })) {
+          // send message to connected node
+          connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
+          return;
+        }
   }
 
-  if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first))
+  if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first)) {
+    LOG(kVerbose) << "not for us";
     return;  // not for us
+  }
 
   // Drop message if it is a direct message type (Connect, ConnectResponse) and this node is in the
   // group but the message destination is another group member node.
   // Dropping this before Sentinel check
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
-    if (Address(header.Destination().first) != connection_manager_.OurId())  // not for me
+    if (Address(header.Destination().first) != connection_manager_.OurId()) {  // not for me
+      LOG(kVerbose) << "not for me";
       return;
+    }
   }
 
   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
@@ -541,6 +554,7 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
   for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
     connection_manager_.Send(node.id, message, [](asio::error_code) {});
   }
+  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ?
 }
 
 template <typename Child>
@@ -582,8 +596,10 @@ void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
 }
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(PutData /*put_data*/, MessageHeader /* original_header */) {
-
+void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader /* original_header */) {
+  // FIXME(Prakash)
+//  cache_.Add(put_data.name_and_type_id().name, *put_data.data());
+  LOG(kVerbose) << "Put Data : " << put_data.type_id();
 }
 
 template <typename Child>
