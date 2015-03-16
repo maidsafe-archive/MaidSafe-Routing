@@ -63,7 +63,6 @@ class RoutingNode {
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
   RoutingNode& operator=(RoutingNode&&) = delete;
-  ~RoutingNode();
 
   // normal bootstrap mechanism
   template <typename CompletionToken>
@@ -189,10 +188,6 @@ RoutingNode<Child>::RoutingNode()
       ConnectToCloseGroup();
     });
   }
-}
-
-template <typename Child>
-RoutingNode<Child>::~RoutingNode() {
 }
 
 template <typename Child>

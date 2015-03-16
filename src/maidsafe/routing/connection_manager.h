@@ -77,7 +77,13 @@ class ConnectionManager {
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
-  ~ConnectionManager() = default;
+//~ConnectionManager() = default;
+  ~ConnectionManager() {
+    std::cerr << this << " ~ConnectionManager begin\n";
+    connections_.reset();
+    std::cerr << this << " ~ConnectionManager end\n";
+  }
+
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
@@ -147,7 +153,7 @@ class ConnectionManager {
   OnReceive on_receive_;
   OnConnectionLost on_connection_lost_;
   std::vector<Address> current_close_group_;
-  std::map<Endpoint, ExpectedAccept> expected_accepts_;
+  std::map<Address, ExpectedAccept> expected_accepts_;
   std::shared_ptr<Connections> connections_;
 };
 

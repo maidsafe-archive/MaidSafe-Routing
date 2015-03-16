@@ -93,17 +93,21 @@ void ConnectionManager::StartAccepting() {
   std::weak_ptr<Connections> weak_connections = connections_;
 
   auto accept_handler = [=](asio::error_code error, Connections::AcceptResult result) {
+    std::cout << "onaccept " << __LINE__ << "\n";
     auto connections = weak_connections.lock();
 
     if (!connections) {
       return;
     }
 
+    std::cout << "onaccept " << __LINE__ << "\n";
     if (error == asio::error::operation_aborted || error == asio::error::already_started) {
       return;
     }
 
+    std::cout << "onaccept " << __LINE__ << " " << error.message() << "\n";
     if (!error) {
+      std::cout << "onaccept " << __LINE__ << "\n";
       HandleAccept(std::move(result));
 
       // The handler may have destroyed 'this'.
@@ -112,6 +116,7 @@ void ConnectionManager::StartAccepting() {
       }
     }
 
+    std::cout << "onaccept " << __LINE__ << "\n";
     return StartAccepting();
   };
 
@@ -119,13 +124,9 @@ void ConnectionManager::StartAccepting() {
 }
 
 void ConnectionManager::HandleAccept(Connections::AcceptResult result) {
-  auto expected_i = expected_accepts_.find(result.his_endpoint);
+  auto expected_i = expected_accepts_.find(result.his_address);
 
   if (expected_i != expected_accepts_.end()) {
-    if (expected_i->second.node_info.id != result.his_address) {
-      return;
-    }
-
     auto expected = std::move(expected_i->second);
     expected_accepts_.erase(expected_i);
 
@@ -136,11 +137,10 @@ void ConnectionManager::HandleAccept(Connections::AcceptResult result) {
   }
 }
 
-void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair his_endpoint_pair,
+void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair,
                                       OnAddNode on_node_added) {
   // TODO(PeterJ): Use internal endpoint as well.
-  expected_accepts_.insert(std::make_pair(his_endpoint_pair.external,
-                                          ExpectedAccept{node_info, on_node_added}));
+  expected_accepts_.insert(std::make_pair(node_info.id, ExpectedAccept{node_info, on_node_added}));
   //StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
   //  on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
   //});
@@ -154,6 +154,7 @@ void ConnectionManager::AddNode(
   // TODO(PeterJ): Use local endpoint as well
   connections_->Connect(their_endpoint_pair.external,
                         [=](asio::error_code error, Connections::ConnectResult result) {
+    std::cout << "onconnect\n";
     if (!weak_connections.lock()) {
       return;
     }
@@ -210,9 +211,11 @@ void ConnectionManager::StartReceiving() {
       return HandleConnectionLost(result.his_address);
     }
     auto h = std::move(on_receive_);
-    h(std::move(result.his_address), std::move(result.message));
-    if (!weak_connections.lock()) return;
-    on_receive_ = std::move(h);
+    if (h) {
+      h(std::move(result.his_address), std::move(result.message));
+      if (!weak_connections.lock()) return;
+      on_receive_ = std::move(h);
+    }
     StartReceiving();
   });
 }
@@ -226,7 +229,10 @@ void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
 void ConnectionManager::HandleConnectionLost(Address lost_connection) {
   routing_table_.DropNode(lost_connection);
   connected_non_routing_nodes_.erase(lost_connection);
-  on_connection_lost_(GroupChanged(), lost_connection);
+  auto h = std::move(on_connection_lost_);
+  if (h) {
+    h(GroupChanged(), lost_connection);
+  }
 }
 
 }  // namespace routing

@@ -181,9 +181,13 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
 }
 
 inline Connections::~Connections() {
+  std::cerr << this << " ~Connections 1\n";
   destroy_indicator_.reset();
+  std::cerr << this << " ~Connections 2\n";
   Shutdown();
+  std::cerr << this << " ~Connections 3\n";
   runner_.Stop();
+  std::cerr << this << " ~Connections 4\n";
 }
 
 template <class Token>
@@ -371,9 +375,13 @@ inline boost::asio::io_service& Connections::get_io_service() { return runner_.s
 
 inline void Connections::Shutdown() {
   get_io_service().post([=]() {
+    std::cerr << this << " Shutdown 1\n";
     acceptors_.clear();
+    std::cerr << this << " Shutdown 2\n";
     connections_.clear();
+    std::cerr << this << " Shutdown 3\n";
     id_to_endpoint_map_.clear();
+    std::cerr << this << " Shutdown 4\n";
   });
 }
 
