@@ -34,7 +34,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                                     MessageTypeTag tag,
                                                     SerialisedMessage message) {
   if (tag == MessageTypeTag::GetClientKeyResponse) {
-    if (!header.FromGroup()) // "keys should always come from a group") One reponse should be enough
+    if (!header.FromGroup()) // keys should always come from a group, one reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     auto keys(node_key_accumulator_.Add(*header.FromGroup(),
                                         std::make_tuple(header, tag, std::move(message)),
@@ -224,11 +224,10 @@ Sentinel::Resolve(const std::vector<ResultType>& verified_messages, GroupMessage
   if (std::get<1>(*verified_messages.begin()) != MessageTypeTag::AccountTransfer) {
     for (size_t index(0); index < verified_messages.size(); ++index) {
       auto& serialised_message(std::get<2>(verified_messages.at(index)));
-      if (static_cast<std::vector<ResultType>::size_type>(
-              std::count_if(verified_messages.begin(), verified_messages.end(),
-                            [&](const ResultType& result) {
-                              return std::get<2>(result) == serialised_message;
-                            })) >= QuorumSize)
+      if (std::count_if(verified_messages.begin(), verified_messages.end(),
+                        [&](const ResultType& result) {
+                            return std::get<2>(result) == serialised_message;
+                        }) >= static_cast<std::vector<ResultType>::difference_type>(QuorumSize))
         return verified_messages.at(index);
     }
   } else {  // account transfer

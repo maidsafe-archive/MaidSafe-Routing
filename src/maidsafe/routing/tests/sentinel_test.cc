@@ -47,7 +47,6 @@ class SentinelTest : public testing::Test {
                    maid_nodes_(),
                    source_address_(NodeAddress(Address(MakeIdentity())), boost::none,
                                                boost::none) {}
-  int i = maidsafe::crypto::SHA512::DIGESTSIZE;
   struct SentinelAddInfo {
     MessageHeader header;
     MessageTypeTag tag;
