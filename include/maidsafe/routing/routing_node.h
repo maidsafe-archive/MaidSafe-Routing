@@ -171,7 +171,7 @@ RoutingNode<Child>::RoutingNode()
       sentinel_(asio_service_.service()),
       cache_(std::chrono::minutes(60)),
       destroy_indicator_(new boost::none_t) {
-  LOG(kInfo) << "RoutingNode -- " << OurId();
+  LOG(kInfo) << "RoutingNode < " << OurId() << " >";
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
@@ -188,12 +188,11 @@ void RoutingNode<Child>::StartBootstrap() {
                         if (error) {
                           LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr
                                         << " >" << error.message();
-                          // TODO(Team): try an connect to bootstrap contacts and other options
-                          // (hardcoded endpoints)
-                          // on failure keep retrying all options forever
+                          // TODO(Team): try connect to bootstrap contacts and other options
+                          // (hardcoded endpoints).on failure keep retrying all options forever
                           return;
                         }
-                        LOG(kInfo) << "StartBootstrap succeded !! " << peer_addr;
+                        LOG(kInfo) << "Bootstrapped with " << peer_addr;
                         // FIXME(Team): Thread safety.
                         bootstrap_node_ = peer_addr;
                         // bootstrap_endpoint_ = our_endpoint; this will not required if
@@ -212,6 +211,7 @@ void RoutingNode<Child>::StartBootstrap() {
 
 template <typename Child>
 void RoutingNode<Child>::PutOurPublicPmid() {
+  assert(bootstrap_node_);
   passport::PublicPmid our_public_pmid{ passport::PublicPmid(our_fob_) };
   auto name = our_public_pmid.Name();
   auto type_id = our_public_pmid.TypeId();
@@ -395,9 +395,8 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     return;  // not for us
   }
 
-  // Drop message if it is a direct message type (Connect, ConnectResponse) and this node is in the
-  // group but the message destination is another group member node.
-  // Dropping this before Sentinel check
+  // Drop message before Sentinel check if it is a direct message type (Connect, ConnectResponse)
+  // and this node is in the group but the message destination is another group member node.
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
     if (Address(header.Destination().first) != connection_manager_.OurId()) {  // not for me
       LOG(kVerbose) << "not for me";
@@ -613,6 +612,10 @@ void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader /* origin
   // FIXME(Prakash)
 //  cache_.Add(put_data.name_and_type_id().name, *put_data.data());
   LOG(kVerbose) << "Put Data : " << put_data.type_id();
+  auto result = static_cast<Child*>(this)->HandlePut(
+              header.Source(), header.FromAuthority(),
+              OurAuthority(put_data.name_and_type_id().name, header),
+              put_data.name_and_type_id(), put_data.data());
 }
 
 template <typename Child>
@@ -635,16 +638,6 @@ template <typename Child>
 SourceAddress RoutingNode<Child>::OurSourceAddress(GroupAddress group) const {
   return SourceAddress(NodeAddress(OurId()), group, boost::none);
 }
-
-// template <class Message>
-// void RoutingNode::SendDirect(Address target, Message message, SendHandler handler) {
-//   MessageHeader header(DestinationAddress(std::make_pair(Destination(target), boost::none)),
-//                        SourceAddress{OurSourceAddress()}, ++message_id_);
-//
-//   rudp_.Send(target, Serialise(header, MessageToTag<Message>::value(), message), handler);
-// }
-//
-
 
 }  // namespace routing
 

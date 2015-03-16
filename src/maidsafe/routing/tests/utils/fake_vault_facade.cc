@@ -41,7 +41,7 @@ namespace test {
 routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress /*from*/,
     routing::Authority /*from_authority*/, routing::Authority /*authority*/,
     Data::NameAndTypeId /*name_and_type_id*/, SerialisedData /*serialised_data*/) {
-//  switch (authority) {
+  switch (authority) {
 //    case routing::Authority::client_manager:
 //      if (from_authority != routing::Authority::client)
 //        break;
@@ -51,17 +51,17 @@ routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress /
 //        return MaidManager::HandlePut(from, Parse<MutableData>(serialised_data));
 //      else if (name_and_type_id.type_id == detail::TypeId<passport::PublicPmid>::value)
 //        return MaidManager::HandlePut(from, Parse<passport::PublicPmid>(serialised_data));
-//    case routing::Authority::nae_manager:
-//      if (from_authority != routing::Authority::client_manager)
-//        break;
-//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
-//        return DataManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
-//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
-//        return DataManager::HandlePut(from, Parse<MutableData>(serialised_data));
-//      break;
-//    default:
-//      break;
-//  }
+    case routing::Authority::nae_manager:
+      if (from_authority != routing::Authority::client_manager)
+        break;
+      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+        return DataManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
+      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+        return DataManager::HandlePut(from, Parse<MutableData>(serialised_data));
+      break;
+    default:
+      break;
+  }
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 
