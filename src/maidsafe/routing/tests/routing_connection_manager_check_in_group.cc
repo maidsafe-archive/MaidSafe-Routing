@@ -36,6 +36,57 @@ namespace routing {
 
 namespace test {
 
+using Endpoint = asio::ip::udp::endpoint;
+
+struct FutureHandler {
+  using Value = boost::optional<CloseGroupDifference>;
+
+  struct State {
+    std::promise<Value> promise;
+    std::future<Value> future;
+
+    State() : future(promise.get_future()) {}
+  };
+
+  std::string what;
+  std::shared_ptr<State> state;
+
+  FutureHandler(std::string what) : what(std::move(what)), state(std::make_shared<State>()) {}
+
+  void operator()(Value v, Endpoint) const {
+    state->promise.set_value(std::move(v));
+  }
+
+  Value Get() { return state->future.get(); }
+};
+
+NodeInfo GenerateNodeInfo() {
+  passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
+  NodeInfo node_info(NodeId(RandomString(NodeId::kSize)), fob, false);
+  return std::move(node_info);
+}
+
+EndpointPair LocalEndpointPair(unsigned short port) {
+  return EndpointPair(Endpoint(GetLocalIp(), port));
+}
+
+TEST(ConnectionManagerTest, FUNC_AddNodes) {
+  NodeInfo c1_info = GenerateNodeInfo();
+  NodeInfo c2_info = GenerateNodeInfo();
+
+  ConnectionManager cm1(c1_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+  ConnectionManager cm2(c2_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+
+  FutureHandler cm1_result("cm1");
+  FutureHandler cm2_result("cm2");
+
+  cm1.AddNode(c2_info, LocalEndpointPair(cm2.AcceptingPort()), cm1_result);
+  cm2.AddNodeAccept(c1_info, LocalEndpointPair(cm1.AcceptingPort()), cm2_result);
+
+  cm1_result.Get();
+  cm2_result.Get();
+}
+
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
 //  boost::asio::io_service io_service;
 //  passport::PublicPmid our_public_pmid(passport::CreatePmidAndSigner().first);

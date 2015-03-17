@@ -38,27 +38,41 @@ namespace helper {
 // For more info in ApplyTuple see: https://www.preney.ca/paul/archives/486
 
 template <int... Is>
-struct Index {};
+struct Index {
+  using Next = Index<Is..., sizeof...(Is)>;
+};
 
-template <int N, int... Is>
-struct GeneratedSequence : GeneratedSequence<N - 1, N - 1, Is...> {};
+//template <int N, int... Is>
+//struct GeneratedSequence : GeneratedSequence<N - 1, N - 1, Is...> {};
+//
+//template <int... Is>
+//struct GeneratedSequence<0, Is...> : Index<Is...> {};
 
-template <int... Is>
-struct GeneratedSequence<0, Is...> : Index<Is...> {};
+template<int Size> struct BuildIndices {
+  using Type = typename BuildIndices<Size - 1>::Type::Next;
+};
+
+template<> struct BuildIndices<0> {
+  using Type = Index<>;
+};
 
 }  // namespace helper
 
-template <class F, typename... Args, int... Is>
-inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup,
-                                          helper::Index<Is...>)
-    -> decltype(f(std::get<Is>(tup)...)) {
-  return f(std::get<Is>(tup)...);
+template <class F, typename Tuple, int... Is>
+inline MAIDSAFE_CONSTEXPR void ApplyTuple(F&& f, Tuple&& tup, helper::Index<Is...>)
+{ //-> decltype(f(std::get<Is>(tup)...)) {
+  f(std::get<Is>(std::forward<Tuple>(tup))...);
 }
 
-template <class F, typename... Args>
-inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup)
-    -> decltype(ApplyTuple(f, tup, helper::GeneratedSequence<sizeof...(Args)>{})) {
-  return ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{});
+template <class F, typename Tuple>
+inline MAIDSAFE_CONSTEXPR void ApplyTuple(F&& f, Tuple&& tup)
+//    -> decltype(ApplyTuple(f,
+//                           tup,
+//                           helper::GeneratedSequence<std::tuple_size<Tuple>::value>{})) {
+ {
+  ApplyTuple(std::forward<F>(f),
+             std::forward<Tuple>(tup),
+             typename helper::BuildIndices<std::tuple_size<typename std::decay<Tuple>::type>::value>::Type{});
 }
 
 }  // namespace detail
@@ -113,7 +127,7 @@ class AsyncQueue {
       values.pop();
     }
 
-    detail::ApplyTuple(std::move(handler), tuple);
+    detail::ApplyTuple(handler, std::move(tuple));
 
     return result.get();
   }

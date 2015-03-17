@@ -60,7 +60,7 @@ class Connections {
    };
 
  public:
-  Connections(const Address& our_node_id);
+  Connections(asio::io_service&, const Address& our_node_id);
   Connections() = delete;
   Connections(const Connections&) = delete;
   Connections(Connections&&) = delete;
@@ -102,6 +102,13 @@ class Connections {
  private:
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
 
+  template<class Handler, class... Args>
+  void post(const Handler& handler, Args&&... args);
+  template<class Handler, class Arg1> void post2(const Handler& handler, const Arg1&);
+  template<class Handler, class Arg1, class Arg2> void post2(const Handler& handler, const Arg1&, const Arg2&);
+
+ private:
+  asio::io_service& service;
   Address our_id_;
 
   std::function<void(Address, const SerialisedMessage&)> on_receive_;
@@ -118,8 +125,8 @@ class Connections {
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
-inline Connections::Connections(const Address& our_node_id)
-    : our_id_(our_node_id), runner_(1), destroy_indicator_(new boost::none_t) {}
+inline Connections::Connections(asio::io_service& ios, const Address& our_node_id)
+    : service(ios), our_id_(our_node_id), runner_(1), destroy_indicator_(new boost::none_t) {}
 
 template <class Token>
 AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
@@ -133,7 +140,7 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
 
     if (remote_endpoint_i == id_to_endpoint_map_.end()) {
       LOG(kWarning) << "bad_descriptor !! " <<  remote_id;
-      return handler(asio::error::bad_descriptor);
+      return post(handler, asio::error::bad_descriptor);
     }
 
     auto remote_endpoint = remote_endpoint_i->second;
@@ -149,13 +156,13 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
                        [=](boost::system::error_code error, std::size_t) mutable {
                          static_cast<void>(buffer);
                          if (!weak_socket.lock()) {
-                           return handler(asio::error::operation_aborted);
+                           return post(handler, asio::error::operation_aborted);
                          }
                          if (error) {
                            id_to_endpoint_map_.erase(remote_id);
                            connections_.erase(remote_endpoint);
                          }
-                         handler(convert::ToStd(error));
+                         post(handler, convert::ToStd(error));
                        });
   });
   return result.get();
@@ -170,7 +177,7 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
   // TODO(PeterJ): For some reason I need to wrap the handler, otherwise I get crashes
   // in the future tests.
   auto handler2 = [=](asio::error_code error, ReceiveResult result) mutable {
-    handler(error, std::move(result));
+    post2(handler, error, result);
   };
 
   get_io_service().post([=]() mutable { receive_queue_.AsyncPop(handler2); });
@@ -179,9 +186,13 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
 }
 
 inline Connections::~Connections() {
+  std::cerr << this << " ~Connections 1\n";
   destroy_indicator_.reset();
+  std::cerr << this << " ~Connections 2\n";
   Shutdown();
+  std::cerr << this << " ~Connections 3\n";
   runner_.Stop();
+  std::cerr << this << " ~Connections 4\n";
 }
 
 template <class Token>
@@ -199,7 +210,7 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
     auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
 
     if (!insert_result.second) {
-      return handler(asio::error::already_started, ConnectResult());
+      return post(handler, asio::error::already_started, ConnectResult());
     }
 
     std::weak_ptr<crux::socket> weak_socket = socket;
@@ -208,10 +219,10 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
       auto socket = weak_socket.lock();
 
       if (!socket) {
-        return handler(asio::error::operation_aborted, ConnectResult());
+        return post(handler, asio::error::operation_aborted, ConnectResult());
       }
       if (error) {
-        return handler(convert::ToStd(error), ConnectResult());
+        return post(handler, convert::ToStd(error), ConnectResult());
       }
 
       auto remote_endpoint = socket->remote_endpoint();
@@ -224,12 +235,12 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
                       auto socket = weak_socket.lock();
 
                       if (!socket) {
-                        return handler(asio::error::operation_aborted, ConnectResult());
+                        return post(handler, asio::error::operation_aborted, ConnectResult());
                       }
 
                       if (error) {
                         connections_.erase(remote_endpoint);
-                        return handler(convert::ToStd(error), ConnectResult());
+                        return post(handler, convert::ToStd(error), ConnectResult());
                       }
 
                       InputVectorStream stream(data);
@@ -239,7 +250,7 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
                       id_to_endpoint_map_[his_id] = remote_endpoint;
                       StartReceiving(his_id, remote_endpoint, socket);
 
-                      handler(convert::ToStd(error), ConnectResult{his_id, our_endpoint});
+                      post(handler, convert::ToStd(error), ConnectResult{his_id, our_endpoint});
                     });
     });
   });
@@ -278,7 +289,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
     auto find_result = acceptors_.insert(std::make_pair(port, acceptor));
 
     if (!find_result.second /* inserted? */) {
-      return handler(asio::error::already_started, Connections::AcceptResult());
+      return post(handler,asio::error::already_started, Connections::AcceptResult());
 
     }
 
@@ -288,11 +299,11 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
 
     acceptor->async_accept(*socket, [=](boost::system::error_code error) mutable {
       if (!weak_acceptor.lock()) {
-        return handler(asio::error::operation_aborted, AcceptResult());
+        return post(handler,asio::error::operation_aborted, AcceptResult());
       }
 
       if (error) {
-        return handler(asio::error::operation_aborted, AcceptResult());
+        return post(handler,asio::error::operation_aborted, AcceptResult());
       }
 
       acceptors_.erase(port);
@@ -307,13 +318,13 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return handler(asio::error::operation_aborted,
+          return post(handler,asio::error::operation_aborted,
                          AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
        }
 
         if (error) {
           connections_.erase(remote_endpoint);
-          return handler(convert::ToStd(error),
+          return post(handler,convert::ToStd(error),
                          AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
         }
 
@@ -325,7 +336,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
         id_to_endpoint_map_[his_id] = remote_endpoint;
         StartReceiving(his_id, remote_endpoint, socket);
 
-        handler(convert::ToStd(error),
+        post(handler,convert::ToStd(error),
                 AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
       });
     });
@@ -346,6 +357,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         auto socket = weak_socket.lock();
 
         if (!socket) {
+          std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 1\n";
           return receive_queue_.Push(asio::error::operation_aborted,
                                      ReceiveResult{id, std::move(*buffer)});
         }
@@ -356,6 +368,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         }
 
         buffer->resize(size);
+        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 2 " << &error << " " << error.message() << "\n";
         receive_queue_.Push(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
 
         if (error)
@@ -369,14 +382,38 @@ inline boost::asio::io_service& Connections::get_io_service() { return runner_.s
 
 inline void Connections::Shutdown() {
   get_io_service().post([=]() {
+    std::cerr << this << " Shutdown 1\n";
     acceptors_.clear();
+    std::cerr << this << " Shutdown 2\n";
     connections_.clear();
+    std::cerr << this << " Shutdown 3\n";
     id_to_endpoint_map_.clear();
+    std::cerr << this << " Shutdown 4\n";
   });
 }
 
 inline void Connections::Wait() {
   runner_.Stop();
+}
+
+template<class Handler, class... Args>
+void Connections::post(const Handler& handler, Args&&... args) {
+  std::tuple<Args...> tuple(std::forward<Args>(args)...);
+  service.post([handler, tuple]() mutable {
+      detail::ApplyTuple(handler, tuple);
+      });
+}
+
+template<class Handler, class Arg1> void Connections::post2(const Handler& handler, const Arg1& arg) {
+  service.post([handler, arg]() {
+      handler(arg);
+      });
+}
+
+template<class Handler, class Arg1, class Arg2> void Connections::post2(const Handler& handler, const Arg1& arg1, const Arg2& arg2) {
+  service.post([=]() {
+      handler(arg1, arg2);
+      });
 }
 
 inline void Connections::Drop(const Address& their_id) {
