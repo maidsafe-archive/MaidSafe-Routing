@@ -168,7 +168,7 @@ RoutingNode<Child>::RoutingNode()
                             ConnectionLost(std::move(diff), std::move(peer_id));
                           }),
       filter_(std::chrono::minutes(20)),
-      sentinel_(asio_service_.service()),
+      sentinel_([](Address) {}, [](GroupAddress) {}),
       cache_(std::chrono::minutes(60)),
       destroy_indicator_(new boost::none_t) {
   LOG(kInfo) << "RoutingNode < " << OurId() << " >";
