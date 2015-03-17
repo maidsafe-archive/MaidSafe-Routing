@@ -26,42 +26,11 @@
 #include "asio/async_result.hpp"
 
 #include "maidsafe/common/config.h"
+#include "maidsafe/routing/apply_tuple.h"
 
 namespace maidsafe {
 
 namespace routing {
-
-namespace detail {
-
-namespace helper {
-
-// For more info in ApplyTuple see: https://www.preney.ca/paul/archives/486
-
-template <int... Is>
-struct Index {};
-
-template <int N, int... Is>
-struct GeneratedSequence : GeneratedSequence<N - 1, N - 1, Is...> {};
-
-template <int... Is>
-struct GeneratedSequence<0, Is...> : Index<Is...> {};
-
-}  // namespace helper
-
-template <class F, typename... Args, int... Is>
-inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup,
-                                          helper::Index<Is...>)
-    -> decltype(f(std::get<Is>(tup)...)) {
-  return f(std::get<Is>(tup)...);
-}
-
-template <class F, typename... Args>
-inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup)
-    -> decltype(ApplyTuple(f, tup, helper::GeneratedSequence<sizeof...(Args)>{})) {
-  return ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{});
-}
-
-}  // namespace detail
 
 template <class... Args>
 class AsyncQueue {

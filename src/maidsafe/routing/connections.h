@@ -32,7 +32,7 @@
 #include "maidsafe/crux/acceptor.hpp"
 #include "maidsafe/crux/socket.hpp"
 
-#include "maidsafe/routing/async_queue.h"
+#include "maidsafe/routing/apply_tuple.h"
 #include "maidsafe/routing/async_exchange.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
@@ -104,9 +104,7 @@ class Connections {
   void OnReceive(asio::error_code, ReceiveResult);
 
   template<class Handler, class... Args>
-  void post(const Handler& handler, Args&&... args);
-  template<class Handler, class Arg1> void post2(const Handler& handler, const Arg1&);
-  template<class Handler, class Arg1, class Arg2> void post2(const Handler& handler, const Arg1&, const Arg2&);
+  void post(Handler&& handler, Args&&... args);
 
  private:
   asio::io_service& service;
@@ -410,22 +408,10 @@ inline void Connections::Wait() {
 }
 
 template<class Handler, class... Args>
-void Connections::post(const Handler& handler, Args&&... args) {
-  std::tuple<Args...> tuple(std::forward<Args>(args)...);
+void Connections::post(Handler&& handler, Args&&... args) {
+  std::tuple<typename std::decay<Args>::type...> tuple(std::forward<Args>(args)...);
   service.post([handler, tuple]() mutable {
-      detail::ApplyTuple(handler, tuple);
-      });
-}
-
-template<class Handler, class Arg1> void Connections::post2(const Handler& handler, const Arg1& arg) {
-  service.post([handler, arg]() {
-      handler(arg);
-      });
-}
-
-template<class Handler, class Arg1, class Arg2> void Connections::post2(const Handler& handler, const Arg1& arg1, const Arg2& arg2) {
-  service.post([=]() {
-      handler(arg1, arg2);
+      ApplyTuple(handler, tuple);
       });
 }
 

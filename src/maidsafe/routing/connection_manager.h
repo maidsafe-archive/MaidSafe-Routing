@@ -128,6 +128,8 @@ class ConnectionManager {
   template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
   void Connect(asio::ip::udp::endpoint, Handler);
 
+  void Shutdown() { connections_.reset(); }
+
  private:
   boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
   void StartReceiving();
