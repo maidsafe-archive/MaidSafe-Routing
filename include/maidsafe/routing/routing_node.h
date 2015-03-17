@@ -163,7 +163,7 @@ RoutingNode<Child>::RoutingNode()
       // bootstrap_handler_(),
       connection_manager_(crux_asio_service_.service(), passport::PublicPmid(our_fob_)),
       filter_(std::chrono::minutes(20)),
-      sentinel_(asio_service_.service()),
+      sentinel_([](Address) {}, [](GroupAddress) {}),
       cache_(std::chrono::minutes(60)),
       connected_nodes_() {
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
