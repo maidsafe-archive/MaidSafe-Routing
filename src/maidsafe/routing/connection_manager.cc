@@ -93,21 +93,17 @@ void ConnectionManager::StartAccepting() {
   std::weak_ptr<Connections> weak_connections = connections_;
 
   auto accept_handler = [=](asio::error_code error, Connections::AcceptResult result) {
-    std::cout << "onaccept " << __LINE__ << "\n";
     auto connections = weak_connections.lock();
 
     if (!connections) {
       return;
     }
 
-    std::cout << "onaccept " << __LINE__ << "\n";
     if (error == asio::error::operation_aborted || error == asio::error::already_started) {
       return;
     }
 
-    std::cout << "onaccept " << __LINE__ << " " << error.message() << "\n";
     if (!error) {
-      std::cout << "onaccept " << __LINE__ << "\n";
       HandleAccept(std::move(result));
 
       // The handler may have destroyed 'this'.
@@ -116,7 +112,6 @@ void ConnectionManager::StartAccepting() {
       }
     }
 
-    std::cout << "onaccept " << __LINE__ << "\n";
     return StartAccepting();
   };
 
@@ -155,7 +150,6 @@ void ConnectionManager::AddNode(
   // TODO(PeterJ): Use local endpoint as well
   connections_->Connect(their_endpoint_pair.external,
                         [=](asio::error_code error, Connections::ConnectResult result) {
-    std::cout << "onconnect\n";
     if (!weak_connections.lock()) {
       return;
     }
@@ -206,14 +200,10 @@ void ConnectionManager::StartReceiving() {
   std::weak_ptr<Connections> weak_connections = connections_;
 
   connections_->Receive([=](asio::error_code error, Connections::ReceiveResult result) {
-    std::cout << this << " 0 ConnectionManager::Received " << &error << "\n";
-    std::cout << this << " 1 ConnectionManager::Received " << error.message() << "\n";
-    std::cout << this << " 2 ConnectionManager::Received \n";
     if (!weak_connections.lock()) return;
     if (error) {
       return HandleConnectionLost(result.his_address);
     }
-    std::cout << this << " 3 ConnectionManager::Received " << hex::Substr(result.message) << "\n";
     auto h = std::move(on_receive_);
     if (h) {
       h(std::move(result.his_address), std::move(result.message));

@@ -77,12 +77,6 @@ class ConnectionManager {
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
-//~ConnectionManager() = default;
-  ~ConnectionManager() {
-    std::cerr << this << " ~ConnectionManager begin\n";
-    connections_.reset();
-    std::cerr << this << " ~ConnectionManager end\n";
-  }
 
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
