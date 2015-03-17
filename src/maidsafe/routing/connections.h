@@ -101,6 +101,7 @@ class Connections {
 
  private:
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
+  void OnReceive(asio::error_code, ReceiveResult);
 
   template<class Handler, class... Args>
   void post(const Handler& handler, Args&&... args);
@@ -118,7 +119,16 @@ class Connections {
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
   std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
-  AsyncQueue<asio::error_code, ReceiveResult> receive_queue_;
+
+  struct ReceiveInput {
+    asio::error_code error;
+    ReceiveResult    result;
+  };
+
+  using ReceiveOutput = std::function<void(asio::error_code, ReceiveResult)>;
+
+  std::queue<ReceiveInput> receive_input_;
+  std::queue<ReceiveOutput> receive_output_;
 
   BoostAsioService runner_;
 
@@ -174,15 +184,29 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
-  // TODO(PeterJ): For some reason I need to wrap the handler, otherwise I get crashes
-  // in the future tests.
-  auto handler2 = [=](asio::error_code error, ReceiveResult result) mutable {
-    post2(handler, error, result);
-  };
-
-  get_io_service().post([=]() mutable { receive_queue_.AsyncPop(handler2); });
+  get_io_service().post([=]() mutable {
+      if (!receive_input_.empty()) {
+        auto input = std::move(receive_input_.front());
+        receive_input_.pop();
+        post(handler, input.error, std::move(input.result));
+      }
+      else {
+        receive_output_.push(std::move(handler));
+      }
+      });
 
   return result.get();
+}
+
+inline void Connections::OnReceive(asio::error_code error, ReceiveResult result) {
+  if (!receive_output_.empty()) {
+    auto handler = std::move(receive_output_.front());
+    receive_output_.pop();
+    post(handler, error, std::move(result));
+  }
+  else {
+    receive_input_.push(ReceiveInput{error, std::move(result)});
+  }
 }
 
 inline Connections::~Connections() {
@@ -353,8 +377,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return receive_queue_.Push(asio::error::operation_aborted,
-                                     ReceiveResult{id, std::move(*buffer)});
+          return OnReceive(asio::error::operation_aborted, ReceiveResult{id, std::move(*buffer)});
         }
 
         if (error) {
@@ -363,7 +386,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         }
 
         buffer->resize(size);
-        receive_queue_.Push(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
+        OnReceive(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
 
         if (error)
           return;
