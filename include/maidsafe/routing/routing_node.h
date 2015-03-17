@@ -64,7 +64,6 @@ class RoutingNode {
   RoutingNode(RoutingNode&&) = delete;
   RoutingNode& operator=(const RoutingNode&) = delete;
   RoutingNode& operator=(RoutingNode&&) = delete;
-  ~RoutingNode();
 
   // normal bootstrap mechanism
   template <typename CompletionToken>
@@ -160,7 +159,7 @@ RoutingNode<Child>::RoutingNode()
       message_id_(RandomUint32()),
       bootstrap_node_(boost::none),
       bootstrap_handler_(),
-      connection_manager_(our_fob_.name(),
+      connection_manager_(asio_service_.service(), our_fob_.name(),
                           [=](Address address, SerialisedMessage msg) {
                             MessageReceived(std::move(address), std::move(msg));
                           },
@@ -176,10 +175,6 @@ RoutingNode<Child>::RoutingNode()
   // need Quorum number of these signed anyway.
   cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
   StartBootstrap();
-}
-
-template <typename Child>
-RoutingNode<Child>::~RoutingNode() {
 }
 
 template <typename Child>
