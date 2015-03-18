@@ -410,17 +410,72 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
                                         serialised_put_data));
 }
 
-/*TEST_F(SentinelFunctionalTest, BEH_SentinelShuffledAdd) {
+TEST_F(SentinelFunctionalTest, BEH_SentinelShuffledAdd) {
+    const GroupAddress group_address(MakeIdentity());
+    SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 
-  const ImmutableData data(NonEmptyString(RandomBytes(1000)));
-  PutData put_message(data.TypeId(), Serialise(data));
-  SerialisedData serialised_message(Serialise(put_message));
+    // Generate PutData messages
+    const ImmutableData data(NonEmptyString(RandomBytes(3)));
+    PutData put_data(data.TypeId(), Serialise(data));
+    auto serialised_put_data(Serialise(put_data));
+    const MessageId message_id_put_data(RandomUint32());
+    auto headers_put_data(single_group.GetHeaders(GetOurDestinationAddress(),
+                                         message_id_put_data, serialised_put_data));
+    auto messages(GenerateMessages(headers_put_data,
+                                            MessageTypeTag::PutData, serialised_put_data));
+    auto message_trackers(ExtractMessageTrackers(messages));
 
-  const GroupAddress group_address(MakeIdentity());
-  const MessageId message_id(RandomUint32());
+    // Generate GetGroupKeyResponses
+    auto serialised_get_group_response(Serialise(GetGroupKeyResponse(
+                single_group.GetPublicKeys(), single_group.SignatureGroupAddress())));
+    auto headers_response(single_group.GetHeaders(GetOurDestinationAddress(),
+                                                  // WRONGLY send with SAME MESSAGE ID
+                                                  message_id_put_data,
+                                                  serialised_get_group_response));
+    auto response_messages(GenerateMessages(headers_response,
+                                            MessageTypeTag::GetGroupKeyResponse,
+                                            serialised_get_group_response));
+    auto response_trackers(ExtractMessageTrackers(response_messages));
 
+    // Mix messages
+    for ( auto message : response_messages )
+        messages.push_back(message);  // add response messages
+    std::random_device random_device;
+    std::mt19937 generator(random_device());
+    std::shuffle(std::begin(messages)+4, std::end(messages), generator);
+    for ( auto message : messages ) std::cout << "Key: " << std::get<3>(message) << std::endl;
 
-}*/
+    // Send all messages to Sentinel
+    AddToSentinel(messages);
+    auto message_returns(GetSelectedSentinelReturns(message_trackers));
+
+    EXPECT_EQ(GroupSize, CountAllSentinelReturns(message_returns));
+    EXPECT_EQ(GroupSize, CountNoneSentinelReturns(message_returns));
+    EXPECT_FALSE(VerifyExactlyOneResponse(message_returns));
+    EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
+    EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
+
+    // Send all GetGroupKeyResponses to Sentinel
+    AddToSentinel(response_messages);
+    auto response_returns(GetSelectedSentinelReturns(response_trackers));
+    //auto expected_valid_response_return(
+    //                      GetSelectedSentinelReturns(expected_valid_response_tracker));
+
+    EXPECT_EQ(GroupSize, CountAllSentinelReturns(response_returns));
+    EXPECT_EQ(GroupSize - 1, CountNoneSentinelReturns(response_returns));
+    //EXPECT_EQ(0, CountNoneSentinelReturns(expected_valid_response_return));
+    EXPECT_TRUE(VerifyExactlyOneResponse(response_returns));
+    EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
+    EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
+
+    EXPECT_TRUE(VerifyMatchSentinelReturn(GetSingleSentinelReturn(response_returns),
+                                          message_id_put_data,
+                                          Authority::client_manager,
+                                          GetOurDestinationAddress(),
+                                          single_group.SignatureGroupAddress(),
+                                          MessageTypeTag::PutData,
+                                          serialised_put_data));
+}
 
 
 /* //Simply to time surrounding execution time,
