@@ -62,8 +62,11 @@ class SignatureGroup {
 
   std::map<Address, asymm::PublicKey> GetPublicKeys() {
       std::map<Address, asymm::PublicKey> result;
-      for (auto node : nodes_)
-          result.insert(std::make_pair(Address(node.name()), asymm::PublicKey(node.public_key())));
+      for (auto node : nodes_) {
+          std::cout << "GetPublicKeys : " << Identity(node.name())
+                    << std::endl;
+          result.insert(std::make_pair(Address(node.name()), node.public_key()));
+      }
       return result;
   }
 
@@ -216,19 +219,22 @@ std::vector<SentinelAddMessage>
 
 void SentinelFunctionalTest::SendMessages(std::vector<SentinelAddMessage> messages) {
   for (auto message : messages ) {
+    std::cout << "Node " << Identity(std::get<0>(message).FromNode()) << std::endl;
     auto sentinel_response( sentinel_.Add(std::get<0>(message), // Message Header
                                           std::get<1>(message), // Message Type Tag
                                           std::get<2>(message))); // Serialised Message
     SaveSentinelReturn(std::get<3>(message), sentinel_response); // Sentinel message tracking key
-    if (!sentinel_response) {
+/*    if (!sentinel_response) {
       std::cout << "Add: key " << std::get<3>(message)
-                << " message " << std::string(std::get<2>(message).begin(), std::get<2>(message).end())
+               // << " message " << std::string(std::get<2>(message).begin(),
+                //                              std::get<2>(message).end())
                 << " BOOST::NONE" << std::endl;
     } else {
       std::cout << "Add: key " << std::get<3>(message)
-                << " message " << std::string(std::get<2>(message).beging(), std::get<2>(message).end())
+                //<< " message " << std::string(std::get<2>(*sentinel_response).begin(),
+                //                              std::get<2>(*sentinel_response).end())
                 << " SENTINEL " << std::endl;
-    }
+    }*/
   }
 }
 
@@ -370,7 +376,7 @@ size_t CountAllSentinelReturns(const SentinelReturns sentinel_returns) {
 size_t CountNoneSentinelReturns(const SentinelReturns sentinel_returns) {
   size_t i(0);
   for ( auto sentinel_return : sentinel_returns ) {
-    std::cout << "CountNoneSentinel: messageKey " << sentinel_return.first << std::endl;
+//    std::cout << "CountNoneSentinel: messageKey " << sentinel_return.first << std::endl;
     if (sentinel_return.second == boost::none) i++;
   }
   return i;
@@ -438,7 +444,7 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
   SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 
   // Generate PutData messages
-  const ImmutableData data(NonEmptyString(RandomBytes(1000)));
+  const ImmutableData data(NonEmptyString(RandomBytes(3)));
   PutData put_data(data.TypeId(), Serialise(data));
   auto serialised_put_data(Serialise(put_data));
   const MessageId message_id_put_data(RandomUint32());
