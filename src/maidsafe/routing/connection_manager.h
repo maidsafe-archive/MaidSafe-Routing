@@ -116,7 +116,7 @@ class ConnectionManager {
 
   bool CloseGroupMember(const Address& their_id);
 
-  uint32_t Size() { return routing_table_.Size(); }
+  std::size_t Size() { return routing_table_.Size(); }
 
   template <class Handler /* void (error_code) */>
   void Send(const Address&, const SerialisedMessage&, Handler);

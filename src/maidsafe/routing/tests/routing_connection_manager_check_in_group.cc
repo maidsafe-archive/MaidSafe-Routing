@@ -16,6 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <future>
 #include <memory>
 #include <vector>
 
@@ -62,7 +63,7 @@ struct FutureHandler {
 
 NodeInfo GenerateNodeInfo() {
   passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
-  NodeInfo node_info(NodeId(RandomString(NodeId::kSize)), fob, false);
+  NodeInfo node_info(MakeIdentity(), fob, false);
   return std::move(node_info);
 }
 
@@ -73,9 +74,12 @@ EndpointPair LocalEndpointPair(unsigned short port) {
 TEST(ConnectionManagerTest, FUNC_AddNodes) {
   NodeInfo c1_info = GenerateNodeInfo();
   NodeInfo c2_info = GenerateNodeInfo();
+  AsioService asio_service(10);
 
-  ConnectionManager cm1(c1_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
-  ConnectionManager cm2(c2_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+  ConnectionManager cm1(asio_service.service(), c1_info.id, ConnectionManager::OnReceive(),
+                        ConnectionManager::OnConnectionLost());
+  ConnectionManager cm2(asio_service.service(), c2_info.id, ConnectionManager::OnReceive(),
+                        ConnectionManager::OnConnectionLost());
 
   FutureHandler cm1_result("cm1");
   FutureHandler cm2_result("cm2");
