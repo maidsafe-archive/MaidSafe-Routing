@@ -157,7 +157,7 @@ template <class Handler /* void (error_code) */>
 void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
                              Handler handler) {
   std::weak_ptr<Connections> guard = connections_;
-//  LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
+  LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
   connections_->Send(addr, message, [=](asio::error_code error) {
       handler(error);
 

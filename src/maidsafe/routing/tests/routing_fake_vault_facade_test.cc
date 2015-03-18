@@ -16,8 +16,13 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/common/test.h"
 #include "maidsafe/routing/tests/utils/fake_vault_facade.h"
+
+#include "asio/spawn.hpp"
+
+#include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/test.h"
+#include "maidsafe/common/data_types/immutable_data.h"
 
 namespace maidsafe {
 
@@ -27,10 +32,25 @@ namespace test {
 
 TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   vault::test::FakeVaultFacade vault1;
-  Sleep(std::chrono::seconds(2));
+  Sleep(std::chrono::seconds(1));
   vault::test::FakeVaultFacade vault2;
   //ASSERT_NO_THROW(vault::test::FakeVaultFacade vault);
-  Sleep(std::chrono::seconds(20));
+  Sleep(std::chrono::seconds(5));
+
+  LOG(kInfo) << "=================================================================================";
+
+  AsioService asio_service(1);
+  asio::spawn(asio_service.service(), [&](asio::yield_context yield) {
+    std::error_code error;
+    vault2.Put(ImmutableData(NonEmptyString(RandomAlphaNumericBytes(1, 50))), yield[error]);
+    EXPECT_FALSE(error);
+    passport::MaidAndSigner maid_and_signer(passport::CreateMaidAndSigner());
+    vault1.Put(passport::PublicMaid(maid_and_signer.first), yield[error]);
+    EXPECT_FALSE(error);
+  });
+
+  Sleep(std::chrono::seconds(1));
+  asio_service.Stop();
 }
 
 //TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {

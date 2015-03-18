@@ -137,7 +137,6 @@ class RoutingNode {
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
- private:
   using unique_identifier = std::pair<Address, uint32_t>;
   AsioService asio_service_;
   passport::Pmid our_fob_;
@@ -212,7 +211,7 @@ void RoutingNode<Child>::PutOurPublicPmid() {
   auto type_id = our_public_pmid.TypeId();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed and may be sent to ClientManager
-    MessageHeader our_header(std::make_pair(Destination(Address(name)), boost::none),
+    MessageHeader our_header(std::make_pair(Destination(name), boost::none),
                              OurSourceAddress(), ++message_id_, Authority::client);
     // As this node is not yet connected to its close group, client authority seems appropriate
     PutData request(type_id, Serialise(our_public_pmid));
@@ -255,15 +254,15 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(DataType data, CompletionToke
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio::post(asio_service_.service(), [=] {
-    MessageHeader our_header(std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
-                             OurSourceAddress(), ++message_id_, Authority::client);
-    PutData request(DataType::Tag::kValue, data.serialise());
+    MessageHeader our_header(
+        std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
+        OurSourceAddress(), ++message_id_, Authority::client);
+    PutData request(data.TypeId(), Serialise(data));
     // FIXME(dirvine) For client in real put this needs signed :08/02/2015
-    // fixme data should serialise properly and not require the above call to serialse()
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
-    for (const auto& target : connection_manager_.GetTarget(OurId())) {
+    for (const auto& target : connection_manager_.GetTarget(OurId()))
       connection_manager_.Send(target.id, message, [](asio::error_code) {});
-    }
+    connection_manager_.Send(*bootstrap_node_, message, [](asio::error_code) {});
   });
   return result.get();
 }
