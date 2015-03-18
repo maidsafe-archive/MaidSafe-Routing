@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include <future>
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
@@ -62,7 +63,7 @@ struct FutureHandler {
 
 NodeInfo GenerateNodeInfo() {
   passport::PublicPmid fob{passport::Pmid(passport::Anpmid())};
-  NodeInfo node_info(NodeId(RandomString(NodeId::kSize)), fob, false);
+  NodeInfo node_info(MakeIdentity(), fob, false);
   return std::move(node_info);
 }
 
@@ -74,8 +75,13 @@ TEST(ConnectionManagerTest, FUNC_AddNodes) {
   NodeInfo c1_info = GenerateNodeInfo();
   NodeInfo c2_info = GenerateNodeInfo();
 
-  ConnectionManager cm1(c1_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
-  ConnectionManager cm2(c2_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+  asio::io_service ios;
+  auto work = std::make_shared<asio::io_service::work>(ios);
+
+  ConnectionManager cm1(ios, c1_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+  ConnectionManager cm2(ios, c2_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
+
+  std::thread thread([&]() { ios.run(); });
 
   FutureHandler cm1_result("cm1");
   FutureHandler cm2_result("cm2");
@@ -85,6 +91,12 @@ TEST(ConnectionManagerTest, FUNC_AddNodes) {
 
   cm1_result.Get();
   cm2_result.Get();
+
+  cm1.Shutdown();
+  cm2.Shutdown();
+
+  work.reset();
+  thread.join();
 }
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {

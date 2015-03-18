@@ -95,8 +95,6 @@ class Connections {
 
   boost::asio::io_service& get_io_service();
 
-  std::weak_ptr<boost::none_t> Guard() { return destroy_indicator_; }
-
   void Wait();
 
  private:
@@ -131,16 +129,13 @@ class Connections {
   std::queue<ReceiveOutput> receive_output_;
 
   BoostAsioService runner_;
-
-  std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
 inline Connections::Connections(asio::io_service& ios, const Address& our_node_id)
     : service(ios),
       work_(new asio::io_service::work(ios)),
       our_id_(our_node_id),
-      runner_(1),
-      destroy_indicator_(new boost::none_t)
+      runner_(1)
 {}
 
 template <class Token>
@@ -215,7 +210,6 @@ inline void Connections::OnReceive(asio::error_code error, ReceiveResult result)
 }
 
 inline Connections::~Connections() {
-  destroy_indicator_.reset();
   Shutdown();
   runner_.Stop();
 }
