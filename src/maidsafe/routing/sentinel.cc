@@ -16,6 +16,8 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <map>
+
 #include "cereal/types/utility.hpp"
 
 #include "maidsafe/common/rsa.h"
@@ -34,7 +36,7 @@ boost::optional<Sentinel::ResultType> Sentinel::Add(MessageHeader header,
                                                     MessageTypeTag tag,
                                                     SerialisedMessage message) {
   if (tag == MessageTypeTag::GetClientKeyResponse) {
-    if (!header.FromGroup()) // keys should always come from a group, one reponse should be enough
+    if (!header.FromGroup())  // keys should always come from a group, one reponse should be enough
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
     auto keys(node_key_accumulator_.Add(*header.FromGroup(),
                                         std::make_tuple(header, tag, std::move(message)),

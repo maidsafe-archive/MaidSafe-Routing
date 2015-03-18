@@ -64,7 +64,7 @@ class SentinelTest : public testing::Test {
                                     asymm::Sign(rsa::PlainText(add_info.serialised), private_key));
     return add_info;
   }
-  
+
   void CreateMaidKeys(size_t quantity) {
     while (quantity-- > 0)
       maid_nodes_.emplace_back(passport::CreateMaidAndSigner().first);
@@ -74,7 +74,7 @@ class SentinelTest : public testing::Test {
     while (quantity-- > 0)
       pmid_nodes_.emplace_back(passport::CreatePmidAndSigner().first);
   }
-  
+
   SentinelAddInfo CreateGetKeyResponse(const passport::Maid& maid, MessageId message_id,
                                        Address source, passport::Pmid& pmid) {
     GetClientKeyResponse get_client_response(Address(maid.name()), maid.public_key());
@@ -131,7 +131,6 @@ class SentinelTest : public testing::Test {
     return group_message;
   }
 
-  
  protected:
   void SortPmidNodes(const Address& target) {
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
@@ -251,7 +250,7 @@ class AccountTransfer : public AccountTransferInfo {
        merged += dynamic_cast<AccountTransfer*>(accounts.at(index).get())->value();
 
     return maidsafe::make_unique<AccountTransfer>(Name(), merged);
- }
+  }
 
  private:
   int value_;

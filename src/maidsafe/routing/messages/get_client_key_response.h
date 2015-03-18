@@ -53,8 +53,8 @@ class GetClientKeyResponse {
       archive(address_, public_key_);
   }
 
-   Address address() const { return address_; }
-   asymm::PublicKey public_key() const { return public_key_; }
+  Address address() const { return address_; }
+  asymm::PublicKey public_key() const { return public_key_; }
 
  private:
   Address address_;
@@ -65,5 +65,4 @@ class GetClientKeyResponse {
 
 }  // namespace maidsafe
 
-
-#endif // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_RESPONSE_H_

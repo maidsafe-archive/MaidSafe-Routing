@@ -68,4 +68,4 @@ class GetClientKey {
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_CLIENT_KEY_H_
