@@ -68,4 +68,4 @@ class GetGroupKey {
 
 }  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_H_

@@ -63,10 +63,10 @@ std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(
   return std::set<Address, Comparison>(Comparison(target_node));
   // for (const auto& peer : peers_) {
   //  result.insert(peer.first);
-  //}
+  // }
   // return result;
   // auto nodes(routing_table_.TargetNodes(target_node));
-  ////nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+  //// nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
   ////                           [](NodeInfo& node) { return !node.connected(); }),
   ////            std::end(nodes));
   // return nodes;
@@ -76,7 +76,7 @@ std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(
 //    const Address& node) {
 //  routing_table_.DropNode(node);
 //  return GroupChanged();
-//}
+// }
 
 optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
   // routing_table_.DropNode(their_id);
@@ -226,7 +226,7 @@ void ConnectionManager::StartReceiving(PeerNode& node) {
 //  auto close_group(routing_table_.OurCloseGroup());
 //  return std::any_of(std::begin(close_group), std::end(close_group),
 //                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
-//}
+// }
 
 optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
   auto new_group(OurCloseGroup());

@@ -83,7 +83,7 @@ class ConnectionManager {
 
   bool IsManaged(const Address& node_to_add) const;
   std::set<Address, Comparison> GetTarget(const Address& target_node) const;
-  //boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+  // boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
   // routing wishes to drop a specific node (may be a node we cannot connect to)
   boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
   void AddNode(boost::optional<NodeInfo> node_to_add, EndpointPair);
@@ -100,9 +100,9 @@ class ConnectionManager {
     return result;
   }
 
-  //size_t CloseGroupBucketDistance() const {
-  //  return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
-  //}
+  // size_t CloseGroupBucketDistance() const {
+  //   return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
+  // }
 
   bool AddressInCloseGroupRange(const Address& address) const {
     if (peers_.size() < GroupSize)
@@ -119,7 +119,7 @@ class ConnectionManager {
     return found_i->second.node_info().dht_fob.public_key();
   }
 
-  //bool CloseGroupMember(const Address& their_id);
+  // bool CloseGroupMember(const Address& their_id);
 
   uint32_t Size() { return static_cast<uint32_t>(peers_.size()); }
 
@@ -163,7 +163,7 @@ class ConnectionManager {
   PublicPmid our_fob_;
   Address our_id_;
 
-  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;
+  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;  // NOLINT
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
   std::map<Address, PeerNode, Comparison> peers_;
 
