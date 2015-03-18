@@ -20,6 +20,7 @@
 #define MAIDSAFE_ROUTING_ACCOUNT_TRANSFER_INFO_H_
 
 #include <cstdint>
+#include <vector>
 
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/polymorphic.hpp"

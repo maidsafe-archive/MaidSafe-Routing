@@ -185,7 +185,7 @@ RoutingNode<Child>::RoutingNode()
   //    ConnectToCloseGroup();
   //    return;
   //  }
-  //});
+  // });
 
   // PeterJ: Read endpoints from database and connect to them.
   // for (auto& node : bootstrap_handler_.ReadBootstrapContacts()) {
@@ -198,7 +198,7 @@ RoutingNode<Child>::RoutingNode()
   //  });
   //  if (bootstrap_node_)
   //    break;
-  //}
+  // }
 }
 
 template <typename Child>
@@ -420,7 +420,7 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 // template <typename Child>
 // void RoutingNode<Child>::ConnectionLost(Address peer) {
 //  connection_manager_.LostNetworkConnection(peer);
-//}
+// }
 
 // reply with our details;
 template <typename Child>
