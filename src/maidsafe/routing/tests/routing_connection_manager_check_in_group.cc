@@ -36,7 +36,7 @@ namespace routing {
 
 namespace test {
 
-TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
+/*TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   boost::asio::io_service io_service;
   passport::PublicPmid our_public_pmid(passport::CreatePmidAndSigner().first);
   auto our_id(our_public_pmid.Name());
@@ -62,7 +62,7 @@ TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {
   // EXPECT_EQ(GroupSize, close_group.size());
   // for (size_t i(0); i < GroupSize; ++i)
   //   EXPECT_EQ(addresses.at(i), close_group.at(i).id);
-}
+}*/
 
 }  // namespace test
 
