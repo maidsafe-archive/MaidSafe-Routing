@@ -108,6 +108,8 @@ class Connections {
 
  private:
   asio::io_service& service;
+  std::unique_ptr<asio::io_service::work> work_;
+
   Address our_id_;
 
   std::function<void(Address, const SerialisedMessage&)> on_receive_;
@@ -134,7 +136,12 @@ class Connections {
 };
 
 inline Connections::Connections(asio::io_service& ios, const Address& our_node_id)
-    : service(ios), our_id_(our_node_id), runner_(1), destroy_indicator_(new boost::none_t) {}
+    : service(ios),
+      work_(new asio::io_service::work(ios)),
+      our_id_(our_node_id),
+      runner_(1),
+      destroy_indicator_(new boost::none_t)
+{}
 
 template <class Token>
 AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
@@ -397,6 +404,7 @@ inline boost::asio::io_service& Connections::get_io_service() { return runner_.s
 
 inline void Connections::Shutdown() {
   get_io_service().post([=]() {
+    work_.reset();
     acceptors_.clear();
     connections_.clear();
     id_to_endpoint_map_.clear();

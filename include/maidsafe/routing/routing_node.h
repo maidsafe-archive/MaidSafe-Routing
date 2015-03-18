@@ -221,8 +221,8 @@ void RoutingNode<Child>::PutOurPublicPmid() {
     connection_manager_.Send(*bootstrap_node_, message, [=](asio::error_code error) {
         if (error)
           LOG(kWarning) << "Failed to send to  < " << *this->bootstrap_node_;
-        else
-          LOG(kVerbose) << "Sent PutOurPublicPmid to : " << *this->bootstrap_node_;
+        //else
+          //LOG(kVerbose) << "Sent PutOurPublicPmid to : " << *this->bootstrap_node_;
     });
   });
 }
@@ -293,7 +293,7 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
   FindGroup message(NodeAddress(OurId()), OurId());
   MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),
                        SourceAddress{OurSourceAddress()}, ++message_id_, Authority::node);
-  if (bootstrap_node_) {
+  if (bootstrap_node_) {  // TODO cleanup
     // this is special case , so probably have special function in connection manager to send to
     // bootstrap node
     auto msg_data = Serialise(header, MessageToTag<FindGroup>::value(), message);
@@ -301,13 +301,13 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
       if (error) {
         LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
       } else {
-        LOG(kInfo) << "Sent Find group";
+//        LOG(kInfo) << "Sent Find group";
       }
     });
     return;
   }
   for (const auto& target : connection_manager_.GetTarget(OurId())) {
-    auto msg_data = Serialise(header, MessageToTag<Connect>::value(), message);
+    auto msg_data = Serialise(header, MessageToTag<FindGroup>::value(), message);
     connection_manager_.Send(target.id, std::move(msg_data), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "rudp cannot send" << error.message();
@@ -317,10 +317,9 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 }
 
 
-
 template <typename Child>
 void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
-  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<< hex::Substr(serialised_message) << ">>>";
+//  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<< hex::Substr(serialised_message) << ">>>";
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
@@ -331,8 +330,9 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  LOG(kVerbose) << "MessageReceived from " << peer_id << " PutData " << header.MessageId()
-                << "tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
+  LOG(kVerbose) << " [ " << OurId() << " ] "<< " Msg from  [ " << peer_id
+                << " ]    MessageId " << header.MessageId()
+                << "  tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
 
 
   if (filter_.Check(header.FilterValue()))
@@ -546,19 +546,18 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
     connection_manager_.Send(node.id, message, [](asio::error_code) {});
   }
 
-  LOG(kInfo) << "FindGroupResponse msg    <<< "<< hex::Substr(message) << ">>>";
   // if node in my group && in non routing list send it to non_routnig list as well
   //if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle message part !
 
   // FIXME (Prakash) Need to send to bootstrap node id rt is empty ? temp code to get past zero state. Delete me !!
   auto temp = (*original_header.ReplyToAddress()).data;
-  LOG(kWarning) << "FindGroupResp sent to " << temp << " but fails !!!!!!!!!!!!!!!!!!!!";
+  //LOG(kVerbose) << "FindGroupResp sent to " << temp ;
   connection_manager_.Send(temp, message,
                            [=](asio::error_code error) {
                              if (error) {
                                LOG(kWarning) << "Could not send to " << temp;
                              } else {
-                               LOG(kInfo) << "Sent FindGroupResponse to " << temp;
+                               //LOG(kVerbose) << "Sent FindGroupResponse to " << temp;
                              }
                            });
 }
@@ -569,6 +568,7 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
+    LOG(kInfo) << "HandleMessage -- FindGroupResponse msg";
   for (const auto node_pmid : find_group_reponse.group()) {
     Address node_id(node_pmid.Name());
     if (!connection_manager_.SuggestNodeToAdd(node_id))
@@ -576,6 +576,19 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     Connect message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
     MessageHeader header(DestinationAddress(std::make_pair(Destination(node_id), boost::none)),
                          SourceAddress{OurSourceAddress()}, ++message_id_, Authority::nae_manager);
+
+    if (bootstrap_node_) {  // TODO cleanup
+      auto message_data = Serialise(header, MessageToTag<Connect>::value(), message);
+      connection_manager_.Send(*bootstrap_node_,
+          std::move(message_data), [](asio::error_code error) {
+            if (error) {
+              LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
+            } else {
+              LOG(kInfo) << "Sent Connect ";
+           }
+        });
+      return;
+    }
     for (const auto& target : connection_manager_.GetTarget(node_id)) {
       // FIXME(Team): Do the serialisation only once as it doesn't depend on the target.
       auto message_data = Serialise(header, MessageToTag<Connect>::value(), message);
