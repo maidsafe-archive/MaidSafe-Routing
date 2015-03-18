@@ -32,7 +32,7 @@
 #include "maidsafe/crux/acceptor.hpp"
 #include "maidsafe/crux/socket.hpp"
 
-#include "maidsafe/routing/async_queue.h"
+#include "maidsafe/routing/apply_tuple.h"
 #include "maidsafe/routing/async_exchange.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/utils.h"
@@ -101,11 +101,10 @@ class Connections {
 
  private:
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
+  void OnReceive(asio::error_code, ReceiveResult);
 
   template<class Handler, class... Args>
-  void post(const Handler& handler, Args&&... args);
-  template<class Handler, class Arg1> void post2(const Handler& handler, const Arg1&);
-  template<class Handler, class Arg1, class Arg2> void post2(const Handler& handler, const Arg1&, const Arg2&);
+  void post(Handler&& handler, Args&&... args);
 
  private:
   asio::io_service& service;
@@ -118,7 +117,16 @@ class Connections {
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
   std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
-  AsyncQueue<asio::error_code, ReceiveResult> receive_queue_;
+
+  struct ReceiveInput {
+    asio::error_code error;
+    ReceiveResult    result;
+  };
+
+  using ReceiveOutput = std::function<void(asio::error_code, ReceiveResult)>;
+
+  std::queue<ReceiveInput> receive_input_;
+  std::queue<ReceiveOutput> receive_output_;
 
   BoostAsioService runner_;
 
@@ -174,25 +182,35 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
-  // TODO(PeterJ): For some reason I need to wrap the handler, otherwise I get crashes
-  // in the future tests.
-  auto handler2 = [=](asio::error_code error, ReceiveResult result) mutable {
-    post2(handler, error, result);
-  };
-
-  get_io_service().post([=]() mutable { receive_queue_.AsyncPop(handler2); });
+  get_io_service().post([=]() mutable {
+      if (!receive_input_.empty()) {
+        auto input = std::move(receive_input_.front());
+        receive_input_.pop();
+        post(handler, input.error, std::move(input.result));
+      }
+      else {
+        receive_output_.push(std::move(handler));
+      }
+      });
 
   return result.get();
 }
 
+inline void Connections::OnReceive(asio::error_code error, ReceiveResult result) {
+  if (!receive_output_.empty()) {
+    auto handler = std::move(receive_output_.front());
+    receive_output_.pop();
+    post(handler, error, std::move(result));
+  }
+  else {
+    receive_input_.push(ReceiveInput{error, std::move(result)});
+  }
+}
+
 inline Connections::~Connections() {
-  std::cerr << this << " ~Connections 1\n";
   destroy_indicator_.reset();
-  std::cerr << this << " ~Connections 2\n";
   Shutdown();
-  std::cerr << this << " ~Connections 3\n";
   runner_.Stop();
-  std::cerr << this << " ~Connections 4\n";
 }
 
 template <class Token>
@@ -357,9 +375,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 1\n";
-          return receive_queue_.Push(asio::error::operation_aborted,
-                                     ReceiveResult{id, std::move(*buffer)});
+          return OnReceive(asio::error::operation_aborted, ReceiveResult{id, std::move(*buffer)});
         }
 
         if (error) {
@@ -368,8 +384,7 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         }
 
         buffer->resize(size);
-        std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 2 " << &error << " " << error.message() << "\n";
-        receive_queue_.Push(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
+        OnReceive(convert::ToStd(error), ReceiveResult{id, std::move(*buffer)});
 
         if (error)
           return;
@@ -382,13 +397,9 @@ inline boost::asio::io_service& Connections::get_io_service() { return runner_.s
 
 inline void Connections::Shutdown() {
   get_io_service().post([=]() {
-    std::cerr << this << " Shutdown 1\n";
     acceptors_.clear();
-    std::cerr << this << " Shutdown 2\n";
     connections_.clear();
-    std::cerr << this << " Shutdown 3\n";
     id_to_endpoint_map_.clear();
-    std::cerr << this << " Shutdown 4\n";
   });
 }
 
@@ -397,22 +408,10 @@ inline void Connections::Wait() {
 }
 
 template<class Handler, class... Args>
-void Connections::post(const Handler& handler, Args&&... args) {
-  std::tuple<Args...> tuple(std::forward<Args>(args)...);
+void Connections::post(Handler&& handler, Args&&... args) {
+  std::tuple<typename std::decay<Args>::type...> tuple(std::forward<Args>(args)...);
   service.post([handler, tuple]() mutable {
-      detail::ApplyTuple(handler, tuple);
-      });
-}
-
-template<class Handler, class Arg1> void Connections::post2(const Handler& handler, const Arg1& arg) {
-  service.post([handler, arg]() {
-      handler(arg);
-      });
-}
-
-template<class Handler, class Arg1, class Arg2> void Connections::post2(const Handler& handler, const Arg1& arg1, const Arg2& arg2) {
-  service.post([=]() {
-      handler(arg1, arg2);
+      ApplyTuple(handler, tuple);
       });
 }
 

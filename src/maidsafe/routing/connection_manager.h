@@ -77,12 +77,6 @@ class ConnectionManager {
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
-//~ConnectionManager() = default;
-  ~ConnectionManager() {
-    std::cerr << this << " ~ConnectionManager begin\n";
-    connections_.reset();
-    std::cerr << this << " ~ConnectionManager end\n";
-  }
 
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
@@ -133,6 +127,8 @@ class ConnectionManager {
 
   template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
   void Connect(asio::ip::udp::endpoint, Handler);
+
+  void Shutdown() { connections_.reset(); }
 
  private:
   boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);

@@ -31,7 +31,6 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   vault::test::FakeVaultFacade vault2;
   //ASSERT_NO_THROW(vault::test::FakeVaultFacade vault);
   Sleep(std::chrono::seconds(20));
-  std::cerr << "DUN!\n";
 }
 
 //TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {
