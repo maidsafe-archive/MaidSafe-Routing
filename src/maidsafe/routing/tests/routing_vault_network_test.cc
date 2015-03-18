@@ -291,20 +291,20 @@ TEST(VaultNetworkTest, FUNC_CreateNetPutGetData) {
   // other async actions (same with the tests below).
 
 
-  LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
+//  LruCache<Identity, SerialisedMessage> cache(0, std::chrono::seconds(0));
 
-  RoutingNode<VaultFacade> n;
+//  RoutingNode<VaultFacade> n;
 
-  NonEmptyString value(RandomAlphaNumericBytes(65));
-  Identity name(crypto::Hash<crypto::SHA512>(value));
-  MutableData a(name, value);
-  ImmutableData b(value);
+//  NonEmptyString value(RandomAlphaNumericBytes(65));
+//  Identity name(crypto::Hash<crypto::SHA512>(value));
+//  MutableData a(name, value);
+//  ImmutableData b(value);
 
-  Address from(MakeIdentity());
-  Address to(MakeIdentity());
+//  Address from(MakeIdentity());
+//  Address to(MakeIdentity());
 
-  n.Get(b.NameAndType(), [](asio::error_code /* error */) {});
-  n.Get(a.NameAndType(), [](asio::error_code /* error */) {});
+//  n.Get(b.NameAndType(), [](asio::error_code /* error */) {});
+//  n.Get(a.NameAndType(), [](asio::error_code /* error */) {});
 
   // n.Put<ImmutableData>(to, b, [](asio::error_code /* error */) {});
   // n.Put<MutableData>(to, a, [](asio::error_code /* error */) {});

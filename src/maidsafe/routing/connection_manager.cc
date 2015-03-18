@@ -32,7 +32,6 @@
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
-#include "maidsafe/routing/async_exchange.h"
 
 namespace maidsafe {
 
@@ -44,203 +43,191 @@ using std::move;
 using boost::none_t;
 using boost::optional;
 
-ConnectionManager::ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob)
-    : io_service_(ios),
-      our_fob_(std::move(our_fob)),
-      our_id_(our_fob_.Name()),
-      peers_(Comparison(our_id_)),
+ConnectionManager::ConnectionManager(asio::io_service& ios, Address our_id, OnReceive on_receive,
+                                     OnConnectionLost on_connection_lost)
+    : mutex_(),
+      our_accept_port_(5483),
+      routing_table_(our_id),
+      connected_non_routing_nodes_(),
+      on_receive_(std::move(on_receive)),
+      on_connection_lost_(std::move(on_connection_lost)),
       current_close_group_(),
-      destroy_indicator_(new boost::none_t()) {}
-
-bool ConnectionManager::IsManaged(const Address& node_id) const {
-  return peers_.find(node_id) != peers_.end();
-  // return routing_table_.CheckNode(node_to_add);
+      connections_(new Connections(ios, our_id)) {
+  StartReceiving();
+  StartAccepting();
 }
 
-std::set<Address, ConnectionManager::Comparison> ConnectionManager::GetTarget(
-    const Address& target_node) const {
-  // TODO(PeterJ): The previous code was quite more complicated, so recheck correctness of this one.
-  return std::set<Address, Comparison>(Comparison(target_node));
-  // for (const auto& peer : peers_) {
-  //  result.insert(peer.first);
-  // }
-  // return result;
-  // auto nodes(routing_table_.TargetNodes(target_node));
-  //// nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
-  ////                           [](NodeInfo& node) { return !node.connected(); }),
-  ////            std::end(nodes));
-  // return nodes;
+bool ConnectionManager::SuggestNodeToAdd(const Address& node_to_add) const {
+  return routing_table_.CheckNode(node_to_add);
 }
 
-// boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
+std::vector<NodeInfo> ConnectionManager::GetTarget(const Address& target_node) const {
+  auto nodes(routing_table_.TargetNodes(target_node));
+  nodes.erase(std::remove_if(std::begin(nodes), std::end(nodes),
+                             [](NodeInfo& node) { return !node.connected; }),
+              std::end(nodes));
+  return nodes;
+}
+
+std::set<Address> ConnectionManager::GetNonRoutingNodes() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return connected_non_routing_nodes_;
+}
+
+//boost::optional<CloseGroupDifference> ConnectionManager::LostNetworkConnection(
 //    const Address& node) {
 //  routing_table_.DropNode(node);
 //  return GroupChanged();
 // }
 
-optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
-  // routing_table_.DropNode(their_id);
-  peers_.erase(their_id);
-  return GroupChanged();
+//optional<CloseGroupDifference> ConnectionManager::DropNode(const Address& their_id) {
+//  routing_table_.DropNode(their_id);
+//  // FIXME(Prakash) remove connection ?
+//  return GroupChanged();
+//}
+void ConnectionManager::DropNode(const Address& their_id) {
+  connections_->Drop(their_id);
 }
 
-// acceptor_(io_service_, crux::endpoint(boost::asio::ip::udp::v4(), 5483)),
-void ConnectionManager::StartAccepting(unsigned short port) {
-  auto acceptor_i = acceptors_.find(port);
+void ConnectionManager::StartAccepting() {
+  std::weak_ptr<Connections> weak_connections = connections_;
 
-  if (acceptor_i == acceptors_.end()) {
-    crux::endpoint endpoint(boost::asio::ip::udp::v4(), port);
-    auto acceptor = std::unique_ptr<crux::acceptor>(new crux::acceptor(io_service_, endpoint));
-    auto pair = acceptors_.insert(std::make_pair(port, std::move(acceptor)));
-    acceptor_i = pair.first;
-  }
+  auto accept_handler = [=](asio::error_code error, Connections::AcceptResult result) {
+    auto connections = weak_connections.lock();
 
-  auto socket = make_shared<crux::socket>(io_service_);
-
-  auto& acceptor = acceptor_i->second;
-
-  weak_ptr<none_t> destroy_guard = destroy_indicator_;
-
-  acceptor->async_accept(*socket, [=](boost::system::error_code error) {
-    if (!destroy_guard.lock())
+    if (!connections) {
       return;
+    }
 
-    if (error) {
-      if (error == boost::asio::error::operation_aborted) {
+    if (error == asio::error::operation_aborted || error == asio::error::already_started) {
+      return;
+    }
+
+    if (!error) {
+      HandleAccept(std::move(result));
+
+      // The handler may have destroyed 'this'.
+      if (!weak_connections.lock()) {
         return;
       }
     }
 
-    StartAccepting(port);
+    return StartAccepting();
+  };
 
-    AsyncExchange(*socket, Serialise(our_fob_),
-                  [=](boost::system::error_code error, SerialisedMessage data) {
-      if (!destroy_guard.lock())
-        return;
-
-      if (error)
-        return;
-
-      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
-      Address their_id(their_public_pmid.Name());
-      InsertPeer(PeerNode(NodeInfo(std::move(their_id), std::move(their_public_pmid), true),
-                          std::move(socket)));
-    });
-  });
+  connections_->Accept(our_accept_port_, &our_accept_port_, std::move(accept_handler));
+  LOG(kInfo) << "StartAccepting() port " << our_accept_port_;
 }
 
-void ConnectionManager::AddNode(optional<NodeInfo> assumed_node_info, EndpointPair eps) {
-  static const crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+void ConnectionManager::HandleAccept(Connections::AcceptResult result) {
+  auto expected_i = expected_accepts_.find(result.his_address);
 
-  // TODO(PeterJ): Try the internal endpoint as well
-  auto endpoint = convert::ToBoost(eps.external);
+  if (expected_i != expected_accepts_.end()) {
+    auto expected = std::move(expected_i->second);
+    expected_accepts_.erase(expected_i);
 
-  auto pair_i = being_connected_.find(endpoint);
-
-  if (pair_i == being_connected_.end()) {
-    bool inserted = false;
-    auto socket = make_shared<crux::socket>(io_service_, unspecified_ep);
-    std::tie(pair_i, inserted) = being_connected_.insert(std::make_pair(endpoint, socket));
+    expected.handler(AddToRoutingTable(std::move(expected.node_info)), result.our_endpoint);
   }
+  else {
+    connected_non_routing_nodes_.insert(result.his_address);
+  }
+}
 
-  auto socket = pair_i->second;
-  weak_ptr<crux::socket> weak_socket = socket;
+void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair,
+                                      OnAddNode on_node_added) {
+  // TODO(PeterJ): Use internal endpoint as well.
+  expected_accepts_.insert(std::make_pair(node_info.id, ExpectedAccept{node_info, on_node_added}));
+  //StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
+  //  on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
+  //});
+}
 
-  socket->async_connect(convert::ToBoost(eps.external), [=](boost::system::error_code error) {
-    auto socket = weak_socket.lock();
+void ConnectionManager::AddNode(
+    NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode on_node_added) {
 
-    if (!socket)
-      return;
+  std::weak_ptr<Connections> weak_connections = connections_;
 
-    if (error) {
-      being_connected_.erase(endpoint);
+  // TODO(PeterJ): Use local endpoint as well
+  connections_->Connect(their_endpoint_pair.external,
+                        [=](asio::error_code error, Connections::ConnectResult result) {
+    if (!weak_connections.lock()) {
       return;
     }
 
-    AsyncExchange(*socket, Serialise(our_fob_),
-                  [=](boost::system::error_code error, SerialisedMessage data) {
-      auto socket = weak_socket.lock();
-
-      if (!socket)
-        return;
-
-      being_connected_.erase(endpoint);
-
-      if (error)
-        return;
-
-      PublicPmid their_public_pmid(Parse<PublicPmid>(std::move(data)));
-      Address their_id(their_public_pmid.Name());
-      NodeInfo their_node_info(std::move(their_id), std::move(their_public_pmid), true);
-
-      if (assumed_node_info && *assumed_node_info != their_node_info)
-        return;
-
-      InsertPeer(PeerNode(std::move(their_node_info), std::move(socket)));
-    });
-  });
-}
-
-void ConnectionManager::InsertPeer(PeerNode&& node_arg) {
-  const auto& id = node_arg.id();
-  const auto pair = peers_.insert(std::make_pair(id, std::move(node_arg)));
-
-  if (!pair.second /* = inserted */) {
-    return;
-  }
-
-  auto& node = pair.first->second;
-
-  StartReceiving(node);
-
-  if (on_connection_added_) {
-    on_connection_added_(node.id());
-  }
-}
-
-void ConnectionManager::StartReceiving(PeerNode& node) {
-  auto node_guard = node.DestroyGuard();
-
-  node.Receive([=, &node](asio::error_code error, const SerialisedMessage& bytes) {
-    if (!node_guard.lock())
+    if (error || (result.his_address != node_to_add.id)) {
       return;
-    if (error)
-      return;
-    if (!on_receive_)
-      return;
-    // Complex handler invocation to be safe in cases where the
-    // handler destroys this object or in case where the handler
-    // invocation resets the handler to something else.
-    auto h = move(on_receive_);
-    h(node.id(), bytes);
-    if (!node_guard.lock())
-      return;
-    if (!on_receive_) {
-      on_receive_ = move(h);
     }
-    StartReceiving(node);
+    on_node_added(AddToRoutingTable(node_to_add), result.our_endpoint);
   });
 }
 
-// bool ConnectionManager::CloseGroupMember(const Address& their_id) {
-//  auto close_group(routing_table_.OurCloseGroup());
-//  return std::any_of(std::begin(close_group), std::end(close_group),
-//                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
-// }
+boost::optional<CloseGroupDifference> ConnectionManager::AddToRoutingTable(NodeInfo node_to_add) {
+  auto added = routing_table_.AddNode(node_to_add);
 
-optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
-  auto new_group(OurCloseGroup());
-  std::vector<Address> new_group_ids;
-  for (const auto& group_member_public_pmid : new_group)
-    new_group_ids.push_back(group_member_public_pmid.Name());
+  if (!added.first) {
+    connections_->Drop(node_to_add.id);
+  } else if (added.second) {
+    connections_->Drop(node_to_add.id);
+  }
 
-  if (new_group_ids != current_close_group_) {
-    auto changed = std::make_pair(new_group_ids, current_close_group_);
-    current_close_group_ = new_group_ids;
+  // FIXME: It is incorrect to assume the GroupChanged will reflect changes made
+  // by the previous Drop command because that command will execute its business
+  // in a separate thread (Same in the AddNodeAccept function and others).
+  return GroupChanged();
+}
+
+bool ConnectionManager::CloseGroupMember(const Address& their_id) {
+  auto close_group(routing_table_.OurCloseGroup());
+  return std::any_of(std::begin(close_group), std::end(close_group),
+                     [&their_id](const NodeInfo& node) { return node.id == their_id; });
+}
+
+boost::optional<CloseGroupDifference> ConnectionManager::GroupChanged() {
+  auto new_nodeinfo_group(routing_table_.OurCloseGroup());
+  std::vector<Address> new_group;
+  for (const auto& nodes : new_nodeinfo_group)
+    new_group.push_back(nodes.id);
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (new_group != current_close_group_) {
+    auto changed = std::make_pair(new_group, current_close_group_);
+    current_close_group_ = new_group;
     return changed;
   }
-
   return boost::none;
+}
+
+void ConnectionManager::StartReceiving() {
+  std::weak_ptr<Connections> weak_connections = connections_;
+
+  connections_->Receive([=](asio::error_code error, Connections::ReceiveResult result) {
+    if (!weak_connections.lock()) return;
+    if (error) {
+      return HandleConnectionLost(result.his_address);
+    }
+    auto h = std::move(on_receive_);
+    if (h) {
+      h(std::move(result.his_address), std::move(result.message));
+      if (!weak_connections.lock()) return;
+      on_receive_ = std::move(h);
+    }
+    StartReceiving();
+  });
+}
+
+void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
+                                             const SerialisedMessage& /*message*/) {
+// connections_->Send(addr, message, std::move(handler));
+// remove connection if failed
+}
+
+
+void ConnectionManager::HandleConnectionLost(Address lost_connection) {
+  routing_table_.DropNode(lost_connection);
+  connected_non_routing_nodes_.erase(lost_connection);
+  auto h = std::move(on_connection_lost_);
+  if (h) {
+    h(GroupChanged(), lost_connection);
+  }
 }
 
 }  // namespace routing

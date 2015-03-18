@@ -17,6 +17,8 @@
     use of the MaidSafe Software.                                                                 */
 
 
+#include "asio/use_future.hpp"
+
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -29,54 +31,91 @@ namespace routing {
 
 namespace test {
 
+static SerialisedMessage str_to_msg(const std::string& str) {
+  return SerialisedMessage(str.begin(), str.end());
+}
+
+static std::string msg_to_str(const SerialisedMessage& msg) {
+  return std::string(msg.begin(), msg.end());
+}
+
 TEST(ConnectionsTest, FUNC_TwoConnections) {
-  boost::asio::io_service ios;
-
-  Address c1_id(MakeIdentity());
-  Address c2_id(MakeIdentity());
-
-  Connections c1(ios, c1_id);
-  Connections c2(ios, c2_id);
-
-  unsigned short port = 8080;
-
   bool c1_finished = false;
   bool c2_finished = false;
 
-  c1.Accept(port,
-      [&](asio::error_code error, asio::ip::udp::endpoint, Address his_id) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(his_id, c2.OurId());
-        std::string msg = "hello";
+  {
+    Address c1_id(MakeIdentity());
+    Address c2_id(MakeIdentity());
 
-        c1.Send(his_id,
-                std::vector<unsigned char>(msg.begin(), msg.end()),
-                [&](asio::error_code error) {
-                  ASSERT_FALSE(error);
-                  c1.Shutdown();
-                  c1_finished = true;
-                });
-      });
+    Connections c1(c1_id);
+    Connections c2(c2_id);
 
-  c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, Address his_id) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(his_id, c1.OurId());
+    unsigned short port = 8080;
 
-        c2.Receive([&, his_id](asio::error_code error, Address sender_id,
-                               const std::vector<unsigned char>& bytes) {
+    c1.Accept(port, nullptr,
+        [&](asio::error_code error, Connections::AcceptResult result) {
           ASSERT_FALSE(error);
-          ASSERT_EQ(sender_id, his_id);
-          ASSERT_EQ(std::string(bytes.begin(), bytes.end()), "hello");
+          ASSERT_EQ(result.his_address, c2.OurId());
+          ASSERT_EQ(result.our_endpoint.port(), port);
 
-          c2.Shutdown();
-          c2_finished = true;
+          c1.Send(result.his_address,
+                  str_to_msg("hello"),
+                  [&](asio::error_code error) {
+                    ASSERT_FALSE(error);
+                    c1.Shutdown();
+                    c1_finished = true;
+                  });
         });
-      });
 
-  ios.run();
+    c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
+        [&](asio::error_code error, Connections::ConnectResult result) {
+          ASSERT_FALSE(error);
+          ASSERT_EQ(result.his_address, c1.OurId());
 
+          c2.Receive([&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
+            ASSERT_FALSE(error);
+            ASSERT_EQ(recv_result.his_address, result.his_address);
+            ASSERT_EQ(msg_to_str(recv_result.message), "hello");
+
+            c2.Shutdown();
+            c2_finished = true;
+          });
+        });
+
+    c1.Wait();
+    c2.Wait();
+  }
   ASSERT_TRUE(c1_finished && c2_finished);
+}
+
+TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
+  Address c1_id(MakeIdentity());
+  Address c2_id(MakeIdentity());
+
+  Connections c1(c1_id);
+  Connections c2(c2_id);
+
+  unsigned short port = 8080;
+
+  auto accept_f  = c1.Accept(port, nullptr, asio::use_future);
+  auto connect_f = c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
+
+  auto accept_result  = accept_f.get();
+  auto connect_result = connect_f.get();
+
+  ASSERT_EQ(accept_result.his_address, c2.OurId());
+  ASSERT_EQ(accept_result.our_endpoint.port(), port);
+
+  ASSERT_EQ(connect_result.his_address, c1.OurId());
+
+  auto recv_f = c2.Receive(asio::use_future);
+  auto send_f = c1.Send(accept_result.his_address, str_to_msg("hello"), asio::use_future);
+
+  send_f.get();
+  recv_f.get();
+
+  c1.Shutdown();
+  c2.Shutdown();
 }
 
 }  // namespace test

@@ -131,6 +131,7 @@ class SentinelTest : public testing::Test {
     return group_message;
   }
 
+
  protected:
   void SortPmidNodes(const Address& target) {
     std::sort(pmid_nodes_.begin(), pmid_nodes_.end(),
