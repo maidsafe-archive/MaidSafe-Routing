@@ -167,19 +167,19 @@ std::vector<SentinelAddMessage>
 
 
 void SentinelFunctionalTest::AddToSentinel(SentinelAddMessage message) {
-  auto sentinel_response( sentinel_.Add(std::get<0>(message), // Message Header
-                                        std::get<1>(message), // Message Type Tag
-                                        std::get<2>(message))); // Serialised Message
-  SaveSentinelReturn(std::get<3>(message), sentinel_response); // Sentinel message tracking key
+  auto sentinel_response(sentinel_.Add(std::get<0>(message),  // Message Header
+                                        std::get<1>(message),  // Message Type Tag
+                                        std::get<2>(message)));  // Serialised Message
+  SaveSentinelReturn(std::get<3>(message), sentinel_response);  // Sentinel message tracking key
 }
 
 
 void SentinelFunctionalTest::AddToSentinel(std::vector<SentinelAddMessage> messages) {
-  for (auto message : messages ) {
-    auto sentinel_response( sentinel_.Add(std::get<0>(message), // Message Header
-                                          std::get<1>(message), // Message Type Tag
-                                          std::get<2>(message))); // Serialised Message
-    SaveSentinelReturn(std::get<3>(message), sentinel_response); // Sentinel message tracking key
+  for ( auto message : messages ) {
+    auto sentinel_response(sentinel_.Add(std::get<0>(message),  // Message Header
+                                          std::get<1>(message),  // Message Type Tag
+                                          std::get<2>(message)));  // Serialised Message
+    SaveSentinelReturn(std::get<3>(message), sentinel_response);  // Sentinel message tracking key
   }
 }
 
@@ -197,7 +197,7 @@ SentinelReturns SentinelFunctionalTest::GetSelectedSentinelReturns(
       if ( itr_track != track_messages.begin() ) {
         itr_track = std::prev(itr_track);
         track_messages.pop_back();
-      } else break;
+      } else { break; }
     }
   }
 
@@ -209,11 +209,10 @@ void SentinelFunctionalTest::SendGetClientKey(Address node_address) {
 }
 
 void SentinelFunctionalTest::SendGetGroupKey(GroupAddress group_address) {
-  //std::lock_guard<std::mutex> lock(mutex_);
   send_get_group_key_calls_.push_back(group_address);
 }
 
-//++++ Free Test Functions +++++++++++++++++++++
+// ++++ Free Test Functions +++++++++++++++++++++
 
 size_t CountAllSentinelReturns(const SentinelReturns sentinel_returns) {
   return sentinel_returns.size();
@@ -239,9 +238,11 @@ boost::optional<Sentinel::ResultType>
   boost::optional<Sentinel::ResultType> sentinel_single_response(boost::none);
   for ( auto sentinel_return : sentinel_returns ) {
     if ( sentinel_return.second != boost::none ) {
-      if ( sentinel_single_response == boost::none )
+      if ( sentinel_single_response == boost::none ) {
         sentinel_single_response = sentinel_return.second;
-      else return boost::none;  // double non-none found, return none
+      } else {
+        return boost::none;  // double non-none found, return none
+      }
     }
   }
   return sentinel_single_response;
@@ -283,13 +284,11 @@ std::vector<SentinelMessageTrack> ExtractMessageTracker(
   return message_trackers;
 }
 
-//+++++++++++++++ Tests +++++++++++++++++++++
+// +++++++++++++++ Tests +++++++++++++++++++++
 
 // first try for specific message type, generalise later
 // PutData is chosen as fundamental type with data payload.
 TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
-
-  // Set up a group
   const GroupAddress group_address(MakeIdentity());
   SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 
@@ -298,7 +297,6 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
   PutData put_data(data.TypeId(), Serialise(data));
   auto serialised_put_data(Serialise(put_data));
   const MessageId message_id_put_data(RandomUint32());
-
   auto headers_put_data(single_group.GetHeaders(GetOurDestinationAddress(),
                                        message_id_put_data, serialised_put_data));
   auto put_data_messages(GenerateMessages(headers_put_data,
@@ -352,8 +350,6 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
 }
 
 TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessageId) {
-
-  // Set up a group
   const GroupAddress group_address(MakeIdentity());
   SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 
@@ -362,7 +358,6 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
   PutData put_data(data.TypeId(), Serialise(data));
   auto serialised_put_data(Serialise(put_data));
   const MessageId message_id_put_data(RandomUint32());
-
   auto headers_put_data(single_group.GetHeaders(GetOurDestinationAddress(),
                                        message_id_put_data, serialised_put_data));
   auto put_data_messages(GenerateMessages(headers_put_data,
@@ -372,7 +367,6 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
   // Generate GetGroupKeyResponses
   auto serialised_get_group_response(Serialise(GetGroupKeyResponse(
               single_group.GetPublicKeys(), single_group.SignatureGroupAddress())));
-  // const MessageId message_id_get_group_key_response(RandomUint32());
   auto headers_response(single_group.GetHeaders(GetOurDestinationAddress(),
                                                 // WRONGLY send with SAME MESSAGE ID
                                                 message_id_put_data,
@@ -446,7 +440,7 @@ TEST_F(SentinelFunctionalTest, BEH_QuickTimerTest) {
 }
 */
 
-}  // namespacce test
+}  // namespace test
 
 }  // namespace routing
 
