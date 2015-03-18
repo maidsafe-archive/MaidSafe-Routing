@@ -63,8 +63,6 @@ class SignatureGroup {
   std::map<Address, asymm::PublicKey> GetPublicKeys() {
       std::map<Address, asymm::PublicKey> result;
       for (auto node : nodes_) {
-          std::cout << "GetPublicKeys : " << Identity(node.name())
-                    << std::endl;
           result.insert(std::make_pair(Address(node.name()), node.public_key()));
       }
       return result;
@@ -74,54 +72,11 @@ class SignatureGroup {
                                         MessageId message_id,
                                         SerialisedData message);
 
-
-/*  void SaveSentinelSendGetClientKeyReturn(
-          boost::optional<Sentinel::ResultType> sentinel_result) {
-      sentinel_send_get_client_key_returns_.push_back(sentinel_result);
-  }
-
-  void SaveSentinelSendGetGroupKeyReturn(
-          boost::optional<Sentinel::ResultType> sentinel_result) {
-      sentinel_send_get_group_key_returns_.push_back(sentinel_result);
-  }
-*/
-
-//  SentinelReturns GetAllSentinelReturns() { return sentinel_returns_; }
-
-/*  SentinelReturns GetAllSentinelReturns() {
-      SentinelReturns sentinel_returns_;
-      for ( auto sentinel_return : sentinel_message_returns_ )
-        sentinel_returns_.push_back(sentinel_return);
-      for ( auto sentinel_return : sentinel_send_get_client_key_returns_ )
-        sentinel_returns_.push_back(sentinel_return);
-      for ( auto sentinel_return : sentinel_send_get_group_key_returns_ )
-        sentinel_returns_.push_back(sentinel_return);
-      return sentinel_returns_;
-  }
-*/
-/*  SentinelReturns GetMessageSentinelReturns() {
-    return sentinel_message_returns_;
-  }
-
-
-  SentinelReturns GetSendGetGroupKeySentinelReturns() {
-    return sentinel_send_get_group_key_returns_;
-  }
-
-  SentinelReturns GetSendGetClientKeySentinelReturns() {
-    return sentinel_send_get_client_key_returns_;
-  }*/
-
  private:
   GroupAddress group_address_;
   size_t group_size_;
   Authority authority_;
   std::vector<passport::Pmid> nodes_;
-
-//  SentinelReturns sentinel_returns_;
-//  SentinelReturns sentinel_message_returns_;
-//  SentinelReturns sentinel_send_get_client_key_returns_;
-//  SentinelReturns sentinel_send_get_group_key_returns_;
 };
 
 std::vector<MessageHeader> SignatureGroup::GetHeaders(DestinationAddress destination_address,
@@ -158,15 +113,8 @@ class SentinelFunctionalTest : public testing::Test {
         GenerateMessages(std::vector<MessageHeader> headers,
                                                  MessageTypeTag tag,
                                                  SerialisedMessage message);
-    void SendMessages(std::vector<SentinelAddMessage> messages);
-
-//  void SimulateMessage(GroupAddress group_address,
-//                       MessageId message_id,
-//                       MessageTypeTag tag, SerialisedData message);
-//  SentinelReturns GetAllSentinelReturns(GroupAddress group_address);
-//  SentinelReturns GetMessageSentinelReturns(GroupAddress group_address);
-//  SentinelReturns GetSendGetGroupKeySentinelReturns(GroupAddress group_address);
-//  SentinelReturns GetSendGetClientKeySentinelReturns(GroupAddress group_address);
+  void AddToSentinel(SentinelAddMessage message);
+  void AddToSentinel(std::vector<SentinelAddMessage> messages);
 
   DestinationAddress GetOurDestinationAddress() { return our_destination_; }
 
@@ -217,24 +165,21 @@ std::vector<SentinelAddMessage>
     return collect_messages;
 }
 
-void SentinelFunctionalTest::SendMessages(std::vector<SentinelAddMessage> messages) {
+
+void SentinelFunctionalTest::AddToSentinel(SentinelAddMessage message) {
+  auto sentinel_response( sentinel_.Add(std::get<0>(message), // Message Header
+                                        std::get<1>(message), // Message Type Tag
+                                        std::get<2>(message))); // Serialised Message
+  SaveSentinelReturn(std::get<3>(message), sentinel_response); // Sentinel message tracking key
+}
+
+
+void SentinelFunctionalTest::AddToSentinel(std::vector<SentinelAddMessage> messages) {
   for (auto message : messages ) {
-    std::cout << "Node " << Identity(std::get<0>(message).FromNode()) << std::endl;
     auto sentinel_response( sentinel_.Add(std::get<0>(message), // Message Header
                                           std::get<1>(message), // Message Type Tag
                                           std::get<2>(message))); // Serialised Message
     SaveSentinelReturn(std::get<3>(message), sentinel_response); // Sentinel message tracking key
-/*    if (!sentinel_response) {
-      std::cout << "Add: key " << std::get<3>(message)
-               // << " message " << std::string(std::get<2>(message).begin(),
-                //                              std::get<2>(message).end())
-                << " BOOST::NONE" << std::endl;
-    } else {
-      std::cout << "Add: key " << std::get<3>(message)
-                //<< " message " << std::string(std::get<2>(*sentinel_response).begin(),
-                //                              std::get<2>(*sentinel_response).end())
-                << " SENTINEL " << std::endl;
-    }*/
   }
 }
 
@@ -259,84 +204,6 @@ SentinelReturns SentinelFunctionalTest::GetSelectedSentinelReturns(
   return select_sentinel_returns;
 }
 
-
-
-/*void SentinelFunctionalTest::SimulateMessage(GroupAddress group_address,
-                                             MessageId message_id,
-                                             MessageTypeTag tag, SerialisedData message) {
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-  if (itr == std::end(groups_)) assert("Sentinel test SimulateMessage: debug Error in test");
-  else {
-    auto headers = itr->GetHeaders(our_destination_,
-                                   message_id, message);
-    for (auto header : headers) {
-      itr->SaveSentinelMessageReturn(sentinel_.Add(header, tag, message));
-    }
-  }
-}
-*/
-
-/*
-SentinelReturns SentinelFunctionalTest::GetAllSentinelReturns(GroupAddress group_address) {
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-  if (itr == std::end(groups_)) {
-    assert("Sentinel test GetSentinelReturns: debug Error in test");
-    return SentinelReturns();
-  } else {
-    return itr->GetAllSentinelReturns();
-  }
-}
-*/
-
-/*
-SentinelReturns SentinelFunctionalTest::GetMessageSentinelReturns(GroupAddress group_address) {
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-  if (itr == std::end(groups_)) {
-    assert("Sentinel test GetSentinelReturns: debug Error in test");
-    return SentinelReturns();
-  }
-  else {
-    return itr->GetMessageSentinelReturns();
-  }
-}
-*/
-
-/*
-SentinelReturns SentinelFunctionalTest::GetSendGetGroupKeySentinelReturns(GroupAddress group_address) {
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-  if (itr == std::end(groups_)) {
-    assert("Sentinel test GetSentinelReturns: debug Error in test");
-    return SentinelReturns();
-  }
-  else {
-    return itr->GetSendGetGroupKeySentinelReturns();
-  }
-}
-*/
-
-/*
-SentinelReturns SentinelFunctionalTest::GetSendGetClientKeySentinelReturns(GroupAddress group_address) {
-  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-  if (itr == std::end(groups_)) {
-    assert("Sentinel test GetSentinelReturns: debug Error in test");
-    return SentinelReturns();
-  }
-  else {
-    return itr->GetSendGetClientKeySentinelReturns();
-  }
-}
-*/
-
 void SentinelFunctionalTest::SendGetClientKey(Address node_address) {
   send_get_client_key_calls_.push_back(node_address);
 }
@@ -344,27 +211,6 @@ void SentinelFunctionalTest::SendGetClientKey(Address node_address) {
 void SentinelFunctionalTest::SendGetGroupKey(GroupAddress group_address) {
   //std::lock_guard<std::mutex> lock(mutex_);
   send_get_group_key_calls_.push_back(group_address);
-/*  auto itr = std::find_if(std::begin(groups_), std::end(groups_),
-                          [group_address](SignatureGroup group_)
-                          { return group_.SignatureGroupAddress() == group_address; });
-
-  if (itr == std::end(groups_)) assert("Sentinel test SendGetGroupKey: debug Error in test");
-  else {
-
-    auto message(Serialise(GetGroupKeyResponse(itr->GetPublicKeys(),
-                                               itr->SignatureGroupAddress())));
-    auto headers = itr->GetHeaders(our_destination_,
-                                   MessageId(RandomUint32()),
-                                   message);
-
-    for (auto header : headers) {
-        itr->SaveSentinelSendGetGroupKeyReturn(
-                    sentinel_.Add(header, MessageTypeTag::GetGroupKeyResponse,
-                                  message));
-    }
-  }
-  static_cast<void>(itr);
-*/
 }
 
 //++++ Free Test Functions +++++++++++++++++++++
@@ -376,7 +222,6 @@ size_t CountAllSentinelReturns(const SentinelReturns sentinel_returns) {
 size_t CountNoneSentinelReturns(const SentinelReturns sentinel_returns) {
   size_t i(0);
   for ( auto sentinel_return : sentinel_returns ) {
-//    std::cout << "CountNoneSentinel: messageKey " << sentinel_return.first << std::endl;
     if (sentinel_return.second == boost::none) i++;
   }
   return i;
@@ -386,7 +231,6 @@ bool VerifyExactlyOneResponse(const SentinelReturns sentinel_returns) {
   size_t counter_responses(0);
   for ( auto sentinel_return : sentinel_returns )
     if (sentinel_return.second != boost::none) counter_responses++;
-  std::cout << "VERIFY EXACTLY ONE: counted " << counter_responses << std::endl;
   return counter_responses == 1;
 }
 
@@ -422,7 +266,6 @@ bool VerifyMatchSentinelReturn(const boost::optional<Sentinel::ResultType> senti
   if ( return_message_header.Destination() != original_destination ) return false;
   if ( *(return_message_header.Source().group_address) != original_source_group ) return false;
 
-  std::cout << "SentinelFunctionalTest Verify SentinelReturn Matched! " << std::endl;
   return true;
 }
 
@@ -430,6 +273,13 @@ std::vector<SentinelMessageTrack> ExtractMessageTrackers(
         const std::vector<SentinelAddMessage>& messages) {
   std::vector<SentinelMessageTrack> message_trackers;
   for ( auto message : messages ) message_trackers.push_back(std::get<3>(message));
+  return message_trackers;
+}
+
+std::vector<SentinelMessageTrack> ExtractMessageTracker(
+        const SentinelAddMessage& message) {
+  std::vector<SentinelMessageTrack> message_trackers;
+  message_trackers.push_back(std::get<3>(message));
   return message_trackers;
 }
 
@@ -466,9 +316,11 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
                                           MessageTypeTag::GetGroupKeyResponse,
                                           serialised_get_group_response));
   auto response_trackers(ExtractMessageTrackers(response_messages));
+  auto expected_valid_response_tracker(
+                         ExtractMessageTracker(response_messages.at(QuorumSize - 1)));
 
   // Send all messages to Sentinel
-  SendMessages(put_data_messages);
+  AddToSentinel(put_data_messages);
   auto message_returns(GetSelectedSentinelReturns(message_trackers));
 
   EXPECT_EQ(GroupSize, CountAllSentinelReturns(message_returns));
@@ -478,11 +330,79 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
   EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
 
   // Send all GetGroupKeyResponses to Sentinel
-  SendMessages(response_messages);
+  AddToSentinel(response_messages);
   auto response_returns(GetSelectedSentinelReturns(response_trackers));
+  auto expected_valid_response_return(
+                        GetSelectedSentinelReturns(expected_valid_response_tracker));
 
   EXPECT_EQ(GroupSize, CountAllSentinelReturns(response_returns));
   EXPECT_EQ(GroupSize - 1, CountNoneSentinelReturns(response_returns));
+  EXPECT_EQ(0, CountNoneSentinelReturns(expected_valid_response_return));
+  EXPECT_TRUE(VerifyExactlyOneResponse(response_returns));
+  EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
+  EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
+
+  EXPECT_TRUE(VerifyMatchSentinelReturn(GetSingleSentinelReturn(response_returns),
+                                        message_id_put_data,
+                                        Authority::client_manager,
+                                        GetOurDestinationAddress(),
+                                        single_group.SignatureGroupAddress(),
+                                        MessageTypeTag::PutData,
+                                        serialised_put_data));
+}
+
+TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessageId) {
+
+  // Set up a group
+  const GroupAddress group_address(MakeIdentity());
+  SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
+
+  // Generate PutData messages
+  const ImmutableData data(NonEmptyString(RandomBytes(3)));
+  PutData put_data(data.TypeId(), Serialise(data));
+  auto serialised_put_data(Serialise(put_data));
+  const MessageId message_id_put_data(RandomUint32());
+
+  auto headers_put_data(single_group.GetHeaders(GetOurDestinationAddress(),
+                                       message_id_put_data, serialised_put_data));
+  auto put_data_messages(GenerateMessages(headers_put_data,
+                                          MessageTypeTag::PutData, serialised_put_data));
+  auto message_trackers(ExtractMessageTrackers(put_data_messages));
+
+  // Generate GetGroupKeyResponses
+  auto serialised_get_group_response(Serialise(GetGroupKeyResponse(
+              single_group.GetPublicKeys(), single_group.SignatureGroupAddress())));
+  // const MessageId message_id_get_group_key_response(RandomUint32());
+  auto headers_response(single_group.GetHeaders(GetOurDestinationAddress(),
+                                                // WRONGLY send with SAME MESSAGE ID
+                                                message_id_put_data,
+                                                serialised_get_group_response));
+  auto response_messages(GenerateMessages(headers_response,
+                                          MessageTypeTag::GetGroupKeyResponse,
+                                          serialised_get_group_response));
+  auto response_trackers(ExtractMessageTrackers(response_messages));
+  auto expected_valid_response_tracker(
+                         ExtractMessageTracker(response_messages.at(QuorumSize - 1)));
+
+  // Send all messages to Sentinel
+  AddToSentinel(put_data_messages);
+  auto message_returns(GetSelectedSentinelReturns(message_trackers));
+
+  EXPECT_EQ(GroupSize, CountAllSentinelReturns(message_returns));
+  EXPECT_EQ(GroupSize, CountNoneSentinelReturns(message_returns));
+  EXPECT_FALSE(VerifyExactlyOneResponse(message_returns));
+  EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
+  EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
+
+  // Send all GetGroupKeyResponses to Sentinel
+  AddToSentinel(response_messages);
+  auto response_returns(GetSelectedSentinelReturns(response_trackers));
+  auto expected_valid_response_return(
+                        GetSelectedSentinelReturns(expected_valid_response_tracker));
+
+  EXPECT_EQ(GroupSize, CountAllSentinelReturns(response_returns));
+  EXPECT_EQ(GroupSize - 1, CountNoneSentinelReturns(response_returns));
+  EXPECT_EQ(0, CountNoneSentinelReturns(expected_valid_response_return));
   EXPECT_TRUE(VerifyExactlyOneResponse(response_returns));
   EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
   EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
