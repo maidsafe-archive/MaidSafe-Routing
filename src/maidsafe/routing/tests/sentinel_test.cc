@@ -174,67 +174,12 @@ class SentinelTest : public testing::Test {
   }
 
   template <size_t N>
-  std::vector<Identity> GetFrontPmidNodeNames() {
-    std::vector<Identity> pmid_names;
-    size_t size(pmid_nodes_.size() < N ? pmid_nodes_.size() : N);
-    for (size_t i = 0; i != size; ++i)
-      pmid_names.push_back(pmid_nodes_[i].name());
-    return pmid_names;
-  }
-
-  template <size_t N>
   std::vector<passport::Pmid> GetFrontPmids() {
     std::vector<passport::Pmid> pmids;
     size_t size(pmid_nodes_.size() < N ? pmid_nodes_.size() : N);
     for (size_t i = 0; i != size; ++i)
       pmids.push_back(pmid_nodes_[i]);
     return pmids;
-  }
-
-  std::vector<Identity> GetCommonPmidNodeNames(
-      std::vector<std::vector<Identity>>& pmids) {
-    assert(pmids.size() >= 2);
-    for (size_t i = 0; i != pmids.size(); ++i)
-      std::sort(pmids[i].begin(), pmids[i].end());
-
-    std::vector<Identity> common_pmids;
-    std::multiset<Identity> all_pmids;
-    std::set<Identity> unique_pmids;
-
-    for (size_t i = 0; i != pmids.size(); ++i) {
-      for (size_t j = 0; j != pmids.size(); ++j) {
-        all_pmids.insert(pmids[i][j]);
-        unique_pmids.insert(pmids[i][j]);
-      }
-    }
-
-    std::vector<std::pair<size_t, Identity>> counts;
-
-    for (const auto& pmid : unique_pmids)
-      counts.push_back(std::make_pair(all_pmids.count(pmid), pmid));
-
-    std::sort(counts.begin(), counts.end(),
-              [](const std::pair<size_t, Identity>& lhs, const std::pair<size_t, Identity>& rhs) {
-                return lhs.first < rhs.first;
-              });
-
-    for (auto i = counts.size() - 1; i != counts.size() - GroupSize - 1; --i)
-      common_pmids.push_back(counts[i].second);
-
-    /*std::vector<Identity> common_pmids(pmids[0]);
-
-    for (size_t i = 1; i != pmids.size(); ++i) {
-      std::vector<Identity> new_pmids, old_pmids(common_pmids);
-      std::set_intersection(pmids[i-1].begin(), pmids[i-1].end(),
-          pmids[i].begin(), pmids[i].end(), std::back_inserter(new_pmids));
-      std::sort(new_pmids.begin(), new_pmids.end());
-      std::sort(old_pmids.begin(), old_pmids.end());
-      common_pmids.clear();
-      std::set_intersection(new_pmids.begin(), new_pmids.end(),
-          old_pmids.begin(), old_pmids.end(), std::back_inserter(common_pmids));
-    }*/
-
-    return common_pmids;
   }
 
   std::unique_ptr<Sentinel> sentinel_;
@@ -310,22 +255,6 @@ TEST_F(SentinelTest, BEH_BasicGroupAdd) {
                                group_key_response.at(QuorumSize - 1).serialised));
   if (!resolved)
     EXPECT_TRUE(false);
-}
-
-TEST_F(SentinelTest, BEH_Merge) {
-  CreatePmidKeys(5000);
-  SortPmidNodes(Address(Identity(RandomBytes(identity_size))));
-  std::vector<Identity> sorted_pmids(GetFrontPmidNodeNames<GroupSize>());
-  std::vector<std::vector<Identity>> pmids;
-
-  for (size_t i = 0; i != sorted_pmids.size(); ++i) {
-    SortPmidNodes(Address(sorted_pmids[i]));
-    pmids.push_back(GetFrontPmidNodeNames<GroupSize>());
-  }
-
-  std::vector<Identity> common_pmids(GetCommonPmidNodeNames(pmids));
-  std::cout << "common pmids size: " << common_pmids.size() << std::endl;
-  EXPECT_GE(common_pmids.size(), QuorumSize);
 }
 
 TEST_F(SentinelTest, BEH_FindGroupResponse) {
