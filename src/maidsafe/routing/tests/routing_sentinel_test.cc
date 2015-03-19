@@ -44,6 +44,7 @@ using SentinelReturns = std::map<SentinelMessageTrack,
                                  boost::optional<Sentinel::ResultType>>;
 using SentinelAddMessage = std::tuple<MessageHeader, MessageTypeTag, SerialisedMessage,
                                       SentinelMessageTrack>;
+using SentinelCountQuorum = std::tuple<size_t, size_t, bool>;
 
 // structure to track messages sent to sentinel and what sentinel result should be
 class SignatureGroup {
@@ -287,6 +288,42 @@ std::vector<SentinelMessageTrack> ExtractMessageTracker(
   return message_trackers;
 }
 
+std::vector<SentinelMessageTrack> IdentifyQuorumMessages(
+        const std::vector<SentinelAddMessage>& messages) {
+  std::vector<SentinelMessageTrack> result_trackers;
+  std::map<GroupAddress, SentinelCountQuorum> quorum_counter;
+  for ( auto message : messages ) {
+    if ( !std::get<0>(message).FromGroup() ) break;
+    if (  std::get<1>(message) == MessageTypeTag::GetGroupKeyResponse ) {
+      auto itr = quorum_counter.find(*(std::get<0>(message).FromGroup()));
+      if ( itr != quorum_counter.end() ) {
+        std::get<1>(itr->second)++;
+        if ( std::get<0>(itr->second) >= QuorumSize &&
+             std::get<1>(itr->second) >= QuorumSize &&
+            !std::get<2>(itr->second) ) {
+          result_trackers.push_back(std::get<3>(message));
+          std::get<2>(itr->second) = true;
+        }
+      }
+    } else {
+      auto itr = quorum_counter.find(*(std::get<0>(message).FromGroup()));
+      if ( itr != quorum_counter.end() ) {
+        std::get<0>(itr->second)++;
+        if ( std::get<0>(itr->second) >= QuorumSize &&
+             std::get<1>(itr->second) >= QuorumSize &&
+            !std::get<2>(itr->second) ) {
+          result_trackers.push_back(std::get<3>(message));
+          std::get<2>(itr->second) = true;
+        }
+      } else {
+        quorum_counter.insert(std::make_pair(*(std::get<0>(message).FromGroup()),
+                                             SentinelCountQuorum(1U, 0U, false)));
+      }
+    }
+  }
+  return result_trackers;
+}
+
 // +++++++++++++++ Tests +++++++++++++++++++++
 
 // first try for specific message type, generalise later
@@ -380,6 +417,8 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
   auto response_trackers(ExtractMessageTrackers(response_messages));
   auto expected_valid_response_tracker(
                          ExtractMessageTracker(response_messages.at(QuorumSize - 1)));
+
+
 
   // Send all messages to Sentinel
   AddToSentinel(put_data_messages);
