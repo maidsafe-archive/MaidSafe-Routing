@@ -481,6 +481,20 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
     connection_manager_.Send(target.id, std::move(message), [](asio::error_code) {});
   }
 
+  //////////////////////// temp code                                                                Delete me
+
+   auto temp = (*original_header.ReplyToAddress()).data;
+   auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
+   connection_manager_.Send(temp, message,
+                            [=](asio::error_code error) {
+                              if (error) {
+                                LOG(kWarning) << "Could not send to " << temp;
+                              } else {
+                                LOG(kVerbose) << "Sent ConnectResponse to " << temp;
+                              }
+                            });
+  ////////////////////////
+
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
 
   connection_manager_.AddNodeAccept
@@ -495,6 +509,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
+LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to " << connect_response.receiver_id();
   if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
     return;
 
