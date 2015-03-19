@@ -219,18 +219,9 @@ void RoutingNode<Child>::PutOurPublicPmid() {
   auto type_id = our_public_pmid.TypeId();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed and may be sent to ClientManager
-    MessageHeader our_header(std::make_pair(Destination(Address(name)), boost::none),
-                             OurSourceAddress(), ++message_id_, Authority::client);
-    // As this node is not yet connected to its close group, client authority seems appropriate
-    PutData request(type_id, Serialise(our_public_pmid));
-
-    auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
-    connection_manager_.Send(*bootstrap_node_, message, [=](asio::error_code error) {
-        if (error)
-          LOG(kWarning) << "Failed to send to  < " << *this->bootstrap_node_;
-        //else
-          //LOG(kVerbose) << "Sent PutOurPublicPmid to : " << *this->bootstrap_node_;
-    });
+    PutData put_data_message(type_id, Serialise(our_public_pmid));
+    SendToBootstrapNode(std::make_pair(Destination(Address(name)), boost::none),
+                        OurSourceAddress(), put_data_message, Authority::client);
   });
 }
 
@@ -297,29 +288,13 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
 
 template <typename Child>
 void RoutingNode<Child>::ConnectToCloseGroup() {
-  FindGroup message(NodeAddress(OurId()), OurId());
-  MessageHeader header(DestinationAddress(std::make_pair(Destination(OurId()), boost::none)),
-                       SourceAddress{OurSourceAddress()}, ++message_id_, Authority::node);
+  FindGroup find_group_message(NodeAddress(OurId()), OurId());
   if (bootstrap_node_) {  // TODO cleanup
-    // this is special case , so probably have special function in connection manager to send to
-    // bootstrap node
-    auto msg_data = Serialise(header, MessageToTag<FindGroup>::value(), message);
-    connection_manager_.Send(*bootstrap_node_, std::move(msg_data), [](asio::error_code error) {
-      if (error) {
-        LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
-      } else {
-//        LOG(kInfo) << "Sent Find group";
-      }
-    });
-    return;
-  }
-  for (const auto& target : connection_manager_.GetTarget(OurId())) {
-    auto msg_data = Serialise(header, MessageToTag<FindGroup>::value(), message);
-    connection_manager_.Send(target.id, std::move(msg_data), [](asio::error_code error) {
-      if (error) {
-        LOG(kWarning) << "rudp cannot send" << error.message();
-      }
-    });
+    SendToBootstrapNode(std::make_pair(Destination(OurId()), boost::none),
+                        OurSourceAddress(), find_group_message, Authority::node);
+  } else {
+    SendSwarmOrParallel(std::make_pair(Destination(OurId()), boost::none),
+                        OurSourceAddress(), find_group_message, Authority::node);
   }
 }
 
@@ -591,26 +566,13 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     Address node_id(node_pmid.Name());
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
-    Connect message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
-    MessageHeader header(DestinationAddress(std::make_pair(Destination(node_id), boost::none)),
-                         SourceAddress{OurSourceAddress()}, ++message_id_, Authority::nae_manager);
-
+    Connect connect_message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
     if (bootstrap_node_) {  // TODO cleanup
-      auto message_data = Serialise(header, MessageToTag<Connect>::value(), message);
-      connection_manager_.Send(*bootstrap_node_,
-          std::move(message_data), [](asio::error_code error) {
-            if (error) {
-              LOG(kWarning) << "Cannot send via bootstrap node" << error.message();
-            } else {
-              LOG(kInfo) << "Sent Connect ";
-           }
-        });
-      return;
-    }
-    for (const auto& target : connection_manager_.GetTarget(node_id)) {
-      // FIXME(Team): Do the serialisation only once as it doesn't depend on the target.
-      auto message_data = Serialise(header, MessageToTag<Connect>::value(), message);
-      connection_manager_.Send(target.id, std::move(message_data), [](asio::error_code) {});
+      SendToBootstrapNode(std::make_pair(Destination(node_id), boost::none),
+                          OurSourceAddress(), connect_message, Authority::nae_manager);
+    } else {
+      SendSwarmOrParallel(std::make_pair(Destination(node_id), boost::none),
+                          OurSourceAddress(), connect_message, Authority::nae_manager);
     }
   }
 }
@@ -673,7 +635,7 @@ void RoutingNode<Child>::SendSwarmOrParallel(const DestinationAddress& destinati
                                              Authority authority) {
   MessageHeader header(destination, source, ++message_id_, authority);
   for (const auto& target : connection_manager_.GetTarget(destination.first.data)) {
-    auto wrapped_message = Serialise(header, MessageToTag<FindGroup>::value(), message);
+    auto wrapped_message = Serialise(header, MessageToTag<MessageType>::value(), message);
     connection_manager_.Send(target.id, std::move(wrapped_message), [](asio::error_code error) {
       if (error) {
         LOG(kWarning) << "Connection manager cannot send" << error.message();
@@ -690,7 +652,7 @@ void RoutingNode<Child>::SendToBootstrapNode(const DestinationAddress& destinati
                                              Authority authority) {
   //assert(source.SourceAddress()== NodeAddress(*bootstrap_node_));  //FIXME(prakash)
   MessageHeader header(destination, source, ++message_id_, authority);
-  auto wrapped_message = Serialise(header, MessageToTag<FindGroup>::value(), message);
+  auto wrapped_message = Serialise(header, MessageToTag<MessageType>::value(), message);
   connection_manager_.Send(*bootstrap_node_, std::move(wrapped_message),
                            [](asio::error_code error) {
                               if (error) {
