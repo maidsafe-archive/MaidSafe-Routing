@@ -129,6 +129,9 @@ class SentinelFunctionalTest : public testing::Test {
                           std::vector<SentinelMessageTrack> track_messages);
 
   size_t CountSendGetGroupKeyCalls(GroupAddress group_address) {
+    size_t i(0);
+    for ( auto call : send_get_group_key_calls_)
+        std::cout << "CALLED " << ++i << " : " << Identity(call) << std::endl;
     return std::count(send_get_group_key_calls_.begin(),
                       send_get_group_key_calls_.end(), group_address);
   }
@@ -440,35 +443,25 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelShuffledAdd) {
     // Mix messages
     for ( auto message : response_messages )
         messages.push_back(message);  // add response messages
+    for ( auto tracker : response_trackers )
+        message_trackers.push_back(tracker);
     std::random_device random_device;
     std::mt19937 generator(random_device());
-    std::shuffle(std::begin(messages)+4, std::end(messages), generator);
+    // Leave first message as the original message
+    std::shuffle(std::begin(messages) + 1, std::end(messages), generator);
     for ( auto message : messages ) std::cout << "Key: " << std::get<3>(message) << std::endl;
 
     // Send all messages to Sentinel
     AddToSentinel(messages);
     auto message_returns(GetSelectedSentinelReturns(message_trackers));
 
-    EXPECT_EQ(GroupSize, CountAllSentinelReturns(message_returns));
-    EXPECT_EQ(GroupSize, CountNoneSentinelReturns(message_returns));
-    EXPECT_FALSE(VerifyExactlyOneResponse(message_returns));
+    EXPECT_EQ(2 * GroupSize, CountAllSentinelReturns(message_returns));
+    EXPECT_EQ(2 * GroupSize - 1, CountNoneSentinelReturns(message_returns));
+    EXPECT_TRUE(VerifyExactlyOneResponse(message_returns));
     EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
     EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
 
-    // Send all GetGroupKeyResponses to Sentinel
-    AddToSentinel(response_messages);
-    auto response_returns(GetSelectedSentinelReturns(response_trackers));
-    //auto expected_valid_response_return(
-    //                      GetSelectedSentinelReturns(expected_valid_response_tracker));
-
-    EXPECT_EQ(GroupSize, CountAllSentinelReturns(response_returns));
-    EXPECT_EQ(GroupSize - 1, CountNoneSentinelReturns(response_returns));
-    //EXPECT_EQ(0, CountNoneSentinelReturns(expected_valid_response_return));
-    EXPECT_TRUE(VerifyExactlyOneResponse(response_returns));
-    EXPECT_EQ(1, CountSendGetGroupKeyCalls(single_group.SignatureGroupAddress()));
-    EXPECT_EQ(0, CountSendGetClientKeyCalls(single_group.SignatureGroupAddress()));
-
-    EXPECT_TRUE(VerifyMatchSentinelReturn(GetSingleSentinelReturn(response_returns),
+    EXPECT_TRUE(VerifyMatchSentinelReturn(GetSingleSentinelReturn(message_returns),
                                           message_id_put_data,
                                           Authority::client_manager,
                                           GetOurDestinationAddress(),
