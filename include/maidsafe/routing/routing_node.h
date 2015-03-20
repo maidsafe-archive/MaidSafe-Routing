@@ -74,13 +74,13 @@ class RoutingNode {
 
   // // will return with the data
   template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(Data::NameAndTypeId name_and_type_id, CompletionToken token);
+  GetReturn<CompletionToken> Get(Data::NameAndTypeId name_and_type_id, CompletionToken&& token);
   // will return with allowed or not (error_code only)
-  template <typename DataType, typename CompletionToken>
-  PutReturn<CompletionToken> Put(DataType data, CompletionToken token);
+  template <typename CompletionToken>
+  PutReturn<CompletionToken> Put(std::shared_ptr<Data> data, CompletionToken&& token);
   // will return with allowed or not (error_code only)
   template <typename FunctorType, typename CompletionToken>
-  PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken token);
+  PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken&& token);
 
   void AddBootstrapContact(Contact bootstrap_contact) {
     bootstrap_handler_.AddBootstrapContacts(std::vector<Contact>(1, bootstrap_contact));
@@ -154,7 +154,7 @@ class RoutingNode {
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
-  LruCache<Identity, SerialisedMessage> cache_;
+  LruCache<Data::NameAndTypeId, SerialisedData> cache_;
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
@@ -179,7 +179,8 @@ RoutingNode<Child>::RoutingNode()
   LOG(kInfo) << "RoutingNode < " << OurId() << " >";
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
-  cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
+  passport::PublicPmid our_public_pmid(our_fob_);
+  cache_.Add(our_public_pmid.NameAndType(), Serialise(our_public_pmid));
   StartBootstrap();
 }
 
@@ -213,13 +214,13 @@ void RoutingNode<Child>::StartBootstrap() {
 template <typename Child>
 void RoutingNode<Child>::PutOurPublicPmid() {
   assert(bootstrap_node_);
-  passport::PublicPmid our_public_pmid{passport::PublicPmid(our_fob_)};
-  auto name = our_public_pmid.Name();
-  auto type_id = our_public_pmid.TypeId();
+  std::shared_ptr<Data> our_public_pmid{new passport::PublicPmid(our_fob_)};
+  auto name = our_public_pmid->Name();
+  auto type_id = our_public_pmid->TypeId();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed and may be sent to ClientManager
     PutData put_data_message(type_id, Serialise(our_public_pmid));
-    SendToBootstrapNode(std::make_pair(Destination(Address(name)), boost::none), OurSourceAddress(),
+    SendToBootstrapNode(std::make_pair(Destination(name), boost::none), OurSourceAddress(),
                         put_data_message, Authority::client);
   });
 }
@@ -227,7 +228,7 @@ void RoutingNode<Child>::PutOurPublicPmid() {
 template <typename Child>
 template <typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode<Child>::Get(Data::NameAndTypeId name_and_type_id,
-                                                   CompletionToken token) {
+                                                   CompletionToken&& token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio::post(asio_service_.service(), [=] {
@@ -241,26 +242,35 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Data::NameAndTypeId name_and_
   });
   return result.get();
 }
+
 // As this is a routing_node this should be renamed to PutPublicPmid one time
 // and possibly it should be a single type it deals with rather than Put<DataType> as this call is
 // special
 // amongst all node types and is the only unauthorised Put anywhere
 // nodes have no reason to Put anywhere else
 template <typename Child>
-template <typename DataType, typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode<Child>::Put(DataType data, CompletionToken token) {
+template <typename CompletionToken>
+PutReturn<CompletionToken> RoutingNode<Child>::Put(std::shared_ptr<Data> data,
+                                                   CompletionToken&& token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  asio::post(asio_service_.service(), [=] {
+  asio::post(asio_service_.service(), [=]() mutable {
     MessageHeader our_header(
         std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
         OurSourceAddress(), ++message_id_, Authority::client);
-    PutData request(data.TypeId(), Serialise(data));
+    PutData request(data->TypeId(), Serialise(data));
     // FIXME(dirvine) For client in real put this needs signed :08/02/2015
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
-    for (const auto& target : connection_manager_.GetTarget(OurId()))
+    auto targets(connection_manager_.GetTarget(OurId()));
+    for (const auto& target : targets) {
       connection_manager_.Send(target.id, message, [](asio::error_code) {});
-    connection_manager_.Send(*bootstrap_node_, message, [](asio::error_code) {});
+    }
+    if (targets.empty() && bootstrap_node_) {
+      connection_manager_.Send(*bootstrap_node_, message,
+                               [handler](std::error_code ec) mutable { handler(ec); });
+    } else {
+      handler(make_error_code(RoutingErrors::not_connected));
+    }
   });
   return result.get();
 }
@@ -268,7 +278,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(DataType data, CompletionToke
 template <typename Child>
 template <typename FunctorType, typename CompletionToken>
 PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType functor,
-                                                     CompletionToken token) {
+                                                     CompletionToken&& token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio::post(asio_service_.service(), [=] {
@@ -281,6 +291,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
     for (const auto& target : connection_manager_.GetTarget(to)) {
       connection_manager_.Send(target.id, message, [](asio::error_code) {});
     }
+    handler();
   });
   return result.get();
 }
@@ -325,13 +336,15 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
     auto data = Parse<GetDataResponse>(binary_input_stream);
-    if (data.data())
-      cache_.Add(data.name_and_type_id().name, *data.data());
+    if (data.data()) {
+      std::shared_ptr<Data> parsed(Parse<std::shared_ptr<Data>>(*data.data()));
+      cache_.Add(parsed->NameAndType(), *data.data());
+    }
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
     auto data = Parse<GetData>(binary_input_stream);
-    auto test = cache_.Get(data.name_and_type_id().name);
+    auto test = cache_.Get(data.name_and_type_id());
     // FIXME(dirvine) move to upper lauer :09/02/2015
     // if (test) {
     //   GetDataResponse response(data.name(), test);
@@ -613,14 +626,17 @@ void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
 }
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader /*original_header*/) {
-  // FIXME(Prakash)
-  //  cache_.Add(put_data.name_and_type_id().name, *put_data.data());
-  LOG(kVerbose) << "Put Data : " << put_data.type_id();
-  //  auto result = static_cast<Child*>(this)->HandlePut(
-  //              original_header.Source(), original_header.FromAuthority(),
-  //              OurAuthority(put_data.name_and_type_id().name, original_header),
-  //              put_data.name_and_type_id(), put_data.data());
+void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader original_header) {
+  LOG(kVerbose) << "Handling PutData: " << put_data.type_id() << "   "
+                << hex::Substr(put_data.data()) << "   " << put_data.data().size();
+  std::shared_ptr<const Data> parsed(Parse<std::shared_ptr<const Data>>(put_data.data()));
+  cache_.Add(parsed->NameAndType(), put_data.data());
+  auto result = static_cast<Child*>(this)
+                    ->HandlePut(original_header.Source(), original_header.FromAuthority(),
+                                OurAuthority(parsed->NameAndType().name, original_header), parsed);
+  if (result) {
+    // TODO(Fraser#5#): 2015-03-20 - Return error somehow.
+  }
 }
 
 template <typename Child>

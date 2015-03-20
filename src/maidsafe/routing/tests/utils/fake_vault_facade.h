@@ -111,13 +111,9 @@ class FakeVaultFacade : public MaidManager<FakeVaultFacade>,
                                      routing::Authority authority,
                                      Data::NameAndTypeId name_and_type_id);
 
-  routing::HandlePutPostReturn HandlePut(routing::SourceAddress from,
-      routing::Authority from_authority, routing::Authority authority,
-      Data::NameAndTypeId name_and_type_id, SerialisedData serialised_data);
 
   routing::HandlePutPostReturn HandlePut(routing::SourceAddress from,
                                          routing::Authority from_authority,
-                                         routing::Destination to,
                                          routing::Authority our_authority,
                                          std::shared_ptr<const Data> data);
 

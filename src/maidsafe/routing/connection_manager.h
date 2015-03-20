@@ -162,8 +162,8 @@ void ConnectionManager::Send(const Address& addr, const SerialisedMessage& messa
                              Handler handler) {
   std::weak_ptr<Connections> guard = connections_;
   LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
-  connections_->Send(addr, message, [=](asio::error_code error) {
-    handler(error);
+  connections_->Send(addr, message, [=](asio::error_code error) mutable {
+      handler(error);
 
     if (!guard.lock())
       return;
