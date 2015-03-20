@@ -63,7 +63,7 @@ If the key accumulator did not have the key(s) accumulated (i.e. accumulator.Che
 
 The accumulators are LRU cache based and will empty old messages that do not confirm in this manner.
 
-## Explicit Example
+## One Explicit Example
 
     < Client {
        Generate payload
@@ -81,13 +81,15 @@ The accumulators are LRU cache based and will empty old messages that do not con
         Sentinel {
           Receive single message
           GetKey
-            to this Client Manager group
-            from each manager, to all other managers
-            preserve message id
-            add signature
+           - to this Client Manager group
+           - from each manager, to all other managers
+           - preserve message id
+           - add signature
+           - from_authority = Client Manager
           {
             Filter on same message id + source=group node from client manager
-                         --> add MessageTypeTag to FilterValue!
+                         --> add MessageTypeTag to FilterValue
+                         --> add from_authority to FilterValue
             Swarm
             Handle pre-sentinel {
               GetKey->
@@ -109,7 +111,29 @@ The accumulators are LRU cache based and will empty old messages that do not con
         Swarm
         (Handle pre-sentinel skipped)
         Sentinel {
+          Receive first message from group
+          GetGroupKey
+           - to Client Manager group (target_id)
+           - preserve message id
+           - add signature
+           - from_authority = NAE-manager
+          {
+            Filter in Client Manager node on same message_id
+                                             + source = NAE-node
+                                             + from_authority = NAE_manager
+                                             + MessageTypeTag
+            Swarm
+            Handle pre-sentinel {
+              GetGroupKey->
+              GetGroupKeyResponse (preserve message id, Group Keys,
+                                   original signature from)
+                             --> will pass filter only once,
+                                 not for every targeted node
+                                 unless we add a target_id field to filterValue,
+                                 which does not naturally belong in header...
 
+            }
+          }
         }
       }
     >
