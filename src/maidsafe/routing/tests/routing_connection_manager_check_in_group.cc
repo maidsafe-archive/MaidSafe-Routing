@@ -54,7 +54,7 @@ struct FutureHandler {
 
   FutureHandler(std::string what) : what(std::move(what)), state(std::make_shared<State>()) {}
 
-  void operator()(asio::error_code error, Value v, Endpoint) const {
+  void operator()(asio::error_code error, Value v) const {
     if (error) {
       throw std::runtime_error("operation failed");
     }

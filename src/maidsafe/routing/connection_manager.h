@@ -65,15 +65,13 @@ class ConnectionManager {
 
  public:
   using OnReceive  = std::function<void(Address, const SerialisedMessage&)>;
-  using OnAddNode  = std::function<void(asio::error_code, boost::optional<CloseGroupDifference>,
-                                        Endpoint)>;
+  using OnAddNode  = std::function<void(asio::error_code, boost::optional<CloseGroupDifference>)>;
   using OnConnectionLost = std::function<void(boost::optional<CloseGroupDifference>, Address)>;
 
  private:
   struct ExpectedAccept {
     NodeInfo node_info;
     OnAddNode handler;
-    std::shared_ptr<Timer> timer;
   };
 
  public:
@@ -139,7 +137,7 @@ class ConnectionManager {
   void StartReceiving();
   void StartAccepting();
 
-  void HandleAccept(Connections::AcceptResult);
+  void HandleAddNode(asio::error_code, NodeInfo, OnAddNode);
   void HandleConnectionLost(Address);
 
   boost::optional<CloseGroupDifference> GroupChanged();

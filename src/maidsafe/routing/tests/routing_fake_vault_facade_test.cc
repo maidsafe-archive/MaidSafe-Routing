@@ -27,7 +27,6 @@ namespace test {
 
 TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   vault::test::FakeVaultFacade vault1;
-  Sleep(std::chrono::seconds(2));
   vault::test::FakeVaultFacade vault2;
   //ASSERT_NO_THROW(vault::test::FakeVaultFacade vault);
   Sleep(std::chrono::seconds(20));
