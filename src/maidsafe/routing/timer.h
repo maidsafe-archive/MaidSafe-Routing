@@ -19,43 +19,36 @@
 #ifndef MAIDSAFE_ROUTING_TIMER_H_
 #define MAIDSAFE_ROUTING_TIMER_H_
 
-#include <functional>
 #include <chrono>
+#include <functional>
+
 #include "asio/steady_timer.hpp"
 
-namespace maidsafe
-{
+namespace maidsafe {
 
-namespace routing
-{
+namespace routing {
 
 class Timer {
-  enum State { idle, running, canceled };
-
  public:
   Timer(asio::io_service&);
   ~Timer();
 
-  template<class Handler>
+  template <class Handler>
   void async_wait(asio::steady_timer::duration, Handler&&);
 
   void cancel();
 
  private:
+  enum State { idle, running, canceled };
   asio::steady_timer timer_;
   std::shared_ptr<State> state_;
 };
 
-inline Timer::Timer(asio::io_service& ios)
-  : timer_(ios),
-    state_(std::make_shared<State>(idle))
-{}
+inline Timer::Timer(asio::io_service& ios) : timer_(ios), state_(std::make_shared<State>(idle)) {}
 
-inline Timer::~Timer() {
-  cancel();
-}
+inline Timer::~Timer() { cancel(); }
 
-template<class Handler>
+template <class Handler>
 void Timer::async_wait(asio::steady_timer::duration duration, Handler&& handler) {
   auto state = state_;
   assert(*state == idle && "Current implementation allows only one async_wait invocation");
@@ -63,11 +56,11 @@ void Timer::async_wait(asio::steady_timer::duration duration, Handler&& handler)
   timer_.expires_from_now(duration);
   // FIXME(Team): forward the handler if we're using c++14
   timer_.async_wait([state, handler](const asio::error_code&) {
-      if (*state != running) {
-        return;
-      }
-      handler();
-      });
+    if (*state != running) {
+      return;
+    }
+    handler();
+  });
 }
 
 inline void Timer::cancel() {
@@ -75,9 +68,8 @@ inline void Timer::cancel() {
   timer_.cancel();
 }
 
-} // routing namespace
+}  // routing namespace
 
-} // maidsafe namespace
+}  // maidsafe namespace
 
-#endif // MAIDSAFE_ROUTING_TIMER_H_
-
+#endif  // MAIDSAFE_ROUTING_TIMER_H_

@@ -43,21 +43,21 @@ namespace routing {
 
 class Connections {
  public:
-   struct AcceptResult {
-     Endpoint his_endpoint;
-     Address  his_address;
-     Endpoint our_endpoint; // As seen by the other end
-   };
+  struct AcceptResult {
+    Endpoint his_endpoint;
+    Address his_address;
+    Endpoint our_endpoint;  // As seen by the other end
+  };
 
-   struct ConnectResult {
-     Address  his_address;
-     Endpoint our_endpoint; // As seen by the other end
-   };
+  struct ConnectResult {
+    Address his_address;
+    Endpoint our_endpoint;  // As seen by the other end
+  };
 
-   struct ReceiveResult {
-     Address his_address;
-     SerialisedMessage message;
-   };
+  struct ReceiveResult {
+    Address his_address;
+    SerialisedMessage message;
+  };
 
  public:
   Connections(asio::io_service&, const Address& our_node_id);
@@ -82,8 +82,8 @@ class Connections {
   // The secont argument is an ugly C-style return of the actual port that has been
   // chosen. TODO: Try to return it using a proper C++ way.
   template <class Token>
-  AsyncResultReturn<Token, AcceptResult>
-  Accept(unsigned short port, unsigned short* chosen_port, Token&&);
+  AsyncResultReturn<Token, AcceptResult> Accept(unsigned short port, unsigned short* chosen_port,
+                                                Token&&);
 
   void Drop(const Address& their_id);
 
@@ -101,7 +101,7 @@ class Connections {
   void StartReceiving(const Address&, const crux::endpoint&, const std::shared_ptr<crux::socket>&);
   void OnReceive(asio::error_code, ReceiveResult);
 
-  template<class Handler, class... Args>
+  template <class Handler, class... Args>
   void post(Handler&& handler, Args&&... args);
 
  private:
@@ -120,7 +120,7 @@ class Connections {
 
   struct ReceiveInput {
     asio::error_code error;
-    ReceiveResult    result;
+    ReceiveResult result;
   };
 
   using ReceiveOutput = std::function<void(asio::error_code, ReceiveResult)>;
@@ -132,11 +132,7 @@ class Connections {
 };
 
 inline Connections::Connections(asio::io_service& ios, const Address& our_node_id)
-    : service(ios),
-      work_(new asio::io_service::work(ios)),
-      our_id_(our_node_id),
-      runner_(1)
-{}
+    : service(ios), work_(new asio::io_service::work(ios)), our_id_(our_node_id), runner_(1) {}
 
 template <class Token>
 AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const SerialisedMessage& bytes,
@@ -149,7 +145,7 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
     auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
 
     if (remote_endpoint_i == id_to_endpoint_map_.end()) {
-      LOG(kWarning) << "bad_descriptor !! " <<  remote_id;
+      LOG(kWarning) << "bad_descriptor !! " << remote_id;
       return post(handler, asio::error::bad_descriptor);
     }
 
@@ -185,15 +181,14 @@ AsyncResultReturn<Token, Connections::ReceiveResult> Connections::Receive(Token&
   asio::async_result<Handler> result(handler);
 
   get_io_service().post([=]() mutable {
-      if (!receive_input_.empty()) {
-        auto input = std::move(receive_input_.front());
-        receive_input_.pop();
-        post(handler, input.error, std::move(input.result));
-      }
-      else {
-        receive_output_.push(std::move(handler));
-      }
-      });
+    if (!receive_input_.empty()) {
+      auto input = std::move(receive_input_.front());
+      receive_input_.pop();
+      post(handler, input.error, std::move(input.result));
+    } else {
+      receive_output_.push(std::move(handler));
+    }
+  });
 
   return result.get();
 }
@@ -203,8 +198,7 @@ inline void Connections::OnReceive(asio::error_code error, ReceiveResult result)
     auto handler = std::move(receive_output_.front());
     receive_output_.pop();
     post(handler, error, std::move(result));
-  }
-  else {
+  } else {
     receive_input_.push(ReceiveInput{error, std::move(result)});
   }
 }
@@ -217,7 +211,6 @@ inline Connections::~Connections() {
 template <class Token>
 AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoint endpoint,
                                                                           Token&& token) {
-
   using Handler = AsyncResultHandler<Token, ConnectResult>;
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
@@ -278,25 +271,23 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
 }
 
 template <class Token>
-AsyncResultReturn<Token, Connections::AcceptResult>
-Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& token) {
-
+AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(unsigned short port,
+                                                                        unsigned short* chosen_port,
+                                                                        Token&& token) {
   using Handler = AsyncResultHandler<Token, AcceptResult>;
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
 
-  auto loopback = [](unsigned short port) {
-    return crux::endpoint(boost::asio::ip::udp::v4(), port);
-  };
+  auto loopback =
+      [](unsigned short port) { return crux::endpoint(boost::asio::ip::udp::v4(), port); };
 
   // TODO(PeterJ):Make sure this operation is thread safe in crux.
   std::shared_ptr<crux::acceptor> acceptor;
 
   try {
     acceptor = std::make_shared<crux::acceptor>(get_io_service(), loopback(port));
-  }
-  catch(...) {
+  } catch (...) {
     acceptor = std::make_shared<crux::acceptor>(get_io_service(), loopback(0));
   }
 
@@ -308,8 +299,7 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
     auto find_result = acceptors_.insert(std::make_pair(port, acceptor));
 
     if (!find_result.second /* inserted? */) {
-      return post(handler,asio::error::already_started, Connections::AcceptResult());
-
+      return post(handler, asio::error::already_started, Connections::AcceptResult());
     }
 
     std::weak_ptr<crux::acceptor> weak_acceptor = acceptor;
@@ -318,11 +308,11 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
 
     acceptor->async_accept(*socket, [=](boost::system::error_code error) mutable {
       if (!weak_acceptor.lock()) {
-        return post(handler,asio::error::operation_aborted, AcceptResult());
+        return post(handler, asio::error::operation_aborted, AcceptResult());
       }
 
       if (error) {
-        return post(handler,asio::error::operation_aborted, AcceptResult());
+        return post(handler, asio::error::operation_aborted, AcceptResult());
       }
 
       acceptors_.erase(port);
@@ -337,14 +327,14 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
         auto socket = weak_socket.lock();
 
         if (!socket) {
-          return post(handler,asio::error::operation_aborted,
-                         AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
-       }
+          return post(handler, asio::error::operation_aborted,
+                      AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
+        }
 
         if (error) {
           connections_.erase(remote_endpoint);
-          return post(handler,convert::ToStd(error),
-                         AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
+          return post(handler, convert::ToStd(error),
+                      AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
         }
 
         InputVectorStream stream(data);
@@ -355,8 +345,8 @@ Connections::Accept(unsigned short port, unsigned short* chosen_port, Token&& to
         id_to_endpoint_map_[his_id] = remote_endpoint;
         StartReceiving(his_id, remote_endpoint, socket);
 
-        post(handler,convert::ToStd(error),
-                AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
+        post(handler, convert::ToStd(error),
+             AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
       });
     });
   });
@@ -405,16 +395,12 @@ inline void Connections::Shutdown() {
   });
 }
 
-inline void Connections::Wait() {
-  runner_.Stop();
-}
+inline void Connections::Wait() { runner_.Stop(); }
 
-template<class Handler, class... Args>
+template <class Handler, class... Args>
 void Connections::post(Handler&& handler, Args&&... args) {
   std::tuple<typename std::decay<Args>::type...> tuple(std::forward<Args>(args)...);
-  service.post([handler, tuple]() mutable {
-      ApplyTuple(handler, tuple);
-      });
+  service.post([handler, tuple]() mutable { ApplyTuple(handler, tuple); });
 }
 
 inline void Connections::Drop(const Address& their_id) {
