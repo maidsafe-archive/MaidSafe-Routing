@@ -499,9 +499,9 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
   connection_manager_.AddNodeAccept
     (NodeInfo(connect.requester_id(), connect.requester_fob(), true),
      connect.requester_endpoints(),
-     [=](boost::optional<CloseGroupDifference> added, Endpoint /* our_endpoint */) {
+     [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
       if (!destroy_guard.lock()) return;
-      if (added)
+      if (!error && added)
         static_cast<Child*>(this)->HandleChurn(*added);
      });
 }
@@ -520,11 +520,11 @@ LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to " << c
   connection_manager_.AddNode(
       NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
       response_ptr->receiver_endpoints(),
-      [=](boost::optional<CloseGroupDifference> added, Endpoint /* our_endpoint */) {
+      [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock()) return;
 
         auto target = response_ptr->requester_id();
-        if (added)
+        if (!error && added)
           static_cast<Child*>(this)->HandleChurn(*added);
         if (connection_manager_.Size() >= QuorumSize) {
           // rudp_.Remove(*bootstrap_node_, asio::use_future).get(); // FIXME (Prakash)

@@ -58,12 +58,14 @@ namespace maidsafe {
 
 namespace routing {
 
+class Timer;
+
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
  public:
   using OnReceive  = std::function<void(Address, const SerialisedMessage&)>;
-  using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>, Endpoint)>;
+  using OnAddNode  = std::function<void(asio::error_code, boost::optional<CloseGroupDifference>)>;
   using OnConnectionLost = std::function<void(boost::optional<CloseGroupDifference>, Address)>;
 
  private:
@@ -135,13 +137,14 @@ class ConnectionManager {
   void StartReceiving();
   void StartAccepting();
 
-  void HandleAccept(Connections::AcceptResult);
+  void HandleAddNode(asio::error_code, NodeInfo, OnAddNode);
   void HandleConnectionLost(Address);
 
   boost::optional<CloseGroupDifference> GroupChanged();
 
  private:
 
+  asio::io_service& io_service_;
   mutable std::mutex mutex_;
   unsigned short our_accept_port_;
   RoutingTable routing_table_;

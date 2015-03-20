@@ -19,6 +19,7 @@
 #include <future>
 #include <memory>
 #include <vector>
+#include <future>
 
 #include "maidsafe/common/rsa.h"
 #include "maidsafe/common/test.h"
@@ -54,7 +55,10 @@ struct FutureHandler {
 
   FutureHandler(std::string what) : what(std::move(what)), state(std::make_shared<State>()) {}
 
-  void operator()(Value v, Endpoint) const {
+  void operator()(asio::error_code error, Value v) const {
+    if (error) {
+      throw std::runtime_error("operation failed");
+    }
     state->promise.set_value(std::move(v));
   }
 
@@ -89,6 +93,9 @@ TEST(ConnectionManagerTest, FUNC_AddNodes) {
 
   cm1_result.Get();
   cm2_result.Get();
+
+  cm1.Shutdown();
+  cm2.Shutdown();
 }
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {

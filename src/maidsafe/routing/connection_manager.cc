@@ -31,6 +31,7 @@
 
 #include "maidsafe/routing/peer_node.h"
 #include "maidsafe/routing/routing_table.h"
+#include "maidsafe/routing/timer.h"
 #include "maidsafe/routing/types.h"
 
 namespace maidsafe {
@@ -45,14 +46,15 @@ using boost::optional;
 
 ConnectionManager::ConnectionManager(asio::io_service& ios, Address our_id, OnReceive on_receive,
                                      OnConnectionLost on_connection_lost)
-    : mutex_(),
+    : io_service_(ios),
+      mutex_(),
       our_accept_port_(5483),
       routing_table_(our_id),
       connected_non_routing_nodes_(),
       on_receive_(std::move(on_receive)),
       on_connection_lost_(std::move(on_connection_lost)),
       current_close_group_(),
-      connections_(new Connections(ios, our_id)) {
+      connections_(new Connections(io_service_, our_id)) {
   StartReceiving();
   StartAccepting();
 }
@@ -92,72 +94,105 @@ void ConnectionManager::DropNode(const Address& their_id) {
 void ConnectionManager::StartAccepting() {
   std::weak_ptr<Connections> weak_connections = connections_;
 
-  auto accept_handler = [=](asio::error_code error, Connections::AcceptResult result) {
-    auto connections = weak_connections.lock();
-
-    if (!connections) {
+  connections_->Accept( our_accept_port_
+                      , &our_accept_port_
+                      , [=](asio::error_code error, Connections::AcceptResult result) {
+    if (!weak_connections.lock()) {
       return;
     }
 
-    if (error == asio::error::operation_aborted || error == asio::error::already_started) {
-      return;
-    }
+    auto expected_i = expected_accepts_.find(result.his_address);
 
-    if (!error) {
-      HandleAccept(std::move(result));
+    if (expected_i != expected_accepts_.end()) {
+      auto expected = std::move(expected_i->second);
+      expected_accepts_.erase(expected_i);
+
+      HandleAddNode( error
+                   , std::move(expected.node_info)
+                   , std::move(expected.handler));
 
       // The handler may have destroyed 'this'.
       if (!weak_connections.lock()) {
         return;
       }
     }
+    else {
+      if (!error) {
+        connected_non_routing_nodes_.insert(result.his_address);
+      }
+    }
 
-    return StartAccepting();
-  };
+    if (error != asio::error::operation_aborted) {
+      StartAccepting();
+    }
+  });
 
-  connections_->Accept(our_accept_port_, &our_accept_port_, std::move(accept_handler));
   LOG(kInfo) << "StartAccepting() port " << our_accept_port_;
 }
 
-void ConnectionManager::HandleAccept(Connections::AcceptResult result) {
-  auto expected_i = expected_accepts_.find(result.his_address);
-
-  if (expected_i != expected_accepts_.end()) {
-    auto expected = std::move(expected_i->second);
-    expected_accepts_.erase(expected_i);
-
-    expected.handler(AddToRoutingTable(std::move(expected.node_info)), result.our_endpoint);
+void ConnectionManager::HandleAddNode( asio::error_code error
+                                     , NodeInfo         node_info
+                                     , OnAddNode        user_handler)
+{
+  if (error && error != asio::error::timed_out) {
+    return;
   }
-  else {
-    connected_non_routing_nodes_.insert(result.his_address);
-  }
+
+  node_info.connected = error != asio::error::timed_out;
+
+  user_handler(error, AddToRoutingTable(std::move(node_info)));
 }
 
 void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair,
                                       OnAddNode on_node_added) {
-  // TODO(PeterJ): Use internal endpoint as well.
-  expected_accepts_.insert(std::make_pair(node_info.id, ExpectedAccept{node_info, on_node_added}));
-  //StartAccepting(connections_, node_to_add, their_endpoint_pair, [=](Endpoint our_endpoint) {
-  //  on_node_added(AddToRoutingTable(node_to_add), our_endpoint);
-  //});
+  auto id = node_info.id;
+
+  auto timer = std::make_shared<Timer>(io_service_);
+
+  auto canceling_handler = [on_node_added, timer]( asio::error_code error
+                                                 , boost::optional<CloseGroupDifference> diff) {
+                             timer->cancel();
+                             on_node_added(error, std::move(diff));
+                           };
+
+  auto insert_result = expected_accepts_.insert
+                         (std::make_pair(id,
+                                         ExpectedAccept{node_info,
+                                                        canceling_handler}));
+
+  if (!insert_result.second) {
+    return io_service_.post([on_node_added]() {
+        on_node_added(asio::error::already_started, boost::none);
+        });
+  }
+
+  // TODO(Team): Is the timeout value correct? Should it be in defined
+  // somewhere else?
+  timer->async_wait(std::chrono::seconds(10), [=]() {
+      expected_accepts_.erase(id);
+      HandleAddNode(asio::error::timed_out, node_info, on_node_added);
+      });
 }
 
-void ConnectionManager::AddNode(
-    NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode on_node_added) {
+void ConnectionManager::AddNode( NodeInfo node_to_add
+                               , EndpointPair their_endpoint_pair
+                               , OnAddNode on_node_added) {
 
   std::weak_ptr<Connections> weak_connections = connections_;
 
   // TODO(PeterJ): Use local endpoint as well
-  connections_->Connect(their_endpoint_pair.external,
-                        [=](asio::error_code error, Connections::ConnectResult result) {
+  connections_->Connect( their_endpoint_pair.external
+                       , [=]( asio::error_code error
+                            , Connections::ConnectResult result) {
     if (!weak_connections.lock()) {
-      return;
+      return on_node_added(asio::error::operation_aborted, boost::none);
     }
 
-    if (error || (result.his_address != node_to_add.id)) {
-      return;
+    if (!error && (result.his_address != node_to_add.id)) {
+      error = asio::error::fault;
     }
-    on_node_added(AddToRoutingTable(node_to_add), result.our_endpoint);
+
+    HandleAddNode(error, node_to_add, on_node_added);
   });
 }
 
