@@ -418,8 +418,6 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
   auto expected_valid_response_tracker(
                          ExtractMessageTracker(response_messages.at(QuorumSize - 1)));
 
-
-
   // Send all messages to Sentinel
   AddToSentinel(put_data_messages);
   auto message_returns(GetSelectedSentinelReturns(message_trackers));
@@ -435,6 +433,14 @@ TEST_F(SentinelFunctionalTest, BEH_WRONG_SentinelSimpleAddRespondWithSameMessage
   auto response_returns(GetSelectedSentinelReturns(response_trackers));
   auto expected_valid_response_return(
                         GetSelectedSentinelReturns(expected_valid_response_tracker));
+
+  std::vector<SentinelAddMessage> messages;
+  for ( auto message : put_data_messages )
+      messages.push_back(message);  // add response messages
+  for ( auto message : response_messages )
+      messages.push_back(message);  // add response messages
+  EXPECT_EQ(expected_valid_response_tracker,
+            IdentifyQuorumMessages(messages));
 
   EXPECT_EQ(GroupSize, CountAllSentinelReturns(response_returns));
   EXPECT_EQ(GroupSize - 1, CountNoneSentinelReturns(response_returns));
@@ -488,6 +494,7 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelShuffledAdd) {
     std::mt19937 generator(random_device());
     // Leave first message as the original message
     std::shuffle(std::begin(messages) + 1, std::end(messages), generator);
+
     for ( auto message : messages ) std::cout << "Key: " << std::get<3>(message) << std::endl;
 
     // Send all messages to Sentinel
