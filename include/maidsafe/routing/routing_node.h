@@ -373,10 +373,14 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
 
   // Drop message before Sentinel check if it is a direct message type (Connect, ConnectResponse)
   // and this node is in the group but the message destination is another group member node.
+  // TODO(Prakash) cleanup aim to abstract relay logic here and may be use term routed message for
+  // response messages
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
-    if (header.Destination().first.data != connection_manager_.OurId()) {  // not for me
-      LOG(kVerbose) << "not for me";
-      return;
+    if (header.Destination().first.data != OurId()) {  // not for me
+      if ((header.Destination().second) && (*header.Destination().second).data != OurId()) {
+        LOG(kVerbose) << "not for me";
+        return;
+      }
     }
   }
 
@@ -496,7 +500,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
   ////////////////////////
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
-
+  LOG(kError) << " AddNodeAccept ";
   connection_manager_.AddNodeAccept
     (NodeInfo(connect.requester_id(), connect.requester_fob(), true),
      connect.requester_endpoints(),
@@ -517,13 +521,13 @@ LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to " << c
 
   // Workaround because ConnectResponse isn't copyconstructibe.
   auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
-
+  LOG(kError) << " AddNode ";
   connection_manager_.AddNode(
       NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
       response_ptr->receiver_endpoints(),
       [=](boost::optional<CloseGroupDifference> added, Endpoint /* our_endpoint */) {
-        if (!destroy_guard.lock()) return;
-
+        if (!destroy_guard.lock())
+            return;
         auto target = response_ptr->requester_id();
         if (added)
           static_cast<Child*>(this)->HandleChurn(*added);
