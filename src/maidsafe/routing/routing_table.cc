@@ -55,8 +55,8 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
 
   // routing table small, just grab this node
   if (nodes_.size() < OptimalSize()) {
-    PushBackThenSort(their_info);
-    return {true, their_info};
+    PushBackThenSort(std::move(their_info));
+    return {true, boost::none};
   }
 
   // new close group member
@@ -65,7 +65,9 @@ std::pair<bool, boost::optional<NodeInfo>> RoutingTable::AddNode(NodeInfo their_
     // this will make RT grow but only after several tens of millions of nodes
     PushBackThenSort(std::move(their_info));
     auto removal_candidate(FindCandidateForRemoval());
-    if (removal_candidate != std::end(nodes_)) {
+    if (removal_candidate == std::end(nodes_)) {
+      return {true, boost::none};
+    } else {
       auto iter = nodes_.begin();
       std::advance(iter, std::distance<decltype(removal_candidate)>(iter, removal_candidate));
       auto candidate = *removal_candidate;
