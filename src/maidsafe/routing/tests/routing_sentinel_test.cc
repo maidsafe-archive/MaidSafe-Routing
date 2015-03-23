@@ -291,7 +291,7 @@ std::vector<SentinelMessageTrack> IdentifyQuorumMessages(
   std::map<GroupAddress, SentinelCountQuorum> quorum_counter;
   for ( auto message : messages ) {
     if ( !std::get<0>(message).FromGroup() ) break;
-    if (  std::get<1>(message) == MessageTypeTag::GetGroupKeyResponse ) {
+    if ( std::get<1>(message) == MessageTypeTag::GetGroupKeyResponse ) {
       auto itr = quorum_counter.find(*(std::get<0>(message).FromGroup()));
       if ( itr != quorum_counter.end() ) {
         std::get<1>(itr->second)++;
