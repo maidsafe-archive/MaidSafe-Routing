@@ -94,11 +94,11 @@ The accumulators are LRU cache based and will empty old messages that do not con
             Handle pre-sentinel {
               GetKey->
               GetKeyResponse (preserve message id, Group Keys + Client Key,
-                              original signature from GetKey)
+                              // original signature from GetKey)
             }
           }
           Accumulate original message and GetKeyResponses
-                                          (only if it had our signature)
+                                          (only if we have called for it)
           Merge keys to verify group
           Check signature of client
           Return Sentinel
@@ -126,14 +126,15 @@ The accumulators are LRU cache based and will empty old messages that do not con
             Handle pre-sentinel {
               GetGroupKey->
               GetGroupKeyResponse (preserve message id, Group Keys,
-                                   original signature from)
-                             --> will pass filter only once,
-                                 not for every targeted node
-                                 unless we add a target_id field to filterValue,
-                                 which does not naturally belong in header...
+                                   // original signature from GetGroupKey)
 
             }
           }
+          Accumulate original message and GetKeyResponse (one per source.node)
+                                          (only if we have called for it)
+          Merge keys to verify group
+          Return Sentinel
         }
+        Handle Message in Persona
       }
     >
