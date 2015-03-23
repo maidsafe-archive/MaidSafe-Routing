@@ -529,7 +529,7 @@ template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to "
              << connect_response.receiver_id();
-  if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
+  if (!connection_manager_.SuggestNodeToAdd(connect_response.receiver_id()))
     return;
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
