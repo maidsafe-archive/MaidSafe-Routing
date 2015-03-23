@@ -148,10 +148,6 @@ class SentinelTest : public testing::Test {
                 return CloserToTarget(lhs.name(), rhs.name(), source.data);
               });
 
-    std::cout << "sorted pmids: " << std::endl;
-    for (size_t index(0); index < GroupSize; ++index)
-      std::cout << "\t" << hex::Substr(pmid_nodes_[index].name().string()) << std::endl;
-
     for (size_t index(0); index < GroupSize; ++index) {
       group_message.emplace_back(
           MakeAddInfo(message, pmid_nodes_.at(index).private_key(),
