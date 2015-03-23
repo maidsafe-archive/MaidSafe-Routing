@@ -16,6 +16,7 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+#include <future>
 #include <memory>
 #include <vector>
 #include <future>
@@ -54,7 +55,10 @@ struct FutureHandler {
 
   FutureHandler(std::string what) : what(std::move(what)), state(std::make_shared<State>()) {}
 
-  void operator()(Value v, Endpoint) const {
+  void operator()(asio::error_code error, Value v) const {
+    if (error) {
+      throw std::runtime_error("operation failed");
+    }
     state->promise.set_value(std::move(v));
   }
 
@@ -74,14 +78,12 @@ EndpointPair LocalEndpointPair(unsigned short port) {
 TEST(ConnectionManagerTest, FUNC_AddNodes) {
   NodeInfo c1_info = GenerateNodeInfo();
   NodeInfo c2_info = GenerateNodeInfo();
+  AsioService asio_service(10);
 
-  asio::io_service ios;
-  auto work = std::make_shared<asio::io_service::work>(ios);
-
-  ConnectionManager cm1(ios, c1_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
-  ConnectionManager cm2(ios, c2_info.id, ConnectionManager::OnReceive(), ConnectionManager::OnConnectionLost());
-
-  std::thread thread([&]() { ios.run(); });
+  ConnectionManager cm1(asio_service.service(), c1_info.id, ConnectionManager::OnReceive(),
+                        ConnectionManager::OnConnectionLost());
+  ConnectionManager cm2(asio_service.service(), c2_info.id, ConnectionManager::OnReceive(),
+                        ConnectionManager::OnConnectionLost());
 
   FutureHandler cm1_result("cm1");
   FutureHandler cm2_result("cm2");
@@ -94,9 +96,6 @@ TEST(ConnectionManagerTest, FUNC_AddNodes) {
 
   cm1.Shutdown();
   cm2.Shutdown();
-
-  work.reset();
-  thread.join();
 }
 
 TEST(ConnectionManagerTest, FUNC_AddNodesCheckCloseGroup) {

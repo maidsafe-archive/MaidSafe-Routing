@@ -74,13 +74,13 @@ class RoutingNode {
 
   // // will return with the data
   template <typename CompletionToken>
-  GetReturn<CompletionToken> Get(Data::NameAndTypeId name_and_type_id, CompletionToken token);
+  GetReturn<CompletionToken> Get(Data::NameAndTypeId name_and_type_id, CompletionToken&& token);
   // will return with allowed or not (error_code only)
-  template <typename DataType, typename CompletionToken>
-  PutReturn<CompletionToken> Put(DataType data, CompletionToken token);
+  template <typename CompletionToken>
+  PutReturn<CompletionToken> Put(std::shared_ptr<Data> data, CompletionToken&& token);
   // will return with allowed or not (error_code only)
   template <typename FunctorType, typename CompletionToken>
-  PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken token);
+  PostReturn<CompletionToken> Post(Address to, FunctorType functor, CompletionToken&& token);
 
   void AddBootstrapContact(Contact bootstrap_contact) {
     bootstrap_handler_.AddBootstrapContacts(std::vector<Contact>(1, bootstrap_contact));
@@ -144,7 +144,6 @@ class RoutingNode {
   void ConnectToCloseGroup();
   Address OurId() const { return Address(our_fob_.name()); }
 
- private:
   using unique_identifier = std::pair<Address, uint32_t>;
   AsioService asio_service_;
   passport::Pmid our_fob_;
@@ -155,7 +154,7 @@ class RoutingNode {
   ConnectionManager connection_manager_;
   LruCache<unique_identifier, void> filter_;
   Sentinel sentinel_;
-  LruCache<Identity, SerialisedMessage> cache_;
+  LruCache<Data::NameAndTypeId, SerialisedData> cache_;
   std::shared_ptr<boost::none_t> destroy_indicator_;
 };
 
@@ -180,28 +179,29 @@ RoutingNode<Child>::RoutingNode()
   LOG(kInfo) << "RoutingNode < " << OurId() << " >";
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
-  cache_.Add(our_fob_.name(), Serialise(passport::PublicPmid(our_fob_)));
+  passport::PublicPmid our_public_pmid(our_fob_);
+  cache_.Add(our_public_pmid.NameAndType(), Serialise(our_public_pmid));
   StartBootstrap();
 }
 
 template <typename Child>
 void RoutingNode<Child>::StartBootstrap() {
   auto handler = [=](asio::error_code error, Address peer_addr, Endpoint /*our_public_endpoint*/) {
-                        if (error) {
-                          LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr
-                                        << " >" << error.message();
-                          // TODO(Team): try connect to bootstrap contacts and other options
-                          // (hardcoded endpoints).on failure keep retrying all options forever
-                          return;
-                        }
-                        LOG(kInfo) << "Bootstrapped with " << peer_addr;
-                        // FIXME(Team): Thread safety.
-                        bootstrap_node_ = peer_addr;
-                        // bootstrap_endpoint_ = our_endpoint; this will not required if
-                        // connection manager has this connection
-                        PutOurPublicPmid();
-                        ConnectToCloseGroup();
-                      };
+    if (error) {
+      LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr << " >"
+                    << error.message();
+      // TODO(Team): try connect to bootstrap contacts and other options
+      // (hardcoded endpoints).on failure keep retrying all options forever
+      return;
+    }
+    LOG(kInfo) << "Bootstrapped with " << peer_addr;
+    // FIXME(Team): Thread safety.
+    bootstrap_node_ = peer_addr;
+    // bootstrap_endpoint_ = our_endpoint; this will not required if
+    // connection manager has this connection
+    PutOurPublicPmid();
+    ConnectToCloseGroup();
+  };
   // try connect to any local nodes (5483) Expect to be told Node_Id
   Endpoint live_port_ep(GetLocalIp(), kLivePort);
   // skip trying to bootstrap off self
@@ -214,21 +214,21 @@ void RoutingNode<Child>::StartBootstrap() {
 template <typename Child>
 void RoutingNode<Child>::PutOurPublicPmid() {
   assert(bootstrap_node_);
-  passport::PublicPmid our_public_pmid{ passport::PublicPmid(our_fob_) };
-  auto name = our_public_pmid.Name();
-  auto type_id = our_public_pmid.TypeId();
+  std::shared_ptr<Data> our_public_pmid{new passport::PublicPmid(our_fob_)};
+  auto name = our_public_pmid->Name();
+  auto type_id = our_public_pmid->TypeId();
   asio::post(asio_service_.service(), [=] {
     // FIXME(Prakash) request should be signed and may be sent to ClientManager
     PutData put_data_message(type_id, Serialise(our_public_pmid));
-    SendToBootstrapNode(std::make_pair(Destination(Address(name)), boost::none),
-                        OurSourceAddress(), put_data_message, Authority::client);
+    SendToBootstrapNode(std::make_pair(Destination(name), boost::none), OurSourceAddress(),
+                        put_data_message, Authority::client);
   });
 }
 
 template <typename Child>
 template <typename CompletionToken>
 GetReturn<CompletionToken> RoutingNode<Child>::Get(Data::NameAndTypeId name_and_type_id,
-                                                   CompletionToken token) {
+                                                   CompletionToken&& token) {
   GetHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio::post(asio_service_.service(), [=] {
@@ -242,25 +242,34 @@ GetReturn<CompletionToken> RoutingNode<Child>::Get(Data::NameAndTypeId name_and_
   });
   return result.get();
 }
+
 // As this is a routing_node this should be renamed to PutPublicPmid one time
 // and possibly it should be a single type it deals with rather than Put<DataType> as this call is
 // special
 // amongst all node types and is the only unauthorised Put anywhere
 // nodes have no reason to Put anywhere else
 template <typename Child>
-template <typename DataType, typename CompletionToken>
-PutReturn<CompletionToken> RoutingNode<Child>::Put(DataType data, CompletionToken token) {
+template <typename CompletionToken>
+PutReturn<CompletionToken> RoutingNode<Child>::Put(std::shared_ptr<Data> data,
+                                                   CompletionToken&& token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
-  asio::post(asio_service_.service(), [=] {
-    MessageHeader our_header(std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
-                             OurSourceAddress(), ++message_id_, Authority::client);
-    PutData request(DataType::Tag::kValue, data.serialise());
+  asio::post(asio_service_.service(), [=]() mutable {
+    MessageHeader our_header(
+        std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
+        OurSourceAddress(), ++message_id_, Authority::client);
+    PutData request(data->TypeId(), Serialise(data));
     // FIXME(dirvine) For client in real put this needs signed :08/02/2015
-    // fixme data should serialise properly and not require the above call to serialse()
     auto message(Serialise(our_header, MessageToTag<PutData>::value(), request));
-    for (const auto& target : connection_manager_.GetTarget(OurId())) {
+    auto targets(connection_manager_.GetTarget(OurId()));
+    for (const auto& target : targets) {
       connection_manager_.Send(target.id, message, [](asio::error_code) {});
+    }
+    if (targets.empty() && bootstrap_node_) {
+      connection_manager_.Send(*bootstrap_node_, message,
+                               [handler](std::error_code ec) mutable { handler(ec); });
+    } else {
+      handler(make_error_code(RoutingErrors::not_connected));
     }
   });
   return result.get();
@@ -269,7 +278,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(DataType data, CompletionToke
 template <typename Child>
 template <typename FunctorType, typename CompletionToken>
 PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType functor,
-                                                     CompletionToken token) {
+                                                     CompletionToken&& token) {
   PostHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
   asio::post(asio_service_.service(), [=] {
@@ -282,6 +291,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
     for (const auto& target : connection_manager_.GetTarget(to)) {
       connection_manager_.Send(target.id, message, [](asio::error_code) {});
     }
+    handler();
   });
   return result.get();
 }
@@ -290,30 +300,31 @@ template <typename Child>
 void RoutingNode<Child>::ConnectToCloseGroup() {
   FindGroup find_group_message(NodeAddress(OurId()), OurId());
   if (bootstrap_node_) {  // TODO cleanup
-    SendToBootstrapNode(std::make_pair(Destination(OurId()), boost::none),
-                        OurSourceAddress(), find_group_message, Authority::node);
+    SendToBootstrapNode(std::make_pair(Destination(OurId()), boost::none), OurSourceAddress(),
+                        find_group_message, Authority::node);
   } else {
-    SendSwarmOrParallel(std::make_pair(Destination(OurId()), boost::none),
-                        OurSourceAddress(), find_group_message, Authority::node);
+    SendSwarmOrParallel(std::make_pair(Destination(OurId()), boost::none), OurSourceAddress(),
+                        find_group_message, Authority::node);
   }
 }
 
 
 template <typename Child>
 void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
-//  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<< hex::Substr(serialised_message) << ">>>";
+  //  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<<
+  //  hex::Substr(serialised_message) << ">>>";
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
-  //Identity name;
+  // Identity name;
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  LOG(kVerbose) << " [ " << OurId() << " ] "<< " Msg from  [ " << peer_id
-                << " ]    MessageId " << header.MessageId()
+  LOG(kVerbose) << " [ " << OurId() << " ] "
+                << " Msg from  [ " << peer_id << " ]    MessageId " << header.MessageId()
                 << "  tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
 
 
@@ -325,13 +336,15 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
     auto data = Parse<GetDataResponse>(binary_input_stream);
-    if (data.data())
-      cache_.Add(data.name_and_type_id().name, *data.data());
+    if (data.data()) {
+      std::shared_ptr<Data> parsed(Parse<std::shared_ptr<Data>>(*data.data()));
+      cache_.Add(parsed->NameAndType(), *data.data());
+    }
   }
   // if we can satisfy request from cache we do
   if (tag == MessageTypeTag::GetData) {
     auto data = Parse<GetData>(binary_input_stream);
-    auto test = cache_.Get(data.name_and_type_id().name);
+    auto test = cache_.Get(data.name_and_type_id());
     // FIXME(dirvine) move to upper lauer :09/02/2015
     // if (test) {
     //   GetDataResponse response(data.name(), test);
@@ -356,14 +369,15 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
       }
     });
   }
-  if (header.RelayedMessage() && (header.FromNode().data != OurId())) { // skip outgoing msgs
-    std::set<Address> connected_non_routing_nodes{ connection_manager_.GetNonRoutingNodes() };
-    if (std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
-        [&header](const Address& node) { return node == (*header.ReplyToAddress()).data; })) {
-          // send message to connected node
-          connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
-          return;
-        }
+  if (header.RelayedMessage() && (header.FromNode().data != OurId())) {  // skip outgoing msgs
+    std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
+    if (std::any_of(
+            std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
+            [&header](const Address& node) { return node == (*header.ReplyToAddress()).data; })) {
+      // send message to connected node
+      connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
+      return;
+    }
   }
 
   if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first)) {
@@ -381,9 +395,9 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
   }
 
   // FIXME(dirvine) Sentinel check here!!  :19/01/2015
-//  auto result = sentinel_.Add(header, tag, serialised_message);
-//  if (!result)
-//    return;
+  //  auto result = sentinel_.Add(header, tag, serialised_message);
+  //  if (!result)
+  //    return;
 
   switch (tag) {
     case MessageTypeTag::Connect:
@@ -441,7 +455,7 @@ Authority RoutingNode<Child>::OurAuthority(const Address& element,
 
 template <typename Child>
 void RoutingNode<Child>::ConnectionLost(boost::optional<CloseGroupDifference> diff, Address) {
-  //auto change = connection_manager_.LostNetworkConnection(peer);
+  // auto change = connection_manager_.LostNetworkConnection(peer);
   if (diff)
     static_cast<Child*>(this)->HandleChurn(*diff);
 }
@@ -481,35 +495,36 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
     connection_manager_.Send(target.id, std::move(message), [](asio::error_code) {});
   }
 
-  //////////////////////// temp code                                                                Delete me
+  //////////////////////// temp code Delete me
 
-   auto temp = (*original_header.ReplyToAddress()).data;
-   auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
-   connection_manager_.Send(temp, message,
-                            [=](asio::error_code error) {
-                              if (error) {
-                                LOG(kWarning) << "Could not send to " << temp;
-                              } else {
-                                LOG(kVerbose) << "Sent ConnectResponse to " << temp;
-                              }
-                            });
+  auto temp = (*original_header.ReplyToAddress()).data;
+  auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
+  connection_manager_.Send(temp, message, [=](asio::error_code error) {
+    if (error) {
+      LOG(kWarning) << "Could not send to " << temp;
+    } else {
+      LOG(kVerbose) << "Sent ConnectResponse to " << temp;
+    }
+  });
   ////////////////////////
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
 
-  connection_manager_.AddNodeAccept
-    (NodeInfo(connect.requester_id(), connect.requester_fob(), true),
-     connect.requester_endpoints(),
-     [=](boost::optional<CloseGroupDifference> added, Endpoint /* our_endpoint */) {
-      if (!destroy_guard.lock()) return;
-      if (added)
-        static_cast<Child*>(this)->HandleChurn(*added);
-     });
+  connection_manager_.AddNodeAccept(
+      NodeInfo(connect.requester_id(), connect.requester_fob(), true),
+      connect.requester_endpoints(),
+      [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
+        if (!destroy_guard.lock())
+          return;
+        if (!error && added)
+          static_cast<Child*>(this)->HandleChurn(*added);
+      });
 }
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
-LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to " << connect_response.receiver_id();
+  LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to "
+             << connect_response.receiver_id();
   if (!connection_manager_.SuggestNodeToAdd(connect_response.requester_id()))
     return;
 
@@ -521,11 +536,12 @@ LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to " << c
   connection_manager_.AddNode(
       NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
       response_ptr->receiver_endpoints(),
-      [=](boost::optional<CloseGroupDifference> added, Endpoint /* our_endpoint */) {
-        if (!destroy_guard.lock()) return;
+      [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
+        if (!destroy_guard.lock())
+          return;
 
         auto target = response_ptr->requester_id();
-        if (added)
+        if (!error && added)
           static_cast<Child*>(this)->HandleChurn(*added);
         if (connection_manager_.Size() >= QuorumSize) {
           // rudp_.Remove(*bootstrap_node_, asio::use_future).get(); // FIXME (Prakash)
@@ -555,19 +571,20 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
   }
 
   // if node in my group && in non routing list send it to non_routnig list as well
-  //if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle message part !
+  // if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle
+  // message part !
 
-  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ? temp code to get past zero state. Delete me !!
+  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ? temp code to get past zero
+  // state. Delete me !!
   auto temp = (*original_header.ReplyToAddress()).data;
-  //LOG(kVerbose) << "FindGroupResp sent to " << temp ;
-  connection_manager_.Send(temp, message,
-                           [=](asio::error_code error) {
-                             if (error) {
-                               LOG(kWarning) << "Could not send to " << temp;
-                             } else {
-                               //LOG(kVerbose) << "Sent FindGroupResponse to " << temp;
-                             }
-                           });
+  // LOG(kVerbose) << "FindGroupResp sent to " << temp ;
+  connection_manager_.Send(temp, message, [=](asio::error_code error) {
+    if (error) {
+      LOG(kWarning) << "Could not send to " << temp;
+    } else {
+      // LOG(kVerbose) << "Sent FindGroupResponse to " << temp;
+    }
+  });
 }
 
 template <typename Child>
@@ -576,18 +593,18 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
-    LOG(kInfo) << "HandleMessage -- FindGroupResponse msg";
+  LOG(kInfo) << "HandleMessage -- FindGroupResponse msg";
   for (const auto node_pmid : find_group_reponse.group()) {
     Address node_id(node_pmid.Name());
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
     Connect connect_message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
     if (bootstrap_node_) {  // TODO cleanup
-      SendToBootstrapNode(std::make_pair(Destination(node_id), boost::none),
-                          OurSourceAddress(), connect_message, Authority::nae_manager);
+      SendToBootstrapNode(std::make_pair(Destination(node_id), boost::none), OurSourceAddress(),
+                          connect_message, Authority::nae_manager);
     } else {
-      SendSwarmOrParallel(std::make_pair(Destination(node_id), boost::none),
-                          OurSourceAddress(), connect_message, Authority::nae_manager);
+      SendSwarmOrParallel(std::make_pair(Destination(node_id), boost::none), OurSourceAddress(),
+                          connect_message, Authority::nae_manager);
     }
   }
 }
@@ -596,8 +613,7 @@ template <typename Child>
 void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
   auto result = static_cast<Child*>(this)->HandleGet(
       header.Source(), header.FromAuthority(),
-      OurAuthority(get_data.name_and_type_id().name, header),
-      get_data.name_and_type_id());
+      OurAuthority(get_data.name_and_type_id().name, header), get_data.name_and_type_id());
   if (!result) {
     // send back error
     return;
@@ -610,14 +626,17 @@ void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
 }
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader /*original_header*/) {
-  // FIXME(Prakash)
-//  cache_.Add(put_data.name_and_type_id().name, *put_data.data());
-  LOG(kVerbose) << "Put Data : " << put_data.type_id();
-//  auto result = static_cast<Child*>(this)->HandlePut(
-//              original_header.Source(), original_header.FromAuthority(),
-//              OurAuthority(put_data.name_and_type_id().name, original_header),
-//              put_data.name_and_type_id(), put_data.data());
+void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader original_header) {
+  LOG(kVerbose) << "Handling PutData: " << put_data.type_id() << "   "
+                << hex::Substr(put_data.data()) << "   " << put_data.data().size();
+  std::shared_ptr<const Data> parsed(Parse<std::shared_ptr<const Data>>(put_data.data()));
+  cache_.Add(parsed->NameAndType(), put_data.data());
+  auto result = static_cast<Child*>(this)
+                    ->HandlePut(original_header.Source(), original_header.FromAuthority(),
+                                OurAuthority(parsed->NameAndType().name, original_header), parsed);
+  if (result) {
+    // TODO(Fraser#5#): 2015-03-20 - Return error somehow.
+  }
 }
 
 template <typename Child>
@@ -646,8 +665,7 @@ template <typename Child>
 template <typename MessageType>
 void RoutingNode<Child>::SendSwarmOrParallel(const DestinationAddress& destination,
                                              const SourceAddress& source,
-                                             const MessageType& message,
-                                             Authority authority) {
+                                             const MessageType& message, Authority authority) {
   MessageHeader header(destination, source, ++message_id_, authority);
   for (const auto& target : connection_manager_.GetTarget(destination.first.data)) {
     auto wrapped_message = Serialise(header, MessageToTag<MessageType>::value(), message);
@@ -663,18 +681,16 @@ template <typename Child>
 template <typename MessageType>
 void RoutingNode<Child>::SendToBootstrapNode(const DestinationAddress& destination,
                                              const SourceAddress& source,
-                                             const MessageType& message,
-                                             Authority authority) {
-  //assert(source.SourceAddress()== NodeAddress(*bootstrap_node_));  //FIXME(prakash)
+                                             const MessageType& message, Authority authority) {
+  // assert(source.SourceAddress()== NodeAddress(*bootstrap_node_));  //FIXME(prakash)
   MessageHeader header(destination, source, ++message_id_, authority);
   auto wrapped_message = Serialise(header, MessageToTag<MessageType>::value(), message);
-  connection_manager_.Send(*bootstrap_node_, std::move(wrapped_message),
-                           [](asio::error_code error) {
-                              if (error) {
-                                LOG(kWarning) << "Connection manager cannot send to bootstrap node"
-                                              << error.message();
-                             }
-                           });
+  connection_manager_.Send(
+      *bootstrap_node_, std::move(wrapped_message), [](asio::error_code error) {
+        if (error) {
+          LOG(kWarning) << "Connection manager cannot send to bootstrap node" << error.message();
+        }
+      });
 }
 
 }  // namespace routing

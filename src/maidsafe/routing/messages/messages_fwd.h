@@ -94,22 +94,22 @@ struct MessageToTag<GetDataResponse> {
 
 template <>
 struct MessageToTag<GetClientKey> {
- static MessageTypeTag value() { return MessageTypeTag::GetClientKey; }
+  static MessageTypeTag value() { return MessageTypeTag::GetClientKey; }
 };
 
 template <>
 struct MessageToTag<GetClientKeyResponse> {
- static MessageTypeTag value() { return MessageTypeTag::GetClientKeyResponse; }
+  static MessageTypeTag value() { return MessageTypeTag::GetClientKeyResponse; }
 };
 
 template <>
 struct MessageToTag<GetGroupKey> {
- static MessageTypeTag value() { return MessageTypeTag::GetGroupKey; }
+  static MessageTypeTag value() { return MessageTypeTag::GetGroupKey; }
 };
 
 template <>
 struct MessageToTag<GetGroupKeyResponse> {
- static MessageTypeTag value() { return MessageTypeTag::GetGroupKeyResponse; }
+  static MessageTypeTag value() { return MessageTypeTag::GetGroupKeyResponse; }
 };
 
 template <>

@@ -58,12 +58,14 @@ namespace maidsafe {
 
 namespace routing {
 
+class Timer;
+
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
  public:
-  using OnReceive  = std::function<void(Address, const SerialisedMessage&)>;
-  using OnAddNode  = std::function<void(boost::optional<CloseGroupDifference>, Endpoint)>;
+  using OnReceive = std::function<void(Address, const SerialisedMessage&)>;
+  using OnAddNode = std::function<void(asio::error_code, boost::optional<CloseGroupDifference>)>;
   using OnConnectionLost = std::function<void(boost::optional<CloseGroupDifference>, Address)>;
 
  private:
@@ -73,7 +75,8 @@ class ConnectionManager {
   };
 
  public:
-  ConnectionManager(asio::io_service& ios, Address our_id, OnReceive on_receive, OnConnectionLost on_connection_lost);
+  ConnectionManager(asio::io_service& ios, Address our_id, OnReceive on_receive,
+                    OnConnectionLost on_connection_lost);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
@@ -88,7 +91,7 @@ class ConnectionManager {
   boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
 
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  //boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
+  // boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
   void DropNode(const Address& their_id);
 
   void AddNode(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
@@ -116,12 +119,13 @@ class ConnectionManager {
 
   bool CloseGroupMember(const Address& their_id);
 
-  uint32_t Size() { return routing_table_.Size(); }
+  std::size_t Size() { return routing_table_.Size(); }
 
   template <class Handler /* void (error_code) */>
   void Send(const Address&, const SerialisedMessage&, Handler);
 
-  void SendToNonRoutingNode(const Address&, const SerialisedMessage&); // remove connection if fails
+  void SendToNonRoutingNode(const Address&,
+                            const SerialisedMessage&);  // remove connection if fails
 
   unsigned short AcceptingPort() const { return our_accept_port_; }
 
@@ -135,13 +139,13 @@ class ConnectionManager {
   void StartReceiving();
   void StartAccepting();
 
-  void HandleAccept(Connections::AcceptResult);
+  void HandleAddNode(asio::error_code, NodeInfo, OnAddNode);
   void HandleConnectionLost(Address);
 
   boost::optional<CloseGroupDifference> GroupChanged();
 
  private:
-
+  asio::io_service& io_service_;
   mutable std::mutex mutex_;
   unsigned short our_accept_port_;
   RoutingTable routing_table_;
@@ -157,24 +161,25 @@ template <class Handler /* void (error_code) */>
 void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
                              Handler handler) {
   std::weak_ptr<Connections> guard = connections_;
-//  LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
-  connections_->Send(addr, message, [=](asio::error_code error) {
+  LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
+  connections_->Send(addr, message, [=](asio::error_code error) mutable {
       handler(error);
 
-      if (!guard.lock()) return;
+    if (!guard.lock())
+      return;
 
-      if (error) {
-        HandleConnectionLost(std::move(addr));
-      }
-      });
+    if (error) {
+      HandleConnectionLost(std::move(addr));
+    }
+  });
 }
 
 template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
 void ConnectionManager::Connect(asio::ip::udp::endpoint remote_endpoint, Handler handler) {
-  connections_->Connect(remote_endpoint, [=](asio::error_code error,
-                                             Connections::ConnectResult result) {
-      handler(error, result.his_address, result.our_endpoint);
-      });
+  connections_->Connect(remote_endpoint,
+                        [=](asio::error_code error, Connections::ConnectResult result) {
+                          handler(error, result.his_address, result.our_endpoint);
+                        });
 }
 
 }  // namespace routing

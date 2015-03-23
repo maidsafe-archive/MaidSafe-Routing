@@ -251,7 +251,7 @@ class AccountTransfer : public AccountTransferInfo {
        merged += dynamic_cast<AccountTransfer*>(accounts.at(index).get())->value();
 
     return maidsafe::make_unique<AccountTransfer>(Name(), merged);
- }
+  }
 
  private:
   int value_;

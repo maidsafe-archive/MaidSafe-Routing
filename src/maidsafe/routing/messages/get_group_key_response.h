@@ -19,6 +19,8 @@
 #ifndef MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
 #define MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
 
+#include <map>
+
 #include "maidsafe/common/config.h"
 
 #include "maidsafe/routing/types.h"
@@ -69,4 +71,4 @@ class GetGroupKeyResponse {
 }  // namespace maidsafe
 
 
-#endif // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
+#endif  // MAIDSAFE_ROUTING_MESSAGES_GET_GROUP_KEY_RESPONSE_H_
