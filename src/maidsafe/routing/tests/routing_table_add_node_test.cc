@@ -48,7 +48,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[0].far_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(1U, table_.Size());
 
   // Try with the same contact (should fail)
@@ -64,7 +64,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[0].mid_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(2U, table_.Size());
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
@@ -74,7 +74,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[0].close_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(3U, table_.Size());
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
@@ -85,7 +85,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[1].far_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(4U, table_.Size());
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
@@ -95,7 +95,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[1].mid_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(5U, table_.Size());
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
@@ -105,7 +105,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
   info_.id = buckets_[1].close_contact;
   result_of_add = table_.AddNode(info_);
   EXPECT_TRUE(result_of_add.first);
-  EXPECT_TRUE(result_of_add.second.is_initialized());
+  EXPECT_FALSE(result_of_add.second.is_initialized());
   EXPECT_EQ(6U, table_.Size());
   result_of_add = table_.AddNode(info_);
   EXPECT_FALSE(result_of_add.first);
@@ -117,7 +117,7 @@ TEST_F(RoutingTableUnitTest, BEH_AddNode) {
     info_.id = buckets_[i].mid_contact;
     result_of_add = table_.AddNode(info_);
     EXPECT_TRUE(result_of_add.first);
-    EXPECT_TRUE(result_of_add.second.is_initialized());
+    EXPECT_FALSE(result_of_add.second.is_initialized());
     EXPECT_EQ(i + 5, table_.Size());
     result_of_add = table_.AddNode(info_);
     EXPECT_FALSE(result_of_add.first);
