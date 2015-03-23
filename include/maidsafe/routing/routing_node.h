@@ -72,7 +72,7 @@ class RoutingNode {
   template <typename CompletionToken>
   BootstrapReturn<CompletionToken> Bootstrap(Endpoint endpoint, CompletionToken&& token);
 
-  // // will return with the data
+  // will return with the data
   template <typename CompletionToken>
   GetReturn<CompletionToken> Get(Data::NameAndTypeId name_and_type_id, CompletionToken&& token);
   // will return with allowed or not (error_code only)
@@ -503,7 +503,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
 
   auto temp = (*original_header.ReplyToAddress()).data;
   auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
-  connection_manager_.Send(temp, message, [=](asio::error_code error) {
+  connection_manager_.Send(temp, std::move(message), [=](asio::error_code error) {
     if (error) {
       LOG(kWarning) << "Could not send to " << temp;
     } else {

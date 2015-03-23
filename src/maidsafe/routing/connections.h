@@ -216,7 +216,12 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
   asio::async_result<Handler> result(handler);
 
   get_io_service().post([=]() mutable {
-    crux::endpoint unspecified_ep(boost::asio::ip::udp::v4(), 0);
+    crux::endpoint unspecified_ep;
+    if (endpoint.address().is_v4())
+      unspecified_ep = crux::endpoint(boost::asio::ip::udp::v4(), 0);
+    else
+      unspecified_ep = crux::endpoint(boost::asio::ip::udp::v6(), 0);
+
     auto socket = std::make_shared<crux::socket>(get_io_service(), unspecified_ep);
 
     auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
