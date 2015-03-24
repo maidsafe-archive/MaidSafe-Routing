@@ -86,7 +86,7 @@ std::set<Address> ConnectionManager::GetNonRoutingNodes() const {
 //  routing_table_.DropNode(their_id);
 //  // FIXME(Prakash) remove connection ?
 //  return GroupChanged();
-//}
+// }
 void ConnectionManager::DropNode(const Address& their_id) { connections_->Drop(their_id); }
 
 void ConnectionManager::StartAccepting() {

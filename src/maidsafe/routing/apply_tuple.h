@@ -47,14 +47,13 @@ inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup,
 
 template <class F, typename... Args>
 inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup)
-    -> decltype(helper::ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{})) {
-  return helper::ApplyTuple(std::forward<F>(f),
-                            tup,
-                            helper::GeneratedSequence<sizeof...(Args)>{});
+    -> decltype(helper::ApplyTuple(std::forward<F>(f), tup,
+                                   helper::GeneratedSequence<sizeof...(Args)>{})) {
+  return helper::ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{});
 }
 
-} // namespace routing
+}  // namespace routing
 
-} // namespace maidsafe
+}  // namespace maidsafe
 
-#endif // MAIDSAFE_ROUTING_APPLY_TUPLE_H_
+#endif  // MAIDSAFE_ROUTING_APPLY_TUPLE_H_

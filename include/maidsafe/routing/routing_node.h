@@ -23,6 +23,7 @@
 #include <memory>
 #include <utility>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -303,7 +304,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
 template <typename Child>
 void RoutingNode<Child>::ConnectToCloseGroup() {
   FindGroup find_group_message(NodeAddress(OurId()), OurId());
-  if (bootstrap_node_) {  // TODO cleanup
+  if (bootstrap_node_) {  // TODO(Team) cleanup
     SendToBootstrapNode(std::make_pair(Destination(OurId()), boost::none), OurSourceAddress(),
                         find_group_message, Authority::node);
   } else {
@@ -475,7 +476,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
                        SourceAddress(OurSourceAddress()), original_header.MessageId(),
                        Authority::node,
                        asymm::Sign(asymm::PlainText(Serialise(respond)), our_fob_.private_key()));
-  if (bootstrap_node_) {  // TODO cleanup
+  if (bootstrap_node_) {  // TODO(Team) cleanup
     auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
     connection_manager_.Send(*bootstrap_node_, std::move(message), [](asio::error_code error) {
       if (error) {
@@ -600,7 +601,7 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
     Connect connect_message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
-    if (bootstrap_node_) {  // TODO cleanup
+    if (bootstrap_node_) {  // TODO(Team) cleanup
       SendToBootstrapNode(std::make_pair(Destination(node_id), boost::none), OurSourceAddress(),
                           connect_message, Authority::nae_manager);
     } else {
