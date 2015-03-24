@@ -127,7 +127,7 @@ class ConnectionManager {
   void SendToNonRoutingNode(const Address&,
                             const SerialisedMessage&);  // remove connection if fails
 
-  unsigned short AcceptingPort() const { return our_accept_port_; }
+  Port AcceptingPort() const { return our_accept_port_; }
 
   template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
   void Connect(asio::ip::udp::endpoint, Handler);
@@ -147,7 +147,7 @@ class ConnectionManager {
  private:
   asio::io_service& io_service_;
   mutable std::mutex mutex_;
-  unsigned short our_accept_port_;
+  Port our_accept_port_;
   RoutingTable routing_table_;
   std::set<Address> connected_non_routing_nodes_;  // clients & bootstrapping nodes
   OnReceive on_receive_;

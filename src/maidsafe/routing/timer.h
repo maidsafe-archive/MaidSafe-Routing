@@ -30,11 +30,11 @@ namespace routing {
 
 class Timer {
  public:
-  Timer(asio::io_service&);
+  explicit Timer(asio::io_service& ios);
   ~Timer();
 
   template <class Handler>
-  void async_wait(asio::steady_timer::duration, Handler&&);
+  void async_wait(asio::steady_timer::duration duration, Handler&& handler);
 
   void cancel();
 
@@ -68,8 +68,8 @@ inline void Timer::cancel() {
   timer_.cancel();
 }
 
-}  // routing namespace
+}  // namespace routing
 
-}  // maidsafe namespace
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_ROUTING_TIMER_H_

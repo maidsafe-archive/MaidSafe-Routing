@@ -51,37 +51,35 @@ TEST(ConnectionsTest, FUNC_TwoConnections) {
   Connections c1(ios, c1_id);
   Connections c2(ios, c2_id);
 
-  unsigned short port = 8080;
+  Port port = 8080;
 
-  c1.Accept(port, nullptr,
-      [&](asio::error_code error, Connections::AcceptResult result) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(result.his_address, c2.OurId());
-        ASSERT_EQ(result.our_endpoint.port(), port);
+  c1.Accept(port, nullptr, [&](asio::error_code error, Connections::AcceptResult result) {
+    ASSERT_FALSE(error);
+    ASSERT_EQ(result.his_address, c2.OurId());
+    ASSERT_EQ(result.our_endpoint.port(), port);
 
-        c1.Send(result.his_address,
-                str_to_msg("hello"),
-                [&](asio::error_code error) {
-                  ASSERT_FALSE(error);
-                  c1.Shutdown();
-                  c1_finished = true;
-                });
-      });
+    c1.Send(result.his_address, str_to_msg("hello"), [&](asio::error_code error) {
+      ASSERT_FALSE(error);
+      c1.Shutdown();
+      c1_finished = true;
+    });
+  });
 
   c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port),
-      [&](asio::error_code error, Connections::ConnectResult result) {
-        ASSERT_FALSE(error);
-        ASSERT_EQ(result.his_address, c1.OurId());
+             [&](asio::error_code error, Connections::ConnectResult result) {
+               ASSERT_FALSE(error);
+               ASSERT_EQ(result.his_address, c1.OurId());
 
-        c2.Receive([&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
-          ASSERT_FALSE(error);
-          ASSERT_EQ(recv_result.his_address, result.his_address);
-          ASSERT_EQ(msg_to_str(recv_result.message), "hello");
+               c2.Receive(
+                   [&, result](asio::error_code error, Connections::ReceiveResult recv_result) {
+                     ASSERT_FALSE(error);
+                     ASSERT_EQ(recv_result.his_address, result.his_address);
+                     ASSERT_EQ(msg_to_str(recv_result.message), "hello");
 
-          c2.Shutdown();
-          c2_finished = true;
-        });
-      });
+                     c2.Shutdown();
+                     c2_finished = true;
+                   });
+             });
 
   ios.run();
 
@@ -99,12 +97,13 @@ TEST(ConnectionsTest, FUNC_TwoConnectionsWithFutures) {
 
   std::thread thread([&]() { ios.run(); });
 
-  unsigned short port = 8080;
+  Port port = 8080;
 
-  auto accept_f  = c1.Accept(port, nullptr, asio::use_future);
-  auto connect_f = c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
+  auto accept_f = c1.Accept(port, nullptr, asio::use_future);
+  auto connect_f =
+      c2.Connect(asio::ip::udp::endpoint(asio::ip::address_v4::loopback(), port), asio::use_future);
 
-  auto accept_result  = accept_f.get();
+  auto accept_result = accept_f.get();
   auto connect_result = connect_f.get();
 
   ASSERT_EQ(accept_result.his_address, c2.OurId());

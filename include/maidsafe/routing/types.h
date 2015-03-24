@@ -48,7 +48,7 @@ namespace routing {
 static const size_t GroupSize = 23;
 static const size_t QuorumSize = 19;
 
-enum class FromType : int32_t {
+enum class FromType : std::int32_t {
   client_manager,
   nae_manager,
   node_manager,
@@ -58,7 +58,7 @@ enum class FromType : int32_t {
   node
 };
 
-enum class Authority : int32_t {
+enum class Authority : std::int32_t {
   client_manager,
   nae_manager,
   node_manager,
@@ -68,7 +68,7 @@ enum class Authority : int32_t {
 };
 
 using Address = Identity;
-using MessageId = uint32_t;
+using MessageId = std::uint32_t;
 using Destination = TaggedValue<Address, struct DestinationTag>;
 using ReplyToAddress = TaggedValue<Address, struct ReplytoTag>;
 using DestinationAddress = std::pair<Destination, boost::optional<ReplyToAddress>>;
@@ -89,18 +89,17 @@ using HandleGetReturn =
                     maidsafe_error>;
 using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
 using HandlePostReturn =
-    boost::expected<std::pair<std::vector<DestinationAddress>, std::vector<byte>>,
-                    maidsafe_error>;
+    boost::expected<std::pair<std::vector<DestinationAddress>, std::vector<byte>>, maidsafe_error>;
 
 using Endpoint = asio::ip::udp::endpoint;
-using Port = uint16_t;
+using Port = std::uint16_t;
 using SerialisedMessage = std::vector<byte>;
 using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address>>;
 using PublicKeyId = std::pair<Address, asymm::PublicKey>;
 
 template <typename CompletionToken, typename... Args>
-using AsyncResultHandler =
-    typename asio::handler_type<typename std::decay<CompletionToken>::type, void(asio::error_code, Args...)>::type;
+using AsyncResultHandler = typename asio::handler_type<typename std::decay<CompletionToken>::type,
+                                                       void(asio::error_code, Args...)>::type;
 
 template <typename CompletionToken, typename... Args>
 using AsyncResultReturn =
