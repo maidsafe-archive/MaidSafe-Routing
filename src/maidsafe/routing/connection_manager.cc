@@ -238,7 +238,7 @@ void ConnectionManager::StartReceiving() {
 
 void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
                                              const SerialisedMessage& /*message*/) {
-  // connections_->Send(addr, message, std::move(handler));
+  // connections_->Send(addr, message, std::move(handler));  // FIXME(Prakash)
   // remove connection if failed
 }
 

@@ -117,6 +117,7 @@ class RoutingNode {
   template <typename MessageType>
   void SendSwarmOrParallel(const DestinationAddress& destination, const SourceAddress& source,
                            const MessageType& message, Authority authority);
+  void SendSwarmOrParallel(const Address& destination, const SerialisedMessage& serialised_message);
   template <typename MessageType>
   void SendToBootstrapNode(const DestinationAddress& destination, const SourceAddress& source,
                            const MessageType& message, Authority authority);
@@ -131,14 +132,7 @@ class RoutingNode {
   void OnBootstrap(asio::error_code, Contact, std::function<void(asio::error_code, Contact)>);
   void PutOurPublicPmid();
 
-  EndpointPair NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
-    if (!our_external_endpoint_) {
-      return EndpointPair();
-    }
-    auto port = connection_manager_.AcceptingPort();
-    return EndpointPair(Endpoint(GetLocalIp(), port),
-                        Endpoint(our_external_endpoint_->address(), port));
-  }
+  EndpointPair NextEndpointPair();
   // this innocuous looking call will bootstrap the node and also be used if we spot close group
   // nodes appering or vanishing so its pretty important.
   void ConnectToCloseGroup();
@@ -223,6 +217,16 @@ void RoutingNode<Child>::PutOurPublicPmid() {
     SendToBootstrapNode(std::make_pair(Destination(name), boost::none), OurSourceAddress(),
                         put_data_message, Authority::client);
   });
+}
+
+template <typename Child>
+EndpointPair RoutingNode<Child>::NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
+  if (!our_external_endpoint_) {
+    return EndpointPair();
+  }
+  auto port = connection_manager_.AcceptingPort();
+  return EndpointPair(Endpoint(GetLocalIp(), port),
+                      Endpoint(our_external_endpoint_->address(), port));
 }
 
 template <typename Child>
@@ -311,12 +315,9 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 
 template <typename Child>
 void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
-  //  LOG(kInfo) << OurId() << " MessageReceived from " << peer_id << " <<< "<<
-  //  hex::Substr(serialised_message) << ">>>";
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
-  // Identity name;
   try {
     Parse(binary_input_stream, header, tag);
   } catch (const std::exception&) {
@@ -326,7 +327,6 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
   LOG(kVerbose) << " [ " << OurId() << " ] "
                 << " Msg from  [ " << peer_id << " ]    MessageId " << header.MessageId()
                 << "  tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
-
 
   if (filter_.Check(header.FilterValue()))
     return;  // already seen
@@ -362,13 +362,10 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
   }
 
   // send to next node(s) even our close group (swarm mode)
-  for (const auto& target : connection_manager_.GetTarget(header.Destination().first)) {
-    connection_manager_.Send(target.id, serialised_message, [](asio::error_code error) {
-      if (error) {
-        LOG(kWarning) << "cannot send" << error.message();
-      }
-    });
-  }
+  SendSwarmOrParallel(header.Destination().first, serialised_message);
+
+  // TODO(Prakash) cleanup aim to abstract relay logic here and may be use term routed message for
+  // response messages
   if (header.RelayedMessage() && (header.FromNode().data != OurId())) {  // skip outgoing msgs
     std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
     if (std::any_of(
@@ -387,8 +384,7 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
 
   // Drop message before Sentinel check if it is a direct message type (Connect, ConnectResponse)
   // and this node is in the group but the message destination is another group member node.
-  // TODO(Prakash) cleanup aim to abstract relay logic here and may be use term routed message for
-  // response messages
+
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
     if (header.Destination().first.data != OurId()) {  // not for me
       if ((header.Destination().second) && (*header.Destination().second).data != OurId()) {
@@ -510,6 +506,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
       LOG(kVerbose) << "Sent ConnectResponse to " << temp;
     }
   });
+  // connection_manager_.SendToNonRoutingNode(temp, message);  // FIXME(Prakash)
   ////////////////////////
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
@@ -682,6 +679,18 @@ void RoutingNode<Child>::SendSwarmOrParallel(const DestinationAddress& destinati
 }
 
 template <typename Child>
+void RoutingNode<Child>::SendSwarmOrParallel(const Address& destination,
+                                             const SerialisedMessage& serialised_message) {
+  for (const auto& target : connection_manager_.GetTarget(destination)) {
+    connection_manager_.Send(target.id, serialised_message, [](asio::error_code error) {
+      if (error) {
+        LOG(kWarning) << "Connection manager cannot send" << error.message();
+      }
+    });
+  }
+}
+
+template <typename Child>
 template <typename MessageType>
 void RoutingNode<Child>::SendToBootstrapNode(const DestinationAddress& destination,
                                              const SourceAddress& source,
@@ -696,6 +705,7 @@ void RoutingNode<Child>::SendToBootstrapNode(const DestinationAddress& destinati
         }
       });
 }
+
 
 }  // namespace routing
 
