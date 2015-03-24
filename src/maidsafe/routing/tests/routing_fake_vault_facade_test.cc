@@ -43,7 +43,7 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   EXPECT_NO_THROW(put_future.get());
   passport::MaidAndSigner maid_and_signer(passport::CreateMaidAndSigner());
   std::shared_ptr<Data> public_maid(new passport::PublicMaid(maid_and_signer.first));
-  put_future = vault1.Put(public_maid, asio::use_future);
+  put_future = vault2.Put(public_maid, asio::use_future);
   EXPECT_NO_THROW(put_future.get());
 
 
@@ -52,7 +52,7 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
     std::error_code error;
     vault2.Put(immutable_data, yield[error]);
     EXPECT_FALSE(error) << error.message();
-    vault1.Put(public_maid, yield[error]);
+    vault2.Put(public_maid, yield[error]);
     EXPECT_FALSE(error) << error.message();
   });
 
