@@ -80,6 +80,13 @@ class ConnectResponse {
   passport::PublicPmid receiver_fob_;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const ConnectResponse& msg) {
+  return os << "(ConnectResponse rq:" << msg.requester_endpoints() << ", "
+            << "rc:" << msg.receiver_endpoints()
+            << ", rq:" << msg.requester_id()
+            << ", rc:" << msg.receiver_id() << ")";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

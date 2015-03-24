@@ -20,6 +20,8 @@
 #define MAIDSAFE_ROUTING_TESTS_UTILS_FAKE_VAULT_FACADE_H_
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include "maidsafe/routing/routing_node.h"
 
@@ -35,17 +37,17 @@ class MaidManager {
   MaidManager() {}
 
   template <typename Data>
-  routing::HandlePutReturn HandlePut(const routing::SourceAddress& from, const Data& data);
+  routing::HandlePutPostReturn HandlePut(const routing::SourceAddress& from, const Data& data);
 };
 
 template <typename Facade>
 template <typename Data>
-routing::HandlePutReturn MaidManager<Facade>::HandlePut(
+routing::HandlePutPostReturn MaidManager<Facade>::HandlePut(
     const routing::SourceAddress& /*source_address*/, const Data& data) {
   std::vector<routing::DestinationAddress> result;
   result.push_back(
       std::make_pair(routing::Destination(routing::Address(data.Name())), boost::none));
-  return routing::HandlePutReturn(result);
+  return routing::HandlePutPostReturn(result);
 }
 
 
@@ -55,7 +57,7 @@ class DataManager {
   DataManager() {}
 
   template <typename Data>
-  routing::HandlePutReturn HandlePut(const routing::SourceAddress& from, const Data& data);
+  routing::HandlePutPostReturn HandlePut(const routing::SourceAddress& from, const Data& data);
   template <typename Data>
   routing::HandleGetReturn HandleGet(const routing::SourceAddress& from, const Identity& name);
 
@@ -66,8 +68,8 @@ class DataManager {
 
 template <typename Facade>
 template <typename Data>
-routing::HandlePutReturn DataManager<Facade>::HandlePut(const routing::SourceAddress& /*from*/,
-                                                        const Data& data) {
+routing::HandlePutPostReturn DataManager<Facade>::HandlePut(const routing::SourceAddress& /*from*/,
+                                                            const Data& data) {
   if (data_.find(data.name().value.string()) == std::end(data_))
     data_.insert(std::make_pair(data.name().value.string(), data.data().string()));
   return boost::make_unexpected(MakeError(CommonErrors::success));
@@ -92,7 +94,7 @@ routing::HandleGetReturn DataManager<Facade>::HandleGet(const routing::SourceAdd
 //  typename ParsedType::serialised_type contents;
 //  Parse(binary_input_stream, name, contents);
 //  return ParsedType(name, contents);
-//}
+// }
 
 // template <>
 // ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data);
@@ -115,9 +117,10 @@ class FakeVaultFacade : public MaidManager<FakeVaultFacade>,
                                      Data::NameAndTypeId name_and_type_id);
 
 
-  routing::HandlePutReturn HandlePut(routing::SourceAddress from, routing::Authority from_authority,
-                                     routing::Authority our_authority,
-                                     std::shared_ptr<const Data> data);
+  routing::HandlePutPostReturn HandlePut(routing::SourceAddress from,
+                                         routing::Authority from_authority,
+                                         routing::Authority our_authority,
+                                         std::shared_ptr<const Data> data);
 
   bool HandlePost(const routing::SerialisedMessage& message);
   // not in local cache do upper layers have it (called when we are in target group)

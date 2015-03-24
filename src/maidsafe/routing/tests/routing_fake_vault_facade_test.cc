@@ -37,13 +37,13 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
 
   LOG(kInfo) << "=================================================================================";
 
-  std::shared_ptr<Data> immutable_data(new ImmutableData(NonEmptyString(RandomAlphaNumericBytes(1, 50))));
-  std::future<void> put_future(
-    vault2.Put(immutable_data, asio::use_future));
+  std::shared_ptr<Data> immutable_data(
+      new ImmutableData(NonEmptyString(RandomAlphaNumericBytes(1, 50))));
+  std::future<void> put_future(vault2.Put(immutable_data, asio::use_future));
   EXPECT_NO_THROW(put_future.get());
   passport::MaidAndSigner maid_and_signer(passport::CreateMaidAndSigner());
   std::shared_ptr<Data> public_maid(new passport::PublicMaid(maid_and_signer.first));
-  put_future = vault1.Put(public_maid, asio::use_future);
+  put_future = vault2.Put(public_maid, asio::use_future);
   EXPECT_NO_THROW(put_future.get());
 
 
@@ -52,7 +52,7 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
     std::error_code error;
     vault2.Put(immutable_data, yield[error]);
     EXPECT_FALSE(error) << error.message();
-    vault1.Put(public_maid, yield[error]);
+    vault2.Put(public_maid, yield[error]);
     EXPECT_FALSE(error) << error.message();
   });
 
@@ -60,12 +60,12 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   asio_service.Stop();
 }
 
-//TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {
+// TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {
 //  using endpoint = asio::ip::udp::endpoint;
 //  using address = asio::ip::address_v4;
 //  vault::test::FakeVaultFacade facade1;
-//  std::vector<std::pair<vault::test::FakeVaultFacade, unsigned short>> vaults(2);
-//  unsigned short port(5483);
+//  std::vector<std::pair<vault::test::FakeVaultFacade, Port>> vaults(2);
+//  Port port(5483);
 //  for (auto& vault : vaults)
 //    vault.second = port++;
 //  for (auto& vault : vaults)
@@ -89,7 +89,7 @@ TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
 //      [](maidsafe_error error) {
 //        ASSERT_EQ(error.code(), make_error_code(CommonErrors::success));
 //      });
-//}
+// }
 
 }  // namespace test
 

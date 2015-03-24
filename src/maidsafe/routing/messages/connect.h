@@ -75,6 +75,11 @@ class Connect {
   passport::PublicPmid requester_fob_;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Connect& msg) {
+  return os << "(Connect " << msg.requester_endpoints() << ", "
+            << msg.requester_id() << ", " << msg.receiver_id() << ", ...)";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

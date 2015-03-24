@@ -22,6 +22,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <queue>
 #include <vector>
 
 #include "asio/io_service.hpp"
@@ -82,8 +83,7 @@ class Connections {
   // The secont argument is an ugly C-style return of the actual port that has been
   // chosen. TODO: Try to return it using a proper C++ way.
   template <class Token>
-  AsyncResultReturn<Token, AcceptResult> Accept(unsigned short port, unsigned short* chosen_port,
-                                                Token&&);
+  AsyncResultReturn<Token, AcceptResult> Accept(Port port, Port* chosen_port, Token&&);
 
   void Drop(const Address& their_id);
 
@@ -113,7 +113,7 @@ class Connections {
   std::function<void(Address, const SerialisedMessage&)> on_receive_;
   std::function<void(Address)> on_drop_;
 
-  std::map<unsigned short, std::shared_ptr<crux::acceptor>> acceptors_;  // NOLINT
+  std::map<Port, std::shared_ptr<crux::acceptor>> acceptors_;  // NOLINT
   std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
   std::map<Address, crux::endpoint> id_to_endpoint_map_;
 
@@ -217,6 +217,7 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
 
   get_io_service().post([=]() mutable {
     crux::endpoint unspecified_ep;
+
     if (endpoint.address().is_v4())
       unspecified_ep = crux::endpoint(boost::asio::ip::udp::v4(), 0);
     else
@@ -276,18 +277,17 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
 }
 
 template <class Token>
-AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(unsigned short port,
-                                                                        unsigned short* chosen_port,
+AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port port,
+                                                                        Port* chosen_port,
                                                                         Token&& token) {
   using Handler = AsyncResultHandler<Token, AcceptResult>;
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
 
-  auto loopback =
-      [](unsigned short port) { return crux::endpoint(boost::asio::ip::udp::v4(), port); };
+  auto loopback = [](Port port) { return crux::endpoint(boost::asio::ip::udp::v4(), port); };
 
-  // TODO(PeterJ):Make sure this operation is thread safe in crux.
+  // TODO(PeterJ) Make sure this operation is thread safe in crux.
   std::shared_ptr<crux::acceptor> acceptor;
 
   try {
@@ -410,7 +410,7 @@ void Connections::post(Handler&& handler, Args&&... args) {
 
 inline void Connections::Drop(const Address& their_id) {
   get_io_service().post([=]() {
-    // TODO: Migth it be that it is in connections_ but not in the id_to_endpoint_map_?
+    // TODO(Team): Might it be that it is in connections_ but not in the id_to_endpoint_map_?
     // I.e. that above layers would wan't to remove by ID nodes which were not
     // yet connected?
     auto i = id_to_endpoint_map_.find(their_id);

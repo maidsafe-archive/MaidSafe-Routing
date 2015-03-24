@@ -23,6 +23,7 @@
 #include <memory>
 #include <utility>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -183,27 +184,32 @@ RoutingNode<Child>::RoutingNode()
 
 template <typename Child>
 void RoutingNode<Child>::StartBootstrap() {
-  auto handler = [=](asio::error_code error, Address peer_addr, Endpoint /*our_public_endpoint*/) {
-    if (error) {
-      LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr << " >"
-                    << error.message();
-      // TODO(Team): try connect to bootstrap contacts and other options
-      // (hardcoded endpoints).on failure keep retrying all options forever
-      return;
-    }
-    LOG(kInfo) << "Bootstrapped with " << peer_addr;
-    // FIXME(Team): Thread safety.
-    bootstrap_node_ = peer_addr;
-    // bootstrap_endpoint_ = our_endpoint; this will not required if
-    // connection manager has this connection
-    PutOurPublicPmid();
-    ConnectToCloseGroup();
-  };
   // try connect to any local nodes (5483) Expect to be told Node_Id
   Endpoint live_port_ep(GetLocalIp(), kLivePort);
+
   // skip trying to bootstrap off self
-  if (connection_manager_.AcceptingPort() != kLivePort)
-    connection_manager_.Connect(live_port_ep, handler);
+  if (connection_manager_.AcceptingPort() == kLivePort) {
+    return;
+  }
+
+  connection_manager_.Connect(live_port_ep,
+    [=](asio::error_code error, Address peer_addr, Endpoint our_public_endpoint) {
+      if (error) {
+        LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr << " >"
+                      << error.message();
+        // TODO(Team): try connect to bootstrap contacts and other options
+        // (hardcoded endpoints).on failure keep retrying all options forever
+        return;
+      }
+      LOG(kInfo) << "Bootstrapped with " << peer_addr;
+      // FIXME(Team): Thread safety.
+      bootstrap_node_ = peer_addr;
+      our_external_endpoint_ = our_public_endpoint;
+      // bootstrap_endpoint_ = our_endpoint; this will not required if
+      // connection manager has this connection
+      PutOurPublicPmid();
+      ConnectToCloseGroup();
+    });
 
   // auto bootstrap_contacts = bootstrap_handler_.ReadBootstrapContacts();
 }
@@ -223,13 +229,12 @@ void RoutingNode<Child>::PutOurPublicPmid() {
 }
 
 template <typename Child>
-EndpointPair RoutingNode<Child>::NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
-  if (!our_external_endpoint_) {
-    return EndpointPair();
-  }
+EndpointPair RoutingNode<Child>::NextEndpointPair() {
   auto port = connection_manager_.AcceptingPort();
+
   return EndpointPair(Endpoint(GetLocalIp(), port),
-                      Endpoint(our_external_endpoint_->address(), port));
+                      our_external_endpoint_ ? Endpoint(our_external_endpoint_->address(), port)
+                                             : Endpoint());
 }
 
 template <typename Child>
@@ -306,7 +311,7 @@ PostReturn<CompletionToken> RoutingNode<Child>::Post(Address to, FunctorType fun
 template <typename Child>
 void RoutingNode<Child>::ConnectToCloseGroup() {
   FindGroup find_group_message(NodeAddress(OurId()), OurId());
-  if (bootstrap_node_) {  // TODO cleanup
+  if (bootstrap_node_) {  // TODO(Team) cleanup
     SendToBootstrapNode(std::make_pair(Destination(OurId()), boost::none), OurSourceAddress(),
                         find_group_message, Authority::node);
   } else {
@@ -327,9 +332,10 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  LOG(kVerbose) << " [ " << OurId() << " ] "
-                << " Msg from  [ " << peer_id << " ]    MessageId " << header.MessageId()
-                << "  tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
+  LOG(kVerbose) << OurId()
+                << " Msg from " << peer_id
+                << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
+                << " " << header;
 
   if (filter_.Check(header.FilterValue()))
     return;  // already seen
@@ -467,7 +473,7 @@ void RoutingNode<Child>::ConnectionLost(boost::optional<CloseGroupDifference> di
 // reply with our details;
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_header) {
-  LOG(kInfo) << "HandleMessage -- Connect msg .. need to connect to " << connect.requester_id();
+  LOG(kInfo) << OurId() << " HandleMessage " << connect;
   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id()))
     return;
 
@@ -505,8 +511,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
-  LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to "
-             << connect_response.receiver_id();
+  LOG(kInfo) << OurId() << " HandleMessage " << connect_response;
   if (!connection_manager_.SuggestNodeToAdd(connect_response.receiver_id()))
     return;
 
@@ -516,8 +521,8 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
   LOG(kError) << " AddNode ";
   connection_manager_.AddNode(
-      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
-      response_ptr->receiver_endpoints(),
+      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), false),
+      response_ptr->requester_endpoints(),
       [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock())
           return;
@@ -534,6 +539,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader original_header) {
+  LOG(kInfo) << OurId() << " HandleMessage " << find_group;
   auto close_group = connection_manager_.OurCloseGroup();
   // add ourselves
   std::vector<passport::PublicPmid> group;
@@ -562,18 +568,18 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
 }
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
+void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_response,
                                        MessageHeader /* original_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
-  LOG(kInfo) << "HandleMessage -- FindGroupResponse msg";
-  for (const auto node_pmid : find_group_reponse.group()) {
+  LOG(kInfo) << OurId() << " HandleMessage " << find_group_response;
+  for (const auto node_pmid : find_group_response.group()) {
     Address node_id(node_pmid.Name());
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
     Connect connect_message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
-    if (bootstrap_node_) {  // TODO cleanup
+    if (bootstrap_node_) {  // TODO(Team) cleanup
       SendToBootstrapNode(std::make_pair(Destination(node_id), boost::none), OurSourceAddress(),
                           connect_message, Authority::nae_manager);
     } else {

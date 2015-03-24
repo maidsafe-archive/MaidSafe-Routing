@@ -36,12 +36,12 @@ namespace test {
 //  std::string content(serialised_data.begin() + digest_size, serialised_data.end());
 //  return ImmutableData(ImmutableData::Name(Identity(name)),
 //                       ImmutableData::serialised_type(NonEmptyString(content)));
-//}
+// }
 
-routing::HandlePutReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
-                                                    routing::Authority from_authority,
-                                                    routing::Authority our_authority,
-                                                    std::shared_ptr<const Data> data) {
+routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
+                                                        routing::Authority from_authority,
+                                                        routing::Authority our_authority,
+                                                        std::shared_ptr<const Data> data) {
   LOG(kVerbose) << "Received Put request from " << from.node_address.data << " with Data name "
                 << data->Name() << " and type " << static_cast<std::uint32_t>(data->TypeId());
   (void)from_authority;
