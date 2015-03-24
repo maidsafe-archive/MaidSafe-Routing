@@ -87,7 +87,9 @@ using FilterType = std::pair<NodeAddress, MessageId>;
 using HandleGetReturn =
     boost::expected<boost::variant<std::vector<DestinationAddress>, std::vector<byte>>,
                     maidsafe_error>;
-using HandlePutPostReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
+using HandlePutReturn = boost::expected<std::vector<DestinationAddress>, maidsafe_error>;
+using HandlePostReturn =
+    boost::expected<std::pair<std::vector<DestinationAddress>, std::vector<byte>>, maidsafe_error>;
 
 using Endpoint = asio::ip::udp::endpoint;
 using Port = uint16_t;
@@ -96,8 +98,8 @@ using CloseGroupDifference = std::pair<std::vector<Address>, std::vector<Address
 using PublicKeyId = std::pair<Address, asymm::PublicKey>;
 
 template <typename CompletionToken, typename... Args>
-using AsyncResultHandler =
-    typename asio::handler_type<typename std::decay<CompletionToken>::type, void(asio::error_code, Args...)>::type;
+using AsyncResultHandler = typename asio::handler_type<typename std::decay<CompletionToken>::type,
+                                                       void(asio::error_code, Args...)>::type;
 
 template <typename CompletionToken, typename... Args>
 using AsyncResultReturn =

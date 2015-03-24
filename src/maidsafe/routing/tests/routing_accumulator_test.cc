@@ -35,7 +35,8 @@ namespace test {
 
 TEST(RoutingTest, BEH_AccumulatorAdd) {
   auto quorum(1U);
-  Accumulator<int, uint32_t> accumulator(std::chrono::milliseconds(10), quorum);
+  const std::chrono::steady_clock::duration time_to_live(std::chrono::milliseconds(100));
+  Accumulator<int, uint32_t> accumulator(time_to_live, quorum);
   auto test_address(MakeIdentity());
   EXPECT_TRUE(!!accumulator.Add(2, 3UL, test_address));
   EXPECT_FALSE(accumulator.HaveName(1));
@@ -44,19 +45,21 @@ TEST(RoutingTest, BEH_AccumulatorAdd) {
   EXPECT_TRUE(accumulator.CheckQuorumReached(2));
   EXPECT_TRUE(!!accumulator.Add(1, 3UL, MakeIdentity()));
   EXPECT_TRUE(accumulator.HaveName(1));
+  // Ensure we haven't passed the timeout since "2" was added, since this would have caused the
+  // second call to Add to remove "2".
+  ASSERT_TRUE(accumulator.HaveName(2));
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
   EXPECT_TRUE(!!accumulator.Add(1, 3UL, MakeIdentity()));
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
   EXPECT_EQ(accumulator.GetAll(1)->second.size(), 2);
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  std::this_thread::sleep_for(time_to_live);
   EXPECT_TRUE(accumulator.CheckQuorumReached(1));
   EXPECT_TRUE(!!accumulator.GetAll(1));
   EXPECT_TRUE(accumulator.HaveName(1));
   EXPECT_TRUE(accumulator.CheckQuorumReached(2));
   EXPECT_TRUE(!!accumulator.GetAll(2));
   EXPECT_TRUE(accumulator.HaveName(2));
-  //  this Add will check timers of all other keys and should remove them as they are now timed
-  //  out
+  // This Add will check timers of all other keys and should remove them as they are now timed out.
   EXPECT_TRUE(!!accumulator.Add(3, 3UL, test_address));
   EXPECT_FALSE(accumulator.CheckQuorumReached(1));
   EXPECT_FALSE(!!accumulator.GetAll(1));
