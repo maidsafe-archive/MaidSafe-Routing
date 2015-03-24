@@ -521,7 +521,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
   LOG(kError) << " AddNode ";
   connection_manager_.AddNode(
-      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), false),
+      NodeInfo(response_ptr->receiver_id(), response_ptr->receiver_fob(), false),
       response_ptr->requester_endpoints(),
       [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock())
@@ -554,15 +554,12 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
                        original_header.MessageId(), Authority::nae_manager,
                        asymm::Sign(asymm::PlainText(Serialise(response)), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
-  for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
-    connection_manager_.Send(node.id, message, [](asio::error_code) {});
+  if (bootstrap_node_) {
+    SendToBootstrapNode(message);
+  } else {
+    SendSwarmOrParallel(original_header.FromNode(), message);
   }
-
   // if node in my group && in non routing list send it to non_routnig list as well
-  // if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle
-  // message part !
-
-  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ?
   if (original_header.ReplyToAddress())
     SendToNonRoutingNode((*original_header.ReplyToAddress()).data, message);
 }
