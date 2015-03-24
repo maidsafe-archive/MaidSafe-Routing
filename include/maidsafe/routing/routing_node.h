@@ -181,27 +181,32 @@ RoutingNode<Child>::RoutingNode()
 
 template <typename Child>
 void RoutingNode<Child>::StartBootstrap() {
-  auto handler = [=](asio::error_code error, Address peer_addr, Endpoint /*our_public_endpoint*/) {
-    if (error) {
-      LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr << " >"
-                    << error.message();
-      // TODO(Team): try connect to bootstrap contacts and other options
-      // (hardcoded endpoints).on failure keep retrying all options forever
-      return;
-    }
-    LOG(kInfo) << "Bootstrapped with " << peer_addr;
-    // FIXME(Team): Thread safety.
-    bootstrap_node_ = peer_addr;
-    // bootstrap_endpoint_ = our_endpoint; this will not required if
-    // connection manager has this connection
-    PutOurPublicPmid();
-    ConnectToCloseGroup();
-  };
   // try connect to any local nodes (5483) Expect to be told Node_Id
   Endpoint live_port_ep(GetLocalIp(), kLivePort);
+
   // skip trying to bootstrap off self
-  if (connection_manager_.AcceptingPort() != kLivePort)
-    connection_manager_.Connect(live_port_ep, handler);
+  if (connection_manager_.AcceptingPort() == kLivePort) {
+    return;
+  }
+
+  connection_manager_.Connect(live_port_ep,
+    [=](asio::error_code error, Address peer_addr, Endpoint our_public_endpoint) {
+      if (error) {
+        LOG(kWarning) << "Cannot connect to bootstrap endpoint < " << peer_addr << " >"
+                      << error.message();
+        // TODO(Team): try connect to bootstrap contacts and other options
+        // (hardcoded endpoints).on failure keep retrying all options forever
+        return;
+      }
+      LOG(kInfo) << "Bootstrapped with " << peer_addr;
+      // FIXME(Team): Thread safety.
+      bootstrap_node_ = peer_addr;
+      our_external_endpoint_ = our_public_endpoint;
+      // bootstrap_endpoint_ = our_endpoint; this will not required if
+      // connection manager has this connection
+      PutOurPublicPmid();
+      ConnectToCloseGroup();
+    });
 
   // auto bootstrap_contacts = bootstrap_handler_.ReadBootstrapContacts();
 }
@@ -221,13 +226,12 @@ void RoutingNode<Child>::PutOurPublicPmid() {
 }
 
 template <typename Child>
-EndpointPair RoutingNode<Child>::NextEndpointPair() {  // FIXME(Peter)   :06/03/2015
-  if (!our_external_endpoint_) {
-    return EndpointPair();
-  }
+EndpointPair RoutingNode<Child>::NextEndpointPair() {
   auto port = connection_manager_.AcceptingPort();
+
   return EndpointPair(Endpoint(GetLocalIp(), port),
-                      Endpoint(our_external_endpoint_->address(), port));
+                      our_external_endpoint_ ? Endpoint(our_external_endpoint_->address(), port)
+                                             : Endpoint());
 }
 
 template <typename Child>
@@ -536,8 +540,8 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
   auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
   LOG(kError) << " AddNode ";
   connection_manager_.AddNode(
-      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), true),
-      response_ptr->receiver_endpoints(),
+      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), false),
+      response_ptr->requester_endpoints(),
       [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock())
           return;
