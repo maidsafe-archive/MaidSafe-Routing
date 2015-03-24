@@ -29,8 +29,8 @@ namespace vault {
 
 namespace test {
 
-// template <>
-// ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data) {
+//template <>
+//ImmutableData ParseData<ImmutableData>(const SerialisedData& serialised_data) {
 //  auto digest_size(crypto::SHA512::DIGESTSIZE);
 //  std::string name(serialised_data.begin(), serialised_data.begin() + digest_size);
 //  std::string content(serialised_data.begin() + digest_size, serialised_data.end());
@@ -38,56 +38,56 @@ namespace test {
 //                       ImmutableData::serialised_type(NonEmptyString(content)));
 //}
 
-routing::HandlePutReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
-                                                    routing::Authority from_authority,
-                                                    routing::Authority our_authority,
-                                                    std::shared_ptr<const Data> data) {
+routing::HandlePutPostReturn FakeVaultFacade::HandlePut(routing::SourceAddress from,
+                                                        routing::Authority from_authority,
+                                                        routing::Authority our_authority,
+                                                        std::shared_ptr<const Data> data) {
   LOG(kVerbose) << "Received Put request from " << from.node_address.data << " with Data name "
                 << data->Name() << " and type " << static_cast<std::uint32_t>(data->TypeId());
   (void)from_authority;
   (void)our_authority;
-  //  switch (authority) {
-  //    case routing::Authority::client_manager:
-  //      if (from_authority != routing::Authority::client)
-  //        break;
-  //      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
-  //        return MaidManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
-  //      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
-  //        return MaidManager::HandlePut(from, Parse<MutableData>(serialised_data));
-  //      else if (name_and_type_id.type_id == detail::TypeId<passport::PublicPmid>::value)
-  //        return MaidManager::HandlePut(from, Parse<passport::PublicPmid>(serialised_data));
-  //    case routing::Authority::nae_manager:
-  //      if (from_authority != routing::Authority::client_manager)
-  //        break;
-  //      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
-  //        return DataManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
-  //      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
-  //        return DataManager::HandlePut(from, Parse<MutableData>(serialised_data));
-  //      break;
-  //    default:
-  //      break;
-  //  }
+//  switch (authority) {
+//    case routing::Authority::client_manager:
+//      if (from_authority != routing::Authority::client)
+//        break;
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return MaidManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return MaidManager::HandlePut(from, Parse<MutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<passport::PublicPmid>::value)
+//        return MaidManager::HandlePut(from, Parse<passport::PublicPmid>(serialised_data));
+//    case routing::Authority::nae_manager:
+//      if (from_authority != routing::Authority::client_manager)
+//        break;
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return DataManager::HandlePut(from, Parse<ImmutableData>(serialised_data));
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return DataManager::HandlePut(from, Parse<MutableData>(serialised_data));
+//      break;
+//    default:
+//      break;
+//  }
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 
 routing::HandleGetReturn FakeVaultFacade::HandleGet(routing::SourceAddress /*from*/,
-                                                    routing::Authority /*from_authority*/,
-                                                    routing::Authority /*authority*/,
-                                                    Data::NameAndTypeId /*name_and_type_id*/) {
-  //  switch (authority) {
-  //    case routing::Authority::nae_manager:
-  //      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
-  //        return DataManager::template HandleGet<ImmutableData>(from, data_name);
-  //      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
-  //        return DataManager::template HandleGet<MutableData>(from, data_name);
-  //      break;
-  //    default:
-  //      break;
-  //  }
+    routing::Authority /*from_authority*/, routing::Authority /*authority*/,
+    Data::NameAndTypeId /*name_and_type_id*/) {
+//  switch (authority) {
+//    case routing::Authority::nae_manager:
+//      if (name_and_type_id.type_id == detail::TypeId<ImmutableData>::value)
+//        return DataManager::template HandleGet<ImmutableData>(from, data_name);
+//      else if (name_and_type_id.type_id == detail::TypeId<MutableData>::value)
+//        return DataManager::template HandleGet<MutableData>(from, data_name);
+//      break;
+//    default:
+//      break;
+//  }
   return boost::make_unexpected(MakeError(VaultErrors::failed_to_handle_request));
 }
 
-void FakeVaultFacade::HandleChurn(routing::CloseGroupDifference /*diff*/) {}
+void FakeVaultFacade::HandleChurn(routing::CloseGroupDifference /*diff*/) {
+}
 
 }  // namespace test
 
