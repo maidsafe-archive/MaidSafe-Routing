@@ -215,8 +215,11 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
+  std::cerr << "Connections::Connect(" << endpoint << ")\n";
+
   get_io_service().post([=]() mutable {
     crux::endpoint unspecified_ep;
+
     if (endpoint.address().is_v4())
       unspecified_ep = crux::endpoint(boost::asio::ip::udp::v4(), 0);
     else

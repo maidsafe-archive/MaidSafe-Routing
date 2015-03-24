@@ -64,6 +64,22 @@ class FindGroupResponse {
   std::vector<passport::PublicPmid> group_;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const FindGroupResponse& msg) {
+   os << "(FindGroupResponse target:" << msg.target_id()
+      << ", group:{";
+
+   auto group = msg.group();
+
+   for (auto i = group.begin(); i != group.end();) {
+     os << i->Name();
+     if (++i != group.end()) {
+       os << ",";
+     }
+   }
+
+   return os << "})";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

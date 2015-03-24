@@ -173,6 +173,25 @@ class MessageHeader {
   boost::optional<asymm::Signature> signature_;
 };
 
+inline
+std::ostream& operator<<(std::ostream& os, const MessageHeader& hdr) {
+  return os << "(Header src:" << hdr.Source()
+            << ", dst:(";
+ 
+  auto dst = hdr.Destination();
+
+  os << reinterpret_cast<const Address&>(dst.first) << ", reply_to:";
+
+  if (dst.second) {
+    os << reinterpret_cast<const Address&>(*dst.second) << ")";
+  }
+  else {
+    os << "none)";
+  }
+
+  return os << ", id:" << hdr.MessageId() << ", ...)";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

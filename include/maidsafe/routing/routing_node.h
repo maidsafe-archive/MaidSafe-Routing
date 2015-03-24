@@ -323,9 +323,10 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  LOG(kVerbose) << " [ " << OurId() << " ] "
-                << " Msg from  [ " << peer_id << " ]    MessageId " << header.MessageId()
-                << "  tag: " << static_cast<std::underlying_type<MessageTypeTag>::type>(tag);
+  LOG(kVerbose) << OurId()
+                << " Msg from " << peer_id
+                << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
+                << " " << header;
 
 
   if (filter_.Check(header.FilterValue()))
@@ -467,7 +468,7 @@ void RoutingNode<Child>::ConnectionLost(boost::optional<CloseGroupDifference> di
 // reply with our details;
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_header) {
-  LOG(kInfo) << "HandleMessage -- Connect msg .. need to connect to " << connect.requester_id();
+  LOG(kInfo) << OurId() << " HandleMessage " << connect;
   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id()))
     return;
   auto targets(connection_manager_.GetTarget(connect.requester_id()));
@@ -527,8 +528,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
-  LOG(kInfo) << "HandleMessage -- ConnectResponse msg .. need to connect to "
-             << connect_response.receiver_id();
+  LOG(kInfo) << OurId() << " HandleMessage " << connect_response;
   if (!connection_manager_.SuggestNodeToAdd(connect_response.receiver_id()))
     return;
 
@@ -556,6 +556,7 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader original_header) {
+  LOG(kInfo) << OurId() << " HandleMessage " << find_group;
   auto close_group = connection_manager_.OurCloseGroup();
   // add ourselves
   std::vector<passport::PublicPmid> group;
@@ -592,13 +593,13 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
 }
 
 template <typename Child>
-void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_reponse,
+void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_response,
                                        MessageHeader /* original_header */) {
   // this is called to get our group on bootstrap, we will try and connect to each of these nodes
   // Only other reason is to allow the sentinel to check signatures and those calls will just fall
   // through here.
-  LOG(kInfo) << "HandleMessage -- FindGroupResponse msg";
-  for (const auto node_pmid : find_group_reponse.group()) {
+  LOG(kInfo) << OurId() << " HandleMessage " << find_group_response;
+  for (const auto node_pmid : find_group_response.group()) {
     Address node_id(node_pmid.Name());
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
