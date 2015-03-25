@@ -198,7 +198,7 @@ void RoutingNode<Child>::StartBootstrap() {
         // (hardcoded endpoints).on failure keep retrying all options forever
         return;
       }
-      LOG(kInfo) << "Bootstrapped with " << peer_addr;
+      LOG(kInfo) << OurId() << " Bootstrapped with " << peer_addr << " his ep:" << live_port_ep;
       // FIXME(Team): Thread safety.
       bootstrap_node_ = peer_addr;
       our_external_endpoint_ = our_public_endpoint;
@@ -263,6 +263,7 @@ PutReturn<CompletionToken> RoutingNode<Child>::Put(std::shared_ptr<Data> data,
                                                    CompletionToken&& token) {
   PutHandler<CompletionToken> handler(std::forward<decltype(token)>(token));
   asio::async_result<decltype(handler)> result(handler);
+
   asio::post(asio_service_.service(), [=]() mutable {
     MessageHeader our_header(
         std::make_pair(Destination(OurId()), boost::none),  // send to ClientMgr
@@ -319,7 +320,7 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 
 
 template <typename Child>
-void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
+void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
@@ -329,10 +330,10 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  LOG(kVerbose) << OurId()
-                << " Msg from " << peer_id
-                << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
-                << " " << header;
+  //LOG(kVerbose) << OurId()
+  //              << " Msg from " << peer_id
+  //              << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
+  //              << " " << header;
 
   if (filter_.Check(header.FilterValue()))
     return;  // already seen
@@ -516,11 +517,12 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
   ////////////////////////
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
-  LOG(kError) << " AddNodeAccept ";
+  LOG(kError) << OurId() << " calling AddNodeAccept " << connect.requester_id();
   connection_manager_.AddNodeAccept(
       NodeInfo(connect.requester_id(), connect.requester_fob(), true),
       connect.requester_endpoints(),
       [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
+        LOG(kError) << " AddNodeAccept ";
         if (!destroy_guard.lock())
           return;
         if (!error && added)
@@ -538,10 +540,10 @@ void RoutingNode<Child>::HandleMessage(ConnectResponse connect_response) {
 
   // Workaround because ConnectResponse isn't copyconstructibe.
   auto response_ptr = std::make_shared<ConnectResponse>(std::move(connect_response));
-  LOG(kError) << " AddNode ";
+  LOG(kError) << OurId() << " calling AddNode " << response_ptr->receiver_id() << " " << response_ptr->receiver_endpoints();
   connection_manager_.AddNode(
-      NodeInfo(response_ptr->requester_id(), response_ptr->receiver_fob(), false),
-      response_ptr->requester_endpoints(),
+      NodeInfo(response_ptr->receiver_id(), response_ptr->receiver_fob(), false),
+      response_ptr->receiver_endpoints(),
       [=](asio::error_code error, boost::optional<CloseGroupDifference> added) {
         if (!destroy_guard.lock())
           return;
@@ -634,8 +636,6 @@ void RoutingNode<Child>::HandleMessage(GetData get_data, MessageHeader header) {
 
 template <typename Child>
 void RoutingNode<Child>::HandleMessage(PutData put_data, MessageHeader original_header) {
-  LOG(kVerbose) << "Handling PutData: " << put_data.type_id() << "   "
-                << hex::Substr(put_data.data()) << "   " << put_data.data().size();
   std::shared_ptr<const Data> parsed(Parse<std::shared_ptr<const Data>>(put_data.data()));
   cache_.Add(parsed->NameAndType(), put_data.data());
   auto result = static_cast<Child*>(this)

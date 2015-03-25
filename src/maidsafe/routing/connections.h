@@ -114,9 +114,8 @@ class Connections {
   std::function<void(Address)> on_drop_;
 
   std::map<Port, std::shared_ptr<crux::acceptor>> acceptors_;  // NOLINT
-  std::map<crux::endpoint, std::shared_ptr<crux::socket>> connections_;
-  std::map<Address, crux::endpoint> id_to_endpoint_map_;
-
+  std::map<Address, std::shared_ptr<crux::socket>> connections_;
+  std::map<crux::endpoint, std::shared_ptr<crux::socket>> connecting_sockets_;
 
   struct ReceiveInput {
     asio::error_code error;
@@ -142,16 +141,12 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
   asio::async_result<Handler> result(handler);
 
   get_io_service().post([=]() mutable {
-    auto remote_endpoint_i = id_to_endpoint_map_.find(remote_id);
+    auto socket_i = connections_.find(remote_id);
 
-    if (remote_endpoint_i == id_to_endpoint_map_.end()) {
+    if (socket_i == connections_.end()) {
       LOG(kWarning) << "bad_descriptor !! " << remote_id;
       return post(handler, asio::error::bad_descriptor);
     }
-
-    auto remote_endpoint = remote_endpoint_i->second;
-    auto socket_i = connections_.find(remote_endpoint);
-    assert(socket_i != connections_.end());
 
     auto& socket = socket_i->second;
     auto buffer = std::make_shared<SerialisedMessage>(std::move(bytes));
@@ -165,8 +160,7 @@ AsyncResultReturn<Token> Connections::Send(const Address& remote_id, const Seria
                            return post(handler, asio::error::operation_aborted);
                          }
                          if (error) {
-                           id_to_endpoint_map_.erase(remote_id);
-                           connections_.erase(remote_endpoint);
+                           connections_.erase(remote_id);
                          }
                          post(handler, convert::ToStd(error));
                        });
@@ -218,18 +212,18 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
   get_io_service().post([=]() mutable {
     crux::endpoint unspecified_ep;
 
+    LOG(kInfo) << OurId() << " Connections::Connect(" << endpoint << ")\n";
     if (endpoint.address().is_v4())
       unspecified_ep = crux::endpoint(boost::asio::ip::udp::v4(), 0);
     else
       unspecified_ep = crux::endpoint(boost::asio::ip::udp::v6(), 0);
 
     auto socket = std::make_shared<crux::socket>(get_io_service(), unspecified_ep);
+    auto local_endpoint = socket->local_endpoint();
 
-    auto insert_result = connections_.insert(std::make_pair(convert::ToBoost(endpoint), socket));
+    auto insert_result = connecting_sockets_.insert(std::make_pair(local_endpoint, socket));
 
-    if (!insert_result.second) {
-      return post(handler, asio::error::already_started, ConnectResult());
-    }
+    assert(insert_result.second);
 
     std::weak_ptr<crux::socket> weak_socket = socket;
 
@@ -239,16 +233,15 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
       if (!socket) {
         return post(handler, asio::error::operation_aborted, ConnectResult());
       }
+
       if (error) {
+        connecting_sockets_.erase(local_endpoint);
         return post(handler, convert::ToStd(error), ConnectResult());
       }
 
       auto remote_endpoint = socket->remote_endpoint();
 
-      connections_[remote_endpoint] = socket;
-      auto his_endpoint = convert::ToAsio(socket->remote_endpoint());
-
-      AsyncExchange(*socket, Serialise(our_id_, his_endpoint),
+      AsyncExchange(*socket, Serialise(our_id_, convert::ToAsio(remote_endpoint)),
                     [=](boost::system::error_code error, SerialisedMessage data) mutable {
                       auto socket = weak_socket.lock();
 
@@ -256,8 +249,9 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
                         return post(handler, asio::error::operation_aborted, ConnectResult());
                       }
 
+                      connecting_sockets_.erase(local_endpoint);
+
                       if (error) {
-                        connections_.erase(remote_endpoint);
                         return post(handler, convert::ToStd(error), ConnectResult());
                       }
 
@@ -265,7 +259,13 @@ AsyncResultReturn<Token, Connections::ConnectResult> Connections::Connect(Endpoi
                       Address his_id;
                       asio::ip::udp::endpoint our_endpoint;
                       Parse(stream, his_id, our_endpoint);
-                      id_to_endpoint_map_[his_id] = remote_endpoint;
+
+                      auto result = connections_.insert(std::make_pair(his_id, socket));
+
+                      if (!result.second) {
+                        return post(handler, asio::error::already_connected, ConnectResult{his_id, our_endpoint});
+                      }
+
                       StartReceiving(his_id, remote_endpoint, socket);
 
                       post(handler, convert::ToStd(error), ConnectResult{his_id, our_endpoint});
@@ -284,10 +284,8 @@ AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port por
   Handler handler(std::forward<Token>(token));
   asio::async_result<Handler> result(handler);
 
-
   auto loopback = [](Port port) { return crux::endpoint(boost::asio::ip::udp::v4(), port); };
 
-  // TODO(PeterJ) Make sure this operation is thread safe in crux.
   std::shared_ptr<crux::acceptor> acceptor;
 
   try {
@@ -321,14 +319,16 @@ AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port por
       }
 
       acceptors_.erase(port);
+
       auto remote_endpoint = socket->remote_endpoint();
-      connections_[remote_endpoint] = socket;
-      auto his_endpoint = convert::ToAsio(socket->remote_endpoint());
+      auto local_endpoint  = socket->local_endpoint();
+
+      connecting_sockets_[local_endpoint] = socket;
 
       std::weak_ptr<crux::socket> weak_socket = socket;
 
-      AsyncExchange(*socket, Serialise(our_id_, his_endpoint), [=](boost::system::error_code error,
-                                                                   SerialisedMessage data) mutable {
+      AsyncExchange(*socket, Serialise(our_id_, convert::ToAsio(remote_endpoint)),
+                    [=](boost::system::error_code error, SerialisedMessage data) mutable {
         auto socket = weak_socket.lock();
 
         if (!socket) {
@@ -337,7 +337,7 @@ AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port por
         }
 
         if (error) {
-          connections_.erase(remote_endpoint);
+          connecting_sockets_.erase(local_endpoint);
           return post(handler, convert::ToStd(error),
                       AcceptResult{convert::ToAsio(remote_endpoint), Address(), Endpoint()});
         }
@@ -347,11 +347,20 @@ AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port por
         Endpoint our_endpoint;
         Parse(stream, his_id, our_endpoint);
 
-        id_to_endpoint_map_[his_id] = remote_endpoint;
+        auto result = connections_.insert(std::make_pair(his_id, socket));
+
         StartReceiving(his_id, remote_endpoint, socket);
 
-        post(handler, convert::ToStd(error),
-             AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
+        if (result.second) {
+          // Inserted
+          post(handler, convert::ToStd(error),
+               AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
+        }
+        else {
+          remote_endpoint = result.first->second->remote_endpoint();
+          post(handler, asio::error::already_connected,
+               AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
+        }
       });
     });
   });
@@ -375,8 +384,8 @@ inline void Connections::StartReceiving(const Address& id, const crux::endpoint&
         }
 
         if (error) {
-          id_to_endpoint_map_.erase(id);
-          connections_.erase(remote_endpoint);
+          connections_.erase(id);
+          size = 0;
         }
 
         buffer->resize(size);
@@ -396,7 +405,7 @@ inline void Connections::Shutdown() {
     work_.reset();
     acceptors_.clear();
     connections_.clear();
-    id_to_endpoint_map_.clear();
+    connecting_sockets_.clear();
   });
 }
 
@@ -410,16 +419,7 @@ void Connections::post(Handler&& handler, Args&&... args) {
 
 inline void Connections::Drop(const Address& their_id) {
   get_io_service().post([=]() {
-    // TODO(Team): Might it be that it is in connections_ but not in the id_to_endpoint_map_?
-    // I.e. that above layers would wan't to remove by ID nodes which were not
-    // yet connected?
-    auto i = id_to_endpoint_map_.find(their_id);
-
-    if (i == id_to_endpoint_map_.end()) {
-      return;
-    }
-
-    connections_.erase(i->second);
+    connections_.erase(their_id);
   });
 }
 

@@ -101,6 +101,7 @@ void ConnectionManager::StartAccepting() {
     auto expected_i = expected_accepts_.find(result.his_address);
 
     if (expected_i != expected_accepts_.end()) {
+      LOG(kInfo) << OurId() << " StartAccepting handler 1 " << error.message() << "\n";
       auto expected = std::move(expected_i->second);
       expected_accepts_.erase(expected_i);
 
@@ -111,6 +112,10 @@ void ConnectionManager::StartAccepting() {
         return;
       }
     } else {
+      LOG(kInfo) << OurId() << " StartAccepting handler 2 " << error.message() << " his_id:" << result.his_address << "\n";
+      for (const auto& a : expected_accepts_) {
+        LOG(kInfo) << "--- " << a.first << "\n";
+      }
       if (!error) {
         connected_non_routing_nodes_.insert(result.his_address);
       }
@@ -126,6 +131,13 @@ void ConnectionManager::StartAccepting() {
 
 void ConnectionManager::HandleAddNode(asio::error_code error, NodeInfo node_info,
                                       OnAddNode user_handler) {
+  LOG(kInfo) << OurId() << " HandleAddNode " << error.message();
+
+  if (error == asio::error::already_connected) {
+    connected_non_routing_nodes_.erase(node_info.id);
+    error = asio::error_code();
+  }
+
   if (error && error != asio::error::timed_out) {
     return;
   }
@@ -138,6 +150,7 @@ void ConnectionManager::HandleAddNode(asio::error_code error, NodeInfo node_info
 void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair, OnAddNode on_node_added) {
   auto id = node_info.id;
 
+  LOG(kInfo) << OurId() << " AddNodeAccept " << node_info.id << "\n";
   auto timer = std::make_shared<Timer>(io_service_);
 
   auto canceling_handler =
@@ -166,14 +179,21 @@ void ConnectionManager::AddNode(NodeInfo node_to_add, EndpointPair their_endpoin
                                 OnAddNode on_node_added) {
   std::weak_ptr<Connections> weak_connections = connections_;
 
-  // TODO(PeterJ): Use local endpoint as well
-  connections_->Connect(their_endpoint_pair.external,
+  // TODO(PeterJ): Use both endpoints
+  asio::ip::udp::endpoint endpoint = their_endpoint_pair.external.address().is_unspecified()
+                                   ? their_endpoint_pair.local
+                                   : their_endpoint_pair.external;
+
+  LOG(kInfo) << "ConnectionManager::Connect " << node_to_add.id << " " << their_endpoint_pair << "\n";
+  connections_->Connect(endpoint,
                         [=](asio::error_code error, Connections::ConnectResult result) {
                           if (!weak_connections.lock()) {
                             return on_node_added(asio::error::operation_aborted, boost::none);
                           }
 
-                          if (!error && (result.his_address != node_to_add.id)) {
+                          LOG(kInfo) << OurId() << " his_address:" << result.his_address << " node_to_add:" << node_to_add.id;
+                          if ((!error || error == asio::error::already_connected)
+                              && (result.his_address != node_to_add.id)) {
                             error = asio::error::fault;
                           }
 
