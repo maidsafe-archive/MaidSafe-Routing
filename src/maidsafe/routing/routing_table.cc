@@ -202,6 +202,8 @@ bool RoutingTable::NewNodeIsBetterThanExisting(
 
 void RoutingTable::PushBackThenSort(NodeInfo their_info) {
   nodes_.push_back(std::move(their_info));
+  LOG(kSuccess) << " RT [ "<< our_id_ << " ] addedd [ " << nodes_.back().id << " ] , size : "
+                << nodes_.size();
   std::sort(std::begin(nodes_), std::end(nodes_), comparison_);
 }
 
