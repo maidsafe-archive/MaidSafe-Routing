@@ -256,13 +256,6 @@ void ConnectionManager::StartReceiving() {
   });
 }
 
-void ConnectionManager::SendToNonRoutingNode(const Address& /*addr*/,
-                                             const SerialisedMessage& /*message*/) {
-  // connections_->Send(addr, message, std::move(handler));  // FIXME(Prakash)
-  // remove connection if failed
-}
-
-
 void ConnectionManager::HandleConnectionLost(Address lost_connection) {
   routing_table_.DropNode(lost_connection);
   connected_non_routing_nodes_.erase(lost_connection);

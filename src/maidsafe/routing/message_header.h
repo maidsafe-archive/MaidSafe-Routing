@@ -177,7 +177,7 @@ inline
 std::ostream& operator<<(std::ostream& os, const MessageHeader& hdr) {
   return os << "(Header src:" << hdr.Source()
             << ", dst:(";
- 
+
   auto dst = hdr.Destination();
 
   os << reinterpret_cast<const Address&>(dst.first) << ", reply_to:";

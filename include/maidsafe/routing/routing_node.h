@@ -122,6 +122,9 @@ class RoutingNode {
   template <typename MessageType>
   void SendToBootstrapNode(const DestinationAddress& destination, const SourceAddress& source,
                            const MessageType& message, Authority authority);
+  void SendToBootstrapNode(const SerialisedMessage& serialised_message);
+  void SendToNonRoutingNode(const Address& destination,
+                            const SerialisedMessage& serialised_message);
   bool TryCache(MessageTypeTag tag, MessageHeader header, Address name);
   Authority OurAuthority(const Address& element, const MessageHeader& header) const;
   void MessageReceived(Address peer_id, SerialisedMessage serialised_message);
@@ -379,7 +382,8 @@ void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage 
             std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
             [&header](const Address& node) { return node == (*header.ReplyToAddress()).data; })) {
       // send message to connected node
-      connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message);
+      connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message,
+                                               [](asio::error_code /*error*/) {});
       return;
     }
   }
@@ -473,7 +477,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
   LOG(kInfo) << OurId() << " HandleMessage " << connect;
   if (!connection_manager_.SuggestNodeToAdd(connect.requester_id()))
     return;
-  auto targets(connection_manager_.GetTarget(connect.requester_id()));
+
   ConnectResponse respond(connect.requester_endpoints(), NextEndpointPair(), connect.requester_id(),
                           OurId(), passport::PublicPmid(our_fob_));
   assert(connect.receiver_id() == OurId());
@@ -482,39 +486,16 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
                        SourceAddress(OurSourceAddress()), original_header.MessageId(),
                        Authority::node,
                        asymm::Sign(asymm::PlainText(Serialise(respond)), our_fob_.private_key()));
-  if (bootstrap_node_) {  // TODO(Team) cleanup
-    auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
-    connection_manager_.Send(*bootstrap_node_, std::move(message), [](asio::error_code error) {
-      if (error) {
-        LOG(kWarning) << "Cannot send ConnectResponse via bootstrap node" << error.message();
-      } else {
-        LOG(kInfo) << "Sent ConnectResponse";
-      }
-    });
+  auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
+
+  if (bootstrap_node_) {  // TODO cleanup
+    SendToBootstrapNode(message);
     return;
   }
-  // FIXME(dirvine) Do we need to pass a shared_from_this type object or this may segfault on
-  // shutdown
-  // :24/01/2015
-  for (auto& target : targets) {
-    // FIXME(Team): Do we need to serialize this for each target?
-    auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
-    connection_manager_.Send(target.id, std::move(message), [](asio::error_code) {});
-  }
 
-  //////////////////////// temp code Delete me
-
-  auto temp = (*original_header.ReplyToAddress()).data;
-  auto message = Serialise(header, MessageToTag<ConnectResponse>::value(), respond);
-  connection_manager_.Send(temp, std::move(message), [=](asio::error_code error) {
-    if (error) {
-      LOG(kWarning) << "Could not send to " << temp;
-    } else {
-      LOG(kVerbose) << "Sent ConnectResponse to " << temp;
-    }
-  });
-  // connection_manager_.SendToNonRoutingNode(temp, message);  // FIXME(Prakash)
-  ////////////////////////
+  SendSwarmOrParallel(connect.requester_id(), message);
+  if (original_header.ReplyToAddress())
+    SendToNonRoutingNode((*original_header.ReplyToAddress()).data, message);
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
   LOG(kError) << OurId() << " calling AddNodeAccept " << connect.requester_id();
@@ -575,25 +556,14 @@ void RoutingNode<Child>::HandleMessage(FindGroup find_group, MessageHeader origi
                        original_header.MessageId(), Authority::nae_manager,
                        asymm::Sign(asymm::PlainText(Serialise(response)), our_fob_.private_key()));
   auto message(Serialise(header, MessageToTag<FindGroupResponse>::value(), response));
-  for (const auto& node : connection_manager_.GetTarget(original_header.FromNode())) {
-    connection_manager_.Send(node.id, message, [](asio::error_code) {});
+  if (bootstrap_node_) {
+    SendToBootstrapNode(message);
+  } else {
+    SendSwarmOrParallel(original_header.FromNode(), message);
   }
-
   // if node in my group && in non routing list send it to non_routnig list as well
-  // if (connection_manager_.AddressInCloseGroupRange()) this check is already happeing in Handle
-  // message part !
-
-  // FIXME (Prakash) Need to send to bootstrap node id rt is empty ? temp code to get past zero
-  // state. Delete me !!
-  auto temp = (*original_header.ReplyToAddress()).data;
-  // LOG(kVerbose) << "FindGroupResp sent to " << temp ;
-  connection_manager_.Send(temp, message, [=](asio::error_code error) {
-    if (error) {
-      LOG(kWarning) << "Could not send to " << temp;
-    } else {
-      // LOG(kVerbose) << "Sent FindGroupResponse to " << temp;
-    }
-  });
+  if (original_header.ReplyToAddress())
+    SendToNonRoutingNode((*original_header.ReplyToAddress()).data, message);
 }
 
 template <typename Child>
@@ -707,11 +677,34 @@ void RoutingNode<Child>::SendToBootstrapNode(const DestinationAddress& destinati
   connection_manager_.Send(
       *bootstrap_node_, std::move(wrapped_message), [](asio::error_code error) {
         if (error) {
-          LOG(kWarning) << "Connection manager cannot send to bootstrap node" << error.message();
+          LOG(kWarning) << "Connection manager cannot send to bootstrap node, " << error.message();
         }
       });
 }
 
+template <typename Child>
+void RoutingNode<Child>::SendToBootstrapNode(const SerialisedMessage& serialised_message) {
+  auto destination = *bootstrap_node_;
+  connection_manager_.Send(
+      destination, serialised_message, [=](asio::error_code error) {
+    if (error) {
+      LOG(kWarning) << "Connection manager cannot send to bootstrap node " << destination
+                    << " , error : " << error.message();
+    }
+  });
+}
+
+template <typename Child>
+void RoutingNode<Child>::SendToNonRoutingNode(const Address& destination,
+                                              const SerialisedMessage& serialised_message) {
+  connection_manager_.SendToNonRoutingNode(destination, serialised_message,
+                                           [=](asio::error_code error) {
+      if (error) {
+        LOG(kWarning) << "Connection manager cannot send to destination " << destination
+                      << " , error : " << error.message();
+      }
+  });
+}
 
 }  // namespace routing
 

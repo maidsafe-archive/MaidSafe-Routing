@@ -124,8 +124,8 @@ class ConnectionManager {
   template <class Handler /* void (error_code) */>
   void Send(const Address&, const SerialisedMessage&, Handler);
 
-  void SendToNonRoutingNode(const Address&,
-                            const SerialisedMessage&);  // remove connection if fails
+  template <class Handler /* void (error_code) */>
+  void SendToNonRoutingNode(const Address&, const SerialisedMessage&, Handler);
 
   Port AcceptingPort() const { return our_accept_port_; }
 
@@ -173,6 +173,19 @@ void ConnectionManager::Send(const Address& addr, const SerialisedMessage& messa
     }
   });
 }
+
+template <class Handler /* void (error_code) */>
+void ConnectionManager::SendToNonRoutingNode(const Address& addr,
+                                             const SerialisedMessage& message,
+                                             Handler handler) {
+  auto found = connected_non_routing_nodes_.find(addr);
+  if (found != connected_non_routing_nodes_.end()) {
+    Send(addr, message, handler);
+  } else {
+    handler(make_error_code(RoutingErrors::not_connected));
+  }
+}
+
 
 template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
 void ConnectionManager::Connect(asio::ip::udp::endpoint remote_endpoint, Handler handler) {
