@@ -1,4 +1,4 @@
-/*  Copyright 2012 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -145,7 +145,7 @@ class SentinelTest : public testing::Test {
   SourceAddress source_address_;
 };
 
-TEST_F(SentinelTest, BEH_BasicNonGroupAdd) {
+TEST_F(SentinelTest, FUNC_BasicNonGroupAdd) {
   CreateMaidKeys(1);
   CreatePmidKeys(QuorumSize);
   ImmutableData data(NonEmptyString(RandomBytes(identity_size)));
@@ -180,7 +180,7 @@ TEST_F(SentinelTest, BEH_BasicNonGroupAdd) {
     EXPECT_TRUE(false);
 }
 
-TEST_F(SentinelTest, BEH_BasicGroupAdd) {
+TEST_F(SentinelTest, FUNC_BasicGroupAdd) {
   CreatePmidKeys(GroupSize * 4);
   ImmutableData data(NonEmptyString(RandomBytes(identity_size)));
   PutData put_data(data.TypeId(), SerialisedData(Serialise(data)));
@@ -256,8 +256,7 @@ class AccountTransfer : public AccountTransferInfo {
   int value_;
 };
 
-
-TEST_F(SentinelTest, BEH_BasicAccountTransferAdd) {
+TEST_F(SentinelTest, FUNC_BasicAccountTransferAdd) {
   CreatePmidKeys(GroupSize * 2);
   SortPmidNodes(source_address_.node_address.data);
   MessageId message_id(RandomInt32());

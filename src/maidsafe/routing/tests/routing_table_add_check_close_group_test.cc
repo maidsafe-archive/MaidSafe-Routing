@@ -36,7 +36,7 @@ namespace routing {
 namespace test {
 
 TEST(RoutingTableTest, FUNC_AddManyNodesCheckCloseGroups) {
-  const auto network_size(500);
+  const auto network_size(200);
   auto routing_tables(RoutingTableNetwork(network_size));
   std::vector<Address> addresses;
   addresses.reserve(network_size);

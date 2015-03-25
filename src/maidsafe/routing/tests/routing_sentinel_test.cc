@@ -325,7 +325,7 @@ std::vector<SentinelMessageTrack> IdentifyQuorumMessages(
 
 // first try for specific message type, generalise later
 // PutData is chosen as fundamental type with data payload.
-TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAddRespondWithNewMessageId) {
+TEST_F(SentinelFunctionalTest, FUNC_SentinelSimpleAddRespondWithNewMessageId) {
   const GroupAddress group_address(MakeIdentity());
   SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 
@@ -386,7 +386,7 @@ TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAddRespondWithNewMessageId) {
                                          serialised_put_data));
 }
 
-TEST_F(SentinelFunctionalTest, BEH_SentinelSimpleAdd) {
+TEST_F(SentinelFunctionalTest, FUNC_SentinelSimpleAdd) {
   const GroupAddress group_address(MakeIdentity());
   SignatureGroup single_group(group_address, GroupSize, Authority::client_manager);
 

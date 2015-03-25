@@ -43,7 +43,7 @@ namespace test {
 
 namespace fs = boost::filesystem;
 
-TEST(BootstrapHandlerUnitTest, BEH_AddContacts) {
+TEST(BootstrapHandlerUnitTest, FUNC_AddContacts) {
   ScopedBootstrapFile bootstrap_file(boost::filesystem::initial_path() / "bootstrap.cache");
   BootstrapHandler test_handler;
   for (int i = 0; i < 100; ++i) {
