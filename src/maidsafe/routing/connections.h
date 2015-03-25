@@ -349,10 +349,9 @@ AsyncResultReturn<Token, Connections::AcceptResult> Connections::Accept(Port por
 
         auto result = connections_.insert(std::make_pair(his_id, socket));
 
-        StartReceiving(his_id, remote_endpoint, socket);
-
         if (result.second) {
           // Inserted
+          StartReceiving(his_id, remote_endpoint, socket);
           post(handler, convert::ToStd(error),
                AcceptResult{convert::ToAsio(remote_endpoint), his_id, our_endpoint});
         }

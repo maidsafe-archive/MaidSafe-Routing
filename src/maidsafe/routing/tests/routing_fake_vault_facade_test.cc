@@ -33,31 +33,32 @@ namespace test {
 TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   vault::test::FakeVaultFacade vault1;
   vault::test::FakeVaultFacade vault2;
-  Sleep(std::chrono::seconds(5));
+  Sleep(std::chrono::seconds(15));
+  vault::test::FakeVaultFacade vault3;
+  Sleep(std::chrono::seconds(15));
+//  LOG(kInfo) << "=================================================================================";
 
-  LOG(kInfo) << "=================================================================================";
-
-  std::shared_ptr<Data> immutable_data(
-      new ImmutableData(NonEmptyString(RandomAlphaNumericBytes(1, 50))));
-  std::future<void> put_future(vault2.Put(immutable_data, asio::use_future));
-  EXPECT_NO_THROW(put_future.get());
-  passport::MaidAndSigner maid_and_signer(passport::CreateMaidAndSigner());
-  std::shared_ptr<Data> public_maid(new passport::PublicMaid(maid_and_signer.first));
-  put_future = vault2.Put(public_maid, asio::use_future);
-  EXPECT_NO_THROW(put_future.get());
+//  std::shared_ptr<Data> immutable_data(
+//      new ImmutableData(NonEmptyString(RandomAlphaNumericBytes(1, 50))));
+//  std::future<void> put_future(vault2.Put(immutable_data, asio::use_future));
+//  EXPECT_NO_THROW(put_future.get());
+//  passport::MaidAndSigner maid_and_signer(passport::CreateMaidAndSigner());
+//  std::shared_ptr<Data> public_maid(new passport::PublicMaid(maid_and_signer.first));
+//  put_future = vault2.Put(public_maid, asio::use_future);
+//  EXPECT_NO_THROW(put_future.get());
 
 
-  AsioService asio_service(1);
-  asio::spawn(asio_service.service(), [&](asio::yield_context yield) {
-    std::error_code error;
-    vault2.Put(immutable_data, yield[error]);
-    EXPECT_FALSE(error) << error.message();
-    vault2.Put(public_maid, yield[error]);
-    EXPECT_FALSE(error) << error.message();
-  });
+//  AsioService asio_service(1);
+//  asio::spawn(asio_service.service(), [&](asio::yield_context yield) {
+//    std::error_code error;
+//    vault2.Put(immutable_data, yield[error]);
+//    EXPECT_FALSE(error) << error.message();
+//    vault2.Put(public_maid, yield[error]);
+//    EXPECT_FALSE(error) << error.message();
+//  });
 
-  Sleep(std::chrono::seconds(5));
-  asio_service.Stop();
+//  Sleep(std::chrono::seconds(5));
+//  asio_service.Stop();
 }
 
 // TEST(RoutingFakeVaultFacadeTest, FUNC_PutGet) {

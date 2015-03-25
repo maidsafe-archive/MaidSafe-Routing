@@ -376,17 +376,42 @@ void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage 
 
   // TODO(Prakash) cleanup aim to abstract relay logic here and may be use term routed message for
   // response messages
-  if (header.RelayedMessage() && (header.FromNode().data != OurId())) {  // skip outgoing msgs
-    std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
-    if (std::any_of(
-            std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
-            [&header](const Address& node) { return node == (*header.ReplyToAddress()).data; })) {
-      // send message to connected node
-      connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message,
-                                               [](asio::error_code /*error*/) {});
-      return;
-    }
+
+  bool relay_request = (header.Source().reply_to_address &&
+                        (header.Source().node_address.data == OurId()) &&
+                        (header.Destination().first.data != OurId()));
+  if (relay_request) { // relay request
+    LOG(kVerbose) << "relay request already fwded";
+//    return; // already fwded // Can not return here. THis could be a group message and I might be group member
   }
+
+  bool relay_response = (header.Destination().second &&
+                         (header.Destination().first.data == OurId()));
+
+  if (relay_response) {  // relay response
+    LOG(kVerbose) << OurId() << " relay response try to send to nrt " << (*header.ReplyToAddress()).data;
+    std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
+    if (std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
+                    [&header](const Address& node) { return node == (*header.ReplyToAddress()).data;
+        })) {
+    // send message to connected node
+    connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message,
+                                             [](asio::error_code /*error*/) {});
+    }
+    return;  // no point progressing further as I was destination and I don't have the replyto node connected
+  }
+
+//  if (header.RelayedMessage() && (hjeader.FromNode().data != OurId())) {  // skip outgoing msgs
+//    std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
+//    if (std::any_of(
+//            std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
+//            [&header](const Address& node) { return node == (*header.ReplyToAddress()).data; })) {
+//      // send message to connected node
+//      connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message,
+//                                               [](asio::error_code /*error*/) {});
+//      return;
+//    }
+//  }
 
   if (!connection_manager_.AddressInCloseGroupRange(header.Destination().first)) {
     LOG(kVerbose) << "not for us";
@@ -398,6 +423,8 @@ void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage 
 
   if ((tag == MessageTypeTag::Connect) || (tag == MessageTypeTag::ConnectResponse)) {
     if (header.Destination().first.data != OurId()) {  // not for me
+      if ((!header.Destination().second.is_initialized()))
+        return;
       if ((header.Destination().second) && (*header.Destination().second).data != OurId()) {
         LOG(kVerbose) << "not for me";
         return;
