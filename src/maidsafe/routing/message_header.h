@@ -175,8 +175,8 @@ class MessageHeader {
 
 inline
 std::ostream& operator<<(std::ostream& os, const MessageHeader& hdr) {
-  return os << "(Header src:" << hdr.Source()
-            << ", dst:(";
+   os << "(Header src:" << hdr.Source()
+      << ", dst:(";
 
   auto dst = hdr.Destination();
 

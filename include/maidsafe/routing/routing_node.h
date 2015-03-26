@@ -207,7 +207,7 @@ void RoutingNode<Child>::StartBootstrap() {
       our_external_endpoint_ = our_public_endpoint;
       // bootstrap_endpoint_ = our_endpoint; this will not required if
       // connection manager has this connection
-      PutOurPublicPmid();
+//      PutOurPublicPmid();                                                              // DISABLED FOR TESTING UNCOMMENT
       ConnectToCloseGroup();
     });
 
@@ -323,7 +323,7 @@ void RoutingNode<Child>::ConnectToCloseGroup() {
 
 
 template <typename Child>
-void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage serialised_message) {
+void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage serialised_message) {
   InputVectorStream binary_input_stream{serialised_message};
   MessageHeader header;
   MessageTypeTag tag;
@@ -333,15 +333,16 @@ void RoutingNode<Child>::MessageReceived(Address /*peer_id*/, SerialisedMessage 
     LOG(kError) << "header failure." << boost::current_exception_diagnostic_information();
     return;
   }
-  //LOG(kVerbose) << OurId()
-  //              << " Msg from " << peer_id
-  //              << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
-  //              << " " << header;
 
   if (filter_.Check(header.FilterValue()))
     return;  // already seen
   // add to filter as soon as posible
   filter_.Add({header.FilterValue()});
+
+  LOG(kVerbose) << OurId()
+                << " Msg from peer " << peer_id
+                << " tag:" << static_cast<std::underlying_type<MessageTypeTag>::type>(tag)
+                << " " << header;
 
   // We add these to cache
   if (tag == MessageTypeTag::GetDataResponse) {
@@ -602,6 +603,11 @@ void RoutingNode<Child>::HandleMessage(FindGroupResponse find_group_response,
   LOG(kInfo) << OurId() << " HandleMessage " << find_group_response;
   for (const auto node_pmid : find_group_response.group()) {
     Address node_id(node_pmid.Name());
+                                                                //DELETE ME DEBUG CODE
+                                                                if ((find_group_response.group().size() == 2) &&(node_id == *bootstrap_node_)) {
+                                                                  LOG(kWarning) << "skipping bootstrap guy to connect";
+                                                                  continue;
+                                                                }
     if (!connection_manager_.SuggestNodeToAdd(node_id))
       continue;
     Connect connect_message(NextEndpointPair(), OurId(), node_id, passport::PublicPmid(our_fob_));
