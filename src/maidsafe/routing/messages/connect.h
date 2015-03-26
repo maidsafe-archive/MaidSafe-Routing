@@ -76,8 +76,8 @@ class Connect {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Connect& msg) {
-  return os << "(Connect " << msg.requester_endpoints() << ", "
-            << msg.requester_id() << ", " << msg.receiver_id() << ", ...)";
+  return os << "(Connect " << msg.requester_endpoints() << ", rq:"
+            << msg.requester_id() << ", rc:" << msg.receiver_id() << ", (FOB...))";
 }
 
 }  // namespace routing

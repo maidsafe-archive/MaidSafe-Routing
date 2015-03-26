@@ -174,7 +174,7 @@ RoutingNode<Child>::RoutingNode()
       sentinel_([](Address) {}, [](GroupAddress) {}),
       cache_(std::chrono::minutes(60)),
       destroy_indicator_(new boost::none_t) {
-  LOG(kInfo) << "RoutingNode < " << OurId() << " >";
+  LOG(kInfo) << OurId() << " RoutingNode created";
   // store this to allow other nodes to get our ID on startup. IF they have full routing tables they
   // need Quorum number of these signed anyway.
   passport::PublicPmid our_public_pmid(our_fob_);
@@ -390,10 +390,10 @@ void RoutingNode<Child>::MessageReceived(Address peer_id, SerialisedMessage seri
                          (header.Destination().first.data == OurId()));
 
   if (relay_response) {  // relay response
-    LOG(kVerbose) << OurId() << " relay response try to send to nrt " << (*header.ReplyToAddress()).data;
+    //LOG(kVerbose) << OurId() << " relay response try to send to nrt " << (*header.ReplyToAddress()).data;
     std::set<Address> connected_non_routing_nodes{connection_manager_.GetNonRoutingNodes()};
     if (std::any_of(std::begin(connected_non_routing_nodes), std::end(connected_non_routing_nodes),
-                    [&header](const Address& node) { return node == (*header.ReplyToAddress()).data;
+                    [&header](const Address& node) { return node == header.ReplyToAddress()->data;
         })) {
     // send message to connected node
     connection_manager_.SendToNonRoutingNode(*header.ReplyToAddress(), serialised_message,
@@ -508,6 +508,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
 
   ConnectResponse respond(connect.requester_endpoints(), NextEndpointPair(), connect.requester_id(),
                           OurId(), passport::PublicPmid(our_fob_));
+
   assert(connect.receiver_id() == OurId());
 
   MessageHeader header(DestinationAddress(original_header.ReturnDestinationAddress()),
@@ -526,7 +527,7 @@ void RoutingNode<Child>::HandleMessage(Connect connect, MessageHeader original_h
     SendToNonRoutingNode((*original_header.ReplyToAddress()).data, message);
 
   std::weak_ptr<boost::none_t> destroy_guard = destroy_indicator_;
-  LOG(kError) << OurId() << " calling AddNodeAccept " << connect.requester_id();
+
   connection_manager_.AddNodeAccept(
       NodeInfo(connect.requester_id(), connect.requester_fob(), true),
       connect.requester_endpoints(),

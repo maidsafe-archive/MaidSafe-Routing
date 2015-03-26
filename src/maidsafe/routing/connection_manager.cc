@@ -169,7 +169,7 @@ void ConnectionManager::AddNodeAccept(NodeInfo node_info, EndpointPair, OnAddNod
 
   // TODO(Team): Is the timeout value correct? Should it be in defined
   // somewhere else?
-  timer->async_wait(std::chrono::seconds(10), [=]() {
+  timer->async_wait(std::chrono::seconds(2), [=]() {
     expected_accepts_.erase(id);
     HandleAddNode(asio::error::timed_out, node_info, on_node_added);
   });

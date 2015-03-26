@@ -33,9 +33,12 @@ namespace test {
 TEST(RoutingFakeVaultFacadeTest, FUNC_Constructor) {
   vault::test::FakeVaultFacade vault1;
   vault::test::FakeVaultFacade vault2;
-  Sleep(std::chrono::seconds(15));
+  Sleep(std::chrono::seconds(5));
+  LOG(kInfo) << "=================================================================================";
   vault::test::FakeVaultFacade vault3;
   Sleep(std::chrono::seconds(15));
+  LOG(kInfo) << "=================================================================================";
+
 //  LOG(kInfo) << "=================================================================================";
 
 //  std::shared_ptr<Data> immutable_data(
