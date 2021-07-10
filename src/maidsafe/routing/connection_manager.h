@@ -52,125 +52,148 @@ destiations. In that case request a close_group message for this node.
 #include "maidsafe/routing/routing_table.h"
 #include "maidsafe/routing/types.h"
 #include "maidsafe/routing/peer_node.h"
+#include "maidsafe/routing/connections.h"
 
 namespace maidsafe {
 
 namespace routing {
 
+class Timer;
+
 class ConnectionManager {
   using PublicPmid = passport::PublicPmid;
 
-  class Comparison {
-   public:
-    explicit Comparison(Address our_id) : our_id_(std::move(our_id)) {}
+ public:
+  using OnReceive = std::function<void(Address, const SerialisedMessage&)>;
+  using OnAddNode = std::function<void(asio::error_code, boost::optional<CloseGroupDifference>)>;
+  using OnConnectionLost = std::function<void(boost::optional<CloseGroupDifference>, Address)>;
 
-    bool operator()(const Address& lhs, const Address& rhs) const {
-      return CloserToTarget(lhs, rhs, our_id_);
-    }
-
-   private:
-    const Address our_id_;
+ private:
+  struct ExpectedAccept {
+    NodeInfo node_info;
+    OnAddNode handler;
   };
 
  public:
-  ConnectionManager(boost::asio::io_service& ios, PublicPmid our_fob);
+  ConnectionManager(asio::io_service& ios, Address our_id, OnReceive on_receive,
+                    OnConnectionLost on_connection_lost);
 
   ConnectionManager(const ConnectionManager&) = delete;
   ConnectionManager(ConnectionManager&&) = delete;
-  ~ConnectionManager() = default;
+
   ConnectionManager& operator=(const ConnectionManager&) = delete;
   ConnectionManager& operator=(ConnectionManager&&) = delete;
 
-  bool IsManaged(const Address& node_to_add) const;
-  std::set<Address, Comparison> GetTarget(const Address& target_node) const;
-  // boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+  bool SuggestNodeToAdd(const Address& node_to_add) const;
+  std::vector<NodeInfo> GetTarget(const Address& target_node) const;
+  std::set<Address> GetNonRoutingNodes() const;
+
+  boost::optional<CloseGroupDifference> LostNetworkConnection(const Address& node);
+
   // routing wishes to drop a specific node (may be a node we cannot connect to)
-  boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
-  void AddNode(boost::optional<NodeInfo> node_to_add, EndpointPair);
+  // boost::optional<CloseGroupDifference> DropNode(const Address& their_id);
+  void DropNode(const Address& their_id);
 
-  std::vector<PublicPmid> OurCloseGroup() const {
-    std::vector<PublicPmid> result;
-    result.reserve(GroupSize);
-    size_t i = 0;
-    for (const auto& pair : peers_) {
-      if (++i > GroupSize)
-        break;
-      result.push_back(pair.second.node_info().dht_fob);
-    }
-    return result;
+  void AddNode(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
+  void AddNodeAccept(NodeInfo node_to_add, EndpointPair their_endpoint_pair, OnAddNode);
+
+  std::vector<NodeInfo> OurCloseGroup() const { return routing_table_.OurCloseGroup(); }
+
+  size_t CloseGroupBucketDistance() const {
+    return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
   }
-
-  // size_t CloseGroupBucketDistance() const {
-  //   return routing_table_.BucketIndex(routing_table_.OurCloseGroup().back().id);
-  // }
 
   bool AddressInCloseGroupRange(const Address& address) const {
-    if (peers_.size() < GroupSize)
+    if (routing_table_.Size() < GroupSize) {
       return true;
-    return (static_cast<std::size_t>(std::distance(peers_.begin(), peers_.upper_bound(address))) <
-            GroupSize);
+    }
+    return CloserToTarget(address, routing_table_.OurCloseGroup().back().id,
+                          routing_table_.OurId());
   }
 
-  const Address& OurId() const { return our_id_; }
+  const Address& OurId() const { return routing_table_.OurId(); }
 
   boost::optional<asymm::PublicKey> GetPublicKey(const Address& node) const {
-    auto found_i = peers_.find(node);
-    if (found_i == peers_.end()) { return boost::none; }
-    return found_i->second.node_info().dht_fob.public_key();
+    return routing_table_.GetPublicKey(node);
   }
 
-  // bool CloseGroupMember(const Address& their_id);
+  bool CloseGroupMember(const Address& their_id);
 
-  uint32_t Size() { return static_cast<uint32_t>(peers_.size()); }
+  std::size_t Size() { return routing_table_.Size(); }
 
-  PeerNode* FindPeer(Address addr) {
-    auto i = peers_.find(addr);
-    if (i == peers_.end())
-      return nullptr;
-    return &i->second;
-  }
+  template <class Handler /* void (error_code) */>
+  void Send(const Address&, const SerialisedMessage&, Handler);
 
-  void StartAccepting(unsigned short port);
+  template <class Handler /* void (error_code) */>
+  void SendToNonRoutingNode(const Address&, const SerialisedMessage&, Handler);
 
-  template<class Handler /* void(NodeId) */>
-  void SetOnConnectionAdded(Handler handler) {
-    on_connection_added_ = std::move(handler);
-  }
+  Port AcceptingPort() const { return our_accept_port_; }
 
-  template<class Handler /* void(NodeId, SerialisedMessage) */>
-  void SetOnReceive(Handler handler) {
-    on_receive_ = std::move(handler);
-  }
+  template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
+  void Connect(asio::ip::udp::endpoint, Handler);
 
-  void Shutdown() {
-    acceptors_.clear();
-    being_connected_.clear();
-    peers_.clear();
-  }
+  void Shutdown() { connections_.reset(); }
 
  private:
+  boost::optional<CloseGroupDifference> AddToRoutingTable(NodeInfo node_to_add);
+  void StartReceiving();
+  void StartAccepting();
+
+  void HandleAddNode(asio::error_code, NodeInfo, OnAddNode);
+  void HandleConnectionLost(Address);
+
   boost::optional<CloseGroupDifference> GroupChanged();
-  void InsertPeer(PeerNode&&);
-  std::weak_ptr<boost::none_t> DestroyGuard() { return destroy_indicator_; }
-  void StartReceiving(PeerNode&);
 
  private:
-  boost::asio::io_service& io_service_;
-
-  std::function<void(Address)> on_connection_added_;
-  std::function<void(Address, const SerialisedMessage&)> on_receive_;
-
-  PublicPmid our_fob_;
-  Address our_id_;
-
-  std::map<unsigned short, std::unique_ptr<crux::acceptor>> acceptors_;  // NOLINT
-  std::map<crux::endpoint, std::shared_ptr<crux::socket>> being_connected_;
-  std::map<Address, PeerNode, Comparison> peers_;
-
+  asio::io_service& io_service_;
+  mutable std::mutex mutex_;
+  Port our_accept_port_;
+  RoutingTable routing_table_;
+  std::set<Address> connected_non_routing_nodes_;  // clients & bootstrapping nodes
+  OnReceive on_receive_;
+  OnConnectionLost on_connection_lost_;
   std::vector<Address> current_close_group_;
-
-  std::shared_ptr<boost::none_t> destroy_indicator_;
+  std::map<Address, ExpectedAccept> expected_accepts_;
+  std::shared_ptr<Connections> connections_;
 };
+
+template <class Handler /* void (error_code) */>
+void ConnectionManager::Send(const Address& addr, const SerialisedMessage& message,
+                             Handler handler) {
+  std::weak_ptr<Connections> guard = connections_;
+  //LOG(kVerbose) << OurId() << " Send to node " << addr << ", msg : " << hex::Substr(message);
+  connections_->Send(addr, message, [=](asio::error_code error) mutable {
+      handler(error);
+
+    if (!guard.lock())
+      return;
+
+    if (error) {
+      HandleConnectionLost(std::move(addr));
+    }
+  });
+}
+
+template <class Handler /* void (error_code) */>
+void ConnectionManager::SendToNonRoutingNode(const Address& addr,
+                                             const SerialisedMessage& message,
+                                             Handler handler) {
+  auto found = connected_non_routing_nodes_.find(addr);
+  if (found != connected_non_routing_nodes_.end()) {
+    Send(addr, message, handler);
+  } else {
+    handler(make_error_code(RoutingErrors::not_connected));
+  }
+}
+
+
+template <class Handler /* void (error_code, Address, Endpoint our_endpoint) */>
+void ConnectionManager::Connect(asio::ip::udp::endpoint remote_endpoint, Handler handler) {
+  connections_->Connect(remote_endpoint,
+                        [=](asio::error_code error, Connections::ConnectResult result) {
+                          handler(error, result.his_address, result.our_endpoint);
+                        });
+}
 
 }  // namespace routing
 

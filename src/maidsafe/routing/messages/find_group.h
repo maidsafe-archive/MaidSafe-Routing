@@ -60,6 +60,11 @@ class FindGroup {
   Address target_id_;
 };
 
+inline std::ostream& operator<<(std::ostream& os, const FindGroup& msg) {
+  return os << "(FindGroup requester:" << static_cast<Address>(msg.requester_id())
+            << ", target:" << msg.target_id() << ")";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe

@@ -1,4 +1,4 @@
-/*  Copyright 2014 MaidSafe.net limited
+/*  Copyright 2015 MaidSafe.net limited
 
     This MaidSafe Software is licensed to you under (1) the MaidSafe.net Commercial License,
     version 1.0 or later, or (2) The General Public License (GPL), version 3, depending on which
@@ -16,12 +16,44 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/routing/routing_node.h"
+#ifndef MAIDSAFE_ROUTING_APPLY_TUPLE_H_
+#define MAIDSAFE_ROUTING_APPLY_TUPLE_H_
+
+#include <tuple>
 
 namespace maidsafe {
 
 namespace routing {
 
+namespace helper {
+
+template <int... Is>
+struct Index {};
+
+template <int N, int... Is>
+struct GeneratedSequence : GeneratedSequence<N - 1, N - 1, Is...> {};
+
+template <int... Is>
+struct GeneratedSequence<0, Is...> : Index<Is...> {};
+
+template <class F, typename... Args, int... Is>
+inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup,
+                                          helper::Index<Is...>)
+    -> decltype(f(std::get<Is>(tup)...)) {
+  return f(std::get<Is>(tup)...);
+}
+
+}  // namespace helper
+
+template <class F, typename... Args>
+inline MAIDSAFE_CONSTEXPR auto ApplyTuple(F&& f, const std::tuple<Args...>& tup)
+    -> decltype(helper::ApplyTuple(std::forward<F>(f), tup,
+                                   helper::GeneratedSequence<sizeof...(Args)>{})) {
+  return helper::ApplyTuple(std::forward<F>(f), tup, helper::GeneratedSequence<sizeof...(Args)>{});
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ROUTING_APPLY_TUPLE_H_

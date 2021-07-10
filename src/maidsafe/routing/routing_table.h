@@ -37,6 +37,7 @@ namespace routing {
 
 struct NodeInfo;
 
+// N:B Bucket 512 is OurId() and Bucket 0 is the furthest bucket.
 // The RoutingTable class is used to maintain a list of contacts to which we are connected.  It is
 // threadsafe and all public functions offer the strong exception guarantee.  Any public function
 // having an Address or NodeInfo arg will throw if NDEBUG is defined and the passed ID is invalid.
@@ -62,8 +63,10 @@ class RoutingTable {
   //
   // 1 - if the contact is ourself, or doesn't have a valid public key, or is already in the table,
   //     it will not be added
-  // 2 - if the routing table is not full (size < OptimalSize()), the contact will be added
-  // 3 - if the contact is within our close group, it will be added
+  // 2 - if the routing table is not full (size < OptimalSize()), the contact will be added with no
+  //     nodes removed
+  // 3 - if the contact is within our close group, it will be added & possibly a node will be
+  //     removed
   // 4 - if we can find a candidate for removal (a contact in a bucket with more than 'BucketSize()'
   //     contacts, which is also not within our close group), and if the new contact will fit in a
   //     bucket closer to our own bucket, then we add the new contact.

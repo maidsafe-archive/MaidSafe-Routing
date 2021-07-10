@@ -117,9 +117,30 @@ class MessageHeader {
   NodeAddress FromNode() const { return source_.node_address; }
   boost::optional<GroupAddress> FromGroup() const { return source_.group_address; }
   Authority FromAuthority() { return authority_; }
-  bool RelayedMessage() const { return static_cast<bool>(source_.reply_to_address); }
+
+  bool RelayedMessage() const {
+      return static_cast<bool>(source_.reply_to_address) ||
+             static_cast<bool>(destination_.second);
+  }
+
+  boost::optional<Address> RelayedTo() const {
+    if (source_.reply_to_address) {
+      return static_cast<const Address&>(*source_.reply_to_address);
+    }
+    else if (destination_.second) {
+      return static_cast<const Address&>(*destination_.second);
+    }
+    return boost::none;
+  }
+
   boost::optional<routing::ReplyToAddress> ReplyToAddress() const {
-    return source_.reply_to_address;
+    if (source_.reply_to_address) {
+      return source_.reply_to_address;
+    }
+    if (destination_.second) {
+      return destination_.second;
+    }
+    return boost::none;
   }
 
   Address FromAddress() const {
@@ -170,6 +191,25 @@ class MessageHeader {
   Authority authority_;
   boost::optional<asymm::Signature> signature_;
 };
+
+inline
+std::ostream& operator<<(std::ostream& os, const MessageHeader& hdr) {
+   os << "(Header src:" << hdr.Source()
+      << ", dst:(";
+
+  auto dst = hdr.Destination();
+
+  os << reinterpret_cast<const Address&>(dst.first) << ", reply_to:";
+
+  if (dst.second) {
+    os << reinterpret_cast<const Address&>(*dst.second) << ")";
+  }
+  else {
+    os << "none)";
+  }
+
+  return os << ", id:" << hdr.MessageId() << ", ...)";
+}
 
 }  // namespace routing
 

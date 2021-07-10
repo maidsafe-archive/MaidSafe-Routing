@@ -86,6 +86,23 @@ inline bool operator>=(const SourceAddress& lhs, const SourceAddress& rhs) {
   return !operator<(lhs, rhs);
 }
 
+inline std::ostream& operator<<(std::ostream& os, const SourceAddress& addr) {
+  os << "(SourceAddress node:" << reinterpret_cast<const Address&>(addr.node_address) << ", ";
+  if (addr.group_address) {
+    os << "group:" << reinterpret_cast<const Address&>(*addr.group_address);
+  }
+  else {
+    os << "group:none";
+  }
+  if (addr.reply_to_address) {
+    os << ", reply_to:" << reinterpret_cast<const Address&>(*addr.reply_to_address);
+  }
+  else {
+    os << ", reply_to:none";
+  }
+  return os << ")";
+}
+
 }  // namespace routing
 
 }  // namespace maidsafe
